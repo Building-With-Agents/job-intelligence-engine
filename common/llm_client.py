@@ -107,8 +107,30 @@ def _model_tier_for_skills_extraction(model_name: str) -> str:
     return MODEL_TIER_MAP.get(model_name, "sonnet")
 
 
+def _build_gemini_llm() -> Any:
+    """Build Google Gemini chat model via LangChain. Drop-in replacement for AzureChatOpenAI."""
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+    except ImportError as e:
+        raise ImportError(
+            "langchain-google-genai is required when LLM_PROVIDER=gemini. "
+            "Install with: pip install langchain-google-genai"
+        ) from e
+
+    return ChatGoogleGenerativeAI(
+        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+        temperature=0.1,
+    )
+
+
 def _get_llm() -> Any:
-    """Build Azure OpenAI chat model for skills extraction."""
+    """Build chat model for skills extraction. Provider selected via LLM_PROVIDER env var."""
+    provider = os.getenv("LLM_PROVIDER", "azure_openai")
+    if provider == "gemini":
+        return _build_gemini_llm()
+
+    # Default: Azure OpenAI
     try:
         from langchain_openai import AzureChatOpenAI
     except ImportError as e:
@@ -137,7 +159,12 @@ def _get_llm() -> Any:
 
 
 def _build_structured_llm(deployment: str) -> Any:
-    """Build Azure OpenAI chat model for structured extraction calls."""
+    """Build chat model for structured extraction calls. Provider selected via LLM_PROVIDER env var."""
+    provider = os.getenv("LLM_PROVIDER", "azure_openai")
+    if provider == "gemini":
+        return _build_gemini_llm()
+
+    # Default: Azure OpenAI
     try:
         from langchain_openai import AzureChatOpenAI
     except ImportError as e:
