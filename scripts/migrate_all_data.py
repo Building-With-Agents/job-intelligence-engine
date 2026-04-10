@@ -20,9 +20,9 @@ Usage (from project root, with venv activated):
 import json
 import os
 
-import pyodbc
 import psycopg2
 import psycopg2.extras
+import pyodbc
 
 # Tables excluded from data migration because they contain PII
 # (personally identifiable information). Matched case-insensitively.

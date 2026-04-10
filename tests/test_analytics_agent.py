@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from datetime import date, datetime, timezone
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from analytics.agent import AnalyticsAgent, _resolve_target_week, default_analytics_target_week

@@ -9,10 +9,11 @@ Usage (from project root, with venv activated):
     python scripts/migrate_skills.py
 """
 
-import os
 import json
-import pyodbc
+import os
+
 import psycopg2
+import pyodbc
 
 # ── Connection strings ────────────────────────────────────────────────
 # MSSQL: read from the Prisma-style DATABASE_URL or build from .env.docker vars

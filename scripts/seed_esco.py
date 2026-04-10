@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 # ruff: noqa: E402  -- module docstring must be first; imports follow
 
 """
@@ -74,6 +75,7 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
+
 from dotenv import load_dotenv
 
 load_dotenv()
