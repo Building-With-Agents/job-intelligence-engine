@@ -81,7 +81,7 @@ class TestAnalyticsAgent:
 
         enriched_event.payload["analytics_target_week"] = "2025-01-06"
         agent = AnalyticsAgent()
-        out = agent.process(enriched_event)
+        out = agent.process_aggregates(enriched_event)
         assert out.payload["event_type"] == "AnalyticsRefreshed"
         assert out.agent_id == "analytics-agent"
         ar = out.payload["aggregate_refresh"]
@@ -117,7 +117,7 @@ class TestAnalyticsAgent:
         _mock_scope.return_value = mock_cm
 
         agent = AnalyticsAgent()
-        out = agent.process(enriched_event)
+        out = agent.process_aggregates(enriched_event)
         ar = out.payload["aggregate_refresh"]
         assert ar["skill_velocity_skipped"] is True
         assert ar["skill_co_occurrence_skipped"] is True
@@ -132,7 +132,7 @@ class TestAnalyticsAgent:
             patch("analytics.agent.session_scope") as mock_scope,
         ):
             agent = AnalyticsAgent()
-            out = agent.process(enriched_event)
+            out = agent.process_aggregates(enriched_event)
         assert "aggregate_refresh" in out.payload
         assert "skipped" in out.payload["aggregate_refresh"].get("note", "").lower()
         mock_r2.assert_not_called()

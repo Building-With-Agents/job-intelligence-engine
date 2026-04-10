@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 
-from agents.common.llm_adapter import MODEL_TIER_MAP
+from common.llm_adapter import MODEL_TIER_MAP
 
 
 def _deployment_names() -> set[str]:

@@ -20,8 +20,8 @@ from typing import Any, TypeVar
 import structlog
 from pydantic import BaseModel
 
-from agents.common.env import load_repo_root_dotenv
-from agents.common.llm_adapter import (
+from common.env import load_repo_root_dotenv
+from common.llm_adapter import (
     MODEL_TIER_MAP,
     compute_extraction_cost,
     get_tracer,
@@ -281,7 +281,7 @@ def invoke_skills_llm(
     """
     # Mock provider: return ground truth data, no API calls
     if os.getenv("LLM_PROVIDER", "").strip().lower() == "mock":
-        from agents.common.mock_llm_provider import mock_invoke_skills_llm
+        from common.mock_llm_provider import mock_invoke_skills_llm
 
         audit_agent = agent_name or AGENT_NAME
         tracer = get_tracer()
@@ -495,7 +495,7 @@ def invoke_structured_extraction_llm(
     """
     # Mock provider: return ground truth data, no API calls
     if os.getenv("LLM_PROVIDER", "").strip().lower() == "mock":
-        from agents.common.mock_llm_provider import mock_invoke_structured
+        from common.mock_llm_provider import mock_invoke_structured
 
         tracer = get_tracer()
         span_ctx = (
@@ -677,7 +677,7 @@ async def ainvoke_structured_extraction_llm(
 ) -> tuple[TSchema | None, dict[str, Any]]:
     """Async counterpart to ``invoke_structured_extraction_llm`` using ``chain.ainvoke``."""
     if os.getenv("LLM_PROVIDER", "").strip().lower() == "mock":
-        from agents.common.mock_llm_provider import mock_invoke_structured
+        from common.mock_llm_provider import mock_invoke_structured
 
         tracer = get_tracer()
         span_ctx = (
