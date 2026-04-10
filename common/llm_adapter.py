@@ -27,9 +27,9 @@ from typing import Any
 
 import structlog
 
-from agents.common.data_store.database import session_scope
-from agents.common.data_store.models import LLMAuditLog
-from agents.common.observability.langfuse import LangfuseTracer
+from common.data_store.database import session_scope
+from common.data_store.models import LLMAuditLog
+from common.observability.langfuse import LangfuseTracer
 
 log = structlog.get_logger()
 
@@ -198,7 +198,7 @@ def complete(
 
     # Mock provider: return ground truth data, no API calls
     if provider == "mock":
-        from agents.common.mock_llm_provider import mock_complete
+        from common.mock_llm_provider import mock_complete
 
         correlation_id = correlation_id or str(uuid.uuid4())
         span_ctx = (
@@ -492,7 +492,7 @@ def _emit_skills_extraction_alert(agent_name: str, backoff_cycles: int) -> None:
     if _alert_bus is None:
         return
     try:
-        from agents.common.event_envelope import EventEnvelope
+        from common.event_envelope import EventEnvelope
 
         event = EventEnvelope(
             correlation_id="",
