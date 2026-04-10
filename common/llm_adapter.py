@@ -225,6 +225,72 @@ def complete(
                     })
             return result
 
+    # Gemini provider: use google-generativeai SDK
+    if provider == "gemini":
+        try:
+            import google.generativeai as genai
+        except ImportError as exc:
+            raise ImportError(
+                "The 'google-generativeai' package is required when LLM_PROVIDER=gemini. "
+                "Install with: pip install google-generativeai"
+            ) from exc
+
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        gmodel = genai.GenerativeModel(gemini_model, system_instruction=system or None)
+
+        correlation_id = correlation_id or str(uuid.uuid4())
+        span_ctx = (
+            _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt,
+                               metadata={"agent_name": agent_name, "model": gemini_model})
+            if _tracer else nullcontext()
+        )
+        with span_ctx:
+            start = time.monotonic()
+            try:
+                response = gmodel.generate_content(prompt)
+                latency_ms = int((time.monotonic() - start) * 1000)
+                content = response.text
+                usage = response.usage_metadata
+                input_tokens = getattr(usage, "prompt_token_count", 0) or 0
+                output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+                # Gemini 2.5 Flash pricing: $0.15/1M input, $0.60/1M output
+                cost_usd = (input_tokens * 0.15 + output_tokens * 0.60) / 1_000_000
+
+                log_extraction_event(
+                    agent_name=agent_name, prompt=prompt, model=gemini_model,
+                    provider="gemini", latency_ms=latency_ms,
+                    input_tokens=input_tokens, output_tokens=output_tokens,
+                    cost_usd=cost_usd, success=True,
+                )
+                if _tracer:
+                    with contextlib.suppress(Exception):
+                        _tracer.log_event("llm_success", {
+                            "input_tokens": input_tokens, "output_tokens": output_tokens,
+                            "cost_usd": cost_usd, "output": _parse_output_for_trace(content),
+                        })
+                return {
+                    "content": content, "input_tokens": input_tokens,
+                    "output_tokens": output_tokens, "cost_usd": cost_usd,
+                    "latency_ms": latency_ms, "model": gemini_model,
+                    "model_tier": "gemini-flash", "success": True,
+                    "extraction_failed": False,
+                }
+            except Exception as exc:
+                latency_ms = int((time.monotonic() - start) * 1000)
+                log_extraction_event(
+                    agent_name=agent_name, prompt=prompt, model=gemini_model,
+                    provider="gemini", latency_ms=latency_ms,
+                    input_tokens=0, output_tokens=0, cost_usd=0.0,
+                    success=False, error_reason=str(exc),
+                )
+                return {
+                    "content": "", "input_tokens": 0, "output_tokens": 0,
+                    "cost_usd": 0.0, "latency_ms": latency_ms, "model": gemini_model,
+                    "model_tier": "gemini-flash", "success": False,
+                    "extraction_failed": True,
+                }
+
     try:
         from anthropic import Anthropic, APIStatusError, APITimeoutError
     except ImportError as exc:
