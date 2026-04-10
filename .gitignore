@@ -1,0 +1,164 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+/reports
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+# Local docker env (never commit)
+.env.docker
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# temp git hash file
+app/generatedGitInfo.json
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/.gitignore
+/.idea/AICommit.xml
+/.idea/compiler.xml
+/.idea/data_source_mapping.xml
+/.idea/dataSources.xml
+/.idea/frontend-cfa.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/prettier.xml
+/.idea/sqldialects.xml
+/.idea/vcs.xml
+
+# Development and planning files
+ai-workforce-form-submissions.plan.md
+develop-git-history.txt
+git-history-develop.txt
+scratch.md
+
+# Image and asset files
+Jobseeker flyer_V6_KMAdams.pdf
+cfa-logo-sm.png
+img.png
+
+# Test and development files
+blobTest.ts
+listBlobBlocks.ts
+testBlobStorage.ts
+tsconfig.scripts.json
+
+# Data schema files
+data/dynamics-schema/dynamics_parser.js
+data/dynamics-schema/dynamics_parser.ts
+data/dynamics-schema/lightcast-data-schema/
+
+# SQL development files
+prisma/sql/cip-socc-inserts/find_missing_cips.sql
+
+# Cursor — ignore local state, keep rules and commands (version-controlled)
+.cursor/*
+!.cursor/rules/
+!.cursor/commands/
+# Claude Code local state
+.claude/
+*.log
+
+
+# Infrastructure/ops docs (environment-specific, not needed for onboarding)
+docs/azure-resource-termination-runbook.md
+docs/VM_CONFIGURATION_STEPS.md
+docs/VM_AUTO_STARTUP.md
+docs/VM_ADD_USER.md
+docs/SECURITY_INCIDENT_RESPONSE_REPORT.md
+docs/REBUILD_STATUS.md
+docs/DB_ANONYMIZATION.md
+docs/AZURE_FILE_SHARE_ACCESS.md
+docs/CLAUDE_CODE_SETUP.md
+
+# Planning and curriculum (keep architecture docs in repo)
+docs/planning/*
+!docs/planning/ARCHITECTURE_DEEP.md
+!docs/planning/ARCHITECTURAL_DECISIONS.md
+!docs/planning/ARCHITECTURE_COMPLETE.md
+!docs/planning/ARCHITECTURE_MID_LEVEL.md
+!docs/planning/ARCHITECTURE_HIGH_LEVEL.md
+!docs/planning/component-diagram.html
+!docs/planning/component-diagram-walking-skeleton.html
+docs/planning/curriculum/
+docs/lesson-framework/
+
+# Admin-only (keep local copy; do not commit)
+docs/REFRESH_ANONYMIZED_FIXTURES.md
+
+# Deprecated MSSQL docs (kept locally for reference)
+docs/MIGRATION_MSSQL_TO_POSTGRES.md
+docs/MIGRATION_MSSQL_TO_POSTGRES.md.local
+docs/DOCKER_SQL_SERVER_SETUP.md
+docs/DOCKER_SQL_SERVER_SETUP.md.local
+
+
+
+# Large/local database artifacts
+*.bacpac
+
+# Local diagnostics
+sqlpackage-*.txt
+
+# Local incident reports
+incident-report_*.md
+/.idea/
+
+# Python agent pipeline artifacts
+**/.venv/
+venv/
+**/__pycache__/
+**/*.pyc
+**/.python_packages/
+
+# Agent data directories (local only — not committed)
+agents/data/staging/*
+agents/data/normalized/*
+agents/data/enriched/*
+agents/data/analytics/*
+agents/data/demand_signals/*
+agents/data/rendered/*
+agents/data/dead_letter/*
+agents/data/output/*
+!agents/data/**/.gitkeep
+agents/venv/
+venv/
+.venv/
+
+# --- Taxonomy raw data (do NOT commit) ---
+agents/skills_extraction/taxonomy/digitalSkillsCollection_en.csv
+agents/skills_extraction/taxonomy/skills_en.csv
+agents/skills_extraction/taxonomy/onet_skills.txt
+# ESCO embedding disk cache (deprecated — use PostgreSQL pgvector)
+agents/skills_extraction/taxonomy/cache/
+
+# Debug scratch scripts (local dev only)
+_debug_*.py
