@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`agents.analytics.aggregators.geo_demand`."""
+"""Unit tests for :mod:`analytics.aggregators.geo_demand`."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agents.analytics.aggregators.geo_demand import compute_geo_demand_weekly
+from analytics.aggregators.geo_demand import compute_geo_demand_weekly
 
 
 def _pg_session() -> MagicMock:

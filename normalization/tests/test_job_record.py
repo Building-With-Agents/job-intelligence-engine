@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from agents.normalization.schema.job_record import JobRecord
+from normalization.schema.job_record import JobRecord
 
 
 class TestJobRecord:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.common.message_bus import (
+from common.message_bus import (
     ComparisonScenario,
     FakeKafkaBroker,
     FakeKafkaConsumer,

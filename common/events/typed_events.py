@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, field_validator
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 
 class IngestBatchEvent(BaseModel):

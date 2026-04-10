@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from agents.common.event_envelope import EventEnvelope
-from agents.ingestion.events import ingest_batch_payload
-from agents.normalization.events import normalization_complete_payload
+from common.event_envelope import EventEnvelope
+from ingestion.events import ingest_batch_payload
+from normalization.events import normalization_complete_payload
 
 
 def test_correlation_id_propagates_from_ingest_batch_to_normalization_complete() -> None:

@@ -11,8 +11,8 @@ import re
 
 import structlog
 
-from agents.enrichment.adapters.base import AbstractONETAdapter
-from agents.enrichment.adapters.models import OccupationProfile, SOCMatch
+from enrichment.adapters.base import AbstractONETAdapter
+from enrichment.adapters.models import OccupationProfile, SOCMatch
 
 log = structlog.get_logger()
 

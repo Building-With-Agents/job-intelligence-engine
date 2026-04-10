@@ -1,6 +1,6 @@
 """Employer profile enrichment: company size, AI maturity, sector, known-employer flag.
 
-Uses :func:`agents.common.llm_client.invoke_structured_extraction_llm` for audit and
+Uses :func:`common.llm_client.invoke_structured_extraction_llm` for audit and
 cost tracking. All categorical fields default to ``unknown`` when signals are weak
 or the LLM fails. ``is_known_employer`` is derived from an exact normalized match on
 ``dbo.companies`` (defensive; no fuzzy guess).
@@ -15,11 +15,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import NormalizedJob
-from agents.common.llm_client import invoke_structured_extraction_llm
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
-from agents.enrichment.resolvers.company_resolver import (
+from common.data_store.models import NormalizedJob
+from common.llm_client import invoke_structured_extraction_llm
+from common.types.job_profile import EmployerProfile
+from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
+from enrichment.resolvers.company_resolver import (
     lookup_company_exact,
     normalize_company_name,
 )
@@ -146,7 +146,7 @@ def build_employer_profile(
     session: Session,
 ) -> EmployerProfile:
     """
-    Return a validated :class:`~agents.common.types.job_profile.EmployerProfile`.
+    Return a validated :class:`~common.types.job_profile.EmployerProfile`.
 
     On LLM failure, returns defaults with ``unknown`` literals and still sets
     ``is_known_employer`` from the companies table when lookup succeeds.

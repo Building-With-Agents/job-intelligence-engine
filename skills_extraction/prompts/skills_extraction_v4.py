@@ -1,6 +1,6 @@
 """Skills extraction prompt v4 — taxonomy-aligned labels (ESCO-style terms) and 10–25 cap for recall.
 
-Builds on v3 guardrails (duties filter, consolidation, strict core). Document changes in agents/eval/prompt_iteration_log.md.
+Builds on v3 guardrails (duties filter, consolidation, strict core). Document changes in eval/prompt_iteration_log.md.
 """
 
 from __future__ import annotations

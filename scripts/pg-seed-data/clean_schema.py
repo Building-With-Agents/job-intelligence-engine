@@ -97,7 +97,7 @@ def clean_schema() -> None:
 --
 -- Agent-managed tables (raw_ingested_jobs, normalized_jobs,
 -- job_ingestion_runs) are NOT included — they are created by
--- agents/common/data_store/migrations.py:run_migrations().
+-- common/data_store/migrations.py:run_migrations().
 --
 -- Usage: psql -U postgres -d talent_finder -f schema.sql
 --        (or executed by seed_pg_database.py)

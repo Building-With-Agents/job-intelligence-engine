@@ -15,8 +15,8 @@ Pages
 Data source: PostgreSQL (via SQLAlchemy) with JSON file fallback.
 
 Usage:
-    streamlit run agents/dashboard/app.py
-    # or: streamlit run agents/dashboard/streamlit_app.py
+    streamlit run dashboard/app.py
+    # or: streamlit run dashboard/streamlit_app.py
 """
 
 from __future__ import annotations
@@ -30,13 +30,13 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from agents.common.env import load_repo_root_dotenv
-from agents.dashboard.batch_insights_queries import (
+from common.env import load_repo_root_dotenv
+from dashboard.batch_insights_queries import (
     fetch_batch_insights_bundle,
     series_from_category_count,
     series_from_salary_histogram,
 )
-from agents.dashboard.relation_safe import read_sql_relation_safe
+from dashboard.relation_safe import read_sql_relation_safe
 
 # ---------------------------------------------------------------------------
 # Environment & paths
@@ -85,7 +85,7 @@ def _db_available() -> bool:
     if not (os.getenv("PYTHON_DATABASE_URL") or os.getenv("PYTHON_DATABASE_URL_READONLY")):
         return False
     try:
-        from agents.dashboard.readonly_engine import check_dashboard_db_connection
+        from dashboard.readonly_engine import check_dashboard_db_connection
 
         return check_dashboard_db_connection()
     except Exception:
@@ -98,7 +98,7 @@ def _load_ingestion_runs() -> tuple[pd.DataFrame, str | None]:
 
     Returns ``(dataframe, optional_warning)`` when ``dbo.job_ingestion_runs`` is missing.
     """
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     query = """
         SELECT run_id, region_id, source, started_at, completed_at,
@@ -129,7 +129,7 @@ def _load_raw_jobs(
 
     Returns ``(dataframe, optional_warning)`` when ``dbo.raw_ingested_jobs`` is missing.
     """
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     engine = get_dashboard_engine()
     hint = (
@@ -174,7 +174,7 @@ def _load_normalized_jobs(
     Same window semantics as :func:`_load_raw_jobs`.
     Returns ``(dataframe, optional_warning)`` when ``dbo.normalized_jobs`` is missing.
     """
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     engine = get_dashboard_engine()
     hint = "`dbo.normalized_jobs` is missing. Apply agent migrations or run the Normalization agent."
@@ -207,7 +207,7 @@ def _load_normalized_jobs(
 @st.cache_data(ttl=300, show_spinner=False)
 def _load_normalized_for_raw_job(raw_job_id: int) -> tuple[pd.DataFrame, str | None]:
     """Load normalized row(s) for a single raw job (Record Journey with paged raw list)."""
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     q = """
         SELECT id, raw_job_id, ingestion_run_id, region_id, source, external_id,
@@ -231,7 +231,7 @@ def _load_normalized_for_raw_job(raw_job_id: int) -> tuple[pd.DataFrame, str | N
 @st.cache_data(ttl=300, show_spinner=False)
 def _load_quarantine_for_raw_job(raw_job_id: int) -> tuple[pd.DataFrame, str | None]:
     """Load quarantine row(s) for a single raw job."""
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     q = """
         SELECT id, raw_job_id, ingestion_run_id, source, external_id,
@@ -252,7 +252,7 @@ def _load_quarantine_for_raw_job(raw_job_id: int) -> tuple[pd.DataFrame, str | N
 @st.cache_data(ttl=300, show_spinner=False)
 def _load_quarantined(run_id: str | None = None) -> tuple[pd.DataFrame, str | None]:
     """Load quarantined records."""
-    from agents.dashboard.readonly_engine import get_dashboard_engine
+    from dashboard.readonly_engine import get_dashboard_engine
 
     engine = get_dashboard_engine()
     hint = "`dbo.normalization_quarantine` is missing. Apply agent migrations."
@@ -717,7 +717,7 @@ def _page_run_summary_json(entries: list[dict]) -> None:
         st.error(
             f"No run log found at `{_RUN_LOG_PATH}`.  \n"
             "Run the pipeline first:  \n"
-            "```\npython agents/pipeline_runner.py\n```"
+            "```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -799,7 +799,7 @@ def _page_record_journey_json(entries: list[dict]) -> None:
         st.error(
             f"No run log found at `{_RUN_LOG_PATH}`.  \n"
             "Run the pipeline first:  \n"
-            "```\npython agents/pipeline_runner.py\n```"
+            "```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -891,7 +891,7 @@ def _page_batch_insights_json(entries: list[dict]) -> None:
         st.error(
             f"No run log found at `{_RUN_LOG_PATH}`.  \n"
             "Run the pipeline first:  \n"
-            "```\npython agents/pipeline_runner.py\n```"
+            "```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -1019,11 +1019,11 @@ def main() -> None:
 
     if use_db:
         if page == "Ingestion Overview":
-            from agents.dashboard.pages_observability import render_ingestion_overview
+            from dashboard.pages_observability import render_ingestion_overview
 
             render_ingestion_overview()
         elif page == "Normalization Quality":
-            from agents.dashboard.pages_observability import render_normalization_quality
+            from dashboard.pages_observability import render_normalization_quality
 
             render_normalization_quality()
         elif page == "Pipeline Run Summary":
@@ -1033,7 +1033,7 @@ def main() -> None:
         elif page == "Batch Insights":
             _page_batch_insights_db()
         elif page == "Weekly Insights":
-            from agents.dashboard.pages_weekly_insights import render_weekly_insights
+            from dashboard.pages_weekly_insights import render_weekly_insights
 
             render_weekly_insights()
     else:
@@ -1044,11 +1044,11 @@ def main() -> None:
                 "This page needs PostgreSQL aggregate tables. Set `PYTHON_DATABASE_URL` "
                 "(or `PYTHON_DATABASE_URL_READONLY`) and restart the app."
             )
-            st.info("Journey and Batch Insights (JSON) still work with `agents/data/output/pipeline_run.json`.")
+            st.info("Journey and Batch Insights (JSON) still work with `data/output/pipeline_run.json`.")
         elif page in ("Ingestion Overview", "Normalization Quality"):
             st.title(page)
             st.warning("Week 6 observability pages require PostgreSQL. Set `PYTHON_DATABASE_URL` and restart the app.")
-            st.info("Journey pages below still work with `agents/data/output/pipeline_run.json`.")
+            st.info("Journey pages below still work with `data/output/pipeline_run.json`.")
         elif page == "Pipeline Run Summary":
             _page_run_summary_json(entries)
         elif page == "Record Journey":

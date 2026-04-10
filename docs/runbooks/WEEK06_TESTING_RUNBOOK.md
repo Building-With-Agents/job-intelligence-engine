@@ -10,14 +10,14 @@ All commands assume you are at the **repo root** with the Python venv activated.
 
 ```powershell
 cd C:\Users\garyl\repos\cfa-projects\building-with-agents-curriculum\watechcoalition
-agents\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
 **Linux / macOS:**
 
 ```bash
-cd ~/repos/cfa-projects/building-with-agents-curriculum/watechcoalition
-source agents/.venv/bin/activate
+cd ~/repos/cfa-projects/building-with-agents-curriculum/job-intelligence-engine
+source .venv/bin/activate
 ```
 
 ---
@@ -48,13 +48,13 @@ source agents/.venv/bin/activate
 ### Prerequisites
 
 1. Your `.env` has `PYTHON_DATABASE_URL` pointing to the seeded database (cloud or local)
-2. Venv is activated and dependencies are installed (`pip install -r agents/requirements.txt`)
-3. Database is reachable: `python agents/scripts/db_check.py tables`
+2. Venv is activated and dependencies are installed (`pip install -r requirements.txt`)
+3. Database is reachable: `python scripts/db_check.py tables`
 
 ### Step 1 — Confirm data is present
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 **Expected output (seeded data):**
@@ -77,13 +77,13 @@ Ingestion writes raw job data from JSearch API and Crawl4AI into `raw_ingested_j
 
 ```bash
 # How many raw records per source?
-python agents/scripts/db_check.py query "SELECT source, COUNT(*) AS records FROM dbo.raw_ingested_jobs GROUP BY source ORDER BY records DESC"
+python scripts/db_check.py query "SELECT source, COUNT(*) AS records FROM dbo.raw_ingested_jobs GROUP BY source ORDER BY records DESC"
 
 # How many ingestion runs completed successfully?
-python agents/scripts/db_check.py query "SELECT status, COUNT(*) FROM dbo.job_ingestion_runs GROUP BY status"
+python scripts/db_check.py query "SELECT status, COUNT(*) FROM dbo.job_ingestion_runs GROUP BY status"
 
 # What does a raw record look like? (sample 1 row)
-python agents/scripts/db_check.py query "SELECT id, source, external_id, title, company, city, state, date_posted, processing_status FROM dbo.raw_ingested_jobs LIMIT 1"
+python scripts/db_check.py query "SELECT id, source, external_id, title, company, city, state, date_posted, processing_status FROM dbo.raw_ingested_jobs LIMIT 1"
 ```
 
 **What to check:**
@@ -97,16 +97,16 @@ Normalization maps source-specific fields into a canonical schema and writes to 
 
 ```bash
 # Total normalized records and field coverage
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(title) AS has_title, COUNT(company) AS has_company, COUNT(description) AS has_description, COUNT(city) AS has_city, COUNT(state_province) AS has_state FROM dbo.normalized_jobs"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(title) AS has_title, COUNT(company) AS has_company, COUNT(description) AS has_description, COUNT(city) AS has_city, COUNT(state_province) AS has_state FROM dbo.normalized_jobs"
 
 # Quarantine rate (should be < 1%)
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS quarantined FROM dbo.normalization_quarantine"
+python scripts/db_check.py query "SELECT COUNT(*) AS quarantined FROM dbo.normalization_quarantine"
 
 # If there are quarantined records, see why:
-python agents/scripts/db_check.py query "SELECT error_type, COUNT(*) FROM dbo.normalization_quarantine GROUP BY error_type"
+python scripts/db_check.py query "SELECT error_type, COUNT(*) FROM dbo.normalization_quarantine GROUP BY error_type"
 
 # Sample a normalized record to see canonical field structure
-python agents/scripts/db_check.py query "SELECT id, title, company, city, state_province, employment_type, experience_level, salary_min, salary_max, date_posted FROM dbo.normalized_jobs LIMIT 1"
+python scripts/db_check.py query "SELECT id, title, company, city, state_province, employment_type, experience_level, salary_min, salary_max, date_posted FROM dbo.normalized_jobs LIMIT 1"
 ```
 
 **What to check:**
@@ -122,16 +122,16 @@ Skills Extraction uses LLM calls to extract skills, tools, tasks, and responsibi
 
 ```bash
 # Extraction success vs failure breakdown
-python agents/scripts/db_check.py query "SELECT extraction_status, COUNT(*) FROM dbo.extracted_intelligence GROUP BY extraction_status"
+python scripts/db_check.py query "SELECT extraction_status, COUNT(*) FROM dbo.extracted_intelligence GROUP BY extraction_status"
 
 # How many records have extracted skills, tools, tasks?
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(skills) AS has_skills, COUNT(tools) AS has_tools, COUNT(tasks) AS has_tasks, COUNT(responsibilities) AS has_responsibilities FROM dbo.extracted_intelligence"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(skills) AS has_skills, COUNT(tools) AS has_tools, COUNT(tasks) AS has_tasks, COUNT(responsibilities) AS has_responsibilities FROM dbo.extracted_intelligence"
 
 # Sample one extracted record to see output structure
-python agents/scripts/db_check.py query "SELECT id, normalized_job_id, extraction_status, skills, tools FROM dbo.extracted_intelligence WHERE extraction_status = 'success' LIMIT 1"
+python scripts/db_check.py query "SELECT id, normalized_job_id, extraction_status, skills, tools FROM dbo.extracted_intelligence WHERE extraction_status = 'success' LIMIT 1"
 
 # LLM cost audit — spend per agent
-python agents/scripts/db_check.py query "SELECT agent_name, COUNT(*) AS calls, COALESCE(SUM(cost_usd), 0) AS total_usd, COALESCE(SUM(COALESCE(input_tokens,0) + COALESCE(output_tokens,0)), 0) AS total_tokens FROM dbo.llm_audit_log GROUP BY agent_name ORDER BY total_usd DESC NULLS LAST"
+python scripts/db_check.py query "SELECT agent_name, COUNT(*) AS calls, COALESCE(SUM(cost_usd), 0) AS total_usd, COALESCE(SUM(COALESCE(input_tokens,0) + COALESCE(output_tokens,0)), 0) AS total_tokens FROM dbo.llm_audit_log GROUP BY agent_name ORDER BY total_usd DESC NULLS LAST"
 ```
 
 **What to check:**
@@ -146,22 +146,22 @@ Enrichment adds classification, quality scoring, spam detection, and dedup resul
 
 ```bash
 # Total enriched records
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
 
 # Temporal period distribution (4 periods: current, recent, aging, historical)
-python agents/scripts/db_check.py query "SELECT temporal_period, COUNT(*) FROM dbo.job_postings WHERE temporal_period IS NOT NULL GROUP BY temporal_period ORDER BY COUNT(*) DESC"
+python scripts/db_check.py query "SELECT temporal_period, COUNT(*) FROM dbo.job_postings WHERE temporal_period IS NOT NULL GROUP BY temporal_period ORDER BY COUNT(*) DESC"
 
 # Borderplex subregion distribution (el_paso_metro, las_cruces, southern_nm, other)
-python agents/scripts/db_check.py query "SELECT borderplex_subregion, COUNT(*) FROM dbo.job_postings WHERE borderplex_subregion IS NOT NULL GROUP BY borderplex_subregion ORDER BY COUNT(*) DESC"
+python scripts/db_check.py query "SELECT borderplex_subregion, COUNT(*) FROM dbo.job_postings WHERE borderplex_subregion IS NOT NULL GROUP BY borderplex_subregion ORDER BY COUNT(*) DESC"
 
 # Duplicate detection results
-python agents/scripts/db_check.py query "SELECT is_duplicate, COUNT(*) FROM dbo.job_postings GROUP BY is_duplicate"
+python scripts/db_check.py query "SELECT is_duplicate, COUNT(*) FROM dbo.job_postings GROUP BY is_duplicate"
 
 # Quality and spam scoring summary
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(quality_score) AS has_quality, ROUND(AVG(quality_score)::numeric, 3) AS avg_quality, COUNT(spam_score) AS has_spam, ROUND(AVG(spam_score)::numeric, 3) AS avg_spam, SUM(CASE WHEN is_spam THEN 1 ELSE 0 END) AS spam_count FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(quality_score) AS has_quality, ROUND(AVG(quality_score)::numeric, 3) AS avg_quality, COUNT(spam_score) AS has_spam, ROUND(AVG(spam_score)::numeric, 3) AS avg_spam, SUM(CASE WHEN is_spam THEN 1 ELSE 0 END) AS spam_count FROM dbo.job_postings"
 
 # Sample an enriched record to see all classification columns
-python agents/scripts/db_check.py query "SELECT id, title, company_name, temporal_period, borderplex_subregion, is_duplicate, quality_score, spam_score, is_spam, soc_code FROM dbo.job_postings LIMIT 1"
+python scripts/db_check.py query "SELECT id, title, company_name, temporal_period, borderplex_subregion, is_duplicate, quality_score, spam_score, is_spam, soc_code FROM dbo.job_postings LIMIT 1"
 ```
 
 **What to check:**
@@ -179,7 +179,7 @@ python agents/scripts/db_check.py query "SELECT id, title, company_name, tempora
 The dashboard provides a visual interface to all the data verified above.
 
 ```bash
-streamlit run agents/dashboard/app.py
+streamlit run dashboard/app.py
 ```
 
 Open `http://localhost:8501` in your browser and walk through all 5 pages:
@@ -204,16 +204,16 @@ Pick a single record and trace it through every table to confirm the full pipeli
 
 ```bash
 # Pick a raw record
-python agents/scripts/db_check.py query "SELECT id, external_id, title, company FROM dbo.raw_ingested_jobs LIMIT 1"
+python scripts/db_check.py query "SELECT id, external_id, title, company FROM dbo.raw_ingested_jobs LIMIT 1"
 
 # Use its id to find the normalized version
-python agents/scripts/db_check.py query "SELECT id, title, company, description IS NOT NULL AS has_desc FROM dbo.normalized_jobs WHERE raw_job_id = <RAW_ID>"
+python scripts/db_check.py query "SELECT id, title, company, description IS NOT NULL AS has_desc FROM dbo.normalized_jobs WHERE raw_job_id = <RAW_ID>"
 
 # Use the normalized id to find extraction results
-python agents/scripts/db_check.py query "SELECT id, extraction_status, skills, tools FROM dbo.extracted_intelligence WHERE normalized_job_id = <NORM_ID>"
+python scripts/db_check.py query "SELECT id, extraction_status, skills, tools FROM dbo.extracted_intelligence WHERE normalized_job_id = <NORM_ID>"
 
 # Find the promoted job_postings record (joined on source + external_id)
-python agents/scripts/db_check.py query "SELECT id, title, company_name, temporal_period, borderplex_subregion, quality_score, spam_score, is_spam FROM dbo.job_postings WHERE external_id = '<EXTERNAL_ID>'"
+python scripts/db_check.py query "SELECT id, title, company_name, temporal_period, borderplex_subregion, quality_score, spam_score, is_spam FROM dbo.job_postings WHERE external_id = '<EXTERNAL_ID>'"
 ```
 
 Replace `<RAW_ID>`, `<NORM_ID>`, and `<EXTERNAL_ID>` with actual values from the previous queries. This traces a single job from raw ingestion through normalization, skills extraction, and enrichment — the full Phase 1 pipeline path.
@@ -332,7 +332,7 @@ python --version          # Should be 3.11+
 pip list | grep sqlalchemy  # Should show sqlalchemy 2.x
 
 # Check database connectivity
-python agents/scripts/db_check.py tables
+python scripts/db_check.py tables
 ```
 
 If `tables` returns a list of `dbo.*` tables, your database connection is working.
@@ -345,13 +345,13 @@ Before running the pipeline, clear previous pipeline data to avoid duplicates an
 
 ```bash
 # See current row counts
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 
 # Run migrations (ensures all tables and columns exist)
-python agents/scripts/db_check.py migrate
+python scripts/db_check.py migrate
 
 # Reset all agent pipeline tables (preserves llm_audit_log and reference data)
-python agents/scripts/db_check.py reset
+python scripts/db_check.py reset
 ```
 
 The `reset` command truncates these tables (in FK-safe order):
@@ -372,7 +372,7 @@ You will be prompted to type `yes` to confirm.
 ### Verify clean state
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 All pipeline tables should show 0 rows. `llm_audit_log` retains its previous count.
@@ -383,18 +383,18 @@ All pipeline tables should show 0 rows. `llm_audit_log` retains its previous cou
 
 ```bash
 # List all tables in dbo schema
-python agents/scripts/db_check.py tables
+python scripts/db_check.py tables
 
 # Verify key tables exist
-python agents/scripts/db_check.py query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'dbo' AND table_name IN ('raw_ingested_jobs', 'normalized_jobs', 'extracted_intelligence', 'job_postings', 'employer_profiles', 'llm_audit_log', 'socc') ORDER BY table_name"
+python scripts/db_check.py query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'dbo' AND table_name IN ('raw_ingested_jobs', 'normalized_jobs', 'extracted_intelligence', 'job_postings', 'employer_profiles', 'llm_audit_log', 'socc') ORDER BY table_name"
 ```
 
-**Expected:** All 7 tables listed. If any are missing, run `python agents/scripts/db_check.py migrate`.
+**Expected:** All 7 tables listed. If any are missing, run `python scripts/db_check.py migrate`.
 
 ### Verify enrichment columns on job_postings
 
 ```bash
-python agents/scripts/db_check.py query "SELECT column_name FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'job_postings' AND column_name IN ('temporal_period', 'borderplex_subregion', 'is_duplicate', 'soc_code', 'naics_code', 'quality_score', 'is_spam', 'dedup_embedding') ORDER BY column_name"
+python scripts/db_check.py query "SELECT column_name FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'job_postings' AND column_name IN ('temporal_period', 'borderplex_subregion', 'is_duplicate', 'soc_code', 'naics_code', 'quality_score', 'is_spam', 'dedup_embedding') ORDER BY column_name"
 ```
 
 **Expected:** All 8 enrichment columns listed.
@@ -440,20 +440,20 @@ For production-scale ingestion (500–1,500 records), use the batch ingestion sc
 
 ```bash
 # Preview what will be ingested (no API calls)
-python agents/scripts/batch_ingest.py --dry-run
+python scripts/batch_ingest.py --dry-run
 
 # Run all queries from config (with 5s delay between queries)
-python agents/scripts/batch_ingest.py --delay 5
+python scripts/batch_ingest.py --delay 5
 ```
 
-The script reads query configuration from `agents/config/ingestion_queries.yaml`, which defines keyword groups (e.g., `react-frontend`, `java-enterprise`, `ml-scientist`) and how many pages to fetch per group.
+The script reads query configuration from `config/ingestion_queries.yaml`, which defines keyword groups (e.g., `react-frontend`, `java-enterprise`, `ml-scientist`) and how many pages to fetch per group.
 
 **API key rotation:** Set `JSEARCH_API_KEY` and optionally `JSEARCH_API_KEY_2` in `.env`. The script rotates to the secondary key when the primary key's budget is exhausted or a 429 is received. Free tier: 200 requests/month per key.
 
 ### Verify after ingestion
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 **Expected:** `raw_ingested_jobs` should show 500–1,500 rows depending on query config and API key budget.
@@ -471,7 +471,7 @@ The Normalization Agent reads from `raw_ingested_jobs` and writes to `normalized
 ### Verify after pipeline run
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(title) AS has_title, COUNT(company) AS has_company, COUNT(description) AS has_desc FROM dbo.normalized_jobs"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(title) AS has_title, COUNT(company) AS has_company, COUNT(description) AS has_desc FROM dbo.normalized_jobs"
 ```
 
 **Expected:** All records should have title and company. Description may be null for scraped records.
@@ -512,13 +512,13 @@ Approximately 46% of JSearch records have empty `job_description` fields. These 
 
 ```bash
 # Check extraction results
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(skills) AS has_skills, COUNT(tools) AS has_tools FROM dbo.extracted_intelligence"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(skills) AS has_skills, COUNT(tools) AS has_tools FROM dbo.extracted_intelligence"
 
 # Check extraction success vs. failure
-python agents/scripts/db_check.py query "SELECT extraction_status, COUNT(*) FROM dbo.extracted_intelligence GROUP BY extraction_status"
+python scripts/db_check.py query "SELECT extraction_status, COUNT(*) FROM dbo.extracted_intelligence GROUP BY extraction_status"
 
 # LLM audit — by agent (tasks / responsibilities / skills / taxonomy use distinct names)
-python agents/scripts/db_check.py query "SELECT agent_name, COUNT(*) AS calls, COALESCE(SUM(cost_usd),0) AS usd, COALESCE(SUM(COALESCE(input_tokens,0)+COALESCE(output_tokens,0)),0) AS tokens FROM dbo.llm_audit_log GROUP BY agent_name ORDER BY usd DESC NULLS LAST"
+python scripts/db_check.py query "SELECT agent_name, COUNT(*) AS calls, COALESCE(SUM(cost_usd),0) AS usd, COALESCE(SUM(COALESCE(input_tokens,0)+COALESCE(output_tokens,0)),0) AS tokens FROM dbo.llm_audit_log GROUP BY agent_name ORDER BY usd DESC NULLS LAST"
 ```
 
 ### Cost projection (1k jobs)
@@ -526,7 +526,7 @@ python agents/scripts/db_check.py query "SELECT agent_name, COUNT(*) AS calls, C
 Run the cost report (uses `llm_audit_log`, `extracted_intelligence.extraction_cost_usd`, and description fill rate):
 
 ```bash
-python agents/scripts/llm_audit_cost_report.py --project-jobs 1000
+python scripts/llm_audit_cost_report.py --project-jobs 1000
 ```
 
 It prints per-agent spend, a projection from stored `extraction_cost_usd`, and a second projection from audit totals (usually closer to real LLM spend). `orchestration_audit_log` is for orchestration decisions, not token billing — use `llm_audit_log` for model costs.
@@ -551,43 +551,43 @@ The Enrichment Agent adds classification and quality scoring to `job_postings`:
 
 ```bash
 # Temporal period distribution
-python agents/scripts/db_check.py query "SELECT temporal_period, COUNT(*) FROM dbo.job_postings WHERE temporal_period IS NOT NULL GROUP BY temporal_period"
+python scripts/db_check.py query "SELECT temporal_period, COUNT(*) FROM dbo.job_postings WHERE temporal_period IS NOT NULL GROUP BY temporal_period"
 
 # Borderplex subregion distribution
-python agents/scripts/db_check.py query "SELECT borderplex_subregion, COUNT(*) FROM dbo.job_postings WHERE borderplex_subregion IS NOT NULL GROUP BY borderplex_subregion"
+python scripts/db_check.py query "SELECT borderplex_subregion, COUNT(*) FROM dbo.job_postings WHERE borderplex_subregion IS NOT NULL GROUP BY borderplex_subregion"
 
 # Dedup results
-python agents/scripts/db_check.py query "SELECT is_duplicate, COUNT(*) FROM dbo.job_postings GROUP BY is_duplicate"
+python scripts/db_check.py query "SELECT is_duplicate, COUNT(*) FROM dbo.job_postings GROUP BY is_duplicate"
 
 # Quality + spam scoring
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(quality_score) AS has_quality, COUNT(spam_score) AS has_spam, SUM(CASE WHEN is_spam THEN 1 ELSE 0 END) AS spam_count FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(quality_score) AS has_quality, COUNT(spam_score) AS has_spam, SUM(CASE WHEN is_spam THEN 1 ELSE 0 END) AS spam_count FROM dbo.job_postings"
 
 # SOC code distribution (top 10)
-python agents/scripts/db_check.py query "SELECT soc_code, COUNT(*) FROM dbo.job_postings WHERE soc_code IS NOT NULL AND soc_code != 'unclassified' GROUP BY soc_code ORDER BY COUNT(*) DESC LIMIT 10"
+python scripts/db_check.py query "SELECT soc_code, COUNT(*) FROM dbo.job_postings WHERE soc_code IS NOT NULL AND soc_code != 'unclassified' GROUP BY soc_code ORDER BY COUNT(*) DESC LIMIT 10"
 
 # NAICS code distribution (top 10)
-python agents/scripts/db_check.py query "SELECT naics_code, COUNT(*) FROM dbo.job_postings WHERE naics_code IS NOT NULL AND naics_code != 'unknown' GROUP BY naics_code ORDER BY COUNT(*) DESC LIMIT 10"
+python scripts/db_check.py query "SELECT naics_code, COUNT(*) FROM dbo.job_postings WHERE naics_code IS NOT NULL AND naics_code != 'unknown' GROUP BY naics_code ORDER BY COUNT(*) DESC LIMIT 10"
 
 # Employer profiles
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total_profiles FROM dbo.employer_profiles"
+python scripts/db_check.py query "SELECT COUNT(*) AS total_profiles FROM dbo.employer_profiles"
 ```
 
 ### Key files for cross-team inspection
 
 - Temporal classifier — `classify_temporal_period()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/classifiers/temporal_period.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/classifiers/temporal_period.py
 - Borderplex tagger — `classify_borderplex_subregion()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/classifiers/borderplex_subregion.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/classifiers/borderplex_subregion.py
 - Fuzzy dedup — `run_fuzzy_dedup()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/dedup/fuzzy_dedup.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/dedup/fuzzy_dedup.py
 - SOC classifier — `classify_soc()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/classifiers/soc_classifier.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/classifiers/soc_classifier.py
 - NAICS classifier — `classify_naics()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/classifiers/naics_classifier.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/classifiers/naics_classifier.py
 - Employer classifier — `build_employer_profile()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/classifiers/employer_classifier.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/classifiers/employer_classifier.py
 - Enrichment agent — `EnrichmentAgent.process()`:
-  https://github.com/Building-With-Agents/watechcoalition/blob/development/agents/enrichment/agent.py
+  https://github.com/Building-With-Agents/watechcoalition/blob/development/enrichment/agent.py
 
 ---
 
@@ -606,7 +606,7 @@ The processing loop (`run_processing_loop.py`) is flywheel Loop 2 — it drains 
 ### Preview pending work
 
 ```bash
-python agents/scripts/run_processing_loop.py --dry-run
+python scripts/run_processing_loop.py --dry-run
 ```
 
 This shows pending raw records, unextracted normalized records, enriched job postings, and estimated iterations/time.
@@ -615,13 +615,13 @@ This shows pending raw records, unextracted normalized records, enriched job pos
 
 ```bash
 # Default: batch-size 50, 10s delay between iterations
-python agents/scripts/run_processing_loop.py
+python scripts/run_processing_loop.py
 
 # Faster (requires sufficient Azure OpenAI TPM):
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 
 # Limit to 5 iterations (for testing):
-python agents/scripts/run_processing_loop.py --max-iterations 5 --batch-size 25
+python scripts/run_processing_loop.py --max-iterations 5 --batch-size 25
 ```
 
 **For faster throughput**, set the extraction chunk env vars before running:
@@ -630,7 +630,7 @@ python agents/scripts/run_processing_loop.py --max-iterations 5 --batch-size 25
 $env:SKILLS_EXTRACTION_CHUNK_SIZE="50"
 $env:SKILLS_EXTRACTION_CHUNK_COOLDOWN="2"
 $env:SKILLS_EXTRACTION_DELAY="0.1"
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
 ### Monitoring progress
@@ -663,14 +663,14 @@ The loop exits when:
 For quick demos with <50 records:
 
 ```bash
-python agents/pipeline_runner.py
+python pipeline_runner.py
 ```
 
 The pipeline runner:
 1. Runs health checks on all Phase 1 agents
 2. Triggers ingestion with Borderplex region config (El Paso, TX/NM)
 3. Chains each agent's output as the next agent's input
-4. Writes a run log to `agents/data/output/pipeline_run.json`
+4. Writes a run log to `data/output/pipeline_run.json`
 
 **Estimated runtime:** 10-25 minutes for ~10-50 records.
 
@@ -680,16 +680,16 @@ For production runs with large record counts:
 
 ```bash
 # Step 1: Bulk ingest (fills the queue)
-python agents/scripts/batch_ingest.py --delay 5
+python scripts/batch_ingest.py --delay 5
 
 # Step 2: Verify raw records staged
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 
 # Step 3: Preview processing work
-python agents/scripts/run_processing_loop.py --dry-run
+python scripts/run_processing_loop.py --dry-run
 
 # Step 4: Run paced processing
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
 **Estimated runtime:** 2-6 hours for ~1,000 records (depends on Azure OpenAI rate limits and how many records have descriptions). See [issue #166](https://github.com/Building-With-Agents/watechcoalition/issues/166) for planned parallelism improvements.
@@ -698,10 +698,10 @@ python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
 
 ```bash
 # Row counts across all tables
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 
 # Check enrichment output
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
 ```
 
 **Expected (Option A):** 10-50 records across pipeline tables. **Expected (Option B):** 500-1,500 raw records; ~54% with descriptions processed through extraction and enrichment.
@@ -716,7 +716,7 @@ The dashboard reads from the same database via a read-only SQLAlchemy engine. It
 
 ```bash
 # From repo root with venv activated
-streamlit run agents/dashboard/app.py
+streamlit run dashboard/app.py
 ```
 
 The app opens at `http://localhost:8501`. The sidebar shows connection status — green "Connected to PostgreSQL (read-only)" when `PYTHON_DATABASE_URL` is set, or a yellow JSON-fallback warning otherwise.
@@ -724,7 +724,7 @@ The app opens at `http://localhost:8501`. The sidebar shows connection status �
 ### Data source
 
 - **Database mode (default):** All five pages query PostgreSQL via a read-only SQLAlchemy engine. Data is cached for 300 seconds (`@st.cache_data(ttl=300)`).
-- **JSON fallback:** If no database URL is configured, three pages (Pipeline Run Summary, Record Journey, Batch Insights) fall back to `agents/data/output/pipeline_run.json`. The two observability pages (Ingestion Overview, Normalization Quality) require PostgreSQL and will show a setup prompt.
+- **JSON fallback:** If no database URL is configured, three pages (Pipeline Run Summary, Record Journey, Batch Insights) fall back to `data/output/pipeline_run.json`. The two observability pages (Ingestion Overview, Normalization Quality) require PostgreSQL and will show a setup prompt.
 
 ### Page-by-page guide
 
@@ -807,19 +807,19 @@ If you seeded the database using `python scripts/pg-seed-data/seed_agent_data.py
 | Ingestion Overview / Normalization Quality show setup prompt | These pages require PostgreSQL, no JSON fallback | Configure database connection |
 | Charts show "No data" | Tables are empty — pipeline hasn't run or was reset | Run the pipeline or seed data |
 | Stale data after a new pipeline run | 300-second cache TTL | Wait 5 minutes or restart Streamlit |
-| Dashboard crashes on startup | Missing dependency | Run `pip install -r agents/requirements.txt` |
+| Dashboard crashes on startup | Missing dependency | Run `pip install -r requirements.txt` |
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
-| `agents/dashboard/streamlit_app.py` | Main app — all 5 pages, DB + JSON modes |
-| `agents/dashboard/app.py` | Entry point with sys.path bootstrap |
-| `agents/dashboard/batch_insights_queries.py` | Full-table SQL aggregates for Batch Insights |
-| `agents/dashboard/pages_observability.py` | Ingestion Overview + Normalization Quality pages |
-| `agents/dashboard/observability_queries.py` | DB query helpers for observability pages |
-| `agents/dashboard/observability_metrics.py` | Metric calculations |
-| `agents/dashboard/readonly_engine.py` | Read-only PostgreSQL engine setup |
+| `dashboard/streamlit_app.py` | Main app — all 5 pages, DB + JSON modes |
+| `dashboard/app.py` | Entry point with sys.path bootstrap |
+| `dashboard/batch_insights_queries.py` | Full-table SQL aggregates for Batch Insights |
+| `dashboard/pages_observability.py` | Ingestion Overview + Normalization Quality pages |
+| `dashboard/observability_queries.py` | DB query helpers for observability pages |
+| `dashboard/observability_metrics.py` | Metric calculations |
+| `dashboard/readonly_engine.py` | Read-only PostgreSQL engine setup |
 
 ---
 
@@ -838,26 +838,26 @@ Use this to populate the shared cloud database before demo day. Students connect
 
 ```bash
 # 1. Verify cloud connection
-python agents/scripts/db_check.py tables
+python scripts/db_check.py tables
 
 # 2. Run migrations (ensure all tables/columns exist on cloud)
-python agents/scripts/db_check.py migrate
+python scripts/db_check.py migrate
 
 # 3. Check current state
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 
 # 4. Reset pipeline tables (clean slate — no dups, no short-circuiting)
-python agents/scripts/db_check.py reset
+python scripts/db_check.py reset
 
 # 5a. Option A — Single-pass demo (small batch)
-python agents/pipeline_runner.py
+python pipeline_runner.py
 
 # 5b. Option B — Flywheel (production-scale)
-python agents/scripts/batch_ingest.py --delay 5
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/batch_ingest.py --delay 5
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 
 # 6. Verify populated data
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 ### Expected results after pipeline run
@@ -913,7 +913,7 @@ sqlalchemy.exc.OperationalError: could not connect to server
 
 - Check `PYTHON_DATABASE_URL` in `.env`
 - Verify Azure Postgres firewall allows your IP
-- Test with: `python agents/scripts/db_check.py tables`
+- Test with: `python scripts/db_check.py tables`
 
 ### JSearch API rate limit
 
@@ -940,7 +940,7 @@ playwright._impl._errors.Error: Browser not installed
 UndefinedTable: relation "dbo.extracted_intelligence" does not exist
 ```
 
-- Run: `python agents/scripts/db_check.py migrate`
+- Run: `python scripts/db_check.py migrate`
 - Migrations are idempotent — safe to run multiple times
 
 ### Pipeline stops at a specific agent
@@ -948,7 +948,7 @@ UndefinedTable: relation "dbo.extracted_intelligence" does not exist
 - Check the console output for which agent failed
 - Phase 1 agent exceptions stop the pipeline (by design)
 - Common cause: missing env var or expired API key
-- Check `agents/data/output/pipeline_run.json` for the last successful stage
+- Check `data/output/pipeline_run.json` for the last successful stage
 
 ### Enrichment columns are NULL
 

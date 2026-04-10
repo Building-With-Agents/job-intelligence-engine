@@ -26,7 +26,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 load_dotenv(_REPO_ROOT / ".env")
 
@@ -53,7 +53,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 async def _fetch_records(source: str, region) -> list:
-    from agents.ingestion.sources import get_adapter
+    from ingestion.sources import get_adapter
 
     adapter = get_adapter(source)
     return await adapter.fetch(region)
@@ -63,15 +63,15 @@ def main() -> None:
     args = _parse_args()
 
     if args.migrate:
-        from agents.common.data_store.database import get_engine
-        from agents.common.data_store.migrations import run_migrations
+        from common.data_store.database import get_engine
+        from common.data_store.migrations import run_migrations
 
         run_migrations(get_engine())
 
-    from agents.common.data_store.database import session_scope
-    from agents.common.data_store.models import JobIngestionRun, RawIngestedJob
-    from agents.common.types import RawJobRecord, RegionConfig
-    from agents.ingestion.deduplicator import deduplicate_batch
+    from common.data_store.database import session_scope
+    from common.data_store.models import JobIngestionRun, RawIngestedJob
+    from common.types import RawJobRecord, RegionConfig
+    from ingestion.deduplicator import deduplicate_batch
 
     region = RegionConfig(
         region_id=args.region_id,

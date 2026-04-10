@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from agents.common.types import ContextSignal
-from agents.common.types.job_record import JobRecord
-from agents.eval.snapshot_schema import (
+from common.types import ContextSignal
+from common.types.job_record import JobRecord
+from eval.snapshot_schema import (
     SNAPSHOT_SCHEMA_VERSION,
     AggregateMetrics,
     ExtractionEvalSnapshot,
@@ -144,7 +144,7 @@ def render_prompt_for_job(
     job_record: JobRecord,
     pass1_tool_names: list[str],
 ) -> tuple[str, str]:
-    from agents.skills_extraction.prompts import (
+    from skills_extraction.prompts import (
         SKILLS_PROMPT_VERSION,
         SKILLS_SYSTEM_PROMPT,
         SKILLS_USER_TEMPLATE,
@@ -163,7 +163,7 @@ def render_prompt_for_job(
 
 
 def get_skills_prompt_version() -> str:
-    from agents.skills_extraction.prompts import SKILLS_PROMPT_VERSION
+    from skills_extraction.prompts import SKILLS_PROMPT_VERSION
 
     return SKILLS_PROMPT_VERSION
 
@@ -405,11 +405,11 @@ def run_eval_dataset(
                 "title": str(job.get("title") or ""),
             }
         else:
-            from agents.skills_extraction.extractors.context import extract_context
-            from agents.skills_extraction.extractors.responsibilities import extract_responsibilities
-            from agents.skills_extraction.extractors.skills import extract_skills
-            from agents.skills_extraction.extractors.tasks import extract_tasks
-            from agents.skills_extraction.extractors.tools import extract_tools
+            from skills_extraction.extractors.context import extract_context
+            from skills_extraction.extractors.responsibilities import extract_responsibilities
+            from skills_extraction.extractors.skills import extract_skills
+            from skills_extraction.extractors.tasks import extract_tasks
+            from skills_extraction.extractors.tools import extract_tools
 
             jr = ground_truth_row_to_job_record(job)
             context_signals, ctx_meta = extract_context(jr)
@@ -744,7 +744,7 @@ def format_prompt_backlog_markdown(snapshot: ExtractionEvalSnapshot, mode: str) 
             "",
             "---",
             "",
-            "_Copy sections into `agents/eval/prompt_iteration_log.md` manually as needed._",
+            "_Copy sections into `eval/prompt_iteration_log.md` manually as needed._",
             "",
         ]
     )

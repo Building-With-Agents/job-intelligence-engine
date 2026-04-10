@@ -170,8 +170,8 @@ def upsert_records(
 def run_migrations() -> None:
     """Run agent migrations to ensure schema is current."""
     try:
-        from agents.common.data_store.database import get_engine
-        from agents.common.data_store.migrations import run_migrations as _migrate
+        from common.data_store.database import get_engine
+        from common.data_store.migrations import run_migrations as _migrate
 
         _migrate(get_engine())
         print("Migrations: OK")

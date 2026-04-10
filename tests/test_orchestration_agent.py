@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.orchestration.agent import OrchestrationAgent
+from common.event_envelope import EventEnvelope
+from orchestration.agent import OrchestrationAgent
 
 
 class TestOrchestrationAgent:

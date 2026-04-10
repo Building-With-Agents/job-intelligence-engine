@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from agents.analytics.canonical_roles.loader import _row_to_features
-from agents.analytics.canonical_roles.persist import (
+from analytics.canonical_roles.loader import _row_to_features
+from analytics.canonical_roles.persist import (
     _build_cluster_role_ids,
     cleanup_orphan_canonical_roles,
     persist_clustering_result,
 )
-from agents.analytics.clustering.types import ClusteringResult, ClusterSummary
-from agents.common.data_store.models import CanonicalRole
+from analytics.clustering.types import ClusteringResult, ClusterSummary
+from common.data_store.models import CanonicalRole
 
 
 def _make_cluster(

@@ -11,14 +11,14 @@ import uuid
 from collections.abc import Iterator
 from datetime import datetime, timedelta
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.typed_events import (
+from common.event_envelope import EventEnvelope
+from common.events.typed_events import (
     NormalizationCompleteEvent,
     NormalizationFailedEvent,
     SourceFailureEvent,
 )
-from agents.ingestion.events import source_failure_payload
-from agents.normalization.events import (
+from ingestion.events import source_failure_payload
+from normalization.events import (
     normalization_complete_payload,
     normalization_failed_payload,
 )

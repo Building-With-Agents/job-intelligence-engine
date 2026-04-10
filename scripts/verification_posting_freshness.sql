@@ -1,6 +1,6 @@
 -- Read-only verification for dbo.posting_freshness (Issue #184 / Step 10).
 -- Run against a dev database, e.g.:
---   psql "$PYTHON_DATABASE_URL" -f agents/scripts/verification_posting_freshness.sql
+--   psql "$PYTHON_DATABASE_URL" -f scripts/verification_posting_freshness.sql
 -- (Convert URL to libpq form or use your SQL client.)
 
 -- 1) Row count

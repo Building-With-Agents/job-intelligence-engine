@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agents.analytics.clustering.types import PostingClusterFeatures
+from analytics.clustering.types import PostingClusterFeatures
 
 log = structlog.get_logger()
 

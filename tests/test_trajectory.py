@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from agents.analytics.insights.trajectory import build_trajectory_map, classify_trajectory
+from analytics.insights.trajectory import build_trajectory_map, classify_trajectory
 
 
 def test_rising_skill_current_gt_prior() -> None:

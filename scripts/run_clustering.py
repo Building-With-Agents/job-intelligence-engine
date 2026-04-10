@@ -2,8 +2,8 @@
 """Run canonical role clustering on live DB data and print findings.
 
 Usage:
-    python agents/scripts/run_clustering.py
-    python agents/scripts/run_clustering.py --min-postings 100
+    python scripts/run_clustering.py
+    python scripts/run_clustering.py --min-postings 100
 """
 from __future__ import annotations
 
@@ -14,22 +14,22 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.common.env import load_repo_root_dotenv
+from common.env import load_repo_root_dotenv
 
 load_repo_root_dotenv()
 
-from agents.analytics.canonical_roles.loader import load_posting_cluster_features
-from agents.analytics.canonical_roles.persist import (
+from analytics.canonical_roles.loader import load_posting_cluster_features
+from analytics.canonical_roles.persist import (
     cleanup_orphan_canonical_roles,
     persist_clustering_result,
 )
-from agents.analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
-from agents.analytics.clustering.config import cluster_min_total_postings
-from agents.analytics.clustering.embeddings import embed_posting_features
-from agents.analytics.clustering.pipeline import run_clustering_pipeline
-from agents.common.data_store.database import check_db_connection, session_scope
+from analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
+from analytics.clustering.config import cluster_min_total_postings
+from analytics.clustering.embeddings import embed_posting_features
+from analytics.clustering.pipeline import run_clustering_pipeline
+from common.data_store.database import check_db_connection, session_scope
 
 
 def _iso_week_monday(today: date) -> date:

@@ -4,7 +4,7 @@ Requires ``PYTHON_DATABASE_URL`` and a full ``dbo`` schema (postal_geo_data, com
 company_addresses, job_postings, normalized_jobs, extracted_intelligence). Skips if
 seed fails (e.g. column naming differs from Prisma/pgloader expectations).
 
-Run ``python agents/scripts/db_check.py migrate`` so ``job_postings`` has ``naics_code``,
+Run ``python scripts/db_check.py migrate`` so ``job_postings`` has ``naics_code``,
 ``soc_code``, and ``employer_profile_id`` before the extended promotion test.
 """
 
@@ -19,16 +19,16 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
-from agents.common.data_store.database import session_scope
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.classifiers.spam_preview import SpamPreviewResult
-from agents.enrichment.job_postings_promotion import (
+from common.data_store.database import session_scope
+from common.event_envelope import EventEnvelope
+from common.types.job_profile import EmployerProfile
+from enrichment.agent import EnrichmentAgent
+from enrichment.classifiers.spam_preview import SpamPreviewResult
+from enrichment.job_postings_promotion import (
     derive_enrichment_output_fields,
     resolve_job_posting_row,
 )
-from agents.tests.db_seed_enrichment_e2e import (
+from tests.db_seed_enrichment_e2e import (
     EnrichmentE2ESeed,
     seed_enrichment_e2e,
     teardown_enrichment_e2e,
@@ -48,7 +48,7 @@ def _e2e_require_uuid_employer_profiles(e2e_engine: Engine) -> None:
     """Promotion + employer upsert require UUID PK ``employer_profiles`` (post-migration schema)."""
     insp = inspect(e2e_engine)
     if not insp.has_table("employer_profiles", schema="dbo"):
-        pytest.skip("dbo.employer_profiles missing — run agents/scripts/db_check.py migrate")
+        pytest.skip("dbo.employer_profiles missing — run scripts/db_check.py migrate")
     with e2e_engine.connect() as conn:
         dt = conn.execute(
             text(
@@ -74,10 +74,10 @@ def _e2e_patch_heavy_enrichment_classifiers() -> object:
         return "15-1252.00"
 
     with (
-        patch("agents.enrichment.agent.classify_naics", return_value="541512"),
-        patch("agents.enrichment.agent.classify_soc", side_effect=_fake_soc),
+        patch("enrichment.agent.classify_naics", return_value="541512"),
+        patch("enrichment.agent.classify_soc", side_effect=_fake_soc),
         patch(
-            "agents.enrichment.agent.build_employer_profile",
+            "enrichment.agent.build_employer_profile",
             return_value=EmployerProfile(),
         ),
     ):
@@ -135,7 +135,7 @@ def _run_agent_with_spam_mock(
     seed: EnrichmentE2ESeed,
     spam_ret: SpamPreviewResult,
 ) -> None:
-    with patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret):
+    with patch("enrichment.agent.score_spam_preview", return_value=spam_ret):
         _run_agent_process(seed)
 
 
@@ -162,9 +162,9 @@ def _run_agent_capture_profile_and_payload(
     spam_ret: SpamPreviewResult,
 ) -> tuple[dict, dict]:
     with (
-        patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret),
+        patch("enrichment.agent.score_spam_preview", return_value=spam_ret),
         patch(
-            "agents.enrichment.agent.EnrichedJobProfile",
+            "enrichment.agent.EnrichedJobProfile",
             side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
         ) as mock_profile,
     ):
@@ -340,10 +340,10 @@ def test_enrichment_promotion_writes_naics_soc_employer_profile_to_job_postings(
 
     try:
         with (
-            patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret),
-            patch("agents.enrichment.agent.classify_naics", return_value=naics_expected),
-            patch("agents.enrichment.agent.classify_soc", side_effect=_fake_soc),
-            patch("agents.enrichment.agent.build_employer_profile", return_value=fake_ep),
+            patch("enrichment.agent.score_spam_preview", return_value=spam_ret),
+            patch("enrichment.agent.classify_naics", return_value=naics_expected),
+            patch("enrichment.agent.classify_soc", side_effect=_fake_soc),
+            patch("enrichment.agent.build_employer_profile", return_value=fake_ep),
         ):
             _run_agent_process(seed)
 

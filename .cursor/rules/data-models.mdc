@@ -2,10 +2,10 @@
 description: "Canonical data models (JobRecord, SkillRecord) and database schema reference for agent pipeline"
 alwaysApply: false
 globs:
-  - "agents/normalization/schema/**"
-  - "agents/enrichment/**/*.py"
-  - "agents/analytics/**/*.py"
-  - "agents/common/data_store/**"
+  - "normalization/schema/**"
+  - "enrichment/**/*.py"
+  - "analytics/**/*.py"
+  - "common/data_store/**"
 ---
 
 # Data Models & Database Reference
@@ -14,7 +14,7 @@ globs:
 
 ## Canonical JobRecord (Pydantic)
 
-This is the pipeline's core data model. Defined in `agents/normalization/schema/`.
+This is the pipeline's core data model. Defined in `normalization/schema/`.
 
 ```python
 from pydantic import BaseModel

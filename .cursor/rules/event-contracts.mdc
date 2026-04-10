@@ -2,9 +2,9 @@
 description: "Event catalog and inter-agent communication contracts for the pipeline"
 alwaysApply: false
 globs:
-  - "agents/common/events/**"
-  - "agents/common/message_bus/**"
-  - "agents/*/agent.py"
+  - "common/events/**"
+  - "common/message_bus/**"
+  - "*/agent.py"
 ---
 
 # Event Contracts
@@ -15,7 +15,7 @@ globs:
 2. **Orchestrator is sole failure consumer.** Only the Orchestration Agent subscribes to `*Failed` and `*Alert` events.
 3. **Propagate `correlation_id`.** Every event in a pipeline run shares the same `correlation_id`, set by the initial `IngestBatch` and passed unchanged through all downstream events.
 4. **Version payloads.** Use `schema_version` field. Increment on breaking payload changes.
-5. **Phase 1 bus:** In-process Python pub/sub (`agents/common/message_bus/`). External bus deferred to Phase 2.
+5. **Phase 1 bus:** In-process Python pub/sub (`common/message_bus/`). External bus deferred to Phase 2.
 
 ## Event Catalog
 
@@ -51,15 +51,15 @@ Each event's `payload` dict should include:
 - **`IngestBatch`**: `batch_id`, `record_count`, `source`, `dedup_count`, `run_id`
 - **`NormalizationComplete`**: `batch_id`, `record_count`, `quarantine_count`
 - **`SkillsExtracted`**: `batch_id`, `record_count`, `skills_count`, `avg_confidence`
-- **`RecordEnriched`**: Two shapes—see `.cursor/rules/integration-schema.mdc`. **Batch** (non-empty `records` on `SkillsExtracted`): `record_enriched_schema_version` (**v3**), `batch_id`, `enriched_count`, `spam_rejected_count`, `flagged_for_review_count`, `temporal_period_distribution`, `borderplex_subregion_distribution`, `duplicate_count`, `soc_classified_count`, `naics_classified_count`, nested **`dedup`** (`cosine_threshold`, `rolling_window_days`, `stub_count`, `rows_with_duplicate_cluster_id`, `rows_with_matched_job_posting_id`). **Single-record** (flat payload): per-posting fields for classification/spam/promotion; no batch `dedup` block. Frozen key sets: `agents/enrichment/resolvers/record_enriched_contract.py`.
+- **`RecordEnriched`**: Two shapes—see `.cursor/rules/integration-schema.mdc`. **Batch** (non-empty `records` on `SkillsExtracted`): `record_enriched_schema_version` (**v3**), `batch_id`, `enriched_count`, `spam_rejected_count`, `flagged_for_review_count`, `temporal_period_distribution`, `borderplex_subregion_distribution`, `duplicate_count`, `soc_classified_count`, `naics_classified_count`, nested **`dedup`** (`cosine_threshold`, `rolling_window_days`, `stub_count`, `rows_with_duplicate_cluster_id`, `rows_with_matched_job_posting_id`). **Single-record** (flat payload): per-posting fields for classification/spam/promotion; no batch `dedup` block. Frozen key sets: `enrichment/resolvers/record_enriched_contract.py`.
 - **`AnalyticsRefreshed`**: Week 2 fixture merge + clustering fields (`canonical_clustering_ran`, `clustering_skipped`, `clustering_skip_reason`, …); legacy keys include `top_skills`, `run_id`, `total_postings`
-- **`EmergenceAlert`**: `correlation_id`, `posting_ids`, `candidate_role_label`, `posting_count`, `top_skills`, `top_tools`, `nearest_canonical_role`, `filter_reason`, `schema_version` — see `agents/common/events/emergence_alert.py`
+- **`EmergenceAlert`**: `correlation_id`, `posting_ids`, `candidate_role_label`, `posting_count`, `top_skills`, `top_tools`, `nearest_canonical_role`, `filter_reason`, `schema_version` — see `common/events/emergence_alert.py`
 - **`RenderComplete`**: `pages_rendered`, `exports_generated`
 - **`*Failed`**: `error_type`, `error_message`, `retry_count`, `max_retries`
 
 ## Adding a New Event Type
 
-1. Define it in `agents/common/events/` following the `EventEnvelope` dataclass
+1. Define it in `common/events/` following the `EventEnvelope` dataclass
 2. Add it to the event catalog (this doc and `ARCHITECTURE_DEEP.md`)
 3. Register the Orchestrator as a consumer
 4. If it's a failure event, only Orchestrator may consume it

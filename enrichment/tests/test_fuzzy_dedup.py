@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.enrichment.dedup.fuzzy_dedup import run_fuzzy_dedup
+from enrichment.dedup.fuzzy_dedup import run_fuzzy_dedup
 
 
 def _unit_vec_xy(t: float, dim: int = 1536) -> list[float]:
@@ -35,7 +35,7 @@ def _survivor_row(
     company_name: str = "Acme",
     requirements: str | None = None,
 ) -> dict:
-    from agents.enrichment.dedup.text import build_dedup_text, dedup_text_hash
+    from enrichment.dedup.text import build_dedup_text, dedup_text_hash
 
     dedup_plain = build_dedup_text(job_title, company_name, requirements or job_description)
     return {
@@ -102,7 +102,7 @@ def _base_current_row(
     }
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure", return_value=None)
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure", return_value=None)
 def test_embedding_none_returns_unique(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
@@ -116,9 +116,9 @@ def test_embedding_none_returns_unique(mock_embed: MagicMock) -> None:
     mock_embed.assert_called_once()
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_hash_skip_avoids_embed_call(mock_embed: MagicMock) -> None:
-    from agents.enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
+    from enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
 
     session = MagicMock()
     cur = _base_current_row(requirements="alpha beta")
@@ -140,7 +140,7 @@ def test_hash_skip_avoids_embed_call(mock_embed: MagicMock) -> None:
     assert session.execute.call_count == 2
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_unique_when_no_survivors(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
@@ -159,7 +159,7 @@ def test_unique_when_no_survivors(mock_embed: MagicMock) -> None:
     assert out.duplicate_cluster_id is None
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_current_embedding_uses_enrichment_dedup_audit_agent(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
@@ -177,7 +177,7 @@ def test_current_embedding_uses_enrichment_dedup_audit_agent(mock_embed: MagicMo
     assert mock_embed.call_args.kwargs["audit_agent_name"] == "enrichment-dedup"
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_list_survivors_filters_by_company_id_param(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cid = "00000000-0000-0000-0000-0000000000dd"
@@ -198,7 +198,7 @@ def test_list_survivors_filters_by_company_id_param(mock_embed: MagicMock) -> No
     assert p_surv["company_id"] == cid
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_threshold_below_returns_unique(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
@@ -228,7 +228,7 @@ def test_threshold_below_returns_unique(mock_embed: MagicMock) -> None:
     assert out.duplicate_cluster_id is None
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_threshold_equal_returns_unique(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
@@ -258,7 +258,7 @@ def test_threshold_equal_returns_unique(mock_embed: MagicMock) -> None:
     assert out.duplicate_cluster_id is None
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_threshold_above_marks_duplicate_when_survivor_wins(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None, salary=None)
@@ -291,9 +291,9 @@ def test_threshold_above_marks_duplicate_when_survivor_wins(mock_embed: MagicMoc
     assert out.matched_job_posting_id == survivor["job_posting_id"]
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_cold_start_survivor_without_cached_embedding_is_backfilled_and_compared(mock_embed: MagicMock) -> None:
-    from agents.enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
+    from enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
 
     session = MagicMock()
     cur = _base_current_row(requirements="alpha beta", dedup_emb=_emb_json(1.0))
@@ -336,7 +336,7 @@ def test_cold_start_survivor_without_cached_embedding_is_backfilled_and_compared
     assert session.execute.call_count == 3
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_current_wins_completeness_flips_contract(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None, salary="90k-100k")
@@ -368,7 +368,7 @@ def test_current_wins_completeness_flips_contract(mock_embed: MagicMock) -> None
     assert out.duplicate_cluster_id is not None
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_current_wins_by_field_count_not_weighted_score(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None, salary=None)
@@ -402,7 +402,7 @@ def test_current_wins_by_field_count_not_weighted_score(mock_embed: MagicMock) -
     assert out.duplicate_cluster_id is not None
 
 
-@patch("agents.enrichment.dedup.fuzzy_dedup._embed_texts_azure")
+@patch("enrichment.dedup.fuzzy_dedup._embed_texts_azure")
 def test_window_params_half_open(mock_embed: MagicMock) -> None:
     session = MagicMock()
     anchor = datetime(2025, 6, 15, 12, 0, 0, tzinfo=timezone.utc)

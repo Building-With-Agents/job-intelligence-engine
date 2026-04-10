@@ -7,12 +7,12 @@ from typing import Any
 import numpy as np
 import pytest
 
-from agents.analytics.clustering.embeddings import embed_prepared_clustering_texts
-from agents.analytics.clustering.emergence import detect_emergence_candidates
-from agents.analytics.clustering.labeling import label_clusters
-from agents.analytics.clustering.pipeline import run_clustering, run_clustering_pipeline
-from agents.analytics.clustering.text import build_clustering_text, clustering_text_hash
-from agents.analytics.clustering.types import (
+from analytics.clustering.embeddings import embed_prepared_clustering_texts
+from analytics.clustering.emergence import detect_emergence_candidates
+from analytics.clustering.labeling import label_clusters
+from analytics.clustering.pipeline import run_clustering, run_clustering_pipeline
+from analytics.clustering.text import build_clustering_text, clustering_text_hash
+from analytics.clustering.types import (
     ClusteredPosting,
     ClusteringResult,
     ClusterSummary,
@@ -144,7 +144,7 @@ def test_embed_prepared_clustering_texts_batches_and_preserves_metadata(
         return [[float(index + 1), float(index + 2)] for index in range(len(texts))]
 
     monkeypatch.setattr(
-        "agents.analytics.clustering.embeddings._embed_texts_azure",
+        "analytics.clustering.embeddings._embed_texts_azure",
         fake_embed_texts,
     )
 
@@ -181,7 +181,7 @@ def test_embed_prepared_clustering_texts_allow_partial_skips_failed_batches(
         return [[1.0, 0.0], [0.0, 1.0]]
 
     monkeypatch.setattr(
-        "agents.analytics.clustering.embeddings._embed_texts_azure",
+        "analytics.clustering.embeddings._embed_texts_azure",
         fake_embed_texts,
     )
 

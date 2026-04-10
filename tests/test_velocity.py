@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from agents.analytics.aggregators import velocity as vel
+from analytics.aggregators import velocity as vel
 
 
 def test_week_starts_for_velocity_five_mondays() -> None:
@@ -137,7 +137,7 @@ def test_refresh_skill_velocity_db_smoke() -> None:
     from sqlalchemy.orm import Session
 
     load_dotenv()
-    from agents.common.data_store.database import get_engine
+    from common.data_store.database import get_engine
 
     with Session(get_engine()) as session:
         n = vel.refresh_skill_velocity(session, date(2025, 1, 6))

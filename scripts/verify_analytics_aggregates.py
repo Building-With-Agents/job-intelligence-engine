@@ -17,11 +17,11 @@ before 8–9).
 
 **Usage** (repo root)::
 
-    PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week 2026-03-30
+    PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week 2026-03-30
 
-    PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week 2026-03-30 --only skills,tools
+    PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week 2026-03-30 --only skills,tools
 
-    PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week 2026-03-30 --drift-threshold-pct 0.5
+    PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week 2026-03-30 --drift-threshold-pct 0.5
 
 Requires ``PYTHON_DATABASE_URL`` and spam thresholds via ``get_spam_thresholds()``.
 """
@@ -34,7 +34,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -58,13 +58,13 @@ structlog.configure(
 )
 from sqlalchemy import func, select, text  # noqa: E402
 
-from agents.analytics.aggregators.demand_weekly import (  # noqa: E402
+from analytics.aggregators.demand_weekly import (  # noqa: E402
     _SKILLS_EXPANDED,
     _TOOLS_EXPANDED,
 )
-from agents.common.data_store.database import session_scope  # noqa: E402
-from agents.common.data_store.models import SkillDemandWeekly, ToolDemandWeekly  # noqa: E402
-from agents.enrichment.classifiers.spam_preview import get_spam_thresholds  # noqa: E402
+from common.data_store.database import session_scope  # noqa: E402
+from common.data_store.models import SkillDemandWeekly, ToolDemandWeekly  # noqa: E402
+from enrichment.classifiers.spam_preview import get_spam_thresholds  # noqa: E402
 
 log = structlog.get_logger()
 

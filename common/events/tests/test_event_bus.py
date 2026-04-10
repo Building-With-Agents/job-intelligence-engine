@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus import (
+from common.event_envelope import EventEnvelope
+from common.message_bus import (
     ComparisonScenario,
     FakeKafkaBroker,
     FakeKafkaConsumer,

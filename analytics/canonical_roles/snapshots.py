@@ -10,8 +10,8 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agents.analytics.aggregators.salary_percentiles import compute_salary_percentiles
-from agents.common.data_store.models import RoleSnapshotWeekly
+from analytics.aggregators.salary_percentiles import compute_salary_percentiles
+from common.data_store.models import RoleSnapshotWeekly
 
 log = structlog.get_logger()
 

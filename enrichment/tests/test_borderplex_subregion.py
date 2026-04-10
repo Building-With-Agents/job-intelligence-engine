@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from agents.enrichment.classifiers.borderplex_subregion import classify_borderplex_subregion
+from enrichment.classifiers.borderplex_subregion import classify_borderplex_subregion
 
 _ALLOWED = frozenset({"el_paso", "las_cruces", "ciudad_juarez", "regional"})
 

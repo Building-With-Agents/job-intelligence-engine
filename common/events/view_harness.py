@@ -2,10 +2,10 @@
 View and check the EXP-004 test harness output.
 
 Run from repo root:
-  python -m agents.common.events.view_harness
-  python -m agents.common.events.view_harness --count 10 --seed 42
-  python -m agents.common.events.view_harness --count 1000   # full harness
-  python -m agents.common.events.view_harness --count 1 --json   # first event as JSON
+  python -m common.events.view_harness
+  python -m common.events.view_harness --count 10 --seed 42
+  python -m common.events.view_harness --count 1000   # full harness
+  python -m common.events.view_harness --count 1 --json   # first event as JSON
 """
 # ruff: noqa: T201
 
@@ -15,8 +15,8 @@ import argparse
 import json
 from datetime import datetime
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.ingest_batch_harness import (
+from common.event_envelope import EventEnvelope
+from common.events.ingest_batch_harness import (
     assert_valid_ingest_batch_envelope,
     generate_synthetic_ingest_batches,
 )

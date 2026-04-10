@@ -25,10 +25,10 @@ from typing import Any
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import NormalizedJob
-from agents.common.types.job_profile import JobProfile
-from agents.common.types.job_record import JobRecord
-from agents.enrichment.classifiers.soc_classifier import classify_soc
+from common.data_store.models import NormalizedJob
+from common.types.job_profile import JobProfile
+from common.types.job_record import JobRecord
+from enrichment.classifiers.soc_classifier import classify_soc
 
 # Role classification
 MIN_TOKEN_LEN = 2
@@ -367,7 +367,7 @@ def enrich_job_profile_naics(job_profile: JobProfile, session: Session) -> None:
     Returns a 6-digit catalog code or the literal ``"unknown"`` (same sentinel as employer
     fields); ``unknown`` is kept as a string, not coerced to ``None``.
     """
-    from agents.enrichment.classifiers.naics_classifier import classify_naics
+    from enrichment.classifiers.naics_classifier import classify_naics
 
     desc = job_profile.description if isinstance(job_profile.description, str) else ""
     code = classify_naics(job_profile.title, desc, session)
@@ -376,11 +376,11 @@ def enrich_job_profile_naics(job_profile: JobProfile, session: Session) -> None:
 
 def enrich_job_profile_employer(job_profile: JobProfile, session: Session) -> None:
     """Set ``job_profile.employer`` and persist to ``employer_profiles`` or ``normalized_jobs`` JSON."""
-    from agents.enrichment.classifiers.employer_classifier import (
+    from enrichment.classifiers.employer_classifier import (
         build_employer_profile,
         persist_employer_metadata,
     )
-    from agents.enrichment.resolvers.company_resolver import resolve_company
+    from enrichment.resolvers.company_resolver import resolve_company
 
     desc = job_profile.description if isinstance(job_profile.description, str) else ""
     ep = build_employer_profile(desc, job_profile.company or "", session)

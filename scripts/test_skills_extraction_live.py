@@ -2,7 +2,7 @@
 """Live skills extraction test — makes a real LLM call.
 
 Usage (from repo root with venv activated):
-    python agents/scripts/test_skills_extraction_live.py
+    python scripts/test_skills_extraction_live.py
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -23,8 +23,8 @@ except ImportError:
 
 
 def main() -> int:
-    from agents.common.types import JobRecord
-    from agents.skills_extraction.extractors.skills import extract_skills
+    from common.types import JobRecord
+    from skills_extraction.extractors.skills import extract_skills
 
     job = JobRecord(
         raw_job_id=0,

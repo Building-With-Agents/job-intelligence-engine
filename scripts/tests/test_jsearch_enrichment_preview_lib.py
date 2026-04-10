@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.scripts.jsearch_enrichment_preview_lib import (
+from scripts.jsearch_enrichment_preview_lib import (
     build_enrichment_output_record,
     build_extraction_dict,
 )

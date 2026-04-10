@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.data_store.database import check_db_connection
-from agents.common.event_envelope import EventEnvelope
-from agents.ingestion.agent import IngestionAgent
+from common.data_store.database import check_db_connection
+from common.event_envelope import EventEnvelope
+from ingestion.agent import IngestionAgent
 
 pytestmark = pytest.mark.integration
 

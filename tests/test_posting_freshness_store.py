@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.analytics.insights.posting_freshness_store import (
+from analytics.insights.posting_freshness_store import (
     build_posting_freshness_row_dicts,
     persist_posting_freshness_rows,
 )
@@ -94,7 +94,7 @@ def test_persist_skips_when_db_unreachable() -> None:
     }
     with (
         patch.dict("os.environ", {"PYTHON_DATABASE_URL": "postgresql+psycopg2://x"}),
-        patch("agents.common.data_store.database.check_db_connection", return_value=False),
+        patch("common.data_store.database.check_db_connection", return_value=False),
     ):
         persist_posting_freshness_rows([row])
 
@@ -116,8 +116,8 @@ def test_persist_merge_on_mock_session() -> None:
     ctx.__exit__ = MagicMock(return_value=False)
     with (
         patch.dict("os.environ", {"PYTHON_DATABASE_URL": "postgresql+psycopg2://x"}),
-        patch("agents.common.data_store.database.check_db_connection", return_value=True),
-        patch("agents.common.data_store.database.session_scope", return_value=ctx),
+        patch("common.data_store.database.check_db_connection", return_value=True),
+        patch("common.data_store.database.session_scope", return_value=ctx),
     ):
         persist_posting_freshness_rows([row])
     mock_session.merge.assert_called_once()
@@ -143,7 +143,7 @@ def test_persist_failure_logs_only() -> None:
     ctx.__exit__ = MagicMock(return_value=False)
     with (
         patch.dict("os.environ", {"PYTHON_DATABASE_URL": "postgresql+psycopg2://x"}),
-        patch("agents.common.data_store.database.check_db_connection", return_value=True),
-        patch("agents.common.data_store.database.session_scope", return_value=ctx),
+        patch("common.data_store.database.check_db_connection", return_value=True),
+        patch("common.data_store.database.session_scope", return_value=ctx),
     ):
         persist_posting_freshness_rows([row])  # does not raise

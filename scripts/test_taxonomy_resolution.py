@@ -2,7 +2,7 @@
 """Interactive taxonomy resolution test.
 
 Usage (from repo root with venv activated):
-    python agents/scripts/test_taxonomy_resolution.py
+    python scripts/test_taxonomy_resolution.py
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -23,7 +23,7 @@ except ImportError:
 
 
 def main() -> int:
-    from agents.skills_extraction.extractors.taxonomy import (
+    from skills_extraction.extractors.taxonomy import (
         resolution_stats,
         resolve_taxonomy,
         resolve_taxonomy_batch,

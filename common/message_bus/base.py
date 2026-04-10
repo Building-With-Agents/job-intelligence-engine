@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus.contracts import (
+from common.event_envelope import EventEnvelope
+from common.message_bus.contracts import (
     EventHandler,
     Subscription,
     enforce_subscription_policy,

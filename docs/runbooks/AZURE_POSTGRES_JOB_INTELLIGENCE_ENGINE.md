@@ -174,9 +174,9 @@ PYTHON_DATABASE_URL=postgresql+psycopg2://<ADMIN_USER>:<ADMIN_PASSWORD>@<SERVER_
 **Verify:** Run the pipeline or Streamlit dashboard:
 
 ```bash
-python agents/pipeline_runner.py
+python pipeline_runner.py
 # or
-streamlit run agents/dashboard/streamlit_app.py
+streamlit run dashboard/streamlit_app.py
 ```
 
 ---
@@ -269,4 +269,4 @@ az group delete --name rg-job-inteligence-engine --no-wait
 
 - [DOCKER_POSTGRESQL_SETUP.md](../DOCKER_POSTGRESQL_SETUP.md) — Local PostgreSQL with Docker
 - [scripts/pg-seed-data/README.md](../../scripts/pg-seed-data/README.md) — Seed script and fixture layout
-- [CLAUDE.md](../../CLAUDE.md) — Agent pipeline architecture and `PYTHON_DATABASE_URL`
+- [CLAUDE.md](../CLAUDE.md) — Agent pipeline architecture and `PYTHON_DATABASE_URL`

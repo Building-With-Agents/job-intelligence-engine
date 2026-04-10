@@ -5,9 +5,9 @@ classifies SOC/NAICS via LLM, and updates in place. Processes in batches
 with a delay between records to respect rate limits.
 
 Usage:
-    python agents/scripts/backfill_enrichment.py
-    python agents/scripts/backfill_enrichment.py --batch-size 25 --delay 5
-    python agents/scripts/backfill_enrichment.py --dry-run
+    python scripts/backfill_enrichment.py
+    python scripts/backfill_enrichment.py --batch-size 25 --delay 5
+    python scripts/backfill_enrichment.py --dry-run
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -67,13 +67,13 @@ def main() -> None:
     parser.add_argument("--max-records", type=int, default=0, help="Max records to process (0 = all)")
     args = parser.parse_args()
 
-    from agents.common.data_store.database import session_scope
-    from agents.enrichment.agent import _enrichment_soc_llm
-    from agents.enrichment.async_bridge import run_coroutine
-    from agents.enrichment.classifiers.naics_classifier import classify_naics
-    from agents.enrichment.classifiers.quality import score_quality
-    from agents.enrichment.classifiers.soc_classifier import classify_soc
-    from agents.enrichment.classifiers.spam_preview import score_spam_preview
+    from common.data_store.database import session_scope
+    from enrichment.agent import _enrichment_soc_llm
+    from enrichment.async_bridge import run_coroutine
+    from enrichment.classifiers.naics_classifier import classify_naics
+    from enrichment.classifiers.quality import score_quality
+    from enrichment.classifiers.soc_classifier import classify_soc
+    from enrichment.classifiers.spam_preview import score_spam_preview
 
     # Count total pending
     with session_scope() as s:

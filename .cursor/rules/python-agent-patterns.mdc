@@ -2,19 +2,19 @@
 description: "Required Python patterns for agent pipeline code: events, logging, health checks, LLM adapter, DB access"
 alwaysApply: false
 globs:
-  - "agents/**/*.py"
+  - "**/*.py"
 ---
 
 # Python Agent Patterns
 
-All Python code in `agents/` must follow these patterns exactly.
+All Python code must follow these patterns exactly.
 
 ## Event Envelope
 
 Every inter-agent communication uses this shape. Never invent a different structure.
 
 ```python
-# agents/common/event_envelope.py
+# common/event_envelope.py
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Any

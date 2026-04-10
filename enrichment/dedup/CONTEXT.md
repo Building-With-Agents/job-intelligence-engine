@@ -18,7 +18,7 @@ Near-duplicate job postings via embedding cosine similarity, same-`company_id` c
 
 **Threshold note:** `0.92` is calibrated for the same embedding family as taxonomy audit (`text-embedding-3-small` in audit logs). If the embedding deployment changes, recalibrate `DEDUP_COSINE_THRESHOLD`.
 
-**Calibration note (April 3, 2026):** The checked-in labeled replay in `agents/eval/dedup_threshold_calibration_cases.json` currently points to `0.88` as the strongest next staging candidate. The production default stays at `0.92` until that lower threshold is validated against a broader staging replay.
+**Calibration note (April 3, 2026):** The checked-in labeled replay in `eval/dedup_threshold_calibration_cases.json` currently points to `0.88` as the strongest next staging candidate. The production default stays at `0.92` until that lower threshold is validated against a broader staging replay.
 
 ## Algorithm (summary)
 
@@ -53,13 +53,13 @@ After a successful enrichment promotion update, [`apply_enrichment_to_job_postin
 
 ## Calibration artifacts
 
-- `agents/scripts/dedup_threshold_calibration.py` — runs the labeled replay with live Azure embeddings.
-- `agents/eval/dedup_threshold_calibration_cases.json` — curated same-company/cross-company/window-boundary cases.
-- `agents/data/reports/dedup_threshold_calibration.json` — latest committed JSON evidence.
-- `agents/docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md` — one-page Week 6 findings summary.
+- `scripts/dedup_threshold_calibration.py` — runs the labeled replay with live Azure embeddings.
+- `eval/dedup_threshold_calibration_cases.json` — curated same-company/cross-company/window-boundary cases.
+- `data/reports/dedup_threshold_calibration.json` — latest committed JSON evidence.
+- `docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md` — one-page Week 6 findings summary.
 
 ## References
 
-- [`agents/skills_extraction/extractors/taxonomy.py`](../../../skills_extraction/extractors/taxonomy.py) — `_embed_texts_azure(..., audit_agent_name=...)`
-- [`agents/common/llm_adapter.py`](../../../common/llm_adapter.py) — `log_extraction_event`
+- [`skills_extraction/extractors/taxonomy.py`](../../../skills_extraction/extractors/taxonomy.py) — `_embed_texts_azure(..., audit_agent_name=...)`
+- [`common/llm_adapter.py`](../../../common/llm_adapter.py) — `log_extraction_event`
 - `docs/planning/ARCHITECTURE_DEEP.md` — enrichment / fuzzy dedup spec

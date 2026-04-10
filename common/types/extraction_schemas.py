@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from agents.common.types.extraction_types import SpanRecord
+from common.types.extraction_types import SpanRecord
 
 TaskCategory = Literal["core", "supporting", "management", "technical"]
 SenioritySignal = Literal["entry", "mid", "senior", "lead", "any"]

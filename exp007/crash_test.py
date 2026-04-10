@@ -6,7 +6,7 @@ Procedure:
 2. Call resume API for each runner with that event (normalization only).
 3. Assert both return NormalizationComplete; Ingestion is not invoked during resume.
 
-Run from repo root: python agents/exp007/crash_test.py
+Run from repo root: python exp007/crash_test.py
 """
 
 from __future__ import annotations
@@ -16,16 +16,16 @@ import sys
 from pathlib import Path
 
 # Path bootstrap
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 import structlog  # noqa: E402
 
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.exp007.langgraph_runner import run_from_after_ingestion_langgraph  # noqa: E402
-from agents.exp007.pure_python_runner import run_from_after_ingestion_pure_python  # noqa: E402
-from agents.ingestion.agent import IngestionAgent  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from exp007.langgraph_runner import run_from_after_ingestion_langgraph  # noqa: E402
+from exp007.pure_python_runner import run_from_after_ingestion_pure_python  # noqa: E402
+from ingestion.agent import IngestionAgent  # noqa: E402
 
 log = structlog.get_logger()
 

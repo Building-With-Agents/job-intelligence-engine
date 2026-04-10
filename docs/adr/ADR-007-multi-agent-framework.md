@@ -79,6 +79,6 @@ Rejected for this project because Phase 2 and observability are first-class requ
 ## References
 
 - **EXP-007 plan and findings:** `docs/planning/EXP-007-plan-and-findings-template.md` (especially §10 EXP-007 Findings (Final)).
-- **Implementations:** `agents/exp007/langgraph_runner.py`, `agents/exp007/pure_python_runner.py`.
-- **Reproducibility:** `python agents/exp007/benchmark_100.py`, `python agents/exp007/crash_test.py`, `pytest agents/tests/test_exp007_crash_resume.py`, `pytest agents/tests/test_pipeline_runner.py -v`.
+- **Implementations:** `exp007/langgraph_runner.py`, `exp007/pure_python_runner.py`.
+- **Reproducibility:** `python exp007/benchmark_100.py`, `python exp007/crash_test.py`, `pytest tests/test_exp007_crash_resume.py`, `pytest tests/test_pipeline_runner.py -v`.
 - **Architecture:** `docs/planning/ARCHITECTURE_DEEP.md`, `docs/planning/ARCHITECTURAL_DECISIONS.md`.

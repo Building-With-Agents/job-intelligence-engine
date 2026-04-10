@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.base_agent import AgentBase, BaseAgent
-from agents.common.event_envelope import EventEnvelope
+from common.base_agent import AgentBase, BaseAgent
+from common.event_envelope import EventEnvelope
 
 
 class _ConcreteAgent(AgentBase):

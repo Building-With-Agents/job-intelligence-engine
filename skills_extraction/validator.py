@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import structlog
 
-from agents.common.types.skill_record import SkillRecord, ToolRecord
+from common.types.skill_record import SkillRecord, ToolRecord
 
 log = structlog.get_logger()
 

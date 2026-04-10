@@ -6,10 +6,10 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from agents.common.message_bus.comparison import TransportCandidate
-from agents.common.message_bus.in_process import InProcessEventBus
-from agents.common.message_bus.kafka import KafkaEventBus
-from agents.common.message_bus.redis_streams import RedisStreamsEventBus
+from common.message_bus.comparison import TransportCandidate
+from common.message_bus.in_process import InProcessEventBus
+from common.message_bus.kafka import KafkaEventBus
+from common.message_bus.redis_streams import RedisStreamsEventBus
 
 
 class FakeRedisStreamsClient:

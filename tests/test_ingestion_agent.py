@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from agents.common.event_envelope import EventEnvelope
-from agents.ingestion.agent import IngestionAgent
+from common.event_envelope import EventEnvelope
+from ingestion.agent import IngestionAgent
 
 
 class TestIngestionAgent:
@@ -24,12 +24,12 @@ class TestIngestionAgent:
         assert result["agent"] == "ingestion-agent"
         assert "metrics" in result
 
-    @patch("agents.ingestion.agent.session_scope")
-    @patch("agents.ingestion.agent.check_db_connection", return_value=True)
-    @patch("agents.ingestion.agent.deduplicate_batch")
+    @patch("ingestion.agent.session_scope")
+    @patch("ingestion.agent.check_db_connection", return_value=True)
+    @patch("ingestion.agent.deduplicate_batch")
     def test_process_emits_ingest_batch(self, mock_dedup, mock_db, mock_session) -> None:
         """Output event_type is IngestBatch."""
-        from agents.ingestion.deduplicator import DedupResult
+        from ingestion.deduplicator import DedupResult
 
         # Mock dedup to return empty result (no DB needed)
         mock_dedup.return_value = DedupResult(new_records=[], duplicates_skipped=0)
@@ -44,12 +44,12 @@ class TestIngestionAgent:
         assert out.payload["event_type"] == "IngestBatch"
         assert out.agent_id == "ingestion-agent"
 
-    @patch("agents.ingestion.agent.session_scope")
-    @patch("agents.ingestion.agent.check_db_connection", return_value=True)
-    @patch("agents.ingestion.agent.deduplicate_batch")
+    @patch("ingestion.agent.session_scope")
+    @patch("ingestion.agent.check_db_connection", return_value=True)
+    @patch("ingestion.agent.deduplicate_batch")
     def test_process_preserves_correlation_id(self, mock_dedup, mock_db, mock_session) -> None:
         """Correlation ID passes through unchanged."""
-        from agents.ingestion.deduplicator import DedupResult
+        from ingestion.deduplicator import DedupResult
 
         mock_dedup.return_value = DedupResult(new_records=[], duplicates_skipped=0)
 

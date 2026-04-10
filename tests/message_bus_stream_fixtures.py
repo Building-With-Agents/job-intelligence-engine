@@ -5,11 +5,11 @@ from __future__ import annotations
 import random
 from collections.abc import Iterable
 
-from agents.common.event_envelope import EventEnvelope
-from agents.ingestion.events import ingest_batch_payload
+from common.event_envelope import EventEnvelope
+from ingestion.events import ingest_batch_payload
 
 try:
-    from agents.common.events.ingest_batch_harness import (  # pragma: no cover
+    from common.events.ingest_batch_harness import (  # pragma: no cover
         generate_synthetic_ingest_batches as _harness_generator,
     )
 except ImportError:  # pragma: no cover

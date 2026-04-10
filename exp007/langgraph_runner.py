@@ -8,7 +8,7 @@ Uses TwoAgentPipelineState (same state for 2 or 3 agents) that carries
 the current EventEnvelope (as dict). Each node calls AgentBase.process().
 
 Run from repo root:
-    python agents/exp007/langgraph_runner.py
+    python exp007/langgraph_runner.py
 
 Or: run_three_agent_langgraph(raw_posting_dict) for full 3-agent run.
 """
@@ -21,16 +21,16 @@ from pathlib import Path
 
 import structlog
 
-# Path bootstrap: repo root on sys.path for "from agents.*" imports.
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# Path bootstrap: repo root on sys.path for "from *" imports.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.exp007.state import TwoAgentPipelineState  # noqa: E402
-from agents.ingestion.agent import IngestionAgent  # noqa: E402
-from agents.normalization.agent import NormalizationAgent  # noqa: E402
-from agents.skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from exp007.state import TwoAgentPipelineState  # noqa: E402
+from ingestion.agent import IngestionAgent  # noqa: E402
+from normalization.agent import NormalizationAgent  # noqa: E402
+from skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
 
 # LangGraph: StateGraph, START, END
 try:

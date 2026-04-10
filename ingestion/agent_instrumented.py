@@ -8,9 +8,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from agents.common.base_agent import AgentBase
-from agents.common.event_envelope import EventEnvelope
-from agents.common.tracer_base import TracerBase
+from common.base_agent import AgentBase
+from common.event_envelope import EventEnvelope
+from common.tracer_base import TracerBase
 
 _FIXTURES_DIR = Path(__file__).parent.parent / "data" / "fixtures"
 _FALLBACK_SCRAPE = _FIXTURES_DIR / "fallback_scrape_sample.json"

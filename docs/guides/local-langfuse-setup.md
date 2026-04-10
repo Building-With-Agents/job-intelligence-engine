@@ -5,7 +5,7 @@ Self-hosted Langfuse v3 for LLM observability, trace inspection, and dataset ann
 ## Prerequisites
 
 - Docker Desktop running
-- Python venv activated with `pip install -r agents/requirements.txt` (includes `langfuse>=2.0`)
+- Python venv activated with `pip install -r requirements.txt` (includes `langfuse>=2.0`)
 - Local PostgreSQL Docker container running (for agent pipeline data)
 
 ## 1. Start Langfuse Docker Services
@@ -70,7 +70,7 @@ python scripts/pg-seed-data/seed_agent_data.py
 ## 6. Run the Pipeline with Mock Traces
 
 ```bash
-python agents/scripts/run_processing_loop.py --max-iterations 2 --batch-size 5
+python scripts/run_processing_loop.py --max-iterations 2 --batch-size 5
 ```
 
 This will:
@@ -98,7 +98,7 @@ Each trace includes:
 Upload the 30 labeled ground truth records as a Langfuse dataset:
 
 ```bash
-python agents/scripts/upload_langfuse_dataset.py
+python scripts/upload_langfuse_dataset.py
 ```
 
 View the dataset in Langfuse UI under **Datasets > extraction-ground-truth-v1**.
@@ -108,7 +108,7 @@ View the dataset in Langfuse UI under **Datasets > extraction-ground-truth-v1**.
 To export changes made in Langfuse back to JSON:
 
 ```bash
-python agents/scripts/export_langfuse_dataset.py
+python scripts/export_langfuse_dataset.py
 ```
 
 ## 9. Switching Between Mock and Real LLM

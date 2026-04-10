@@ -1,6 +1,6 @@
 """Shared database infrastructure for all agents."""
 
-from agents.common.data_store.database import (
+from common.data_store.database import (
     check_db_connection,
     get_engine,
     get_session_factory,

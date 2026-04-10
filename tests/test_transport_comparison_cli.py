@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import io
 
-from agents.common.message_bus.comparison import (
+from common.message_bus.comparison import (
     ComparisonScenario,
     TransportComparisonResult,
 )
-from agents.common.message_bus.run_comparison import main, render_report
+from common.message_bus.run_comparison import main, render_report
 
 
 def test_cli_main_renders_markdown_report_to_stdout_buffer() -> None:

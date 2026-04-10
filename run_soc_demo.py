@@ -9,13 +9,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import select
 
-from agents.common.data_store.database import session_scope
-from agents.common.data_store.models import NormalizedJob
-from agents.common.llm_client import invoke_skills_llm
-from agents.common.types.job_profile import JobProfile
-from agents.common.types.job_record import JobRecord
-from agents.enrichment.classification import enrich_job_profile_soc
-from agents.enrichment.classifiers.soc_classifier import classify_soc, get_soc_candidates
+from common.data_store.database import session_scope
+from common.data_store.models import NormalizedJob
+from common.llm_client import invoke_skills_llm
+from common.types.job_profile import JobProfile
+from common.types.job_record import JobRecord
+from enrichment.classification import enrich_job_profile_soc
+from enrichment.classifiers.soc_classifier import classify_soc, get_soc_candidates
 
 
 def _load_env() -> None:

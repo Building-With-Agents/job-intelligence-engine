@@ -6,8 +6,8 @@ Azure API calls are made (avoids cost, latency, and flakiness in CI).
 
 from __future__ import annotations
 
-from agents.common.types import TaxonomyResult
-from agents.skills_extraction.extractors.taxonomy import (
+from common.types import TaxonomyResult
+from skills_extraction.extractors.taxonomy import (
     _load_genai_extension,
     resolution_report,
     resolution_stats,
@@ -91,21 +91,21 @@ class TestResolveTaxonomy:
 
         # Clear in-memory cache so _get_esco_embeddings re-loads
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_embedding_meta",
+            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
             None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_normalized_matrix",
+            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
             None,
         )
         # Mock DB load to return our fake matrix
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+            "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: (fake_meta, fake_matrix),
         )
         # Mock Azure API for query embedding (single label)
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._embed_texts_azure",
+            "skills_extraction.extractors.taxonomy._embed_texts_azure",
             _mock_embed_texts_azure,
         )
         monkeypatch.setenv("SKILL_TAXONOMY_SIMILARITY_THRESHOLD", "0.0")
@@ -118,7 +118,7 @@ class TestResolveTaxonomy:
     def test_step5_onet_match(self, monkeypatch) -> None:
         """Label that does not match steps 1–4 resolves at step 5 via O*NET (monkeypatched store)."""
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._get_onet_store",
+            "skills_extraction.extractors.taxonomy._get_onet_store",
             lambda: {"reading comprehension": ("2.A.1.a", "Reading Comprehension")},
         )
         r = resolve_taxonomy("Reading Comprehension")
@@ -149,11 +149,11 @@ class TestResolveTaxonomyBatch:
 
     def test_same_order_as_input(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+            "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._embed_texts_azure",
+            "skills_extraction.extractors.taxonomy._embed_texts_azure",
             _mock_embed_texts_azure,
         )
         labels = ["ABAP", "Unknown", "abap", "ABAP"]
@@ -173,19 +173,19 @@ class TestResolveTaxonomyBatch:
     def test_step5_in_batch(self, monkeypatch) -> None:
         """Batch resolves a label at step 5 when O*NET store is patched and step 4 is skipped."""
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_embedding_meta",
+            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
             None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_normalized_matrix",
+            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
             None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+            "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._get_onet_store",
+            "skills_extraction.extractors.taxonomy._get_onet_store",
             lambda: {"reading comprehension": ("2.A.1.a", "Reading Comprehension")},
         )
         labels = ["ABAP", "Reading Comprehension", "Unknown XYZ"]
@@ -204,11 +204,11 @@ class TestResolutionStats:
 
     def test_counts_all_steps(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+            "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._embed_texts_azure",
+            "skills_extraction.extractors.taxonomy._embed_texts_azure",
             _mock_embed_texts_azure,
         )
         labels = ["ABAP", "Unknown XYZ", "abap"]
@@ -219,11 +219,11 @@ class TestResolutionStats:
 
     def test_coverage_formula(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+            "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._embed_texts_azure",
+            "skills_extraction.extractors.taxonomy._embed_texts_azure",
             _mock_embed_texts_azure,
         )
         results = resolve_taxonomy_batch(["ABAP", "Unknown", "abap"])
@@ -236,15 +236,15 @@ class TestResolutionStats:
     def test_resolution_report_shape(self, monkeypatch) -> None:
         """Skip embedding + O*NET so one label is step 2 and one is step 6."""
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_embedding_meta",
+            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
             None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._esco_normalized_matrix",
+            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
             None,
         )
         monkeypatch.setattr(
-            "agents.skills_extraction.extractors.taxonomy._get_onet_store",
+            "skills_extraction.extractors.taxonomy._get_onet_store",
             lambda: {},
         )
         results = resolve_taxonomy_batch(["ABAP", "Some Unknown Skill XYZ 123"])

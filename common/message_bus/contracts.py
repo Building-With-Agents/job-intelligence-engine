@@ -14,7 +14,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TypeAlias, cast
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 EVENT_TYPE_KEY = "event_type"
 MAX_EVENT_TYPE_LENGTH = 128

@@ -45,12 +45,12 @@ Detect **near-duplicate job postings** after enrichment promotion using **embedd
 
 | Piece               | Location                                                                   |
 | ------------------- | -------------------------------------------------------------------------- |
-| Algorithm           | `agents/enrichment/dedup/fuzzy_dedup.py` — `run_fuzzy_dedup`               |
-| Embeddings + audit  | `agents/skills_extraction/extractors/taxonomy.py` — `_embed_texts_azure`   |
-| Result type         | `agents/enrichment/dedup/types.py` — `FuzzyDedupResult`                    |
-| DB writes for flags | `agents/enrichment/job_postings_promotion.py` — `apply_fuzzy_dedup_result` |
-| Migrations          | `agents/common/data_store/migrations.py`                                   |
-| Detail              | `agents/enrichment/dedup/CONTEXT.md`                                       |
+| Algorithm           | `enrichment/dedup/fuzzy_dedup.py` — `run_fuzzy_dedup`               |
+| Embeddings + audit  | `skills_extraction/extractors/taxonomy.py` — `_embed_texts_azure`   |
+| Result type         | `enrichment/dedup/types.py` — `FuzzyDedupResult`                    |
+| DB writes for flags | `enrichment/job_postings_promotion.py` — `apply_fuzzy_dedup_result` |
+| Migrations          | `common/data_store/migrations.py`                                   |
+| Detail              | `enrichment/dedup/CONTEXT.md`                                       |
 
 
 ## Issue completion matrix
@@ -70,31 +70,31 @@ Detect **near-duplicate job postings** after enrichment promotion using **embedd
 | Day 29 vs day 31 boundary behaves correctly | **Done** | Covered in env-gated matching E2E and replay cases. |
 | Track false-positive and false-negative rates | **Done** | `dedup_threshold_calibration.py` + labeled cases + committed JSON report + findings doc. |
 | Log every embedding API call to `dbo.llm_audit_log` | **Done** | Shared `_embed_texts_azure(..., audit_agent_name="enrichment-dedup")` path writes one audit row per HTTP attempt. |
-| Write one-page findings doc | **Done** | Supporting artifact at `agents/docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md`. |
-| Run `pytest agents/tests/ -v` with no regressions | **Done** | Final out-of-sandbox repo sweep: `237 passed, 2 warnings`. |
+| Write one-page findings doc | **Done** | Supporting artifact at `docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md`. |
+| Run `pytest tests/ -v` with no regressions | **Done** | Final out-of-sandbox repo sweep: `237 passed, 2 warnings`. |
 
 ## Testing
 
 
 | Layer             | What                                                                              | Command / note                                                            |
 | ----------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Unit (dedup)**  | Mocked SQL + `_embed_texts_azure`; threshold, window, completeness, embed failure, dedup audit-agent propagation | `pytest agents/enrichment/tests/test_fuzzy_dedup.py`                      |
-| **Unit (calibration)** | Labeled replay math, FP/FN accounting, scope gating, findings rendering | `pytest agents/enrichment/tests/test_dedup_calibration.py` |
-| **Unit (promotion)** | `FuzzyDedupResult` persistence, dedup-after-promotion wiring; after merge with `development`, also temporal/Borderplex params on promotion `UPDATE` | `pytest agents/enrichment/tests/test_job_postings_promotion.py`           |
-| **E2E matching**  | Real Postgres + Azure embeddings; 29d vs 31d window, near-dup vs different text, and live `llm_audit_log` insertion for `agent_name='enrichment-dedup'` | `pytest agents/tests/test_fuzzy_dedup_matching_e2e.py -m fuzzy_dedup_e2e` |
-| **E2E promotion** | Real DB + `EnrichmentAgent`; `run_fuzzy_dedup` mocked; asserts flag persistence   | `pytest agents/tests/test_fuzzy_dedup_promotion_e2e.py`                   |
+| **Unit (dedup)**  | Mocked SQL + `_embed_texts_azure`; threshold, window, completeness, embed failure, dedup audit-agent propagation | `pytest enrichment/tests/test_fuzzy_dedup.py`                      |
+| **Unit (calibration)** | Labeled replay math, FP/FN accounting, scope gating, findings rendering | `pytest enrichment/tests/test_dedup_calibration.py` |
+| **Unit (promotion)** | `FuzzyDedupResult` persistence, dedup-after-promotion wiring; after merge with `development`, also temporal/Borderplex params on promotion `UPDATE` | `pytest enrichment/tests/test_job_postings_promotion.py`           |
+| **E2E matching**  | Real Postgres + Azure embeddings; 29d vs 31d window, near-dup vs different text, and live `llm_audit_log` insertion for `agent_name='enrichment-dedup'` | `pytest tests/test_fuzzy_dedup_matching_e2e.py -m fuzzy_dedup_e2e` |
+| **E2E promotion** | Real DB + `EnrichmentAgent`; `run_fuzzy_dedup` mocked; asserts flag persistence   | `pytest tests/test_fuzzy_dedup_promotion_e2e.py`                   |
 
 ## Validation Findings
 
 ### What We Tested
 
-- Promotion persistence/unit path with fabricated `FuzzyDedupResult` inputs, dedup-after-promotion wiring, and temporal/Borderplex column binding checks in `agents/enrichment/tests/test_job_postings_promotion.py` (the latter shared with the merged `development` enrichment promotion surface).
-- Matching/unit path in `agents/enrichment/tests/test_fuzzy_dedup.py`, including threshold checks, half-open 30-day window params, survivor completeness arbitration, cached-vector reuse, and cold-start survivor backfill.
+- Promotion persistence/unit path with fabricated `FuzzyDedupResult` inputs, dedup-after-promotion wiring, and temporal/Borderplex column binding checks in `enrichment/tests/test_job_postings_promotion.py` (the latter shared with the merged `development` enrichment promotion surface).
+- Matching/unit path in `enrichment/tests/test_fuzzy_dedup.py`, including threshold checks, half-open 30-day window params, survivor completeness arbitration, cached-vector reuse, and cold-start survivor backfill.
 - Audit contract at the dedup call site: `_embed_texts_azure(..., audit_agent_name="enrichment-dedup")` for both current-row embedding and lazy survivor backfill.
 - The shared helper now records one `llm_audit_log` row per embedding HTTP attempt, not only successful responses. Failed/rate-limited attempts are logged with `success = false`; `cost_usd` is computed from embedding token usage when the provider returns it.
-- Live-path E2E coverage in `agents/tests/test_fuzzy_dedup_matching_e2e.py` now includes a real `llm_audit_log` assertion, not just dedup state assertions.
+- Live-path E2E coverage in `tests/test_fuzzy_dedup_matching_e2e.py` now includes a real `llm_audit_log` assertion, not just dedup state assertions.
 - Scenario coverage already checked into env-gated E2E tests:
-  `agents/tests/test_fuzzy_dedup_matching_e2e.py` covers 29 vs 31 days, same-company different content, different companies, and repost merges.
+  `tests/test_fuzzy_dedup_matching_e2e.py` covers 29 vs 31 days, same-company different content, different companies, and repost merges.
 
 ### What We Found
 
@@ -124,22 +124,22 @@ Detect **near-duplicate job postings** after enrichment promotion using **embedd
 
 ### Data / Evidence
 
-- 2026-04-01: `./agents/.venv/bin/python -m pytest agents/enrichment/tests/test_fuzzy_dedup.py -q` → `14 passed`
-- 2026-04-01 (pre–`development` merge): `./agents/.venv/bin/python -m pytest agents/enrichment/tests/test_job_postings_promotion.py -q` → `11 passed` (fuzzy-dedup promotion tests only).
+- 2026-04-01: `./.venv/bin/python -m pytest enrichment/tests/test_fuzzy_dedup.py -q` → `14 passed`
+- 2026-04-01 (pre–`development` merge): `./.venv/bin/python -m pytest enrichment/tests/test_job_postings_promotion.py -q` → `11 passed` (fuzzy-dedup promotion tests only).
 - After merge with `development`: the same module grows to **`17 passed`** — the original fuzzy-dedup/promotion cases plus six tests that assert `temporal_period` / `borderplex_subregion` are bound on promotion `UPDATE`s (dedup path mocked so `execute` counts stay stable).
-- 2026-04-01 inside sandbox: `./agents/.venv/bin/python agents/scripts/db_check.py tables` → failed with `could not translate host name "pg-jobintel-cfa-dev.postgres.database.azure.com" to address`
-- 2026-04-01 outside sandbox: `./agents/.venv/bin/python agents/scripts/db_check.py tables` → succeeded against the real Azure DB
-- 2026-04-01 outside sandbox: `./agents/.venv/bin/python agents/scripts/db_check.py migrate` → `Migrations complete`
-- 2026-04-01 outside sandbox: `./agents/.venv/bin/python -m pytest agents/tests/test_fuzzy_dedup_matching_e2e.py -q` → `6 passed`
-- 2026-04-01 outside sandbox: `./agents/.venv/bin/python -m pytest agents/tests/test_fuzzy_dedup_promotion_e2e.py -q` → `1 passed`
-- 2026-04-02: `./agents/.venv/bin/python -m pytest agents/enrichment/tests/test_company_resolver.py -v` → `17 passed`
-- 2026-04-02: `./agents/.venv/bin/python -m pytest agents/tests/test_fuzzy_dedup_promotion_e2e.py -v` → `1 passed`
-- 2026-04-02: `./agents/.venv/bin/python -m pytest agents/tests/ -v` → `217 passed, 5 skipped, 2 warnings`
-- 2026-04-03 outside sandbox: `./agents/.venv/bin/python agents/scripts/db_check.py migrate` → `Migrations complete`
-- 2026-04-03 outside sandbox: `./agents/.venv/bin/python -m pytest agents/tests/test_database.py -q` → `5 passed, 1 warning`
-- 2026-04-03 outside sandbox: `./agents/.venv/bin/python -m pytest agents/tests/test_fuzzy_dedup_matching_e2e.py agents/tests/test_fuzzy_dedup_promotion_e2e.py -q` → `7 passed`
-- 2026-04-03 outside sandbox: `./agents/.venv/bin/python -m pytest agents/tests/ -v` → `237 passed, 2 warnings`
-- 2026-04-03 outside sandbox: `./agents/.venv/bin/python -m agents.scripts.dedup_threshold_calibration` → wrote `agents/data/reports/dedup_threshold_calibration.json` and `agents/docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md`
+- 2026-04-01 inside sandbox: `./.venv/bin/python scripts/db_check.py tables` → failed with `could not translate host name "pg-jobintel-cfa-dev.postgres.database.azure.com" to address`
+- 2026-04-01 outside sandbox: `./.venv/bin/python scripts/db_check.py tables` → succeeded against the real Azure DB
+- 2026-04-01 outside sandbox: `./.venv/bin/python scripts/db_check.py migrate` → `Migrations complete`
+- 2026-04-01 outside sandbox: `./.venv/bin/python -m pytest tests/test_fuzzy_dedup_matching_e2e.py -q` → `6 passed`
+- 2026-04-01 outside sandbox: `./.venv/bin/python -m pytest tests/test_fuzzy_dedup_promotion_e2e.py -q` → `1 passed`
+- 2026-04-02: `./.venv/bin/python -m pytest enrichment/tests/test_company_resolver.py -v` → `17 passed`
+- 2026-04-02: `./.venv/bin/python -m pytest tests/test_fuzzy_dedup_promotion_e2e.py -v` → `1 passed`
+- 2026-04-02: `./.venv/bin/python -m pytest tests/ -v` → `217 passed, 5 skipped, 2 warnings`
+- 2026-04-03 outside sandbox: `./.venv/bin/python scripts/db_check.py migrate` → `Migrations complete`
+- 2026-04-03 outside sandbox: `./.venv/bin/python -m pytest tests/test_database.py -q` → `5 passed, 1 warning`
+- 2026-04-03 outside sandbox: `./.venv/bin/python -m pytest tests/test_fuzzy_dedup_matching_e2e.py tests/test_fuzzy_dedup_promotion_e2e.py -q` → `7 passed`
+- 2026-04-03 outside sandbox: `./.venv/bin/python -m pytest tests/ -v` → `237 passed, 2 warnings`
+- 2026-04-03 outside sandbox: `./.venv/bin/python -m scripts.dedup_threshold_calibration` → wrote `data/reports/dedup_threshold_calibration.json` and `docs/week 6/FINDINGS-fuzzy-dedup-bryan-emilio.md`
 - 2026-04-03 calibration replay summary:
   - `0.88` → `TP=5`, `FP=0`, `TN=7`, `FN=0`, `FPR=0.000`, `FNR=0.000`
   - `0.92` → `TP=3`, `FP=0`, `TN=7`, `FN=2`, `FPR=0.000`, `FNR=0.400`
@@ -150,13 +150,13 @@ Detect **near-duplicate job postings** after enrichment promotion using **embedd
 - **Operational:** Requires `AZURE_OPENAI_EMBEDDING_`*; embedding outages leave rows as non-duplicates for that run (no global reset).
 - **Availability bias:** Best-effort dedup favors enrichment availability over strict dedup consistency on every run.
 - **Lazy backfill cost:** Backfilling same-company, in-window survivors improves cold-start recall, but adds embedding cost during historical comparisons.
-- **Tooling warning:** SQLAlchemy can emit `SAWarning: Did not recognize type 'vector'` when reflecting `job_postings` columns that include `dedup_embedding`. The enrichment E2E helpers (`agents/tests/db_seed_enrichment_e2e.py`, `agents/tests/fuzzy_dedup_e2e_helpers.py`) filter that warning around `inspect.get_columns` so pytest output stays clean; other ad-hoc reflection may still log the warning. It does not block migrations or live test execution.
+- **Tooling warning:** SQLAlchemy can emit `SAWarning: Did not recognize type 'vector'` when reflecting `job_postings` columns that include `dedup_embedding`. The enrichment E2E helpers (`tests/db_seed_enrichment_e2e.py`, `tests/fuzzy_dedup_e2e_helpers.py`) filter that warning around `inspect.get_columns` so pytest output stays clean; other ad-hoc reflection may still log the warning. It does not block migrations or live test execution.
 - **Calibration scope:** The labeled replay is now part of the checked-in toolchain, but it is still a curated sample rather than a full production backfill.
 - **Not a substitute** for ingestion dedup: fingerprint dedup still drops exact repeats at `raw_ingested_jobs`.
 
 ## References
 
 - `docs/planning/ARCHITECTURE_DEEP.md` — enrichment / dedup
-- `agents/scripts/dedup_metrics_report.py` — optional HTML metrics from DB
-- `agents/scripts/dedup_threshold_calibration.py` — labeled FP/FN replay
-- `agents/data/reports/dedup_threshold_calibration.json` — committed calibration evidence
+- `scripts/dedup_metrics_report.py` — optional HTML metrics from DB
+- `scripts/dedup_threshold_calibration.py` — labeled FP/FN replay
+- `data/reports/dedup_threshold_calibration.json` — committed calibration evidence

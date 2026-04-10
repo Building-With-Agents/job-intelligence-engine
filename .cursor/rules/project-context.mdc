@@ -10,7 +10,7 @@ alwaysApply: true
 Dual-stack repository:
 
 - **Root (`/`)** — Next.js / TypeScript / Prisma web application. **Read-only from the agent pipeline perspective.**
-- **`agents/`** — Python 3.11 (pinned) eight-agent pipeline that ingests, normalizes, enriches, and analyzes external job postings. **This is the active development focus.**
+- **This repo** — Python 3.11 (pinned) eight-agent pipeline that ingests, normalizes, enriches, and analyzes external job postings. **This is the active development focus.**
 
 ## Canonical Documentation
 
@@ -33,7 +33,7 @@ Read these before implementing anything — they are the source of truth:
 
 ## Boundary — Do NOT Modify These
 
-Unless explicitly instructed, never modify files outside `agents/`:
+Unless explicitly instructed, never modify files outside this repo:
 
 - `app/`, `lib/`, `types/`, `public/`, `emails/`, `scripts/`
 - `prisma/schema.prisma` (read-only reference for Python agents)
@@ -59,24 +59,24 @@ Unless explicitly instructed, never modify files outside `agents/`:
 
 ## Commands
 
-- `cd agents && pip install -r requirements.txt` — Install Python dependencies
-- `cd agents && pytest tests/` — Run all tests
-- `cd agents && pytest <agent>/tests/` — Run single agent tests (e.g., `pytest ingestion/tests/`)
-- `cd agents && pytest -x -v` — Run tests, stop on first failure
-- `streamlit run agents/dashboard/streamlit_app.py` — Launch dashboard
-- `python -m agents.orchestration.scheduler` — Run full pipeline
-- `python -m agents.ingestion.agent --source jsearch --limit 50` — Run single agent
-- `cd agents && ruff check .` — Lint Python code
-- `cd agents && ruff format .` — Format Python code
+- `pip install -r requirements.txt` — Install Python dependencies
+- `pytest tests/` — Run all tests
+- `pytest <agent>/tests/` — Run single agent tests (e.g., `pytest ingestion/tests/`)
+- `pytest -x -v` — Run tests, stop on first failure
+- `streamlit run dashboard/streamlit_app.py` — Launch dashboard
+- `python -m orchestration.scheduler` — Run full pipeline
+- `python -m ingestion.agent --source jsearch --limit 50` — Run single agent
+- `ruff check .` — Lint Python code
+- `ruff format .` — Format Python code
 
 ## Phase 1 vs Phase 2
 
 **Phase 1 agents (implement):** Ingestion, Normalization, Skills Extraction, Enrichment (lite), Analytics, Visualization, Orchestration
 
 **Phase 2 (scaffold only — do NOT implement):**
-- `agents/demand_analysis/` — entire agent
-- `agents/orchestration/circuit_breaker/`
-- `agents/orchestration/saga/`
-- `agents/orchestration/admin_api/`
-- `agents/enrichment/resolvers/` — company/geo/labor-market lookups
+- `demand_analysis/` — entire agent
+- `orchestration/circuit_breaker/`
+- `orchestration/saga/`
+- `orchestration/admin_api/`
+- `enrichment/resolvers/` — company/geo/labor-market lookups
 - External message bus migration

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from agents.common.types import ExtractionMetadata, SkillRecord, SpanRecord, ToolRecord
+from common.types import ExtractionMetadata, SkillRecord, SpanRecord, ToolRecord
 
 
 def test_span_record_accepts_legacy_char_aliases() -> None:

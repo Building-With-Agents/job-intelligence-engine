@@ -2,8 +2,8 @@
 Run a single job through the Skills Extraction Agent and generate an HTML timeline.
 
 Usage:
-  python -m agents.scripts.run_skills_extraction_timeline
-  python -m agents.scripts.run_skills_extraction_timeline --mock
+  python -m scripts.run_skills_extraction_timeline
+  python -m scripts.run_skills_extraction_timeline --mock
 
 --mock: Use mocked extract_skills (no Azure LLM). Produces example metrics in the HTML.
 """
@@ -20,12 +20,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Repo root on sys.path for agents
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agents.common.event_envelope import EventEnvelope
-from agents.skills_extraction.agent import (
+from common.event_envelope import EventEnvelope
+from skills_extraction.agent import (
     ExtractionResult,
     ExtractionStore,
     SkillsExtractionAgent,
@@ -416,7 +416,7 @@ def main() -> int:
     if args.mock:
         from unittest.mock import patch
 
-        from agents.common.types import SkillRecord, SpanRecord
+        from common.types import SkillRecord, SpanRecord
 
         mock_skill = SkillRecord(
             label="Python",
@@ -434,7 +434,7 @@ def main() -> int:
             "provider": "azure-openai",
             "model": "sonnet",
         }
-        with patch("agents.skills_extraction.agent.extract_skills") as mock_extract:
+        with patch("skills_extraction.agent.extract_skills") as mock_extract:
             mock_extract.return_value = ([mock_skill], mock_meta)
             out_envelope = agent.process(input_envelope)
     else:

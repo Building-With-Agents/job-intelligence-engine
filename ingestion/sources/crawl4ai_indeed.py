@@ -29,9 +29,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.common.types.region_config import RegionConfig
-from agents.ingestion.sources.base_adapter import SourceAdapter
+from common.types.raw_job_record import RawJobRecord
+from common.types.region_config import RegionConfig
+from ingestion.sources.base_adapter import SourceAdapter
 
 log = structlog.get_logger()
 

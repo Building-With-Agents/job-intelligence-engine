@@ -9,8 +9,8 @@ Prerequisites:
   - Optional: PYTHON_DATABASE_URL to stage records to raw_ingested_jobs
 
 Usage (from repo root):
-  python agents/run_ingestion.py
-  python agents/run_ingestion.py --location "El Paso, TX" --limit 5
+  python run_ingestion.py
+  python run_ingestion.py --location "El Paso, TX" --limit 5
 
 From agents directory:
   python run_ingestion.py
@@ -26,11 +26,11 @@ from pathlib import Path
 
 import structlog
 
-from agents.common.event_envelope import EventEnvelope
-from agents.ingestion.agent import IngestionAgent
-from agents.ingestion.sources.jsearch_adapter import JSEARCH_BASE_URL
+from common.event_envelope import EventEnvelope
+from ingestion.agent import IngestionAgent
+from ingestion.sources.jsearch_adapter import JSEARCH_BASE_URL
 
-# Repo root on path for "from agents.*"
+# Repo root on path for "from *"
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))

@@ -2,7 +2,7 @@
 """Verify the extraction ground truth dataset.
 
 Usage (from repo root with venv activated):
-    python agents/scripts/test_ground_truth.py
+    python scripts/test_ground_truth.py
 """
 
 from __future__ import annotations
@@ -11,13 +11,13 @@ import json
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 
 def main() -> int:
-    gt_path = Path("agents/eval/extraction_ground_truth.json")
+    gt_path = Path("eval/extraction_ground_truth.json")
     if not gt_path.exists():
         print(f"ERROR: {gt_path} not found")
         return 1

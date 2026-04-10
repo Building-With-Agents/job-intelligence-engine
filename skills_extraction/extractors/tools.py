@@ -20,7 +20,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from agents.common.types import JobRecord, SpanRecord, ToolRecord
+from common.types import JobRecord, SpanRecord, ToolRecord
 
 FIELD_PRIORITY = {
     "title": 0,

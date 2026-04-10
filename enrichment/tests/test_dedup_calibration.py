@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from math import sqrt
 
-from agents.enrichment.dedup.calibration import (
+from enrichment.dedup.calibration import (
     CalibrationCase,
     CalibrationPosting,
     generate_calibration_report,
@@ -104,7 +104,7 @@ def test_generate_calibration_report_tracks_fp_and_fn_rates() -> None:
 
     report = generate_calibration_report(
         cases,
-        source_path="agents/eval/dedup_threshold_calibration_cases.json",
+        source_path="eval/dedup_threshold_calibration_cases.json",
         thresholds=[0.92],
         default_threshold=0.92,
         audit_agent_name="enrichment-dedup-calibration",
@@ -157,7 +157,7 @@ def test_render_findings_markdown_includes_required_sections() -> None:
 
     report = generate_calibration_report(
         cases,
-        source_path="agents/eval/dedup_threshold_calibration_cases.json",
+        source_path="eval/dedup_threshold_calibration_cases.json",
         thresholds=[0.9, 0.92],
         default_threshold=0.92,
         embed_texts=fake_embed,

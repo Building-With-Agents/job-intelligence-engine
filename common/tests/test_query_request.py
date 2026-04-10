@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.common.types.query_request import QueryPersona, QueryRequest
+from common.types.query_request import QueryPersona, QueryRequest
 
 
 def test_query_request_defaults() -> None:

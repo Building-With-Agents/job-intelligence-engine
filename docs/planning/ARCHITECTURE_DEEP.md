@@ -25,7 +25,7 @@
 /                              ← Next.js app root (DO NOT MODIFY)
 ├── app/
 ├── prisma/schema.prisma       ← Read-only from Python
-└── agents/
+└── (repo root)
     ├── ingestion/
     │   ├── agent.py
     │   ├── sources/           ← jsearch_adapter.py, scraper_adapter.py
@@ -266,7 +266,7 @@ class EnrichedJobProfile(BaseModel):
 
 **Nestor + Fatima (locked names):** `soc_code`, `naics_code`, and nested employer enrichment (pair canonical name **`employer`** / typed **`EmployerProfile`**). Full registry and SOC lookup normalization cross-refs: `.cursor/rules/integration-schema.mdc`.
 
-**Implementation today:** `agents/enrichment/schemas.py` uses `job_record: dict[...]`, `employer_profile: dict[str, Any] | None`, plus `soc_code` / `naics_code` — see integration rule for the **`employer` vs `employer_profile`** TODO.
+**Implementation today:** `enrichment/schemas.py` uses `job_record: dict[...]`, `employer_profile: dict[str, Any] | None`, plus `soc_code` / `naics_code` — see integration rule for the **`employer` vs `employer_profile`** TODO.
 
 ### Analytics Schemas
 
@@ -359,7 +359,7 @@ class JobRecord(BaseModel):
 ## Agent Specifications
 
 ### 1. Ingestion Agent
-**File:** `agents/ingestion/agent.py` | **Emits:** `IngestBatch` | **Writes to:** `raw_ingested_jobs`
+**File:** `ingestion/agent.py` | **Emits:** `IngestBatch` | **Writes to:** `raw_ingested_jobs`
 
 **Phase 1 responsibilities:**
 - Poll JSearch via `httpx`; scrape via Crawl4AI [Tool #12 — reference implementation]
@@ -383,14 +383,14 @@ class JobRecord(BaseModel):
 
 The monolithic `pipeline_runner.py` chains all agents in a single pass, which couples ingestion throughput (API budget/rate-limited) to processing throughput (LLM rate-limited). The **flywheel pattern** decouples these into two independent loops connected via the database as a queue:
 
-**Loop 1 — Batch Ingest** (`agents/scripts/batch_ingest.py`):
-- Reads query configuration from `agents/config/ingestion_queries.yaml`
+**Loop 1 — Batch Ingest** (`scripts/batch_ingest.py`):
+- Reads query configuration from `config/ingestion_queries.yaml`
 - Rotates API keys (`JSEARCH_API_KEY`, `JSEARCH_API_KEY_2`) when budget is exhausted or 429 received
 - Stages raw records to `raw_ingested_jobs` with `processing_status = 'pending'`
 - Does NOT trigger downstream processing — ingestion only
 - Supports `--dry-run` (show plan without API calls) and `--delay` (seconds between queries)
 
-**Loop 2 — Paced Processing** (`agents/scripts/run_processing_loop.py`):
+**Loop 2 — Paced Processing** (`scripts/run_processing_loop.py`):
 - Polls `raw_ingested_jobs` (pending) and `normalized_jobs` (unextracted) in a loop
 - Each iteration: Normalize → Skills Extraction → Enrichment
 - Pauses between iterations (`--delay`) to manage LLM rate limits
@@ -402,7 +402,7 @@ This separation allows bulk ingestion (hundreds of API calls) to run independent
 ---
 
 ### 2. Normalization Agent
-**File:** `agents/normalization/agent.py` | **Consumes:** `IngestBatch` | **Emits:** `NormalizationComplete` | **Writes to:** `normalized_jobs`
+**File:** `normalization/agent.py` | **Consumes:** `IngestBatch` | **Emits:** `NormalizationComplete` | **Writes to:** `normalized_jobs`
 
 **Phase 1 responsibilities:**
 - Map source fields → `JobRecord` via per-source field mappers
@@ -427,7 +427,7 @@ This separation allows bulk ingestion (hundreds of API calls) to run independent
 ---
 
 ### 3. Work Intelligence Agent *(formerly Skills Extraction Agent)*
-**File:** `agents/skills_extraction/agent.py` (directory kept for git history) | **Consumes:** `NormalizationComplete` | **Emits:** `SkillsExtracted` | **Writes to:** `extracted_intelligence`
+**File:** `skills_extraction/agent.py` (directory kept for git history) | **Consumes:** `NormalizationComplete` | **Emits:** `SkillsExtracted` | **Writes to:** `extracted_intelligence`
 
 **Phase 1 responsibilities:**
 
@@ -491,7 +491,7 @@ This separation allows bulk ingestion (hundreds of API calls) to run independent
 ---
 
 ### 4. Enrichment Agent
-**File:** `agents/enrichment/agent.py` | **Consumes:** `SkillsExtracted` | **Emits:** `RecordEnriched` | **Writes to:** `job_postings`
+**File:** `enrichment/agent.py` | **Consumes:** `SkillsExtracted` | **Emits:** `RecordEnriched` | **Writes to:** `job_postings`
 
 #### Phase 1 — Full (implement now)
 
@@ -543,7 +543,7 @@ This separation allows bulk ingestion (hundreds of API calls) to run independent
 
 #### `RecordEnriched` event shapes (Pair D — integration)
 
-Canonical key sets and cross-pair DB field registry: **`.cursor/rules/integration-schema.mdc`** and `agents/enrichment/resolvers/record_enriched_contract.py`.
+Canonical key sets and cross-pair DB field registry: **`.cursor/rules/integration-schema.mdc`** and `enrichment/resolvers/record_enriched_contract.py`.
 
 | Shape | Trigger | Contents |
 |-------|---------|----------|
@@ -578,7 +578,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 ---
 
 ### 5. Analytics Agent
-**File:** `agents/analytics/agent.py` | **Consumes:** `RecordEnriched` | **Emits:** `AnalyticsRefreshed`, `EmergenceAlert`, `DisruptionRefreshed`
+**File:** `analytics/agent.py` | **Consumes:** `RecordEnriched` | **Emits:** `AnalyticsRefreshed`, `EmergenceAlert`, `DisruptionRefreshed`
 **Exposes:** `POST /analytics/query` (REST) [Contract #18 — reference implementation]
 
 > **Phase 2 note:** In Phase 2, the Analytics Agent absorbs Demand Analysis capabilities (time-series indexing, velocity windows 7d/30d/90d, 30-day demand forecasts, anomaly detection with significance testing, TrajectoryRecord projections). Q&A migrates out to the standalone Query Agent (Agent 9). The `persona` field is added to the query API in Week 6 for forward-compatibility — Phase 1 ignores it; Phase 2 Query Agent uses it for response routing.
@@ -680,7 +680,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 ---
 
 ### 6. Visualization Agent
-**File:** `agents/visualization/agent.py` + `agents/dashboard/streamlit_app.py`
+**File:** `visualization/agent.py` + `dashboard/streamlit_app.py`
 **Consumes:** `AnalyticsRefreshed`, `DisruptionRefreshed`, `DemandSignalsUpdated` (Phase 2)
 **Emits:** `RenderComplete` | **DB:** Read-only SQLAlchemy
 
@@ -723,7 +723,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 ---
 
 ### 7. Orchestration Agent
-**File:** `agents/orchestration/agent.py` | **Framework:** LangGraph StateGraph [Tool #13/#16] + APScheduler [Fixed]
+**File:** `orchestration/agent.py` | **Framework:** LangGraph StateGraph [Tool #13/#16] + APScheduler [Fixed]
 
 #### Phase 1 — Basic (implement now)
 - Master run schedule; trigger pipeline steps in sequence
@@ -764,7 +764,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 ---
 
 ### 8. Demand Analysis *(Phase 2 — capabilities absorbed into Analytics Agent expansion)*
-**File:** `agents/demand_analysis/agent.py` | **Consumes:** `RecordEnriched`, `AnalyticsRefreshed` | **Emits:** `DemandSignalsUpdated`, `DemandAnomaly`
+**File:** `demand_analysis/agent.py` | **Consumes:** `RecordEnriched`, `AnalyticsRefreshed` | **Emits:** `DemandSignalsUpdated`, `DemandAnomaly`
 
 **Phase 2 scope (enriched from client spec):**
 - Time-series index: skill, role, industry, region — aligned with CanonicalRole clustering from Analytics
@@ -787,12 +787,12 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 | Anomaly precision | ≥ 80% |
 | Trajectory confidence calibration | Within ±10% |
 
-> **Architecture note:** The Demand Analysis capabilities listed above are absorbed into the Analytics Agent in Phase 2. The `agents/demand_analysis/` scaffold directory is repurposed for the Query Agent. This avoids a 10-agent system — demand analysis is analytics-domain work (same data sources, same aggregate tables). See Agent 9 below.
+> **Architecture note:** The Demand Analysis capabilities listed above are absorbed into the Analytics Agent in Phase 2. The `demand_analysis/` scaffold directory is repurposed for the Query Agent. This avoids a 10-agent system — demand analysis is analytics-domain work (same data sources, same aggregate tables). See Agent 9 below.
 
 ---
 
 ### 9. Query Agent *(Phase 2 — standalone workforce intelligence Q&A)*
-**File:** `agents/query/agent.py` | **Consumes:** `AnalyticsRefreshed`, `DisruptionRefreshed` | **Emits:** `QueryResponse`
+**File:** `query/agent.py` | **Consumes:** `AnalyticsRefreshed`, `DisruptionRefreshed` | **Emits:** `QueryResponse`
 
 **Phase 2 scope:**
 - Standalone workforce intelligence Q&A agent — migrates Q&A responsibility out of the Analytics Agent
@@ -849,7 +849,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 
 ## Database Schema Extensions
 
-> **SQLAlchemy is the single database authority.** All tables are agent-managed. Prisma is being phased out. Reference tables (companies, industry_sectors, technology_areas, skills, socc) are seeded via pgloader and agent-owned with full read+write. See `agents/common/data_store/models.py` for ORM definitions.
+> **SQLAlchemy is the single database authority.** All tables are agent-managed. Prisma is being phased out. Reference tables (companies, industry_sectors, technology_areas, skills, socc) are seeded via pgloader and agent-owned with full read+write. See `common/data_store/models.py` for ORM definitions.
 
 ```sql
 -- Enrichment columns on job_postings (SQLAlchemy migration — Prisma deprecated)

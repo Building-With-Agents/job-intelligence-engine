@@ -8,9 +8,9 @@ from typing import TypedDict
 
 import structlog
 
-from agents.analytics.insights.freshness import PostingFreshnessResult
-from agents.analytics.insights.trajectory import TrajectoryEntry
-from agents.common.llm_adapter import complete
+from analytics.insights.freshness import PostingFreshnessResult
+from analytics.insights.trajectory import TrajectoryEntry
+from common.llm_adapter import complete
 
 log = structlog.get_logger()
 

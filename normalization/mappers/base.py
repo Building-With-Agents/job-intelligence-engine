@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from agents.common.types.job_record import JobRecord
-from agents.common.types.raw_job_record import RawJobRecord
+from common.types.job_record import JobRecord
+from common.types.raw_job_record import RawJobRecord
 
 
 class MapperBase(ABC):

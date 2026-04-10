@@ -9,12 +9,12 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import cast
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.ingest_batch_harness import generate_synthetic_ingest_batches
-from agents.common.message_bus.base import EventBusBase
-from agents.common.message_bus.kafka import KafkaHandlerExecutionError
-from agents.common.message_bus.redis_streams import HandlerExecutionError
-from agents.normalization.events import normalization_complete_payload
+from common.event_envelope import EventEnvelope
+from common.events.ingest_batch_harness import generate_synthetic_ingest_batches
+from common.message_bus.base import EventBusBase
+from common.message_bus.kafka import KafkaHandlerExecutionError
+from common.message_bus.redis_streams import HandlerExecutionError
+from normalization.events import normalization_complete_payload
 
 
 @dataclass(frozen=True, slots=True)

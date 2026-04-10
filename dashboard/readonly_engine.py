@@ -1,6 +1,6 @@
 """Read-only SQLAlchemy engine for the Streamlit dashboard.
 
-Separate singleton from ``agents.common.data_store.get_engine`` so the dashboard
+Separate singleton from ``common.data_store.get_engine`` so the dashboard
 does not share the pipeline writer pool. Connections use PostgreSQL
 ``default_transaction_read_only=on`` so accidental writes fail fast.
 

@@ -9,9 +9,9 @@ so ``SQLAlchemyExtractionStore`` persists one row per job.
 
 Usage (repo root, venv activated):
 
-    python agents/scripts/populate_week5_records.py
-    python agents/scripts/populate_week5_records.py --limit 20 --sequential
-    python agents/scripts/populate_week5_records.py --batch --limit 20
+    python scripts/populate_week5_records.py
+    python scripts/populate_week5_records.py --limit 20 --sequential
+    python scripts/populate_week5_records.py --batch --limit 20
 """
 
 from __future__ import annotations
@@ -23,19 +23,19 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from sqlalchemy import select  # noqa: E402
 
-from agents.common.data_store.database import check_db_connection, session_scope  # noqa: E402
-from agents.common.data_store.models import ExtractedIntelligence, NormalizedJob  # noqa: E402
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.common.types import JobRecord  # noqa: E402
-from agents.skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
+from common.data_store.database import check_db_connection, session_scope  # noqa: E402
+from common.data_store.models import ExtractedIntelligence, NormalizedJob  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from common.types import JobRecord  # noqa: E402
+from skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
 
 
 def _normalized_job_to_job_record(row: NormalizedJob) -> JobRecord:

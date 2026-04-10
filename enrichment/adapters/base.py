@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from agents.enrichment.adapters.models import OccupationProfile, RegionalProfile, SOCMatch, WageEstimate
+from enrichment.adapters.models import OccupationProfile, RegionalProfile, SOCMatch, WageEstimate
 
 
 class AbstractBLSAdapter(ABC):

@@ -2,7 +2,7 @@
 test_tracer.py — Observability test suite.
 
 Run with:
-    cd agents
+    
     pytest common/tests/test_tracer.py -v
 """
 
@@ -13,12 +13,12 @@ import uuid
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.observability.langfuse import LangfuseTracer
-from agents.common.observability.otel_tracer import OTelTracer
-from agents.common.observability.structlog_tracer import StructlogTracer
-from agents.common.tracer_base import TracerBase
-from agents.ingestion.agent_instrumented import InstrumentedIngestionAgent
+from common.event_envelope import EventEnvelope
+from common.observability.langfuse import LangfuseTracer
+from common.observability.otel_tracer import OTelTracer
+from common.observability.structlog_tracer import StructlogTracer
+from common.tracer_base import TracerBase
+from ingestion.agent_instrumented import InstrumentedIngestionAgent
 
 TRACER_KINDS = ["structlog", "langfuse", "otel"]
 

@@ -19,11 +19,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import JobRecord
-from agents.skills_extraction.extractors.responsibilities import _ResponsibilitiesLLMRoot
-from agents.skills_extraction.extractors.skills import _LLMSkill, _SkillsLLMRoot
-from agents.skills_extraction.extractors.tasks import _TasksLLMRoot
+from common.event_envelope import EventEnvelope
+from common.types import JobRecord
+from skills_extraction.extractors.responsibilities import _ResponsibilitiesLLMRoot
+from skills_extraction.extractors.skills import _LLMSkill, _SkillsLLMRoot
+from skills_extraction.extractors.tasks import _TasksLLMRoot
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -98,7 +98,7 @@ async def _slow_skills_invoke(*_args, **_kwargs):
 def test_intra_job_parallel_faster_than_serial() -> None:
     """Three intra-job LLM calls (tasks + responsibilities + skills) must run
     concurrently: wall time ≈ 1× latency, not 3× latency."""
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     item = _make_work_item(1)
     mock_loader = MagicMock()
@@ -130,19 +130,19 @@ def test_intra_job_parallel_faster_than_serial() -> None:
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_tracked_tasks),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_tracked_resp),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_tracked_skills),
         ),
         patch(
-            "agents.skills_extraction.agent.resolve_taxonomy_batch",
+            "skills_extraction.agent.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
     ):
@@ -171,7 +171,7 @@ def test_intra_job_parallel_faster_than_serial() -> None:
 def test_inter_job_parallel_faster_than_serial(n_jobs: int, concurrency: int) -> None:
     """N jobs processed with concurrency C must complete in roughly N/C × per-job
     time, not N × per-job time (serial)."""
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     items = [_make_work_item(i) for i in range(n_jobs)]
     mock_loader = MagicMock()
@@ -182,19 +182,19 @@ def test_inter_job_parallel_faster_than_serial(n_jobs: int, concurrency: int) ->
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_slow_tasks_invoke),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_slow_resp_invoke),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_slow_skills_invoke),
         ),
         patch(
-            "agents.skills_extraction.agent.resolve_taxonomy_batch",
+            "skills_extraction.agent.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
         patch.dict("os.environ", {"SKILLS_EXTRACTION_CONCURRENCY": str(concurrency)}),
@@ -225,7 +225,7 @@ def test_inter_job_parallel_faster_than_serial(n_jobs: int, concurrency: int) ->
 
 def test_failed_dimension_does_not_block_other_dimensions() -> None:
     """A 429 on tasks must not prevent responsibilities and skills from returning results."""
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     item = _make_work_item(1)
     mock_loader = MagicMock()
@@ -268,23 +268,23 @@ def test_failed_dimension_does_not_block_other_dimensions() -> None:
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_fail_tasks),
         ),
         patch(
-            "agents.skills_extraction.extractors.tasks.asyncio.sleep",
+            "skills_extraction.extractors.tasks.asyncio.sleep",
             new=AsyncMock(),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=_slow_resp_invoke),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(skills_root, _dim_meta())),
         ),
         patch(
-            "agents.skills_extraction.agent.resolve_taxonomy_batch",
+            "skills_extraction.agent.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
     ):

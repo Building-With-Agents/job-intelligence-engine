@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import create_engine, select
 
-from agents.analytics.aggregators import co_occurrence as co
-from agents.analytics.aggregators import demand_weekly as dw
+from analytics.aggregators import co_occurrence as co
+from analytics.aggregators import demand_weekly as dw
 
 
 def test_extract_cooccurrence_pairs_runbook_shape() -> None:
@@ -104,7 +104,7 @@ def test_refresh_skill_co_occurrence_db_smoke() -> None:
     from sqlalchemy.orm import Session
 
     load_dotenv()
-    from agents.common.data_store.database import get_engine
+    from common.data_store.database import get_engine
 
     with Session(get_engine()) as session:
         n = co.refresh_skill_co_occurrence(session, date(2025, 1, 6))

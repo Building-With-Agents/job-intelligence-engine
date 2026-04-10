@@ -4,9 +4,9 @@
 Reads from a fixture or list of posting IDs and prints selected IDs (e.g. 30–50)
 for human labeling. Usage:
 
-  python -m agents.skills_extraction.scripts.select_ground_truth_postings
-  python -m agents.skills_extraction.scripts.select_ground_truth_postings --limit 40
-  python -m agents.skills_extraction.scripts.select_ground_truth_postings --fixture path/to/fixture.json
+  python -m skills_extraction.scripts.select_ground_truth_postings
+  python -m skills_extraction.scripts.select_ground_truth_postings --limit 40
+  python -m skills_extraction.scripts.select_ground_truth_postings --fixture path/to/fixture.json
 
 Output: one posting_id per line, suitable for feeding into an eval labeling workflow.
 """

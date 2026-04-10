@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.demand_analysis.agent import DemandAnalysisAgent
+from common.event_envelope import EventEnvelope
+from demand_analysis.agent import DemandAnalysisAgent
 
 
 class TestDemandAnalysisAgent:

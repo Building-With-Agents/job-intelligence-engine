@@ -1,6 +1,6 @@
 """Skills extraction prompt v1 — versioned for Exercise 4.5 iteration.
 
-Document changes in agents/eval/prompt_iteration_log.md.
+Document changes in eval/prompt_iteration_log.md.
 """
 
 from __future__ import annotations

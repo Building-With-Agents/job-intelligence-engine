@@ -25,5 +25,5 @@
 - **§2 / trajectory:** Note the **SQLAlchemy** scaffold uses **`role_id` + `trajectory_data` JSON**, while **`trajectory.py`** uses skill/sector **string keys** for the pure **`build_trajectory_map`** helper — cross-link both.
 
 ## Data / Evidence
-- **Tests:** Last full sweep **`agents/tests/`**: **257 passed**, **6 skipped** (warnings only: LangSmith, SQLAlchemy legacy `Query.get`, pgvector reflect).
+- **Tests:** Last full sweep **`tests/`**: **257 passed**, **6 skipped** (warnings only: LangSmith, SQLAlchemy legacy `Query.get`, pgvector reflect).
 - **Sample:** Fixture-driven **`AnalyticsRefreshed`** unchanged for demos; step 10 typically **does not** emit cardinality alerts unless **>500** distinct skill labels appear on the batch (rare in fixtures).

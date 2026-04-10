@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`agents.analytics.aggregators.salary_percentiles`."""
+"""Unit tests for :mod:`analytics.aggregators.salary_percentiles`."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agents.analytics.aggregators.salary_percentiles import compute_salary_percentiles
-from agents.analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
+from analytics.aggregators.salary_percentiles import compute_salary_percentiles
+from analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
 
 
 def _pg_session() -> MagicMock:
@@ -150,7 +150,7 @@ def test_refresh_role_snapshot_weekly_uses_shared_salary_helper(monkeypatch: pyt
         }
 
     monkeypatch.setattr(
-        "agents.analytics.canonical_roles.snapshots.compute_salary_percentiles",
+        "analytics.canonical_roles.snapshots.compute_salary_percentiles",
         fake_compute_salary_percentiles,
     )
 

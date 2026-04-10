@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Import after env may be patched
-from agents.skills_extraction.extractors.taxonomy import _embed_texts_azure
+from skills_extraction.extractors.taxonomy import _embed_texts_azure
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def embedding_env() -> dict[str, str]:
     }
 
 
-@patch("agents.common.llm_adapter.log_extraction_event")
+@patch("common.llm_adapter.log_extraction_event")
 def test_embed_texts_azure_logs_audit_on_success(
     mock_log: MagicMock,
     embedding_env: dict[str, str],
@@ -43,7 +43,7 @@ def test_embed_texts_azure_logs_audit_on_success(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "agents.skills_extraction.extractors.taxonomy.httpx.Client",
+            "skills_extraction.extractors.taxonomy.httpx.Client",
             return_value=mock_cm,
         ),
     ):
@@ -63,7 +63,7 @@ def test_embed_texts_azure_logs_audit_on_success(
     assert kwargs["latency_ms"] >= 0
 
 
-@patch("agents.common.llm_adapter.log_extraction_event")
+@patch("common.llm_adapter.log_extraction_event")
 def test_embed_texts_azure_audit_uses_total_tokens_when_no_prompt_tokens(
     mock_log: MagicMock,
     embedding_env: dict[str, str],
@@ -85,7 +85,7 @@ def test_embed_texts_azure_audit_uses_total_tokens_when_no_prompt_tokens(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "agents.skills_extraction.extractors.taxonomy.httpx.Client",
+            "skills_extraction.extractors.taxonomy.httpx.Client",
             return_value=mock_cm,
         ),
     ):
@@ -96,7 +96,7 @@ def test_embed_texts_azure_audit_uses_total_tokens_when_no_prompt_tokens(
     assert kwargs["prompt"] == "a\nb"
 
 
-@patch("agents.common.llm_adapter.log_extraction_event")
+@patch("common.llm_adapter.log_extraction_event")
 def test_embed_texts_azure_logs_failed_attempts_on_rate_limit(
     mock_log: MagicMock,
     embedding_env: dict[str, str],
@@ -115,10 +115,10 @@ def test_embed_texts_azure_logs_failed_attempts_on_rate_limit(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "agents.skills_extraction.extractors.taxonomy.httpx.Client",
+            "skills_extraction.extractors.taxonomy.httpx.Client",
             return_value=mock_cm,
         ),
-        patch("agents.skills_extraction.extractors.taxonomy.time.sleep"),
+        patch("skills_extraction.extractors.taxonomy.time.sleep"),
     ):
         out = _embed_texts_azure(["hello"], audit_agent_name="enrichment-dedup")
 

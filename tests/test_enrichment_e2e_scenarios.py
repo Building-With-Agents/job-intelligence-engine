@@ -5,7 +5,7 @@ Azure/OpenAI (or configured provider), and ``pytest --live``.
 
 **Run (see logs on stdout):**
 
-    cd agents
+    
     pytest tests/test_enrichment_e2e_scenarios.py --live -s
 
 No LLM mocks — classifiers and spam preview call real endpoints.
@@ -34,12 +34,12 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 
-from agents.common.event_envelope import EventEnvelope
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.classifiers.employer_classifier import AUDIT_AGENT_EMPLOYER
-from agents.enrichment.classifiers.naics_classifier import AUDIT_AGENT_NAICS
-from agents.enrichment.classifiers.spam_preview import AUDIT_AGENT_SPAM_PREVIEW
-from agents.tests.db_seed_enrichment_e2e import (
+from common.event_envelope import EventEnvelope
+from enrichment.agent import EnrichmentAgent
+from enrichment.classifiers.employer_classifier import AUDIT_AGENT_EMPLOYER
+from enrichment.classifiers.naics_classifier import AUDIT_AGENT_NAICS
+from enrichment.classifiers.spam_preview import AUDIT_AGENT_SPAM_PREVIEW
+from tests.db_seed_enrichment_e2e import (
     EnrichmentE2ESeed,
     seed_enrichment_e2e,
     teardown_enrichment_e2e,
@@ -49,7 +49,7 @@ log = logging.getLogger("enrichment_e2e_scenarios")
 
 pytestmark = pytest.mark.live_llm
 
-# SOC resolution logs under this name (see ``agents.enrichment.agent._enrichment_soc_llm``).
+# SOC resolution logs under this name (see ``enrichment.agent._enrichment_soc_llm``).
 AUDIT_AGENT_SOC = "enrichment-agent"
 
 # Expected enrichment classifiers / spam preview (for ordered logging and soft checks).
@@ -190,7 +190,7 @@ def scenarios_e2e_engine() -> Engine:
 def _scenarios_require_uuid_employer_profiles(scenarios_e2e_engine: Engine) -> None:
     insp = inspect(scenarios_e2e_engine)
     if not insp.has_table("employer_profiles", schema="dbo"):
-        pytest.skip("dbo.employer_profiles missing — run agents/scripts/db_check.py migrate")
+        pytest.skip("dbo.employer_profiles missing — run scripts/db_check.py migrate")
     with scenarios_e2e_engine.connect() as conn:
         dt = conn.execute(
             text(

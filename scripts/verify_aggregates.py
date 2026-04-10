@@ -3,7 +3,7 @@
 
 Compares the **sum of ``posting_count``** over all skills for a target ISO week to
 the same quantity recomputed from raw enriched data using the same logic as
-``agents.analytics.aggregators.demand_weekly._SKILLS_EXPANDED`` (per-skill
+``analytics.aggregators.demand_weekly._SKILLS_EXPANDED`` (per-skill
 ``COUNT(DISTINCT job_posting_id)``, then summed). Those two totals must match
 within **0.5%** (IMP-021 aggregate accuracy).
 
@@ -15,18 +15,18 @@ code uses the **reconciled** sum comparison only.
 
 **Run locally** (repo root)::
 
-    PYTHONPATH=. python agents/scripts/verify_aggregates.py
+    PYTHONPATH=. python scripts/verify_aggregates.py
 
 Optional week: pass a **real** Monday as ISO ``YYYY-MM-DD`` (do **not** type the
 placeholder letters ``YYYY-MM-DD``)::
 
-    PYTHONPATH=. python agents/scripts/verify_aggregates.py --week 2025-01-06
+    PYTHONPATH=. python scripts/verify_aggregates.py --week 2025-01-06
 
 List Mondays that have Step-2-eligible expanded skill rows (same joins/filters as
 ``_SKILLS_EXPANDED``, **no** week filter) — use this to pick ``--week``::
 
-    PYTHONPATH=. python agents/scripts/verify_aggregates.py --list-weeks
-    PYTHONPATH=. python agents/scripts/verify_aggregates.py --list-weeks --list-limit 50
+    PYTHONPATH=. python scripts/verify_aggregates.py --list-weeks
+    PYTHONPATH=. python scripts/verify_aggregates.py --list-weeks --list-limit 50
 
 Requires ``PYTHON_DATABASE_URL`` and (for spam bound) the same env as production
 (``SPAM_REJECT_THRESHOLD`` defaults via ``get_spam_thresholds()``).
@@ -41,7 +41,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # Path bootstrap (repo root on sys.path)
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -65,10 +65,10 @@ structlog.configure(
 )
 from sqlalchemy import func, select, text  # noqa: E402
 
-from agents.analytics.aggregators.demand_weekly import _SKILLS_EXPANDED  # noqa: E402
-from agents.common.data_store.database import session_scope  # noqa: E402
-from agents.common.data_store.models import SkillDemandWeekly  # noqa: E402
-from agents.enrichment.classifiers.spam_preview import get_spam_thresholds  # noqa: E402
+from analytics.aggregators.demand_weekly import _SKILLS_EXPANDED  # noqa: E402
+from common.data_store.database import session_scope  # noqa: E402
+from common.data_store.models import SkillDemandWeekly  # noqa: E402
+from enrichment.classifiers.spam_preview import get_spam_thresholds  # noqa: E402
 
 log = structlog.get_logger()
 

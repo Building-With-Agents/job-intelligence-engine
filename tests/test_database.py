@@ -16,9 +16,9 @@ from sqlalchemy import MetaData, Table, create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.database import get_engine as _get_engine
-from agents.common.data_store.migrations import run_migrations
-from agents.common.data_store.models import LLMAuditLog
+from common.data_store.database import get_engine as _get_engine
+from common.data_store.migrations import run_migrations
+from common.data_store.models import LLMAuditLog
 
 
 def run_migration() -> None:

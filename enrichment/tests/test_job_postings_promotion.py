@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.enrichment.dedup.types import FuzzyDedupResult
-from agents.enrichment.job_postings_promotion import (
+from enrichment.dedup.types import FuzzyDedupResult
+from enrichment.job_postings_promotion import (
     apply_enrichment_to_job_postings,
     apply_fuzzy_dedup_result,
 )
@@ -237,11 +237,11 @@ def test_apply_enrichment_to_job_postings_calls_dedup_for_non_rejected_tiers(
 
     with (
         patch(
-            "agents.enrichment.job_postings_promotion.resolve_job_posting_row",
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
             return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
         ),
-        patch("agents.enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_result) as mock_run,
-        patch("agents.enrichment.job_postings_promotion.apply_fuzzy_dedup_result", return_value=True) as mock_apply,
+        patch("enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_result) as mock_run,
+        patch("enrichment.job_postings_promotion.apply_fuzzy_dedup_result", return_value=True) as mock_apply,
     ):
         applied = apply_enrichment_to_job_postings(
             session,
@@ -259,10 +259,10 @@ def test_apply_enrichment_to_job_postings_skips_dedup_for_rejected_tier() -> Non
 
     with (
         patch(
-            "agents.enrichment.job_postings_promotion.resolve_job_posting_row",
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
             return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
         ),
-        patch("agents.enrichment.job_postings_promotion.run_fuzzy_dedup") as mock_run,
+        patch("enrichment.job_postings_promotion.run_fuzzy_dedup") as mock_run,
     ):
         applied = apply_enrichment_to_job_postings(
             session,
@@ -280,10 +280,10 @@ def test_apply_enrichment_to_job_postings_logs_and_continues_on_dedup_failure() 
 
     with (
         patch(
-            "agents.enrichment.job_postings_promotion.resolve_job_posting_row",
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
             return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
         ),
-        patch("agents.enrichment.job_postings_promotion.run_fuzzy_dedup", side_effect=RuntimeError("boom")),
+        patch("enrichment.job_postings_promotion.run_fuzzy_dedup", side_effect=RuntimeError("boom")),
     ):
         applied = apply_enrichment_to_job_postings(
             session,
@@ -312,8 +312,8 @@ def _apply_with_resolved_row_for_temporal_borderplex(resolved_row: dict[str, obj
         stub=False,
     )
     with (
-        patch("agents.enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_result),
-        patch("agents.enrichment.job_postings_promotion.apply_fuzzy_dedup_result", return_value=True),
+        patch("enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_result),
+        patch("enrichment.job_postings_promotion.apply_fuzzy_dedup_result", return_value=True),
     ):
         out = apply_enrichment_to_job_postings(
             session,

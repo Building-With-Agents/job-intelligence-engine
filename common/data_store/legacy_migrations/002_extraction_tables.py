@@ -1,7 +1,7 @@
 """**LEGACY — optional standalone script (not the canonical migration path).**
 
 Removed in commit ``65b81b2b315b97aefdde0c60aee97f1af45fa1ae`` when extraction DDL
-was folded into consolidated ``run_migrations`` (``agents/common/data_store/migrations.py``).
+was folded into consolidated ``run_migrations`` (``common/data_store/migrations.py``).
 Restored under ``legacy_migrations/`` for compatibility (old ``migrations/002_*.py`` path
 conflicts with the ``migrations.py`` module). Prefer ``run_migrations(get_engine())`` for greenfield DBs.
 

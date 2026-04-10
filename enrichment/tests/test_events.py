@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from agents.enrichment.resolvers.events import (
+from enrichment.resolvers.events import (
     RECORD_ENRICHED_SCHEMA_VERSION,
     build_record_enriched_event,
 )
-from agents.enrichment.resolvers.record_enriched_contract import (
+from enrichment.resolvers.record_enriched_contract import (
     RECORD_ENRICHED_BATCH_PAYLOAD_KEYS,
     RECORD_ENRICHED_DEDUP_BLOCK_KEYS,
 )

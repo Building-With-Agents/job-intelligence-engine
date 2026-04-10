@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TextIO
 
-from agents.common.message_bus.candidate_factories import build_transport_candidates
-from agents.common.message_bus.comparison import (
+from common.message_bus.candidate_factories import build_transport_candidates
+from common.message_bus.comparison import (
     ComparisonScenario,
     TransportComparisonResult,
     compare_transport_candidates,

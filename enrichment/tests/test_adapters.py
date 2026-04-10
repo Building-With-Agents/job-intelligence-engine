@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
-from agents.enrichment.adapters import (
+from enrichment.adapters import (
     MockBLSAdapter,
     MockCensusAdapter,
     MockONETAdapter,

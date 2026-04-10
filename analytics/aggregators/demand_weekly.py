@@ -1,6 +1,6 @@
 """Refresh weekly skill and tool demand aggregate tables (Analytics steps 2 and 3).
 
-Lives under ``agents.analytics.aggregators`` per CLAUDE.md / ARCHITECTURE_DEEP.
+Lives under ``analytics.aggregators`` per CLAUDE.md / ARCHITECTURE_DEEP.
 
 Source rows: ``extracted_intelligence`` JSONB (skills/tools), joined to
 ``normalized_jobs`` → ``job_postings`` → ``companies`` for spam gating and
@@ -22,8 +22,8 @@ import structlog
 from sqlalchemy import Date, DateTime, Text, column, delete, func, insert, literal, select, text
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import SkillDemandWeekly, ToolDemandWeekly
-from agents.enrichment.classifiers.spam_preview import get_spam_thresholds
+from common.data_store.models import SkillDemandWeekly, ToolDemandWeekly
+from enrichment.classifiers.spam_preview import get_spam_thresholds
 
 log = structlog.get_logger()
 

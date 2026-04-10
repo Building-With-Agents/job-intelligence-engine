@@ -43,7 +43,7 @@ from sqlalchemy import create_engine, delete, text  # noqa: E402
 from sqlalchemy.engine import Engine  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from agents.common.data_store.models import NAICS  # noqa: E402
+from common.data_store.models import NAICS  # noqa: E402
 
 # Official Census workbook column headers (pandas preserves internal spacing).
 _EXCEL_CODE_COL = "2022 NAICS US   Code"

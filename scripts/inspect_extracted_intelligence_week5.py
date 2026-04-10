@@ -8,8 +8,8 @@ say ``context_signals`` but the DB column name is ``context``).
 
 Usage (repo root, venv activated, ``PYTHON_DATABASE_URL`` set):
 
-    python agents/scripts/inspect_extracted_intelligence_week5.py
-    python agents/scripts/inspect_extracted_intelligence_week5.py --limit 5 --summary-only
+    python scripts/inspect_extracted_intelligence_week5.py
+    python scripts/inspect_extracted_intelligence_week5.py --limit 5 --summary-only
 
 Why ``pipeline_runner.py`` might show empty Week 5 fields
 ---------------------------------------------------------
@@ -35,16 +35,16 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from sqlalchemy import select  # noqa: E402
 
-from agents.common.data_store.database import check_db_connection, session_scope  # noqa: E402
-from agents.common.data_store.models import ExtractedIntelligence  # noqa: E402
+from common.data_store.database import check_db_connection, session_scope  # noqa: E402
+from common.data_store.models import ExtractedIntelligence  # noqa: E402
 
 
 def _is_empty(value: object) -> bool:

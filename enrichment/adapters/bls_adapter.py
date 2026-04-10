@@ -13,8 +13,8 @@ import asyncio
 
 import structlog
 
-from agents.enrichment.adapters.base import AbstractBLSAdapter
-from agents.enrichment.adapters.models import WageEstimate
+from enrichment.adapters.base import AbstractBLSAdapter
+from enrichment.adapters.models import WageEstimate
 
 log = structlog.get_logger()
 

@@ -1,7 +1,7 @@
 """Skill pair co-occurrence aggregates (Analytics step 9).
 
 Join path and spam/dedup/extraction filters match
-:mod:`agents.analytics.aggregators.demand_weekly` (``_SKILLS_EXPANDED``).
+:mod:`analytics.aggregators.demand_weekly` (``_SKILLS_EXPANDED``).
 
 Per posting, skills are deduped, sorted, capped at 20, then unordered pairs are
 counted with **lexicographic** ``skill_a < skill_b`` so each pair appears once
@@ -19,9 +19,9 @@ import structlog
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
-from agents.analytics.aggregators.demand_weekly import _SKILLS_EXPANDED
-from agents.common.data_store.models import SkillCoOccurrence
-from agents.enrichment.classifiers.spam_preview import get_spam_thresholds
+from analytics.aggregators.demand_weekly import _SKILLS_EXPANDED
+from common.data_store.models import SkillCoOccurrence
+from enrichment.classifiers.spam_preview import get_spam_thresholds
 
 log = structlog.get_logger()
 

@@ -12,7 +12,7 @@ Loads 30 eval records, builds ``JobRecord``, runs ``extract_context``.
 
 Usage (repo root, venv active)::
 
-    python agents/scripts/debug_context_metrics.py
+    python scripts/debug_context_metrics.py
 """
 # ruff: noqa: T201
 
@@ -26,15 +26,15 @@ from pathlib import Path
 
 import structlog
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.types import ContextSignal, JobRecord
-from agents.skills_extraction.extractors.context import extract_context
+from common.types import ContextSignal, JobRecord
+from skills_extraction.extractors.context import extract_context
 
-_EVAL_PATH = _REPO_ROOT / "agents/eval/extraction_ground_truth.json"
-_MANUAL_PATH = _REPO_ROOT / "agents/eval/fatima_context_temp.json"
+_EVAL_PATH = _REPO_ROOT / "eval/extraction_ground_truth.json"
+_MANUAL_PATH = _REPO_ROOT / "eval/fatima_context_temp.json"
 
 _STATE_ABB = {
     "texas": "TX",

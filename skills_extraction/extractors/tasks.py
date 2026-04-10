@@ -16,21 +16,21 @@ from typing import Any
 import structlog
 from pydantic import BaseModel, Field
 
-from agents.common.llm_client import (
+from common.llm_client import (
     ainvoke_structured_extraction_llm,
     invoke_structured_extraction_llm,
 )
-from agents.common.types import ContextSignal, JobRecord, TaskRecord
-from agents.skills_extraction.extractors._retry import (
+from common.types import ContextSignal, JobRecord, TaskRecord
+from skills_extraction.extractors._retry import (
     RATE_LIMIT_BACKOFF_SECS,
 )
-from agents.skills_extraction.extractors._retry import (
+from skills_extraction.extractors._retry import (
     is_rate_limited as _is_rate_limited,
 )
-from agents.skills_extraction.extractors._retry import (
+from skills_extraction.extractors._retry import (
     merge_retry_metadata as _merge_retry_metadata,
 )
-from agents.skills_extraction.extractors.context import _format_pass1_context_for_prompt
+from skills_extraction.extractors.context import _format_pass1_context_for_prompt
 
 log = structlog.get_logger()
 

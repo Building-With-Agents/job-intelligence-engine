@@ -22,7 +22,7 @@ Environment variables consumed by later modules in this package:
 - ``EMERGENCE_MIN_DISTINCT_EMPLOYERS`` (default ``2``)
 """
 
-from agents.analytics.clustering.config import (
+from analytics.clustering.config import (
     DEFAULT_CLUSTER_DISTANCE_METRIC,
     DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME,
     DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE,
@@ -44,21 +44,21 @@ from agents.analytics.clustering.config import (
     emergence_min_novel_skills,
     emergence_min_quality_score,
 )
-from agents.analytics.clustering.embeddings import (
+from analytics.clustering.embeddings import (
     embed_posting_features,
     embed_prepared_clustering_texts,
 )
-from agents.analytics.clustering.emergence import detect_emergence_candidates
-from agents.analytics.clustering.labeling import label_clusters
-from agents.analytics.clustering.pipeline import run_clustering, run_clustering_pipeline
-from agents.analytics.clustering.text import (
+from analytics.clustering.emergence import detect_emergence_candidates
+from analytics.clustering.labeling import label_clusters
+from analytics.clustering.pipeline import run_clustering, run_clustering_pipeline
+from analytics.clustering.text import (
     build_clustering_text,
     build_clustering_texts,
     clustering_text_hash,
     prepare_clustering_text,
     prepare_clustering_texts,
 )
-from agents.analytics.clustering.types import (
+from analytics.clustering.types import (
     ClusteredPosting,
     ClusteringResult,
     ClusterSummary,

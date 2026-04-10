@@ -6,9 +6,9 @@ Requires ``PYTHON_DATABASE_URL`` and Azure embedding env vars
 
 Run (repo root)::
 
-    pytest agents/tests/test_fuzzy_dedup_matching_e2e.py -m fuzzy_dedup_e2e -v
+    pytest tests/test_fuzzy_dedup_matching_e2e.py -m fuzzy_dedup_e2e -v
 
-Or from ``agents/``::
+Or from repo root::
 
     pytest tests/test_fuzzy_dedup_matching_e2e.py -m fuzzy_dedup_e2e -v
 """
@@ -23,8 +23,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-from agents.tests.db_seed_enrichment_e2e import seed_enrichment_e2e, teardown_enrichment_e2e
-from agents.tests.fuzzy_dedup_e2e_helpers import (
+from tests.db_seed_enrichment_e2e import seed_enrichment_e2e, teardown_enrichment_e2e
+from tests.fuzzy_dedup_e2e_helpers import (
     SecondCompany,
     add_normalized_job_and_extracted,
     anchor_now,

@@ -2,16 +2,16 @@
 
 Queries ``dbo.extracted_intelligence`` and ``dbo.llm_audit_log``, resolves
 model tiers for Azure deployment names, prints Markdown tables for pasting
-into ``agents/eval/cost_audit_week5.md`` (§3b, §6) or for records.
+into ``eval/cost_audit_week5.md`` (§3b, §6) or for records.
 
 Usage (repo root, venv, ``PYTHON_DATABASE_URL`` set):
 
-    python -m agents.eval.cost_audit_week5_report
-    python -m agents.eval.cost_audit_week5_report --since 2026-03-01
+    python -m eval.cost_audit_week5_report
+    python -m eval.cost_audit_week5_report --since 2026-03-01
 
 Optional comparison baseline (USD per successful EI row) for the >20% flag::
 
-    python -m agents.eval.cost_audit_week5_report --baseline-per-record 0.0114
+    python -m eval.cost_audit_week5_report --baseline-per-record 0.0114
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "agents"))
 
 from dotenv import load_dotenv
@@ -32,8 +32,8 @@ load_dotenv(REPO_ROOT / ".env")
 import structlog
 from sqlalchemy import text
 
-from agents.common.data_store.database import get_engine
-from agents.eval.cost_tier import resolve_llm_audit_model_tier
+from common.data_store.database import get_engine
+from eval.cost_tier import resolve_llm_audit_model_tier
 
 log = structlog.get_logger()
 

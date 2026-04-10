@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from agents.enrichment.classification import classify_job
-from agents.enrichment.classifiers.quality import score_quality
+from enrichment.classification import classify_job
+from enrichment.classifiers.quality import score_quality
 
 
 def build_extraction_dict(

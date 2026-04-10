@@ -18,10 +18,10 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-from agents.common.types.raw_job_record import RawJobRecord
+from common.types.raw_job_record import RawJobRecord
 
 # Load .env from repo root so JSEARCH_API_KEY is available when set there
-_repo_root = Path(__file__).resolve().parent.parent.parent.parent
+_repo_root = Path(__file__).resolve().parent.parent.parent
 load_dotenv(_repo_root / ".env")
 
 TARGET_COUNT = 200

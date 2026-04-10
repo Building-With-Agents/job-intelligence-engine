@@ -10,14 +10,14 @@ All commands assume you are at the **repo root** with the Python venv activated.
 
 ```powershell
 cd C:\Users\garyl\repos\cfa-projects\building-with-agents-curriculum\watechcoalition
-agents\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
 **Linux / macOS:**
 
 ```bash
-cd ~/repos/cfa-projects/building-with-agents-curriculum/watechcoalition
-source agents/.venv/bin/activate
+cd ~/repos/cfa-projects/building-with-agents-curriculum/job-intelligence-engine
+source .venv/bin/activate
 ```
 
 ---
@@ -44,8 +44,8 @@ source agents/.venv/bin/activate
 ### Prerequisites
 
 1. Your `.env` has `PYTHON_DATABASE_URL` pointing to the seeded database (cloud or local)
-2. Venv is activated and dependencies are installed (`pip install -r agents/requirements.txt`)
-3. Database is reachable: `python agents/scripts/db_check.py tables`
+2. Venv is activated and dependencies are installed (`pip install -r requirements.txt`)
+3. Database is reachable: `python scripts/db_check.py tables`
 4. Docker services running for Langfuse: `docker compose up -d`
 
 ### Step 1 — Confirm upstream data is present
@@ -53,7 +53,7 @@ source agents/.venv/bin/activate
 Run the Week 06 verification first to ensure the pipeline's upstream tables are populated:
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 **Expected output (seeded data):**
@@ -83,25 +83,25 @@ python scripts/pg-seed-data/seed_pg_database.py
 
 ```bash
 # Skill demand aggregates
-python agents/scripts/db_check.py query "SELECT skill_label, posting_count FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10"
+python scripts/db_check.py query "SELECT skill_label, posting_count FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10"
 
 # Role snapshot
-python agents/scripts/db_check.py query "SELECT role_title, posting_count, median_salary FROM dbo.role_snapshot_weekly ORDER BY posting_count DESC LIMIT 5"
+python scripts/db_check.py query "SELECT role_title, posting_count, median_salary FROM dbo.role_snapshot_weekly ORDER BY posting_count DESC LIMIT 5"
 
 # Insight summaries
-python agents/scripts/db_check.py query "SELECT id, summary_type, is_llm_generated, created_at FROM dbo.insight_summary ORDER BY created_at DESC LIMIT 5"
+python scripts/db_check.py query "SELECT id, summary_type, is_llm_generated, created_at FROM dbo.insight_summary ORDER BY created_at DESC LIMIT 5"
 ```
 
 **Pair A — automated aggregate checks (IMP-021):** After refreshing aggregates for a chosen anchor Monday (Analytics Agent steps 2–3 then 8, or your pair’s equivalent), run:
 
 ```bash
-PYTHONPATH=. python agents/scripts/verify_aggregates.py --list-weeks
-PYTHONPATH=. python agents/scripts/verify_aggregates.py --week <YYYY-MM-DD>   # Monday
+PYTHONPATH=. python scripts/verify_aggregates.py --list-weeks
+PYTHONPATH=. python scripts/verify_aggregates.py --week <YYYY-MM-DD>   # Monday
 
-PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week <YYYY-MM-DD>
+PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week <YYYY-MM-DD>
 # Optional filters:
-# PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week <Monday> --only skills,tools
-# PYTHONPATH=. python agents/scripts/verify_analytics_aggregates.py --week <Monday> --only velocity,cooccurrence
+# PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week <Monday> --only skills,tools
+# PYTHONPATH=. python scripts/verify_analytics_aggregates.py --week <Monday> --only velocity,cooccurrence
 ```
 
 Worked examples and notes live in [docs/findings/week-07-skill-tool-demand-findings.md](../../../docs/findings/week-07-skill-tool-demand-findings.md).
@@ -126,10 +126,10 @@ Navigate to **Tracing** in the Langfuse UI. If the processing loop has been run 
 
 ```bash
 # The seeded DB is fully processed (pending: 0) — roll back 3 jobs first
-python agents/scripts/reset_sample_jobs.py
+python scripts/reset_sample_jobs.py
 
 # Then run with real LLM for real traces (or LLM_PROVIDER=mock if no API keys)
-python agents/scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
 ```
 
 Then refresh the Tracing page.
@@ -139,7 +139,7 @@ Then refresh the Tracing page.
 Navigate to **Datasets** in the Langfuse UI. If the ground truth has been uploaded, you should see `extraction-ground-truth-v1`. If not:
 
 ```bash
-python agents/scripts/upload_langfuse_dataset.py
+python scripts/upload_langfuse_dataset.py
 ```
 
 Then refresh the Datasets page and confirm the item count matches your ground truth file.
@@ -172,7 +172,7 @@ The Analytics Agent also generates weekly insight summaries using LLM calls. Wit
 
 Langfuse receives traces from all LLM calls in the pipeline. Every call to `invoke_skills_llm()`, `invoke_structured_extraction_llm()`, or `complete()` is wrapped in a Langfuse generation span when a tracer is registered. Traces show full prompt input, model output, token counts, costs, and timing.
 
-Langfuse also serves as the dataset and annotation platform. Ground truth data from `agents/eval/extraction_ground_truth.json` is uploaded as a Langfuse dataset for review, annotation, and eval run tracking.
+Langfuse also serves as the dataset and annotation platform. Ground truth data from `eval/extraction_ground_truth.json` is uploaded as a Langfuse dataset for review, annotation, and eval run tracking.
 
 The mock provider (`LLM_PROVIDER=mock`) enables testing both features without Azure OpenAI API keys. Mock calls produce real Langfuse traces with simulated token counts and costs.
 
@@ -237,7 +237,7 @@ If Azure OpenAI keys are unavailable, set:
 LLM_PROVIDER=mock
 ```
 
-The mock provider returns ground truth data from `agents/eval/extraction_ground_truth.json` via round-robin, generates realistic token counts and costs, and produces real Langfuse traces. All verification steps work with mock — but traces will show `model: mock-sonnet-v1` and `is_llm_generated: FALSE`.
+The mock provider returns ground truth data from `eval/extraction_ground_truth.json` via round-robin, generates realistic token counts and costs, and produces real Langfuse traces. All verification steps work with mock — but traces will show `model: mock-sonnet-v1` and `is_llm_generated: FALSE`.
 
 > **Note on mock traces:** Mock LLM calls only fire for records that have description text. Many JSearch records have empty descriptions — these skip extraction and produce no traces. You will see `skills_extraction_no_text` warnings. This is expected. The seeded fixture data includes descriptions.
 
@@ -256,8 +256,8 @@ If neither script has been run, the NAICS classifier will gracefully degrade —
 ### Verify database connectivity
 
 ```bash
-python agents/scripts/db_check.py tables
-python agents/scripts/db_check.py counts
+python scripts/db_check.py tables
+python scripts/db_check.py counts
 ```
 
 ---
@@ -270,21 +270,21 @@ The seeded database is fully processed (`pending: 0`). Use this script to roll b
 
 ```bash
 # 1. Preview which jobs will be reset (no writes)
-python agents/scripts/reset_sample_jobs.py --dry-run
+python scripts/reset_sample_jobs.py --dry-run
 
 # 2. Roll back 3 fully-processed jobs to 'pending'
 #    (deletes extracted_intelligence, job_postings rows, normalized_jobs rows
 #     and resets raw_ingested_jobs.processing_status -> 'pending')
-python agents/scripts/reset_sample_jobs.py
+python scripts/reset_sample_jobs.py
 
 # 3. Re-process those 3 jobs through the full pipeline
-python agents/scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
 ```
 
 After the loop finishes, verify output:
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 Expected: `normalized_jobs` +3, `extracted_intelligence` +3, `job_postings` +3 vs before the reset.
@@ -292,8 +292,8 @@ Expected: `normalized_jobs` +3, `extracted_intelligence` +3, `job_postings` +3 v
 To reset more jobs:
 
 ```bash
-python agents/scripts/reset_sample_jobs.py --count 5
-python agents/scripts/run_processing_loop.py --max-iterations 1 --batch-size 5
+python scripts/reset_sample_jobs.py --count 5
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 5
 ```
 
 > **Tip:** After each `reset_sample_jobs.py` run you get fresh Langfuse traces for normalization → skills/tasks/responsibilities extraction → enrichment (SOC, NAICS, dedup). This is the fastest way to verify your Week 7 step produces real output without re-running batch_ingest.
@@ -306,18 +306,18 @@ To iterate on SOC/NAICS/quality classification without re-ingesting from JSearch
 
 ```bash
 # 1. Clear processing output (keeps raw_ingested_jobs intact)
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.normalized_jobs CASCADE"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.extracted_intelligence CASCADE"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.employer_profiles CASCADE"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.normalized_jobs CASCADE"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.extracted_intelligence CASCADE"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.employer_profiles CASCADE"
 
 # 2. Reset raw records to pending (all or a subset)
-python agents/scripts/db_check.py query "UPDATE dbo.raw_ingested_jobs SET processing_status = 'pending'"
+python scripts/db_check.py query "UPDATE dbo.raw_ingested_jobs SET processing_status = 'pending'"
 
 # 3. Re-run processing (normalize → extract → enrich)
-python agents/scripts/run_processing_loop.py --batch-size 25 --delay 10
+python scripts/run_processing_loop.py --batch-size 25 --delay 10
 
 # 4. Evaluate — check classification quality
-python agents/scripts/db_check.py query "SELECT count(*) as total, count(quality_score) as with_quality, count(soc_code) as with_soc, count(naics_code) as with_naics FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT count(*) as total, count(quality_score) as with_quality, count(soc_code) as with_soc, count(naics_code) as with_naics FROM dbo.job_postings"
 
 # 5. Re-export fixtures to capture improved output
 python scripts/pg-seed-data/export_agent_data.py
@@ -330,17 +330,17 @@ python scripts/pg-seed-data/export_agent_data.py
 If you need to clear analytics outputs and re-run the Analytics Agent, truncate the aggregate tables. These tables are created by the Analytics Agent during Week 7 — if they do not exist yet, these commands will produce errors (expected).
 
 ```bash
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.skill_demand_weekly"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.tool_demand_weekly"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.role_snapshot_weekly"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.sector_summary_weekly"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.geo_demand_weekly"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.skill_velocity"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.skill_co_occurrence"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.posting_freshness"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.trajectory_map"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.cohort_gap_cache"
-python agents/scripts/db_check.py query "TRUNCATE TABLE dbo.insight_summary"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.skill_demand_weekly"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.tool_demand_weekly"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.role_snapshot_weekly"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.sector_summary_weekly"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.geo_demand_weekly"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.skill_velocity"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.skill_co_occurrence"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.posting_freshness"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.trajectory_map"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.cohort_gap_cache"
+python scripts/db_check.py query "TRUNCATE TABLE dbo.insight_summary"
 ```
 
 ### Reset Langfuse data (full wipe)
@@ -358,7 +358,7 @@ This removes all Langfuse persistent storage and re-provisions the default org, 
 ### Verify clean state
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 All analytics aggregate tables should show 0 rows (or not exist yet). Upstream pipeline tables (`raw_ingested_jobs`, `normalized_jobs`, `extracted_intelligence`, `job_postings`) should retain their data — do NOT truncate those for analytics testing.
@@ -372,7 +372,7 @@ The Analytics Agent reads from `job_postings`, which is populated by the Ingesti
 ### Quick verification
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 **Minimum data for analytics testing:**
@@ -386,7 +386,7 @@ python agents/scripts/db_check.py counts
 If `job_postings` has fewer than 50 records, run the processing loop to populate it:
 
 ```bash
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
 Or seed from the prepared dataset:
@@ -399,7 +399,7 @@ python scripts/pg-seed-data/seed_pg_database.py
 
 ```bash
 # Confirm enrichment columns are populated (needed by analytics grouping)
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(temporal_period) AS has_temporal, COUNT(borderplex_subregion) AS has_borderplex, COUNT(quality_score) AS has_quality, COUNT(soc_code) AS has_soc, COUNT(naics_code) AS has_naics FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(temporal_period) AS has_temporal, COUNT(borderplex_subregion) AS has_borderplex, COUNT(quality_score) AS has_quality, COUNT(soc_code) AS has_soc, COUNT(naics_code) AS has_naics FROM dbo.job_postings"
 ```
 
 **Expected (seeded data):** Of the 596 enriched job_postings: `has_quality` = 596 (100%), `has_soc` ≈ 525 (88%), `has_naics` ≈ 292 non-"unknown" (49%). `has_temporal` and `has_borderplex` depend on the Pair A temporal/borderplex classifiers. The 172 reference job_postings do not have enrichment columns.
@@ -415,7 +415,7 @@ python agents/scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(tempora
 Top skills by posting count, aggregated weekly.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT skill_label, posting_count, week_start FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 15"
+python scripts/db_check.py query "SELECT skill_label, posting_count, week_start FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 15"
 ```
 
 **What to check:**
@@ -428,7 +428,7 @@ python agents/scripts/db_check.py query "SELECT skill_label, posting_count, week
 Top tools by posting count, aggregated weekly.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT tool_label, posting_count, week_start FROM dbo.tool_demand_weekly ORDER BY posting_count DESC LIMIT 15"
+python scripts/db_check.py query "SELECT tool_label, posting_count, week_start FROM dbo.tool_demand_weekly ORDER BY posting_count DESC LIMIT 15"
 ```
 
 **What to check:**
@@ -440,7 +440,7 @@ python agents/scripts/db_check.py query "SELECT tool_label, posting_count, week_
 Role counts with salary distributions.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT role_title, posting_count, median_salary, salary_p25, salary_p75 FROM dbo.role_snapshot_weekly ORDER BY posting_count DESC LIMIT 10"
+python scripts/db_check.py query "SELECT role_title, posting_count, median_salary, salary_p25, salary_p75 FROM dbo.role_snapshot_weekly ORDER BY posting_count DESC LIMIT 10"
 ```
 
 **What to check:**
@@ -453,7 +453,7 @@ python agents/scripts/db_check.py query "SELECT role_title, posting_count, media
 Sector aggregates from `industry_sectors` classification.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT sector_name, posting_count, avg_quality_score FROM dbo.sector_summary_weekly ORDER BY posting_count DESC LIMIT 10"
+python scripts/db_check.py query "SELECT sector_name, posting_count, avg_quality_score FROM dbo.sector_summary_weekly ORDER BY posting_count DESC LIMIT 10"
 ```
 
 **What to check:**
@@ -465,7 +465,7 @@ python agents/scripts/db_check.py query "SELECT sector_name, posting_count, avg_
 Geographic demand by Borderplex subregion and broader location.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT region, subregion, posting_count FROM dbo.geo_demand_weekly ORDER BY posting_count DESC LIMIT 10"
+python scripts/db_check.py query "SELECT region, subregion, posting_count FROM dbo.geo_demand_weekly ORDER BY posting_count DESC LIMIT 10"
 ```
 
 **What to check:**
@@ -478,7 +478,7 @@ python agents/scripts/db_check.py query "SELECT region, subregion, posting_count
 Demand trend for skills (Phase 1 Pair A). Values are derived in Python from the last **five** `week_start` slices in `skill_demand_weekly` ending at the anchor Monday: a **4-week rolling mean** of weekly `posting_count`, then week-over-week **`pct_change`** on that smoothed series (not a raw single-week spike). The ORM maps Python attribute **`velocity_week`** → database column **`week`**.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT skill_label, week, demand_count, week_over_week_change, four_week_trend, trend_confidence, esco_uri FROM dbo.skill_velocity ORDER BY ABS(week_over_week_change) DESC NULLS LAST LIMIT 10"
+python scripts/db_check.py query "SELECT skill_label, week, demand_count, week_over_week_change, four_week_trend, trend_confidence, esco_uri FROM dbo.skill_velocity ORDER BY ABS(week_over_week_change) DESC NULLS LAST LIMIT 10"
 ```
 
 **What to check:**
@@ -493,7 +493,7 @@ python agents/scripts/db_check.py query "SELECT skill_label, week, demand_count,
 Skill pairs that co-appear in the same job posting.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT skill_a, skill_b, co_occurrence_count FROM dbo.skill_co_occurrence ORDER BY co_occurrence_count DESC LIMIT 10"
+python scripts/db_check.py query "SELECT skill_a, skill_b, co_occurrence_count FROM dbo.skill_co_occurrence ORDER BY co_occurrence_count DESC LIMIT 10"
 ```
 
 **What to check:**
@@ -506,7 +506,7 @@ python agents/scripts/db_check.py query "SELECT skill_a, skill_b, co_occurrence_
 Posting lifecycle metrics — how quickly jobs turn over.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT freshness_bucket, posting_count, avg_days_listed FROM dbo.posting_freshness ORDER BY avg_days_listed"
+python scripts/db_check.py query "SELECT freshness_bucket, posting_count, avg_days_listed FROM dbo.posting_freshness ORDER BY avg_days_listed"
 ```
 
 **What to check:**
@@ -516,7 +516,7 @@ python agents/scripts/db_check.py query "SELECT freshness_bucket, posting_count,
 ### Table 9 — `trajectory_map` (Phase 2 scaffold)
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.trajectory_map"
+python scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.trajectory_map"
 ```
 
 **Expected:** 0 rows. This table is a Phase 2 scaffold for career trajectory analysis. It should exist (created by migration) but remain empty in Phase 1.
@@ -524,7 +524,7 @@ python agents/scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.trajec
 ### Table 10 — `cohort_gap_cache` (Phase 2 scaffold)
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.cohort_gap_cache"
+python scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.cohort_gap_cache"
 ```
 
 **Expected:** 0 rows. Phase 2 scaffold for cohort gap analysis.
@@ -534,7 +534,7 @@ python agents/scripts/db_check.py query "SELECT COUNT(*) AS rows FROM dbo.cohort
 The Analytics Agent generates weekly insight summaries. With mock or when LLM is unavailable, it uses a deterministic template fallback.
 
 ```bash
-python agents/scripts/db_check.py query "SELECT id, summary_type, is_llm_generated, LENGTH(summary_text) AS text_length, created_at FROM dbo.insight_summary ORDER BY created_at DESC LIMIT 5"
+python scripts/db_check.py query "SELECT id, summary_type, is_llm_generated, LENGTH(summary_text) AS text_length, created_at FROM dbo.insight_summary ORDER BY created_at DESC LIMIT 5"
 ```
 
 **What to check:**
@@ -545,7 +545,7 @@ python agents/scripts/db_check.py query "SELECT id, summary_type, is_llm_generat
 ### Aggregate row count summary
 
 ```bash
-python agents/scripts/db_check.py query "SELECT 'skill_demand_weekly' AS tbl, COUNT(*) AS rows FROM dbo.skill_demand_weekly UNION ALL SELECT 'tool_demand_weekly', COUNT(*) FROM dbo.tool_demand_weekly UNION ALL SELECT 'role_snapshot_weekly', COUNT(*) FROM dbo.role_snapshot_weekly UNION ALL SELECT 'sector_summary_weekly', COUNT(*) FROM dbo.sector_summary_weekly UNION ALL SELECT 'geo_demand_weekly', COUNT(*) FROM dbo.geo_demand_weekly UNION ALL SELECT 'skill_velocity', COUNT(*) FROM dbo.skill_velocity UNION ALL SELECT 'skill_co_occurrence', COUNT(*) FROM dbo.skill_co_occurrence UNION ALL SELECT 'posting_freshness', COUNT(*) FROM dbo.posting_freshness UNION ALL SELECT 'insight_summary', COUNT(*) FROM dbo.insight_summary"
+python scripts/db_check.py query "SELECT 'skill_demand_weekly' AS tbl, COUNT(*) AS rows FROM dbo.skill_demand_weekly UNION ALL SELECT 'tool_demand_weekly', COUNT(*) FROM dbo.tool_demand_weekly UNION ALL SELECT 'role_snapshot_weekly', COUNT(*) FROM dbo.role_snapshot_weekly UNION ALL SELECT 'sector_summary_weekly', COUNT(*) FROM dbo.sector_summary_weekly UNION ALL SELECT 'geo_demand_weekly', COUNT(*) FROM dbo.geo_demand_weekly UNION ALL SELECT 'skill_velocity', COUNT(*) FROM dbo.skill_velocity UNION ALL SELECT 'skill_co_occurrence', COUNT(*) FROM dbo.skill_co_occurrence UNION ALL SELECT 'posting_freshness', COUNT(*) FROM dbo.posting_freshness UNION ALL SELECT 'insight_summary', COUNT(*) FROM dbo.insight_summary"
 ```
 
 ---
@@ -570,10 +570,10 @@ The seeded database is fully processed — reset 3 jobs first so the loop has wo
 
 ```bash
 # Roll back 3 jobs to 'pending'
-python agents/scripts/reset_sample_jobs.py
+python scripts/reset_sample_jobs.py
 
 # Re-process with real LLM (generates real Langfuse traces)
-python agents/scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
 ```
 
 Watch the console output for:
@@ -644,7 +644,7 @@ Check that the processing run wrote to `llm_audit_log`:
 
 ```bash
 # Real LLM (azure_openai)
-python agents/scripts/db_check.py query "SELECT agent_name, model, provider, COUNT(*) AS calls, COALESCE(SUM(cost_usd),0) AS total_usd FROM dbo.llm_audit_log GROUP BY agent_name, model, provider ORDER BY calls DESC LIMIT 10"
+python scripts/db_check.py query "SELECT agent_name, model, provider, COUNT(*) AS calls, COALESCE(SUM(cost_usd),0) AS total_usd FROM dbo.llm_audit_log GROUP BY agent_name, model, provider ORDER BY calls DESC LIMIT 10"
 ```
 
 **With `LLM_PROVIDER=azure_openai`:** Rows show your deployment name (e.g. `chat-gpt41mini`) and `provider = 'azure_openai'`. Cost reflects real token usage.
@@ -658,12 +658,12 @@ python agents/scripts/db_check.py query "SELECT agent_name, model, provider, COU
 ### Step 1 — Upload ground truth
 
 ```bash
-python agents/scripts/upload_langfuse_dataset.py
+python scripts/upload_langfuse_dataset.py
 ```
 
 The script prints each uploaded item with its `ground_truth_id` and truncated title. At the end, it reports the total count.
 
-**Expected:** Output shows 30 items uploaded to dataset `extraction-ground-truth-v1` (or whatever count matches your `agents/eval/extraction_ground_truth.json`).
+**Expected:** Output shows 30 items uploaded to dataset `extraction-ground-truth-v1` (or whatever count matches your `eval/extraction_ground_truth.json`).
 
 ### Step 2 — Verify in Langfuse UI
 
@@ -702,10 +702,10 @@ This demonstrates the quick-edit workflow: small corrections without opening the
 ### Step 5 — Export back to JSON
 
 ```bash
-python agents/scripts/export_langfuse_dataset.py
+python scripts/export_langfuse_dataset.py
 ```
 
-**Expected:** The script reports the number of exported records and the output path (`agents/eval/extraction_ground_truth.json`).
+**Expected:** The script reports the number of exported records and the output path (`eval/extraction_ground_truth.json`).
 
 ### Step 6 — Verify round-trip
 
@@ -714,7 +714,7 @@ Compare the exported JSON against the original to confirm the round-trip preserv
 ```bash
 python -c "
 import json
-with open('agents/eval/extraction_ground_truth.json') as f:
+with open('eval/extraction_ground_truth.json') as f:
     data = json.load(f)
 print(f'Records: {len(data)}')
 print(f'First record title: {data[0].get(\"title\", \"?\")[:60]}')
@@ -731,7 +731,7 @@ If you modified a skill in Step 4, that change should appear in the exported JSO
 The Streamlit dashboard provides a visual interface to all pipeline data.
 
 ```bash
-streamlit run agents/dashboard/app.py
+streamlit run dashboard/app.py
 ```
 
 Open http://localhost:8501 in your browser.
@@ -806,7 +806,7 @@ All `LANGFUSE_INIT_*` variables should be present. If they are and login still f
 **Dataset upload fails**
 
 ```bash
-python agents/scripts/upload_langfuse_dataset.py
+python scripts/upload_langfuse_dataset.py
 ```
 
 If this fails with a connection error:
@@ -869,10 +869,10 @@ If the script is not available, NAICS classification will return "unknown" for a
 
 Error: `relation "dbo.skill_demand_weekly" does not exist`
 
-This is expected at the start of Week 7. The Analytics Agent creates these tables during implementation. Run migrations once your pair has added the table definitions to `agents/common/data_store/models.py`:
+This is expected at the start of Week 7. The Analytics Agent creates these tables during implementation. Run migrations once your pair has added the table definitions to `common/data_store/models.py`:
 
 ```bash
-python agents/scripts/db_check.py migrate
+python scripts/db_check.py migrate
 ```
 
 **Aggregate tables exist but are empty**
@@ -880,7 +880,7 @@ python agents/scripts/db_check.py migrate
 The Analytics Agent requires a minimum data threshold to produce meaningful aggregates. Check the source data:
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
+python scripts/db_check.py query "SELECT COUNT(*) AS enriched_jobs FROM dbo.job_postings"
 ```
 
 If fewer than 50 enriched records exist, the minimum data guard may prevent aggregation. Seed more data:
@@ -892,7 +892,7 @@ python scripts/pg-seed-data/seed_pg_database.py
 Or run the processing loop to enrich more records:
 
 ```bash
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
 **Insight summary missing or empty**
@@ -906,7 +906,7 @@ The insight summary depends on the Analytics Agent's LLM summary generation. Wit
 Check that aggregate tables have data before expecting summaries:
 
 ```bash
-python agents/scripts/db_check.py query "SELECT 'skill_demand_weekly' AS tbl, COUNT(*) FROM dbo.skill_demand_weekly UNION ALL SELECT 'role_snapshot_weekly', COUNT(*) FROM dbo.role_snapshot_weekly"
+python scripts/db_check.py query "SELECT 'skill_demand_weekly' AS tbl, COUNT(*) FROM dbo.skill_demand_weekly UNION ALL SELECT 'role_snapshot_weekly', COUNT(*) FROM dbo.role_snapshot_weekly"
 ```
 
 **Skill velocity looks “flat” or mostly `week_over_week_change = 0.0`**
@@ -918,8 +918,8 @@ python agents/scripts/db_check.py query "SELECT 'skill_demand_weekly' AS tbl, CO
 Pair A caps co-occurrence at **200 pairs per `week_start`** with deterministic tie-breaking. Total row count should scale with the number of weeks processed (e.g., on the order of **200 × weeks**), not millions:
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS pairs FROM dbo.skill_co_occurrence"
-python agents/scripts/db_check.py query "SELECT week_start, COUNT(*) AS n FROM dbo.skill_co_occurrence GROUP BY week_start ORDER BY n DESC LIMIT 5"
+python scripts/db_check.py query "SELECT COUNT(*) AS pairs FROM dbo.skill_co_occurrence"
+python scripts/db_check.py query "SELECT week_start, COUNT(*) AS n FROM dbo.skill_co_occurrence GROUP BY week_start ORDER BY n DESC LIMIT 5"
 ```
 
 Expected: hundreds to low thousands of pairs, not millions.

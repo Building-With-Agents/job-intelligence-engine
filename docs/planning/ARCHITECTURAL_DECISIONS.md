@@ -76,7 +76,7 @@ weight it carries and who owns it.
 | 29 | Contract | Correlation ID propagation | Set once at pipeline entry, propagated unchanged through every downstream event |
 | 30 | Contract | Taxonomy store abstraction | `TaxonomyStoreBase` ABC — concrete implementation switchable via `TAXONOMY_STORE` env var. Phase 1: `PostgreSQLTaxonomyStore`. Phase 2: `LightcastTaxonomyStore` |
 | 31 | Architectural | Phased Query Agent architecture | Phase 1: Q&A inside Analytics Agent. Phase 2: standalone Query Agent (9th agent) with persona routing |
-| 32 | Architectural | Demand Analysis absorbed into Analytics | Demand Analysis capabilities merged into Analytics Agent Phase 2; `agents/demand_analysis/` repurposed for Query Agent. Final count: Phase 1 = 8, Phase 2 = 9 |
+| 32 | Architectural | Demand Analysis absorbed into Analytics | Demand Analysis capabilities merged into Analytics Agent Phase 2; `demand_analysis/` repurposed for Query Agent. Final count: Phase 1 = 8, Phase 2 = 9 |
 
 ### Open — Must Resolve Before Build
 
@@ -322,7 +322,7 @@ Prisma is off-limits, SQLAlchemy is the natural Python ORM for PostgreSQL access
 it provides sessions, connection pooling, and testable mock interfaces that raw
 psycopg2 does not.
 
-**Hard rule enforced across all agents:** No file in `agents/` ever imports
+**Hard rule enforced across all agents:** No file ever imports
 Prisma or calls the Prisma CLI. No Python file ever modifies `prisma/schema.prisma`.
 Any agent that needs database access uses SQLAlchemy models defined in its own
 `models.py`.
@@ -447,7 +447,7 @@ class TaxonomyStoreBase(ABC):
 **Phase 1 concrete implementation:** `PostgreSQLTaxonomyStore` — queries the
 `skills` table and pgvector index in the local PostgreSQL instance. The taxonomy
 data is seeded at setup time from a configurable source (Lightcast API default;
-see `agents/setup/seed_taxonomy.py`).
+see `scripts/seed_taxonomy.py`).
 
 **Phase 2 option:** `LightcastTaxonomyStore` — queries the Lightcast Skills API
 live, bypassing the local seed. Switch via `TAXONOMY_STORE=lightcast` env var.
@@ -484,7 +484,7 @@ No database connection required. Used in all unit tests.
 
 **Context:** ARCHITECTURE_DEEP.md originally defined Agent 8 (Demand Analysis Agent) as a Phase 2 standalone agent for time-series indexing, velocity windows, forecasting, and anomaly detection. With the Query Agent becoming the 9th agent, the system would have 10 agents — adding complexity without clear domain separation.
 
-**Resolution:** Demand Analysis capabilities are absorbed into the Analytics Agent's Phase 2 expansion. The Analytics Agent already handles skill velocity (`skill_velocity` table), trajectory mapping (`trajectory_map` table), and emergence detection (`EmergenceAlert` event) in Phase 1. The Demand Analysis scope (extended velocity windows, forecasting, anomaly detection) is the same analytical domain with the same data sources. The `agents/demand_analysis/` scaffold directory is repurposed for the Query Agent.
+**Resolution:** Demand Analysis capabilities are absorbed into the Analytics Agent's Phase 2 expansion. The Analytics Agent already handles skill velocity (`skill_velocity` table), trajectory mapping (`trajectory_map` table), and emergence detection (`EmergenceAlert` event) in Phase 1. The Demand Analysis scope (extended velocity windows, forecasting, anomaly detection) is the same analytical domain with the same data sources. The `demand_analysis/` scaffold directory is repurposed for the Query Agent.
 
 **Rationale:** "One agent = one responsibility" (Engineering Rule #1). Demand analysis IS analytics — same data, same aggregate tables, same domain. Keeping it separate violates the single-responsibility principle. The Query Agent has genuinely different responsibility (Q&A with persona routing), different consumers (end users), and different outputs (formatted reports). Final count: Phase 1 = 8 agents, Phase 2 = 9 agents.
 
@@ -526,7 +526,7 @@ labour-market interoperability for Phase 2 (Demand Analysis uses SOC codes).
 
 **Type:** Tool
 
-**Recommendation:** Stay in-repo (`agents/`). Trigger for revisiting: model size
+**Recommendation:** Stay in-repo. Trigger for revisiting: model size
 exceeds 2GB or training time exceeds 4 hours per cycle. Until then, in-repo keeps
 setup friction low. Migrate to Azure ML only if those thresholds are crossed.
 

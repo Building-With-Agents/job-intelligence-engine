@@ -1,6 +1,6 @@
 # Cost Audit — Week 5 Phase 4
 
-**Status:** Week 5 Phase 4 / **Issue #90**. §3–§5 capture a **point-in-time `llm_audit_log` cohort** (not reproducible from git alone). **`extracted_intelligence` totals**, **env-aware model-tier rollup**, and **exact cost per successful EI row** are produced by `python -m agents.eval.cost_audit_week5_report` — paste its Markdown into **§3b** and **§6** when you refresh against your DB.
+**Status:** Week 5 Phase 4 / **Issue #90**. §3–§5 capture a **point-in-time `llm_audit_log` cohort** (not reproducible from git alone). **`extracted_intelligence` totals**, **env-aware model-tier rollup**, and **exact cost per successful EI row** are produced by `python -m eval.cost_audit_week5_report` — paste its Markdown into **§3b** and **§6** when you refresh against your DB.
 
 ---
 
@@ -26,14 +26,14 @@ Team Summary; numeric totals match the `llm_audit_log` aggregates in §3–§5.
 
 | In scope | Notes |
 |----------|--------|
-| Per-job **LLM** token and USD totals persisted by the Skills Extraction Agent | Written to `dbo.extracted_intelligence` as `extraction_tokens_used` and `extraction_cost_usd` when records are saved (`agents/skills_extraction/agent.py`). |
-| Per-call LLM audit rows | Written to `dbo.llm_audit_log` via `log_extraction_event` (`agents/common/llm_client.py` and related callers). **Multiple `agent_name` values can appear** (see §3). |
+| Per-job **LLM** token and USD totals persisted by the Skills Extraction Agent | Written to `dbo.extracted_intelligence` as `extraction_tokens_used` and `extraction_cost_usd` when records are saved (`skills_extraction/agent.py`). |
+| Per-call LLM audit rows | Written to `dbo.llm_audit_log` via `log_extraction_event` (`common/llm_client.py` and related callers). **Multiple `agent_name` values can appear** (see §3). |
 | **Measured** split of tokens/USD by `agent_name` | From DB aggregate (this document §3–5). |
 
 | Out of scope / caveat | Notes |
 |----------------------|--------|
 | Equating every audit row to one `extracted_intelligence` row | No FK from `llm_audit_log` to `normalized_job_id`. |
-| **Main pipeline vs other callers** | The default `agents/skills_extraction/agent.py` path runs Pass 1 tools + Pass 2 **skills** and persists **skills** metadata; **`extract_tasks` / `extract_responsibilities` in-repo are stubs** (`return []`). Rows for **`skills-extraction-tasks`** and **`skills-extraction-responsibilities`** in `llm_audit_log` indicate **other code paths** (scripts, experiments, or future wiring)—**not** the main single-agent persistence design. Interpret §5 accordingly. |
+| **Main pipeline vs other callers** | The default `skills_extraction/agent.py` path runs Pass 1 tools + Pass 2 **skills** and persists **skills** metadata; **`extract_tasks` / `extract_responsibilities` in-repo are stubs** (`return []`). Rows for **`skills-extraction-tasks`** and **`skills-extraction-responsibilities`** in `llm_audit_log` indicate **other code paths** (scripts, experiments, or future wiring)—**not** the main single-agent persistence design. Interpret §5 accordingly. |
 
 ---
 
@@ -45,10 +45,10 @@ Team Summary; numeric totals match the `llm_audit_log` aggregates in §3–§5.
 |--------|-----|
 | `extraction_tokens_used` | Integer; total tokens attributed to the extraction run for that row (from Pass 2 skills metadata when LLM ran). |
 | `extraction_cost_usd` | Float; USD estimate from the same metadata path. |
-| `extraction_metadata` (JSONB) | May include `model_tier`, `pass1_tool_count`, `pass2_llm_dimensions`, `tokens_used`, `cost_usd` (see `ExtractionMetadata` in `agents/common/types/extraction_types.py`). |
+| `extraction_metadata` (JSONB) | May include `model_tier`, `pass1_tool_count`, `pass2_llm_dimensions`, `tokens_used`, `cost_usd` (see `ExtractionMetadata` in `common/types/extraction_types.py`). |
 | `extraction_version`, `extracted_at` | Filter to a cohort. |
 
-**Schema:** `agents/common/data_store/models.py` (`ExtractedIntelligence`).
+**Schema:** `common/data_store/models.py` (`ExtractedIntelligence`).
 
 ### `dbo.llm_audit_log`
 
@@ -91,12 +91,12 @@ Team Summary; numeric totals match the `llm_audit_log` aggregates in §3–§5.
 Run against the same database that populated §3 (venv + `PYTHON_DATABASE_URL` from repo root):
 
 ```bash
-python -m agents.eval.cost_audit_week5_report
+python -m eval.cost_audit_week5_report
 # Optional: limit audit log to a time window; compare to informal eval baseline (USD / successful EI row)
-python -m agents.eval.cost_audit_week5_report --since 2026-03-01 --baseline-per-record 0.0114
+python -m eval.cost_audit_week5_report --since 2026-03-01 --baseline-per-record 0.0114
 ```
 
-The command prints Markdown tables: EI aggregates (success vs failed rows), `extraction_metadata->>'model_tier'` distribution, `llm_audit_log` totals for comparison, and **resolved model tier** rollup using `agents/eval/cost_tier.py` (Azure deployment name + `EXTRACTION_MODEL_TIER`).
+The command prints Markdown tables: EI aggregates (success vs failed rows), `extraction_metadata->>'model_tier'` distribution, `llm_audit_log` totals for comparison, and **resolved model tier** rollup using `eval/cost_tier.py` (Azure deployment name + `EXTRACTION_MODEL_TIER`).
 
 **Ad-hoc SQL** (subset of what the report runs):
 
@@ -157,7 +157,7 @@ Use **one definition consistently** when comparing to baselines:
 
 ## 6. Breakdown by model tier (Sonnet vs Haiku vs zero-cost)
 
-**Recommended (Issue #90):** Run `python -m agents.eval.cost_audit_week5_report` and paste the sections **“resolved model tier (env-aware)”** and **“Per deployment name (`model` column)”** here. Resolver: `agents/eval/cost_tier.py` (`resolve_llm_audit_model_tier`) — substring `haiku`/`sonnet` → `MODEL_TIER_MAP` → exact match to `EXTRACTION_DEPLOYMENT_SKILLS` / `EXTRACTION_MODEL_SKILLS` / `AZURE_OPENAI_DEPLOYMENT_NAME` + `EXTRACTION_MODEL_TIER` (same intent as `agents/common/llm_client.py`).
+**Recommended (Issue #90):** Run `python -m eval.cost_audit_week5_report` and paste the sections **“resolved model tier (env-aware)”** and **“Per deployment name (`model` column)”** here. Resolver: `eval/cost_tier.py` (`resolve_llm_audit_model_tier`) — substring `haiku`/`sonnet` → `MODEL_TIER_MAP` → exact match to `EXTRACTION_DEPLOYMENT_SKILLS` / `EXTRACTION_MODEL_SKILLS` / `AZURE_OPENAI_DEPLOYMENT_NAME` + `EXTRACTION_MODEL_TIER` (same intent as `common/llm_client.py`).
 
 **Raw SQL** (deployment names often land in `other` without the resolver):
 
@@ -189,8 +189,8 @@ _Paste env-aware tier tables from `cost_audit_week5_report` below._
 
 ## 7. Context extraction verification (zero LLM — code-based)
 
-- **`extract_context`** (`agents/skills_extraction/extractors/context.py`) returns an empty list and logs `context_extraction_stub`; it does **not** import or call `llm_client` / `llm_adapter`.
-- The main skills extraction persistence path in `agents/skills_extraction/agent.py` does not attach a separate LLM call for context; context JSON is not populated from an LLM in the current integration.
+- **`extract_context`** (`skills_extraction/extractors/context.py`) returns an empty list and logs `context_extraction_stub`; it does **not** import or call `llm_client` / `llm_adapter`.
+- The main skills extraction persistence path in `skills_extraction/agent.py` does not attach a separate LLM call for context; context JSON is not populated from an LLM in the current integration.
 
 **Conclusion:** For the code revision present in this repository, **context extraction consumes zero LLM tokens.**
 
@@ -198,7 +198,7 @@ _Paste env-aware tier tables from `cost_audit_week5_report` below._
 
 ## 8. Tools verification analysis — **NOT IMPLEMENTED**
 
-- The module docstring for `agents/skills_extraction/extractors/tools.py` describes optional **Haiku-class LLM verification** for ambiguous matches.
+- The module docstring for `skills_extraction/extractors/tools.py` describes optional **Haiku-class LLM verification** for ambiguous matches.
 - **There is no implementation** that invokes the LLM or writes to `llm_audit_log` for tool verification (no `invoke_skills_llm`, `complete`, or `log_extraction_event` in that file).
 
 **Report handling:** Do **not** claim measured “reduction” in Haiku verification calls. State **N/A — feature not implemented** until code paths exist and emit auditable rows.
@@ -217,16 +217,16 @@ _Paste env-aware tier tables from `cost_audit_week5_report` below._
 
 | Item | Repository fact |
 |------|------------------|
-| [`agents/eval/cost_model_week4.md`](cost_model_week4.md) | Often still a placeholder until someone runs `python -m agents.eval.cost_projection` against a defined DB window and commits the output. |
-| Generator | `python -m agents.eval.cost_projection` reads `dbo.llm_audit_log` (`agents/eval/cost_projection.py`). Tier labels there still use SQL `ILIKE`; prefer **`cost_audit_week5_report`** for Azure deployment–aware tiers. |
+| [`eval/cost_model_week4.md`](cost_model_week4.md) | Often still a placeholder until someone runs `python -m eval.cost_projection` against a defined DB window and commits the output. |
+| Generator | `python -m eval.cost_projection` reads `dbo.llm_audit_log` (`eval/cost_projection.py`). Tier labels there still use SQL `ILIKE`; prefer **`cost_audit_week5_report`** for Azure deployment–aware tiers. |
 
-**Informal eval baselines** (30-job harness, not identical to DB cohort N): see [`agents/eval/prompt_iteration_log.md`](prompt_iteration_log.md) — e.g. **~$0.0114** / job after v2 prompt iteration, **~$0.0160** / job after Pass 1 catalog work (tokens and USD per job documented there).
+**Informal eval baselines** (30-job harness, not identical to DB cohort N): see [`eval/prompt_iteration_log.md`](prompt_iteration_log.md) — e.g. **~$0.0114** / job after v2 prompt iteration, **~$0.0160** / job after Pass 1 catalog work (tokens and USD per job documented there).
 
 **§3 cohort (definition B/C):** **~$0.01014** / primary skills call; **~$0.0111** / job if all **$2.9147** is spread over **263** skills-aligned jobs (includes extra task/responsibility LLM spend in the same audit window).
 
 **>20% variance flag (Issue #90):** After you have **definition A** from `cost_audit_week5_report` (avg cost / successful EI row), compare to your chosen baseline (e.g. `0.0114`) using:
 
-`python -m agents.eval.cost_audit_week5_report --baseline-per-record 0.0114`
+`python -m eval.cost_audit_week5_report --baseline-per-record 0.0114`
 
 The script prints **delta %** and flags if **|delta| > 20%**. Document the baseline source in the Issue #90 comment.
 
@@ -242,12 +242,12 @@ The script prints **delta %** and flags if **|delta| > 20%**. Document the basel
 ## 12. Limitations (very important)
 
 1. **Measurements are point-in-time audit aggregates** embedded in this doc—they are **not** reproducible from git alone; re-query your DB to verify.
-2. **`skills-extraction-tasks` / `skills-extraction-responsibilities`** appear in `llm_audit_log` but the **default `agents/skills_extraction/agent.py` pipeline uses stubs** for tasks/responsibilities extractors; **attribute those rows to the callers that set `agent_name`**, not to the main persistence path, unless your deployment doc says otherwise.
+2. **`skills-extraction-tasks` / `skills-extraction-responsibilities`** appear in `llm_audit_log` but the **default `skills_extraction/agent.py` pipeline uses stubs** for tasks/responsibilities extractors; **attribute those rows to the callers that set `agent_name`**, not to the main persistence path, unless your deployment doc says otherwise.
 3. **`llm_audit_log` ↔ `extracted_intelligence`** cannot be joined by job id; cohort alignment is approximate.
 4. **`cost_model_week4.md`** may still be empty until `cost_projection` is run and committed; informal harness baselines live in **`prompt_iteration_log.md`** (§10).
 5. **Tools Haiku verification** is **not implemented** in `extract_tools` — no empirical savings or call counts for that feature.
-6. **`cost_projection.py` Pass 1 vs Pass 2 split** uses `avg_cost_per_call == 0` on grouped rows — do not over-interpret as “pattern match” rows without reading that script (`agents/eval/cost_projection.py`).
-7. **Eval harness** (`agents/eval/extraction_eval_core.py`, `pipeline` mode) aggregates tokens/cost from `extract_skills` metadata for **eval runs**; it does not replace DB actuals for deployed extractions unless you explicitly scope the same runs.
+6. **`cost_projection.py` Pass 1 vs Pass 2 split** uses `avg_cost_per_call == 0` on grouped rows — do not over-interpret as “pattern match” rows without reading that script (`eval/cost_projection.py`).
+7. **Eval harness** (`eval/extraction_eval_core.py`, `pipeline` mode) aggregates tokens/cost from `extract_skills` metadata for **eval runs**; it does not replace DB actuals for deployed extractions unless you explicitly scope the same runs.
 8. **Percentages** in §5 are **of total measured LLM USD/tokens**; they do **not** imply all dimensions are implemented in the main agent.
 
 ---
@@ -256,7 +256,7 @@ The script prints **delta %** and flags if **|delta| > 20%**. Document the basel
 
 | Criterion | Status | Where |
 |-----------|--------|--------|
-| Query `extracted_intelligence` for `extraction_tokens_used` / `extraction_cost_usd` | **Reproducible** | `python -m agents.eval.cost_audit_week5_report`, §3b SQL; optional paste under §3b |
+| Query `extracted_intelligence` for `extraction_tokens_used` / `extraction_cost_usd` | **Reproducible** | `python -m eval.cost_audit_week5_report`, §3b SQL; optional paste under §3b |
 | Actual cost per record vs projections | **§4 + §10 + report** (`--baseline-per-record`) | Compare definition **A** to baseline; §3 cohort approximations for B/C |
 | Cost by model tier (Sonnet / Haiku / zero-cost pattern) | **Reproducible** | `cost_tier.py` + report; optional paste under §6 |
 | Cost by dimension (skills, tools, tasks, responsibilities, context) | Done | §5 + executive summary |
@@ -265,7 +265,7 @@ The script prints **delta %** and flags if **|delta| > 20%**. Document the basel
 | Most expensive dimension | Done | §9 |
 | ≥1 optimization with data | Done | §11 |
 | This audit doc | Done | Full file |
-| Update `agents/eval/cost_log.md` with Week 5 actuals | Done | [`cost_log.md`](cost_log.md) §2 |
+| Update `eval/cost_log.md` with Week 5 actuals | Done | [`cost_log.md`](cost_log.md) §2 |
 
 ---
 
@@ -278,4 +278,4 @@ Document here when filling the audit:
 - `extraction_version` or git hash: _TBD_
 - Time range for `extracted_at` and `llm_audit_log.created_at`: _TBD_
 - `EXTRACTION_MODEL_TIER` and deployment names in use: _TBD_
-- **Refresh metrics:** `python -m agents.eval.cost_audit_week5_report` (optional `--since`, `--baseline-per-record`)
+- **Refresh metrics:** `python -m eval.cost_audit_week5_report` (optional `--since`, `--baseline-per-record`)

@@ -8,9 +8,9 @@ from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from agents.common.types import ContextSignal
-from agents.common.types.extraction_types import SpanRecord
-from agents.eval.extraction_eval_core import (
+from common.types import ContextSignal
+from common.types.extraction_types import SpanRecord
+from eval.extraction_eval_core import (
     EVAL_DIMENSIONS,
     canonical_context_label,
     canonicalize_context_signal_type_for_eval,
@@ -25,7 +25,7 @@ from agents.eval.extraction_eval_core import (
     prediction_context_labels_from_signals,
     run_eval_dataset,
 )
-from agents.eval.snapshot_schema import (
+from eval.snapshot_schema import (
     SNAPSHOT_SCHEMA_VERSION,
     AggregateMetrics,
     ExtractionEvalSnapshot,
@@ -269,7 +269,7 @@ def test_now_mountain_iso_contains_offset() -> None:
 
 def test_now_mountain_iso_fixed_clock() -> None:
     fixed = datetime(2024, 7, 15, 6, 30, 0, tzinfo=ZoneInfo("America/Denver"))
-    with patch("agents.eval.extraction_eval_core.datetime") as mock_dt:
+    with patch("eval.extraction_eval_core.datetime") as mock_dt:
         mock_dt.now.return_value = fixed
         out = now_mountain_iso()
     mock_dt.now.assert_called_once()

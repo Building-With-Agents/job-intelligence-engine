@@ -19,9 +19,9 @@ import re
 import sys
 from datetime import datetime
 
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.common.types.region_config import RegionConfig
-from agents.ingestion.sources.base_adapter import SourceAdapter
+from common.types.raw_job_record import RawJobRecord
+from common.types.region_config import RegionConfig
+from ingestion.sources.base_adapter import SourceAdapter
 
 # Force UTF-8 mode at process level for Crawl4AI's Playwright browser subprocess.
 # Previous attempts (PR #111, #125) wrapped stdout/stderr here, but the real issue

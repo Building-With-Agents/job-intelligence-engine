@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.synthetic_events import (
+from common.event_envelope import EventEnvelope
+from common.events.synthetic_events import (
     generate_synthetic_normalization_complete,
     generate_synthetic_normalization_failed,
     generate_synthetic_source_failures,

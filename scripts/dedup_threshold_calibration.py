@@ -3,8 +3,8 @@
 
 Usage (repo root, with Azure embedding env vars in the repo-root ``.env``)::
 
-    ./agents/.venv/bin/python -m agents.scripts.dedup_threshold_calibration
-    ./agents/.venv/bin/python -m agents.scripts.dedup_threshold_calibration \
+    ./.venv/bin/python -m scripts.dedup_threshold_calibration
+    ./.venv/bin/python -m scripts.dedup_threshold_calibration \
       --thresholds 0.88,0.90,0.92,0.94,0.96
 """
 
@@ -15,18 +15,18 @@ import json
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.env import load_repo_root_dotenv  # noqa: E402
-from agents.enrichment.dedup.calibration import (  # noqa: E402
+from common.env import load_repo_root_dotenv  # noqa: E402
+from enrichment.dedup.calibration import (  # noqa: E402
     DEFAULT_CALIBRATION_AUDIT_AGENT,
     generate_calibration_report,
     load_calibration_cases,
     parse_thresholds,
     render_findings_markdown,
 )
-from agents.enrichment.dedup.config import dedup_cosine_threshold  # noqa: E402
+from enrichment.dedup.config import dedup_cosine_threshold  # noqa: E402
 
 load_repo_root_dotenv()
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus import InProcessEventBus
-from agents.normalization.events import normalization_complete_payload
-from agents.tests.message_bus_stream_fixtures import generate_ingest_batches
+from common.event_envelope import EventEnvelope
+from common.message_bus import InProcessEventBus
+from normalization.events import normalization_complete_payload
+from tests.message_bus_stream_fixtures import generate_ingest_batches
 
 
 def test_in_process_publish_subscribe_synchronous_delivery() -> None:

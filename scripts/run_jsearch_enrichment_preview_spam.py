@@ -7,11 +7,11 @@ per ``normalized_job_id`` inside ``EnrichmentAgent``.
 
 PowerShell (repo root)::
 
-    python -m agents.scripts.run_jsearch_enrichment_preview_spam --limit 20 --html-out agents/data/rendered/enrichment_spam_preview.html
+    python -m scripts.run_jsearch_enrichment_preview_spam --limit 20 --html-out data/rendered/enrichment_spam_preview.html
 
 Classify an existing run only::
 
-    python -m agents.scripts.run_jsearch_enrichment_preview_spam --skip-ingest --ingestion-run-id <uuid> --html-out agents/data/rendered/enrichment_spam_preview.html
+    python -m scripts.run_jsearch_enrichment_preview_spam --skip-ingest --ingestion-run-id <uuid> --html-out data/rendered/enrichment_spam_preview.html
 """
 
 from __future__ import annotations
@@ -28,22 +28,22 @@ import structlog
 from dotenv import load_dotenv
 from sqlalchemy import text
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 load_dotenv(_REPO_ROOT / ".env")
 
-from agents.common.data_store.database import session_scope  # noqa: E402
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.enrichment.agent import EnrichmentAgent  # noqa: E402
-from agents.enrichment.enrichment_spam_preview_html import (  # noqa: E402
+from common.data_store.database import session_scope  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from enrichment.agent import EnrichmentAgent  # noqa: E402
+from enrichment.enrichment_spam_preview_html import (  # noqa: E402
     render_enrichment_spam_preview_html,
 )
-from agents.ingestion.agent import IngestionAgent  # noqa: E402
-from agents.normalization.agent import NormalizationAgent  # noqa: E402
-from agents.scripts.jsearch_enrichment_preview_lib import SPAM_PREVIEW_SQL_BY_RUN  # noqa: E402
-from agents.skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
+from ingestion.agent import IngestionAgent  # noqa: E402
+from normalization.agent import NormalizationAgent  # noqa: E402
+from scripts.jsearch_enrichment_preview_lib import SPAM_PREVIEW_SQL_BY_RUN  # noqa: E402
+from skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
 
 structlog.configure(
     processors=[

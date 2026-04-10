@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.ingest_batch_harness import (
+from common.event_envelope import EventEnvelope
+from common.events.ingest_batch_harness import (
     assert_valid_ingest_batch_envelope,
     generate_synthetic_ingest_batches,
     is_valid_ingest_batch_envelope,

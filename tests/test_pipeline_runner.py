@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from agents.common.data_store.database import check_db_connection
-from agents.pipeline_runner import PIPELINE, run_health_checks, run_pipeline
+from common.data_store.database import check_db_connection
+from pipeline_runner import PIPELINE, run_health_checks, run_pipeline
 
 
 class TestRunHealthChecks:
@@ -79,11 +79,11 @@ class TestRunPipelineStubs:
 
     def test_stub_pipeline_produces_entries(self) -> None:
         """A pipeline of stub agents that don't need DB still produces entries."""
-        from agents.analytics.agent import AnalyticsAgent
-        from agents.enrichment.agent import EnrichmentAgent
-        from agents.orchestration.agent import OrchestrationAgent
-        from agents.skills_extraction.agent import SkillsExtractionAgent
-        from agents.visualization.agent import VisualizationAgent
+        from analytics.agent import AnalyticsAgent
+        from enrichment.agent import EnrichmentAgent
+        from orchestration.agent import OrchestrationAgent
+        from skills_extraction.agent import SkillsExtractionAgent
+        from visualization.agent import VisualizationAgent
 
         stub_pipeline = [
             (SkillsExtractionAgent(), False),
@@ -94,7 +94,7 @@ class TestRunPipelineStubs:
         ]
         trigger = {"event_type": "NormalizationComplete", "posting_id": 1}
         with (
-            patch("agents.analytics.agent.check_db_connection", return_value=False),
+            patch("analytics.agent.check_db_connection", return_value=False),
             patch.dict(os.environ, {"PYTHON_DATABASE_URL": ""}),
         ):
             entries = run_pipeline(stub_pipeline, "test-stubs", trigger)
@@ -102,11 +102,11 @@ class TestRunPipelineStubs:
 
     def test_correlation_id_consistency(self) -> None:
         """All entries share the same correlation_id."""
-        from agents.analytics.agent import AnalyticsAgent
-        from agents.enrichment.agent import EnrichmentAgent
-        from agents.orchestration.agent import OrchestrationAgent
-        from agents.skills_extraction.agent import SkillsExtractionAgent
-        from agents.visualization.agent import VisualizationAgent
+        from analytics.agent import AnalyticsAgent
+        from enrichment.agent import EnrichmentAgent
+        from orchestration.agent import OrchestrationAgent
+        from skills_extraction.agent import SkillsExtractionAgent
+        from visualization.agent import VisualizationAgent
 
         stub_pipeline = [
             (SkillsExtractionAgent(), False),
@@ -117,7 +117,7 @@ class TestRunPipelineStubs:
         ]
         trigger = {"event_type": "NormalizationComplete", "posting_id": 1}
         with (
-            patch("agents.analytics.agent.check_db_connection", return_value=False),
+            patch("analytics.agent.check_db_connection", return_value=False),
             patch.dict(os.environ, {"PYTHON_DATABASE_URL": ""}),
         ):
             entries = run_pipeline(stub_pipeline, "test-cid", trigger)
@@ -126,7 +126,7 @@ class TestRunPipelineStubs:
 
     def test_all_envelope_fields_present(self) -> None:
         """Every entry has all 6 required envelope fields."""
-        from agents.skills_extraction.agent import SkillsExtractionAgent
+        from skills_extraction.agent import SkillsExtractionAgent
 
         stub_pipeline = [(SkillsExtractionAgent(), False)]
         trigger = {"event_type": "NormalizationComplete", "posting_id": 1}

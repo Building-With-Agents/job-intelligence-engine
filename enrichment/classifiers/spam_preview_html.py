@@ -6,7 +6,7 @@ import html
 import json
 from typing import Any
 
-from agents.enrichment.classifiers.spam_preview import SpamPreviewResult
+from enrichment.classifiers.spam_preview import SpamPreviewResult
 
 
 def render_spam_preview_html(

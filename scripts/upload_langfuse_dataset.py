@@ -1,15 +1,15 @@
 """Upload ground truth extraction data to Langfuse as a dataset.
 
 Creates (or updates) a Langfuse dataset with labeled job postings from
-agents/eval/extraction_ground_truth.json for annotation and evaluation.
+eval/extraction_ground_truth.json for annotation and evaluation.
 
 Prerequisites:
   - Langfuse running at LANGFUSE_BASE_URL (local Docker or cloud)
   - LANGFUSE_SECRET_KEY and LANGFUSE_PUBLIC_KEY set in .env
 
 Usage:
-  python agents/scripts/upload_langfuse_dataset.py
-  python agents/scripts/upload_langfuse_dataset.py --dataset-name my-custom-name
+  python scripts/upload_langfuse_dataset.py
+  python scripts/upload_langfuse_dataset.py --dataset-name my-custom-name
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import logging
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 from dotenv import load_dotenv  # noqa: E402

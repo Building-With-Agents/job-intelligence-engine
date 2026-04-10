@@ -10,14 +10,14 @@
 
 | Area | Location |
 |------|-----------|
-| ORM | `PostingFreshness`, `TrajectoryMap` in `agents/common/data_store/models.py` |
-| Migrations | `agents/common/data_store/migrations.py` — `dbo.posting_freshness`, `dbo.trajectory_map` |
-| Step 10 | `agents/analytics/agent.py` + `agents/analytics/insights/posting_freshness_store.py` |
-| Enrichment → analytics | `freshness_records` on batch `RecordEnriched`; `agents/enrichment/resolvers/freshness_slice.py` |
+| ORM | `PostingFreshness`, `TrajectoryMap` in `common/data_store/models.py` |
+| Migrations | `common/data_store/migrations.py` — `dbo.posting_freshness`, `dbo.trajectory_map` |
+| Step 10 | `analytics/agent.py` + `analytics/insights/posting_freshness_store.py` |
+| Enrichment → analytics | `freshness_records` on batch `RecordEnriched`; `enrichment/resolvers/freshness_slice.py` |
 | Step 11 | In-memory `build_trajectory_map([])`; trajectory table exists, rows optional in Phase 1 |
-| Step 12 | `agents/analytics/insights/llm_summary.py` — LLM + template fallback |
-| Step 13 | `agents/analytics/insights/events.py` — `AnalyticsRefreshed` counts |
-| Guardrails | `agents/analytics/insights/guardrails.py` — aggregate staleness, cardinality cap |
+| Step 12 | `analytics/insights/llm_summary.py` — LLM + template fallback |
+| Step 13 | `analytics/insights/events.py` — `AnalyticsRefreshed` counts |
+| Guardrails | `analytics/insights/guardrails.py` — aggregate staleness, cardinality cap |
 | Cursor rule | `.cursor/rules/analytics-guardrails.mdc` |
 
 ---
@@ -37,7 +37,7 @@
 
 ## How to verify
 
-1. **Lint / tests** (from `agents/`):
+1. **Lint / tests** (from repo root):
 
    ```bash
    python -m ruff check .
@@ -46,9 +46,9 @@
 
 2. **Database** (dev): run migrations, then read-only SQL:
 
-   `agents/scripts/verification_posting_freshness.sql`
+   `scripts/verification_posting_freshness.sql`
 
-3. **Demo pipeline:** `python agents/pipeline_runner.py` — order includes Enrichment → Analytics; batch path should populate `freshness_records` so Step 10 is not empty-skipped.
+3. **Demo pipeline:** `python pipeline_runner.py` — order includes Enrichment → Analytics; batch path should populate `freshness_records` so Step 10 is not empty-skipped.
 
 ---
 

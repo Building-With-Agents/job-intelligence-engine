@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-04-03T19:12:02.677750+00:00",
-  "source_path": "agents/eval/dedup_threshold_calibration_cases.json",
+  "source_path": "eval/dedup_threshold_calibration_cases.json",
   "report_thresholds": [
     0.88,
     0.9,

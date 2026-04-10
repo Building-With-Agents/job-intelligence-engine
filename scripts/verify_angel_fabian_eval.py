@@ -5,7 +5,7 @@ that the ground truth file loads, the harness produces metrics, and
 the llm_audit_log table is queryable for cost audit.
 
 Usage (from repo root, venv active):
-    python agents/scripts/verify_angel_fabian_eval.py
+    python scripts/verify_angel_fabian_eval.py
 """
 # ruff: noqa: T201
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Path bootstrap
 # ---------------------------------------------------------------------------
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -35,7 +35,7 @@ def main() -> int:
     print("\n=== 1. Ground truth file ===")
     gt_path = _REPO_ROOT / "agents" / "eval" / "extraction_ground_truth.json"
     if gt_path.exists():
-        from agents.eval.extraction_eval_core import load_ground_truth
+        from eval.extraction_eval_core import load_ground_truth
 
         data = load_ground_truth(gt_path)
         print(f"  PASS: ground truth loaded -- {len(data)} records")
@@ -49,7 +49,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 2. Eval harness (stub mode) ===")
     try:
-        from agents.eval.extraction_eval_core import print_console, run_eval_dataset
+        from eval.extraction_eval_core import print_console, run_eval_dataset
 
         result = run_eval_dataset(
             data[:5],  # limit to 5 for speed
@@ -71,7 +71,7 @@ def main() -> int:
     try:
         from sqlalchemy import text as sa_text
 
-        from agents.common.data_store.database import session_scope
+        from common.data_store.database import session_scope
 
         with session_scope() as session:
             row = session.execute(

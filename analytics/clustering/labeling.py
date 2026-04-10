@@ -7,15 +7,15 @@ from collections.abc import Callable, Sequence
 
 import structlog
 
-from agents.analytics.clustering.config import cluster_label_dominance_threshold
-from agents.analytics.clustering.text import normalize_clustering_text_fragment
-from agents.analytics.clustering.types import (
+from analytics.clustering.config import cluster_label_dominance_threshold
+from analytics.clustering.text import normalize_clustering_text_fragment
+from analytics.clustering.types import (
     ClusteredPosting,
     ClusteringResult,
     ClusterSummary,
     PostingClusterFeatures,
 )
-from agents.common.llm_adapter import complete
+from common.llm_adapter import complete
 
 log = structlog.get_logger()
 

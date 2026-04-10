@@ -17,7 +17,7 @@
  * since pgloader runs inside a Docker container.
  *
  * After pgloader completes, run the Python data migration:
- *   agents/.venv/Scripts/python.exe scripts/migrate_all_data.py
+ *   .venv/Scripts/python.exe scripts/migrate_all_data.py
  *
  * See docs/MIGRATION_MSSQL_TO_POSTGRES.md for the full procedure.
  */

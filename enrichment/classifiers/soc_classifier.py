@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import SOCC
+from common.data_store.models import SOCC
 
 log = structlog.get_logger()
 
@@ -156,7 +156,7 @@ def _soc_search_needles(title: str, description: str | None) -> list[str]:
                 break
     if len(needles) < 2 and description:
         with contextlib.suppress(Exception):
-            from agents.enrichment.classification import tokenize
+            from enrichment.classification import tokenize
 
             for t in tokenize(description[:1200]):
                 if len(t) >= 4 and t not in needles:

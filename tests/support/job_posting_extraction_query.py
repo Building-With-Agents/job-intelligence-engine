@@ -10,7 +10,7 @@ A posting is **excluded** if there is any ``extracted_intelligence`` row joined 
 Usage (read-only)::
 
     from sqlalchemy import create_engine, text
-    from agents.tests.support.job_posting_extraction_query import (
+    from tests.support.job_posting_extraction_query import (
         fetch_unextracted_job_posting_rows,
         row_to_job_record,
     )
@@ -28,7 +28,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from agents.common.types import JobRecord
+from common.types import JobRecord
 
 # Default band for "10–20 records" sampling in tests and scripts.
 DEFAULT_MIN_SAMPLE = 15

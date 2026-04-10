@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from agents.dashboard.batch_insights_queries import (
+from dashboard.batch_insights_queries import (
     series_from_category_count,
     series_from_salary_histogram,
 )

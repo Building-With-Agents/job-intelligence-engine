@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.dashboard.streamlit_app import _clamp_list_window
+from dashboard.streamlit_app import _clamp_list_window
 
 
 class TestClampListWindow:

@@ -41,16 +41,16 @@ from typing import Any, Protocol
 
 import structlog
 
-from agents.common.base_agent import BaseAgent
-from agents.common.llm_adapter import get_tracer
+from common.base_agent import BaseAgent
+from common.llm_adapter import get_tracer
 
 log = structlog.get_logger()
 
-from agents.common.data_store import check_db_connection, session_scope
-from agents.common.data_store.models import ExtractedIntelligence, NormalizedJob
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import ExtractionMetadata, JobRecord, ToolRecord
-from agents.skills_extraction.extractors import (
+from common.data_store import check_db_connection, session_scope
+from common.data_store.models import ExtractedIntelligence, NormalizedJob
+from common.event_envelope import EventEnvelope
+from common.types import ExtractionMetadata, JobRecord, ToolRecord
+from skills_extraction.extractors import (
     extract_context,
     extract_responsibilities,
     extract_responsibilities_async,
@@ -58,14 +58,14 @@ from agents.skills_extraction.extractors import (
     extract_tasks_async,
     extract_tools,
 )
-from agents.skills_extraction.extractors.skills import (
+from skills_extraction.extractors.skills import (
     apply_taxonomy_to_skills,
     extract_skills_no_taxonomy,
     extract_skills_no_taxonomy_async,
 )
-from agents.skills_extraction.extractors.taxonomy import resolve_taxonomy_batch
-from agents.skills_extraction.prompts import SKILLS_PROMPT_VERSION
-from agents.skills_extraction.validator import validate_extraction_result
+from skills_extraction.extractors.taxonomy import resolve_taxonomy_batch
+from skills_extraction.prompts import SKILLS_PROMPT_VERSION
+from skills_extraction.validator import validate_extraction_result
 
 _FIXTURE_PATH = (
     Path(__file__).parent.parent / "data" / "fixtures" / "fixture_skills_extracted.json"

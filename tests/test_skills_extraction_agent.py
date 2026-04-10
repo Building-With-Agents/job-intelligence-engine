@@ -13,11 +13,11 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import delete, inspect
 
-from agents.common.data_store.database import check_db_connection, get_engine, session_scope
-from agents.common.data_store.models import ExtractedIntelligence, NormalizedJob
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import JobRecord
-from agents.skills_extraction.agent import ExtractionWorkItem, SkillsExtractionAgent
+from common.data_store.database import check_db_connection, get_engine, session_scope
+from common.data_store.models import ExtractedIntelligence, NormalizedJob
+from common.event_envelope import EventEnvelope
+from common.types import JobRecord
+from skills_extraction.agent import ExtractionWorkItem, SkillsExtractionAgent
 
 
 def _integration_db_available() -> bool:
@@ -40,17 +40,17 @@ def _patch_skills_extraction_pass2_llm(
 ) -> Any:
     """Mock Pass 2 LLM paths; Pass 1 (context + tools) stays real."""
     with (
-        patch("agents.skills_extraction.agent.extract_context") as m_ctx,
-        patch("agents.skills_extraction.agent.extract_tasks") as m_tasks,
-        patch("agents.skills_extraction.agent.extract_tasks_async", new_callable=AsyncMock) as m_tasks_async,
-        patch("agents.skills_extraction.agent.extract_responsibilities") as m_resp,
+        patch("skills_extraction.agent.extract_context") as m_ctx,
+        patch("skills_extraction.agent.extract_tasks") as m_tasks,
+        patch("skills_extraction.agent.extract_tasks_async", new_callable=AsyncMock) as m_tasks_async,
+        patch("skills_extraction.agent.extract_responsibilities") as m_resp,
         patch(
-            "agents.skills_extraction.agent.extract_responsibilities_async",
+            "skills_extraction.agent.extract_responsibilities_async",
             new_callable=AsyncMock,
         ) as m_resp_async,
-        patch("agents.skills_extraction.agent.extract_skills_no_taxonomy") as m_skills,
+        patch("skills_extraction.agent.extract_skills_no_taxonomy") as m_skills,
         patch(
-            "agents.skills_extraction.agent.extract_skills_no_taxonomy_async",
+            "skills_extraction.agent.extract_skills_no_taxonomy_async",
             new_callable=AsyncMock,
         ) as m_skills_async,
     ):
@@ -169,14 +169,14 @@ class TestSkillsExtractionAgent:
     def test_health_check_ok(self) -> None:
         """Returns 'ok' when the fixture loads and the DB is reachable."""
         agent = SkillsExtractionAgent()
-        with patch("agents.skills_extraction.agent.check_db_connection", return_value=True):
+        with patch("skills_extraction.agent.check_db_connection", return_value=True):
             result = agent.health_check()
         assert result["status"] == "ok"
 
     def test_health_check_degraded_fixture_only(self) -> None:
         """Returns 'degraded' when the fixture works but the DB is unavailable."""
         agent = SkillsExtractionAgent()
-        with patch("agents.skills_extraction.agent.check_db_connection", return_value=False):
+        with patch("skills_extraction.agent.check_db_connection", return_value=False):
             result = agent.health_check()
         assert result["status"] == "degraded"
 
@@ -185,8 +185,8 @@ class TestSkillsExtractionAgent:
         agent = SkillsExtractionAgent()
         fake_path = Path("/nonexistent/fixture_skills_extracted.json")
         with (
-            patch("agents.skills_extraction.agent._FIXTURE_PATH", fake_path),
-            patch("agents.skills_extraction.agent.check_db_connection", return_value=False),
+            patch("skills_extraction.agent._FIXTURE_PATH", fake_path),
+            patch("skills_extraction.agent.check_db_connection", return_value=False),
         ):
             result = agent.health_check()
         assert result["status"] == "down"
@@ -197,8 +197,8 @@ class TestSkillsExtractionAgent:
         bad_file.write_text("NOT VALID JSON {{{", encoding="utf-8")
         agent = SkillsExtractionAgent()
         with (
-            patch("agents.skills_extraction.agent._FIXTURE_PATH", bad_file),
-            patch("agents.skills_extraction.agent.check_db_connection", return_value=False),
+            patch("skills_extraction.agent._FIXTURE_PATH", bad_file),
+            patch("skills_extraction.agent.check_db_connection", return_value=False),
         ):
             result = agent.health_check()
         assert result["status"] == "down"
@@ -221,7 +221,7 @@ class TestSkillsExtractionAgent:
 
     def test_process_returns_fixture_skills(self, normalization_event: EventEnvelope) -> None:
         """Output contains a non-empty skills list with expected keys."""
-        from agents.common.types import SkillRecord, SpanRecord, TaxonomyResult
+        from common.types import SkillRecord, SpanRecord, TaxonomyResult
 
         agent = SkillsExtractionAgent()
         agent.health_check()  # pre-load fixture
@@ -238,7 +238,7 @@ class TestSkillsExtractionAgent:
                 skills_meta={"extraction_failed": False, "tokens_used": 50, "cost_usd": 0.0},
             ),
             patch(
-                "agents.skills_extraction.agent.resolve_taxonomy_batch",
+                "skills_extraction.agent.resolve_taxonomy_batch",
                 return_value=[mock_taxonomy],
             ),
         ):
@@ -417,7 +417,7 @@ class TestSkillsExtractionAgent:
 
     def test_process_payload_has_taxonomy_coverage_and_cost_when_llm_used(self) -> None:
         """When skills extraction returns skills and metadata, payload has cost and coverage."""
-        from agents.common.types import SkillRecord, SpanRecord, TaxonomyResult
+        from common.types import SkillRecord, SpanRecord, TaxonomyResult
 
         event = EventEnvelope(
             correlation_id="test-metrics",
@@ -456,7 +456,7 @@ class TestSkillsExtractionAgent:
                 },
             ),
             patch(
-                "agents.skills_extraction.agent.resolve_taxonomy_batch",
+                "skills_extraction.agent.resolve_taxonomy_batch",
                 return_value=[mock_taxonomy],
             ),
         ):
@@ -497,7 +497,7 @@ class TestSkillsExtractionAgent:
 
     def test_process_parallel_path_degrades_when_async_dimension_raises(self) -> None:
         """One failed async dimension should not cancel the others for the same job."""
-        from agents.common.types import SkillRecord, SpanRecord, TaxonomyResult
+        from common.types import SkillRecord, SpanRecord, TaxonomyResult
 
         event = EventEnvelope(
             correlation_id="test-parallel-degraded",
@@ -526,18 +526,18 @@ class TestSkillsExtractionAgent:
         )
         with (
             patch.dict(os.environ, {"SKILLS_EXTRACTION_PARALLEL": "1"}, clear=False),
-            patch("agents.skills_extraction.agent.extract_context", return_value=([], {"tokens_used": 0, "cost_usd": 0.0, "latency_ms": 5, "extraction_failed": False, "extraction_metadata": {}})),
-            patch("agents.skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=RuntimeError("tasks boom"))),
+            patch("skills_extraction.agent.extract_context", return_value=([], {"tokens_used": 0, "cost_usd": 0.0, "latency_ms": 5, "extraction_failed": False, "extraction_metadata": {}})),
+            patch("skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=RuntimeError("tasks boom"))),
             patch(
-                "agents.skills_extraction.agent.extract_responsibilities_async",
+                "skills_extraction.agent.extract_responsibilities_async",
                 new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 7, "cost_usd": 0.001, "latency_ms": 50, "extraction_metadata": {}})),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_skills_no_taxonomy_async",
+                "skills_extraction.agent.extract_skills_no_taxonomy_async",
                 new=AsyncMock(return_value=([skill], {"extraction_failed": False, "tokens_used": 13, "cost_usd": 0.002, "latency_ms": 70, "model": "skills-deployment"})),
             ),
             patch(
-                "agents.skills_extraction.agent.resolve_taxonomy_batch",
+                "skills_extraction.agent.resolve_taxonomy_batch",
                 return_value=[TaxonomyResult(original_label="Python", resolution_step=6)],
             ),
         ):
@@ -587,12 +587,12 @@ class TestSkillsExtractionAgent:
 
         with (
             patch.dict(os.environ, {"SKILLS_EXTRACTION_PARALLEL": "1"}, clear=False),
-            patch("agents.skills_extraction.agent.extract_context", return_value=([], {"tokens_used": 0, "cost_usd": 0.0, "latency_ms": 40, "extraction_failed": False, "extraction_metadata": {}})),
-            patch("agents.skills_extraction.agent.extract_tasks_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 10, "cost_usd": 0.001, "latency_ms": 200, "extraction_metadata": {}}))),
-            patch("agents.skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 11, "cost_usd": 0.001, "latency_ms": 300, "extraction_metadata": {}}))),
-            patch("agents.skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 12, "cost_usd": 0.001, "latency_ms": 500, "extraction_metadata": {}, "model": "skills-deployment"}))),
+            patch("skills_extraction.agent.extract_context", return_value=([], {"tokens_used": 0, "cost_usd": 0.0, "latency_ms": 40, "extraction_failed": False, "extraction_metadata": {}})),
+            patch("skills_extraction.agent.extract_tasks_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 10, "cost_usd": 0.001, "latency_ms": 200, "extraction_metadata": {}}))),
+            patch("skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 11, "cost_usd": 0.001, "latency_ms": 300, "extraction_metadata": {}}))),
+            patch("skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 12, "cost_usd": 0.001, "latency_ms": 500, "extraction_metadata": {}, "model": "skills-deployment"}))),
             patch(
-                "agents.skills_extraction.agent.time.perf_counter",
+                "skills_extraction.agent.time.perf_counter",
                 side_effect=[10.0, 10.01, 10.02, 10.27, 10.28, 10.29],
             ),
         ):
@@ -626,12 +626,12 @@ class TestSkillsExtractionAgent:
         agent = SkillsExtractionAgent()
         with (
             patch.dict(os.environ, {"SKILLS_EXTRACTION_PARALLEL": "0"}, clear=False),
-            patch("agents.skills_extraction.agent.extract_tasks", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_tasks,
-            patch("agents.skills_extraction.agent.extract_responsibilities", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_resp,
-            patch("agents.skills_extraction.agent.extract_skills_no_taxonomy", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_skills,
-            patch("agents.skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
-            patch("agents.skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
-            patch("agents.skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.extract_tasks", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_tasks,
+            patch("skills_extraction.agent.extract_responsibilities", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_resp,
+            patch("skills_extraction.agent.extract_skills_no_taxonomy", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_skills,
+            patch("skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
         ):
             out = agent.process(event)
 
@@ -701,7 +701,7 @@ class TestSkillsExtractionAgent:
                 "_extract_work_item_no_taxonomy_async",
                 new=AsyncMock(side_effect=_fake_extract),
             ),
-            patch("agents.skills_extraction.agent.time.sleep") as m_sleep,
+            patch("skills_extraction.agent.time.sleep") as m_sleep,
         ):
             out = agent.process(
                 EventEnvelope(
@@ -799,13 +799,13 @@ class TestSkillsExtractionAgent:
         agent = SkillsExtractionAgent()
         with (
             patch.dict(os.environ, {"SKILLS_EXTRACTION_PARALLEL": "1"}, clear=False),
-            patch("agents.skills_extraction.agent.asyncio.get_running_loop", return_value=object()),
-            patch("agents.skills_extraction.agent.extract_tasks", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_tasks,
-            patch("agents.skills_extraction.agent.extract_responsibilities", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_resp,
-            patch("agents.skills_extraction.agent.extract_skills_no_taxonomy", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_skills,
-            patch("agents.skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
-            patch("agents.skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
-            patch("agents.skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.asyncio.get_running_loop", return_value=object()),
+            patch("skills_extraction.agent.extract_tasks", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_tasks,
+            patch("skills_extraction.agent.extract_responsibilities", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_resp,
+            patch("skills_extraction.agent.extract_skills_no_taxonomy", return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})) as m_skills,
+            patch("skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.extract_responsibilities_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
+            patch("skills_extraction.agent.extract_skills_no_taxonomy_async", new=AsyncMock(side_effect=AssertionError("async path should not run"))),
         ):
             out = agent.process(event)
 
@@ -839,7 +839,7 @@ class TestSkillsExtractionAgent:
                 skills_list=[],
                 skills_meta={"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0},
             ),
-            patch("agents.skills_extraction.agent.time.sleep") as m_sleep,
+            patch("skills_extraction.agent.time.sleep") as m_sleep,
         ):
             out = agent.process(
                 EventEnvelope(
@@ -855,7 +855,7 @@ class TestSkillsExtractionAgent:
 
     def test_process_parallel_batch_matches_serial_output(self) -> None:
         """Parallel and serial batch execution should match result-for-result on extraction output."""
-        from agents.common.types import (
+        from common.types import (
             ResponsibilityRecord,
             SkillRecord,
             SpanRecord,
@@ -959,30 +959,30 @@ class TestSkillsExtractionAgent:
         )
 
         with (
-            patch("agents.skills_extraction.agent.extract_context", return_value=([], ctx_meta)),
-            patch("agents.skills_extraction.agent.extract_tasks", return_value=([task], tasks_meta)),
+            patch("skills_extraction.agent.extract_context", return_value=([], ctx_meta)),
+            patch("skills_extraction.agent.extract_tasks", return_value=([task], tasks_meta)),
             patch(
-                "agents.skills_extraction.agent.extract_tasks_async",
+                "skills_extraction.agent.extract_tasks_async",
                 new=AsyncMock(return_value=([task], tasks_meta)),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_responsibilities",
+                "skills_extraction.agent.extract_responsibilities",
                 return_value=([responsibility], responsibilities_meta),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_responsibilities_async",
+                "skills_extraction.agent.extract_responsibilities_async",
                 new=AsyncMock(return_value=([responsibility], responsibilities_meta)),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_skills_no_taxonomy",
+                "skills_extraction.agent.extract_skills_no_taxonomy",
                 return_value=([skill], skills_meta),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_skills_no_taxonomy_async",
+                "skills_extraction.agent.extract_skills_no_taxonomy_async",
                 new=AsyncMock(return_value=([skill], skills_meta)),
             ),
             patch(
-                "agents.skills_extraction.agent.resolve_taxonomy_batch",
+                "skills_extraction.agent.resolve_taxonomy_batch",
                 return_value=[taxonomy],
             ),
         ):
@@ -1022,7 +1022,7 @@ class TestSkillsExtractionAgent:
                 clear=False,
             ),
             patch(
-                "agents.skills_extraction.agent.extract_context",
+                "skills_extraction.agent.extract_context",
                 return_value=(
                     [],
                     {
@@ -1037,15 +1037,15 @@ class TestSkillsExtractionAgent:
                 ),
             ),
             patch(
-                "agents.skills_extraction.agent.extract_tasks_async",
+                "skills_extraction.agent.extract_tasks_async",
                 new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})),
             ) as m_tasks,
             patch(
-                "agents.skills_extraction.agent.extract_responsibilities_async",
+                "skills_extraction.agent.extract_responsibilities_async",
                 new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}})),
             ) as m_resp,
             patch(
-                "agents.skills_extraction.agent.extract_skills_no_taxonomy_async",
+                "skills_extraction.agent.extract_skills_no_taxonomy_async",
                 new=AsyncMock(return_value=([], {"extraction_failed": False, "tokens_used": 0, "cost_usd": 0.0, "latency_ms": 10, "extraction_metadata": {}, "model": "skills-deployment"})),
             ) as m_skills,
         ):

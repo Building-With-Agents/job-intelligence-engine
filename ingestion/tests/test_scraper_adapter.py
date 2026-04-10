@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
-from agents.common.types.region_config import RegionConfig
-from agents.ingestion.sources.scraper_adapter import ScraperAdapter
+from common.types.region_config import RegionConfig
+from ingestion.sources.scraper_adapter import ScraperAdapter
 
 _TEST_REGION = RegionConfig(
     region_id="test-region",

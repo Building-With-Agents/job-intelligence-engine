@@ -1,10 +1,10 @@
-"""Unit tests for ``agents.eval.cost_tier``."""
+"""Unit tests for ``eval.cost_tier``."""
 
 from __future__ import annotations
 
 import pytest
 
-from agents.eval.cost_tier import resolve_llm_audit_model_tier
+from eval.cost_tier import resolve_llm_audit_model_tier
 
 
 @pytest.fixture

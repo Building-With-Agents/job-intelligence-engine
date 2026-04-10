@@ -10,12 +10,12 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agents.enrichment.dedup.completeness import completeness_score, publish_date_for_tiebreak
-from agents.enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
-from agents.enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
-from agents.enrichment.dedup.types import FuzzyDedupResult
-from agents.enrichment.dedup.vectors import cosine_similarity, parse_stored_embedding, vector_to_pg_cast_param
-from agents.skills_extraction.extractors.taxonomy import _embed_texts_azure
+from enrichment.dedup.completeness import completeness_score, publish_date_for_tiebreak
+from enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
+from enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
+from enrichment.dedup.types import FuzzyDedupResult
+from enrichment.dedup.vectors import cosine_similarity, parse_stored_embedding, vector_to_pg_cast_param
+from skills_extraction.extractors.taxonomy import _embed_texts_azure
 
 log = structlog.get_logger()
 

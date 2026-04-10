@@ -2,8 +2,8 @@
 description: "SQL guardrails for Analytics Agent: query validation, allowed tables, row limits, timeout enforcement"
 alwaysApply: false
 globs:
-  - "agents/analytics/query_engine/**"
-  - "agents/analytics/agent.py"
+  - "analytics/query_engine/**"
+  - "analytics/agent.py"
 ---
 
 # SQL Guardrails

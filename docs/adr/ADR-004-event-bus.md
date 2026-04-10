@@ -6,7 +6,7 @@ March 2026 · In-process, Redis Streams, and Kafka message buses; normalized com
 
 ## 1. What We Tested
 
-**Transports.** We tested three implementations in `agents/common/message_bus/`: in-process (in-memory), Redis Streams (fake_redis), and Kafka (fake_kafka).
+**Transports.** We tested three implementations in `common/message_bus/`: in-process (in-memory), Redis Streams (fake_redis), and Kafka (fake_kafka).
 
 **Scenario.** The flow was ingest_batch_to_normalization_complete with 1,000 input events (seed 42); an optional 50k run is available via CLI.
 
@@ -50,17 +50,17 @@ When **scaling or when durability and replay matter**, use **Redis Streams** for
 
 ## 5. Data and Evidence
 
-**CSV.** Results are in `agents/data/output/exp004_comparison.csv`, with columns for transport, backend, throughput, latency, queue_depth, in_flight after drain, max_in_flight peak, replay, producer_crash_*, events_lost_consumer_crash, and related fields.
+**CSV.** Results are in `data/output/exp004_comparison.csv`, with columns for transport, backend, throughput, latency, queue_depth, in_flight after drain, max_in_flight peak, replay, producer_crash_*, events_lost_consumer_crash, and related fields.
 
 **Charts.** The same directory contains `exp004_throughput.png`, `exp004_latency.png`, `exp004_observability.png`, `exp004_replay.png`, and `exp004_correlation_id.png`. For Redis and Kafka, queue_depth and max_in_flight in the charts are peak values during the run.
 
-**Checked-in artifacts.** We have `agents/docs/exp004_transport_results.md`, optional `exp004_transport_report.html`, and findings in `agents/docs/EXP-004_CURRENT_TESTABLE_ASSETS.txt`.
+**Checked-in artifacts.** We have `docs/exp004_transport_results.md`, optional `exp004_transport_report.html`, and findings in `docs/EXP-004_CURRENT_TESTABLE_ASSETS.txt`.
 
-**Report script.** Run `python -m agents.common.message_bus.run_comparison_and_report` to write the CSV, generate the charts, and log the summary.
+**Report script.** Run `python -m common.message_bus.run_comparison_and_report` to write the CSV, generate the charts, and log the summary.
 
-**CLI.** For a custom run you can use `python -m agents.common.message_bus.run_comparison --count 1000 --seed 42 --crash-at 500 --format markdown --output agents/docs/exp004_transport_results.md` (or `--format csv` for CSV).
+**CLI.** For a custom run you can use `python -m common.message_bus.run_comparison --count 1000 --seed 42 --crash-at 500 --format markdown --output docs/exp004_transport_results.md` (or `--format csv` for CSV).
 
-**Tests.** Run `pytest agents/tests/test_transport_comparison.py agents/tests/test_redis_streams_event_bus.py agents/tests/test_kafka_event_bus.py agents/common/events/tests/test_event_bus.py -v`; all pass.
+**Tests.** Run `pytest tests/test_transport_comparison.py tests/test_redis_streams_event_bus.py tests/test_kafka_event_bus.py common/events/tests/test_event_bus.py -v`; all pass.
 
 ---
 

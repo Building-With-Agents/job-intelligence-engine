@@ -9,9 +9,9 @@ from collections.abc import Awaitable, Mapping, Sequence
 from inspect import isawaitable
 from typing import Protocol, cast
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus.base import EventBusBase
-from agents.common.message_bus.contracts import EventHandler, Subscription
+from common.event_envelope import EventEnvelope
+from common.message_bus.base import EventBusBase
+from common.message_bus.contracts import EventHandler, Subscription
 
 _EVENT_FIELD = "event"
 

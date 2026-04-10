@@ -30,17 +30,17 @@ event output matches the promotion/write path.
 
 With ``normalized_job_id`` and a resolvable ``job_postings`` row (join on
 ``source``/``external_id``), Phase 1 enrichment columns are persisted via
-:mod:`agents.enrichment.job_postings_promotion`. **Rejected** spam tier skips
+:mod:`enrichment.job_postings_promotion`. **Rejected** spam tier skips
 ``UPDATE`` entirely. **Uncertain** (degraded classifier) updates quality fields
 only and leaves ``is_spam``/``spam_score`` unchanged.
 
-Fixture: agents/data/fixtures/fixture_enriched.json — supplies ``company`` /
+Fixture: data/fixtures/fixture_enriched.json — supplies ``company`` /
 ``company_id`` / ``sector_id`` when not on the event; role, seniority, and
 ``quality_score`` are always computed (not taken from the fixture). Spam
 scores use the fixture only when ``normalized_job_id`` is absent or DB is
 unconfigured.
 
-CLI: ``python -m agents.enrichment.agent --limit 50`` (loads repo-root ``.env`` via
+CLI: ``python -m enrichment.agent --limit 50`` (loads repo-root ``.env`` via
 python-dotenv, then requires ``PYTHON_DATABASE_URL``).
 """
 
@@ -60,46 +60,46 @@ from dotenv import load_dotenv
 from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
-from agents.common.base_agent import BaseAgent
-from agents.common.data_store.database import check_db_connection, session_scope
-from agents.common.data_store.models import IndustrySector, NormalizedJob, TechnologyArea
-from agents.common.event_envelope import EventEnvelope
-from agents.common.llm_client import invoke_skills_llm
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.adapters.facade import ExternalEnrichmentFacade
-from agents.enrichment.async_bridge import run_coroutine
-from agents.enrichment.classification import (
+from common.base_agent import BaseAgent
+from common.data_store.database import check_db_connection, session_scope
+from common.data_store.models import IndustrySector, NormalizedJob, TechnologyArea
+from common.event_envelope import EventEnvelope
+from common.llm_client import invoke_skills_llm
+from common.types.job_profile import EmployerProfile
+from enrichment.adapters.facade import ExternalEnrichmentFacade
+from enrichment.async_bridge import run_coroutine
+from enrichment.classification import (
     FALLBACK_TECH_AREA_LABELS,
     classify_job,
 )
-from agents.enrichment.classifiers.employer_classifier import (
+from enrichment.classifiers.employer_classifier import (
     build_employer_profile,
     persist_employer_metadata,
 )
-from agents.enrichment.classifiers.naics_classifier import classify_naics
-from agents.enrichment.classifiers.quality import score_quality
-from agents.enrichment.classifiers.soc_classifier import classify_soc
-from agents.enrichment.classifiers.spam_preview import (
+from enrichment.classifiers.naics_classifier import classify_naics
+from enrichment.classifiers.quality import score_quality
+from enrichment.classifiers.soc_classifier import classify_soc
+from enrichment.classifiers.spam_preview import (
     SpamPreviewResult,
     apply_spam_tiers,
     score_spam_preview,
 )
-from agents.enrichment.job_postings_promotion import (
+from enrichment.job_postings_promotion import (
     apply_enrichment_to_job_postings,
     derive_enrichment_output_fields,
     resolve_job_posting_row,
 )
-from agents.enrichment.resolvers.company_resolver import resolve_company
-from agents.enrichment.resolvers.confidence import (
+from enrichment.resolvers.company_resolver import resolve_company
+from enrichment.resolvers.confidence import (
     compute_field_confidence,
     compute_overall_confidence,
 )
-from agents.enrichment.resolvers.events import build_record_enriched_event
-from agents.enrichment.resolvers.freshness_slice import build_freshness_record_for_analytics
-from agents.enrichment.resolvers.location_resolver import resolve_location
-from agents.enrichment.resolvers.sector_resolver import resolve_sector
-from agents.enrichment.schemas import EnrichedJobProfile
-from agents.scripts.jsearch_enrichment_preview_lib import build_extraction_dict
+from enrichment.resolvers.events import build_record_enriched_event
+from enrichment.resolvers.freshness_slice import build_freshness_record_for_analytics
+from enrichment.resolvers.location_resolver import resolve_location
+from enrichment.resolvers.sector_resolver import resolve_sector
+from enrichment.schemas import EnrichedJobProfile
+from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
 
@@ -133,7 +133,7 @@ def _enrichment_soc_llm() -> Callable[[str], str]:
 
 _alert_bus: Any = None
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 _ENV_PATH = _REPO_ROOT / ".env"
 
 
@@ -497,7 +497,7 @@ class EnrichmentAgent(BaseAgent):
         import json as _json
         from contextlib import nullcontext, suppress
 
-        from agents.common.llm_adapter import get_tracer
+        from common.llm_adapter import get_tracer
 
         payload = event.payload
         correlation_id = event.correlation_id

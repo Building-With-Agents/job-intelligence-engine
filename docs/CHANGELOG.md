@@ -11,28 +11,28 @@ All notable changes to the agents pipeline are documented here.
 ### Changes
 
 - **Retry metadata correctness**
-  - `agents/skills_extraction/extractors/_retry.py`: `merge_retry_metadata(...)` now keeps
+  - `skills_extraction/extractors/_retry.py`: `merge_retry_metadata(...)` now keeps
     the latest retry status fields while preserving accumulated `tokens_used`, `cost_usd`,
     and `latency_ms`.
-  - `agents/skills_extraction/extractors/tasks.py`,
-    `agents/skills_extraction/extractors/responsibilities.py`, and
-    `agents/skills_extraction/extractors/skills.py`: remove the overwrite that previously
+  - `skills_extraction/extractors/tasks.py`,
+    `skills_extraction/extractors/responsibilities.py`, and
+    `skills_extraction/extractors/skills.py`: remove the overwrite that previously
     discarded accumulated retry totals after a successful backoff retry.
 
 - **Benchmark test fixes**
-  - `agents/skills_extraction/tests/test_parallel_throughput.py`: the intra-job benchmark
+  - `skills_extraction/tests/test_parallel_throughput.py`: the intra-job benchmark
     now asserts real overlap (`max_in_flight == 3`) and uses a threshold that fails a
     serial regression.
   - The partial-failure benchmark now checks the actual payload contract
     (`records` + top-level `extraction_status`) and asserts degraded-not-failed behavior.
 
 - **Acceptance coverage**
-  - `agents/common/tests/test_llm_adapter.py`: adds a concurrent audit-write test proving
+  - `common/tests/test_llm_adapter.py`: adds a concurrent audit-write test proving
     each `log_extraction_event()` call gets a distinct short-lived session and closes it.
-  - `agents/tests/test_skills_extraction_agent.py`: strengthens serial ↔ parallel
+  - `tests/test_skills_extraction_agent.py`: strengthens serial ↔ parallel
     equivalence by comparing saved extraction output dict-for-dict, not just payload shape.
-  - `agents/tests/test_skills_extractor.py` and
-    `agents/skills_extraction/tests/test_async_extractors.py`: assert retry totals are
+  - `tests/test_skills_extractor.py` and
+    `skills_extraction/tests/test_async_extractors.py`: assert retry totals are
     accumulated, not overwritten, after a `429 -> success` recovery.
 
 - **Benchmark estimate**
@@ -55,35 +55,35 @@ All notable changes to the agents pipeline are documented here.
 ### Changes
 
 - **Shared retry module**
-  - `agents/skills_extraction/extractors/_retry.py` (new): canonical home for
+  - `skills_extraction/extractors/_retry.py` (new): canonical home for
     `RATE_LIMIT_BACKOFF_SECS`, `RATE_LIMIT_MAX_CYCLES`, `is_rate_limited`, and
     `merge_retry_metadata`. All three async extractors now import from here instead
     of each defining their own copy.
 
 - **Retry/backoff parity for tasks and responsibilities (P2 fix)**
-  - `agents/skills_extraction/extractors/tasks.py` — `extract_tasks_async` now
+  - `skills_extraction/extractors/tasks.py` — `extract_tasks_async` now
     has the same two-level retry strategy as `extract_skills_no_taxonomy_async`:
     one timeout retry after 0.5 s, then up to four 429 backoff cycles with jitter.
     Previously the function made a single call and silently returned `[]` on any
     failure.
-  - `agents/skills_extraction/extractors/responsibilities.py` —
+  - `skills_extraction/extractors/responsibilities.py` —
     `extract_responsibilities_async` receives the same upgrade.
 
 - **Async public entrypoint (P2 fix)**
-  - `agents/skills_extraction/agent.py` — new `process_async(event)` method on
+  - `skills_extraction/agent.py` — new `process_async(event)` method on
     `SkillsExtractionAgent`. Unlike `process()`, it awaits `_extract_batch_parallel`
     directly and never falls back to serial, so async hosts (FastAPI, async test
     runners, other async agents) always get the full parallel speedup. The
     module-level docstring is updated to document both entrypoints.
 
 - **Tests**
-  - `agents/skills_extraction/tests/test_async_extractors.py` — six new tests:
+  - `skills_extraction/tests/test_async_extractors.py` — six new tests:
     429 retry + backoff for `extract_tasks_async` and `extract_responsibilities_async`
     (including `sleep` mock assertion), persistent-failure empty-return for each,
     `process_async` returns a valid `SkillsExtracted` envelope, and
     `process_async` verifies `_extract_batch_parallel` is called (not the serial
     fallback) even when already inside an event loop.
-  - `agents/skills_extraction/tests/test_parallel_throughput.py` (new): four
+  - `skills_extraction/tests/test_parallel_throughput.py` (new): four
     throughput/correctness benchmark tests using 50 ms mock LLM latency —
     intra-job parallelism (3 concurrent calls ≈ 1× latency vs 3×), inter-job
     parallelism (5 and 10 jobs bounded by semaphore), and partial-failure isolation
@@ -105,7 +105,7 @@ See `TODO.md` — three acceptance criteria still require work:
 ### Changes
 
 - **Agent execution**
-  - `agents/skills_extraction/agent.py`: adds batch-level inter-job concurrency controlled by
+  - `skills_extraction/agent.py`: adds batch-level inter-job concurrency controlled by
     `SKILLS_EXTRACTION_CONCURRENCY` (default `5`) when `SKILLS_EXTRACTION_PARALLEL=1`.
   - Refactors `process()` into explicit serial and parallel batch helpers so the public entrypoint
     remains synchronous while the internal batch path uses `asyncio.run(...)`.
@@ -118,10 +118,10 @@ See `TODO.md` — three acceptance criteria still require work:
     utilization, and `SQLAlchemyExtractionStore.save()` serializes concurrent callers with a
     process-local lock.
 - **Processing loop**
-  - `agents/scripts/run_processing_loop.py`: logs `extraction_duration_ms` and
+  - `scripts/run_processing_loop.py`: logs `extraction_duration_ms` and
     `iteration_wall_clock_ms` so serial vs parallel extraction time can be compared in the loop.
 - **Tests**
-  - `agents/tests/test_skills_extraction_agent.py`: adds coverage for semaphore limits, job-level
+  - `tests/test_skills_extraction_agent.py`: adds coverage for semaphore limits, job-level
     failure isolation, running-loop serial fallback, serial throttle preservation, serial/parallel
     payload equivalence, and empty-text short-circuit behavior in parallel mode.
 - **Docs/config**
@@ -135,7 +135,7 @@ See `TODO.md` — three acceptance criteria still require work:
 ### Changes
 
 - **Agent execution**
-  - `agents/skills_extraction/agent.py`: adds `SKILLS_EXTRACTION_PARALLEL`-controlled
+  - `skills_extraction/agent.py`: adds `SKILLS_EXTRACTION_PARALLEL`-controlled
     intra-job concurrency for Pass 2 extraction.
   - New `_extract_work_item_no_taxonomy_async(...)` runs tasks, responsibilities,
     and no-taxonomy skills extraction with `asyncio.gather(..., return_exceptions=True)`.
@@ -145,7 +145,7 @@ See `TODO.md` — three acceptance criteria still require work:
   - Combined extraction latency now reflects Pass 2 wall-clock time in the async path
     instead of summing dimension latencies.
 - **Tests**
-  - `agents/tests/test_skills_extraction_agent.py`: covers degraded async-dimension
+  - `tests/test_skills_extraction_agent.py`: covers degraded async-dimension
     failure handling, wall-clock latency aggregation, and the explicit serial fallback.
 - **Docs/config**
   - `TODO.md`, `CLAUDE.md`, and `.env.example` updated to reflect the current Phase A/B state.
@@ -162,17 +162,17 @@ See `TODO.md` — three acceptance criteria still require work:
 ### Changes
 
 - **Kafka candidate**
-  - `agents/common/message_bus/kafka.py`: adds `KafkaEventBus` with:
+  - `common/message_bus/kafka.py`: adds `KafkaEventBus` with:
     - transport-agnostic routing via `EventEnvelope` + `payload["event_type"]`
     - parity counters (`published_events`, `delivered_events`, `handler_failures`, `queue_depth`, `in_flight`)
     - per-message commit on success and seek-on-failure replay behavior
     - optional `from_bootstrap_servers(...)` constructor (requires `kafka-python`)
 - **Exports/docs**
-  - `agents/common/message_bus/__init__.py`: exports Kafka bus/errors.
-  - `agents/common/message_bus/README.md`: adds Commit 4 Kafka usage and semantics.
-  - `agents/requirements.txt`: adds `kafka-python>=2.0`.
+  - `common/message_bus/__init__.py`: exports Kafka bus/errors.
+  - `common/message_bus/README.md`: adds Commit 4 Kafka usage and semantics.
+  - `requirements.txt`: adds `kafka-python>=2.0`.
 - **Tests**
-  - `agents/tests/test_kafka_event_bus.py`:
+  - `tests/test_kafka_event_bus.py`:
     - envelope serialization round-trip
     - harness-equivalent 1,000-event IngestBatch → NormalizationComplete parity
     - crash at index 500 + replay (`replay_count=501`, `replay_completeness=100%`, same event_id set)
@@ -189,7 +189,7 @@ See `TODO.md` — three acceptance criteria still require work:
 ### Changes
 
 - **Comparison runner**
-  - `agents/common/message_bus/comparison.py`: adds:
+  - `common/message_bus/comparison.py`: adds:
     - `ComparisonScenario` for shared harness/run configuration
     - `run_transport_comparison(...)` for one bus instance
     - `compare_transport_candidates(...)` for multi-bus comparisons
@@ -205,12 +205,12 @@ See `TODO.md` — three acceptance criteria still require work:
   - `results_to_rows(...)` returns CSV-friendly dicts
   - `format_results_markdown_table(...)` renders a Markdown table for ADR/findings docs
 - **Exports/docs/tests**
-  - `agents/common/message_bus/__init__.py`: exports comparison helpers and result types
-  - `agents/common/message_bus/README.md`: documents the comparison entry points
-  - `agents/tests/test_transport_comparison.py`: covers in-process, fake Redis Streams, and fake Kafka comparisons plus table output
-  - `agents/common/message_bus/run_comparison.py`: adds a CLI that runs the three-way comparison and renders Markdown / CSV / JSON
-  - `agents/common/message_bus/candidate_factories.py`: adds default in-process, fake Redis, fake Kafka, and optional live Redis/Kafka candidate builders
-  - `agents/tests/test_transport_comparison_cli.py`: covers CLI report rendering
+  - `common/message_bus/__init__.py`: exports comparison helpers and result types
+  - `common/message_bus/README.md`: documents the comparison entry points
+  - `tests/test_transport_comparison.py`: covers in-process, fake Redis Streams, and fake Kafka comparisons plus table output
+  - `common/message_bus/run_comparison.py`: adds a CLI that runs the three-way comparison and renders Markdown / CSV / JSON
+  - `common/message_bus/candidate_factories.py`: adds default in-process, fake Redis, fake Kafka, and optional live Redis/Kafka candidate builders
+  - `tests/test_transport_comparison_cli.py`: covers CLI report rendering
 
 ## EXP-004 scope expansion (Emilio)
 
@@ -219,29 +219,29 @@ See `TODO.md` — three acceptance criteria still require work:
 ### Changes
 
 - **Failure payloads**
-  - `agents/ingestion/events.py`: `source_failure_payload` extended with `error_type`, `severity` (default `"critical"`), and `error_reason`.
-  - `agents/normalization/events.py`: `normalization_failed_payload` extended with the same three fields (`error_type`, `severity`, `error_reason`).
-- **Synthetic generators** (`agents/common/events/synthetic_events.py`)
+  - `ingestion/events.py`: `source_failure_payload` extended with `error_type`, `severity` (default `"critical"`), and `error_reason`.
+  - `normalization/events.py`: `normalization_failed_payload` extended with the same three fields (`error_type`, `severity`, `error_reason`).
+- **Synthetic generators** (`common/events/synthetic_events.py`)
   - `generate_synthetic_normalization_complete(count, seed, typed=False)` — deterministic NormalizationComplete events.
   - `generate_synthetic_source_failures(count, seed, typed=False)` — deterministic SourceFailure events.
   - `generate_synthetic_normalization_failed(count, seed, typed=False)` — deterministic NormalizationFailed events.
   - All accept optional `typed=True` to yield typed event wrappers.
-- **Typed events** (`agents/common/events/typed_events.py`)
+- **Typed events** (`common/events/typed_events.py`)
   - `IngestBatchEvent`, `NormalizationCompleteEvent`, `SourceFailureEvent`, `NormalizationFailedEvent` — wrappers around `EventEnvelope` that validate `payload["event_type"]`.
 - **Harness**
   - `ingest_batch_harness.py`: `generate_synthetic_ingest_batches(..., typed=False)`; when `typed=True`, yields `IngestBatchEvent` instances.
 - **Tests**
-  - `agents/common/events/tests/test_synthetic_events.py` — shape, `agent_id`, payload keys, determinism for synthetic generators.
-  - `agents/common/events/tests/test_correlation_propagation.py` — one test that builds IngestBatch + NormalizationComplete with the same `correlation_id` and asserts they match (synthetic only).
+  - `common/events/tests/test_synthetic_events.py` — shape, `agent_id`, payload keys, determinism for synthetic generators.
+  - `common/events/tests/test_correlation_propagation.py` — one test that builds IngestBatch + NormalizationComplete with the same `correlation_id` and asserts they match (synthetic only).
 
 ### Demo scripts
 
-- **`agents/common/events/demo_50_events.py`**
+- **`common/events/demo_50_events.py`**
   - Generates 50 success events (IngestBatch only), then 50 mixed events (20 IngestBatch + 15 SourceFailure + 15 NormalizationFailed). Prints sample payloads so you can see `error_type`, `severity`, and `error_reason` on failure events.
-  - **Run:** `python -m agents.common.events.demo_50_events` (from repo root, venv activated).
-- **`agents/common/events/demo_bus_flow.py`**
+  - **Run:** `python -m common.events.demo_50_events` (from repo root, venv activated).
+- **`common/events/demo_bus_flow.py`**
   - In-memory bus simulation: Scenario A (happy path, no errors), Scenario B (stream with SourceFailure events interleaved), Scenario C (crash after N events, then recover and replay with same seed).
-  - **Run:** `python -m agents.common.events.demo_bus_flow` (from repo root, venv activated).
+  - **Run:** `python -m common.events.demo_bus_flow` (from repo root, venv activated).
 
 ---
 
@@ -251,13 +251,13 @@ See `TODO.md` — three acceptance criteria still require work:
 
 ### Changes
 
-- **Added** `agents/common/events/ingest_batch_harness.py`
+- **Added** `common/events/ingest_batch_harness.py`
   - `generate_synthetic_ingest_batches(count=1000, seed=42)` — deterministic generator that yields `EventEnvelope` instances with IngestBatch payloads.
   - `assert_valid_ingest_batch_envelope(event)` — raises `ValueError` with a clear message if envelope or payload is invalid.
   - `is_valid_ingest_batch_envelope(event)` — returns `True`/`False` for single-event validation.
   - Constants: `INGEST_BATCH_PAYLOAD_KEYS`, `INGEST_BATCH_PAYLOAD_STR_KEYS`, `INGEST_BATCH_PAYLOAD_INT_KEYS` for payload validation.
-- **Added** `agents/common/events/tests/__init__.py` — package marker for event tests.
-- **Added** `agents/common/events/tests/test_harness_events.py` — 16 tests that validate only the harness (see **Harness tests explained** below).
+- **Added** `common/events/tests/__init__.py` — package marker for event tests.
+- **Added** `common/events/tests/test_harness_events.py` — 16 tests that validate only the harness (see **Harness tests explained** below).
 
 No message bus implementation, throughput, crash recovery, or replay tests are included — those are owned by the event-bus experiment (Bryan).
 
@@ -265,10 +265,10 @@ No message bus implementation, throughput, crash recovery, or replay tests are i
 
 ### Harness tests explained
 
-The file `agents/common/events/tests/test_harness_events.py` contains **16 tests** in six groups. Each test only checks the harness output (no bus, no network). Run them with:
+The file `common/events/tests/test_harness_events.py` contains **16 tests** in six groups. Each test only checks the harness output (no bus, no network). Run them with:
 
 ```bash
-cd agents && pytest common/events/tests/test_harness_events.py -v
+pytest common/events/tests/test_harness_events.py -v
 ```
 
 #### 1. Envelope shape (3 tests)
@@ -336,7 +336,7 @@ These ensure the validation helper rejects invalid events and accepts valid ones
   - `timestamp` from a fixed base (2025-01-01 00:00:00) plus `timedelta(seconds=i)`.
   - `correlation_id` = `f"harness-{seed}"` for the whole run.
   - Payload via `ingest_batch_payload()` with `batch_id=f"harness-batch-{seed}-{i}"`, `source="harness"`, `region_id="us"`, and integer fields from `(seed + i)` modulo small constants.
-- **Event shape:** Each event is an `EventEnvelope` with `agent_id="ingestion_agent"`, `schema_version="1.0"`, and a payload that matches the contract from `agents/ingestion/events.ingest_batch_payload()` (`event_type`, `batch_id`, `source`, `region_id`, `total_fetched`, `staged_count`, `dedup_count`, `error_count`).
+- **Event shape:** Each event is an `EventEnvelope` with `agent_id="ingestion_agent"`, `schema_version="1.0"`, and a payload that matches the contract from `ingestion/events.ingest_batch_payload()` (`event_type`, `batch_id`, `source`, `region_id`, `total_fetched`, `staged_count`, `dedup_count`, `error_count`).
 - **Validation:** The helper checks that the envelope has the expected `agent_id`, that the payload is a dict with all required keys, that `event_type == "IngestBatch"`, and that each key has the correct type (str vs int). Tests use this to ensure every generated event is valid and to assert that invalid payloads are rejected.
 
 ---
@@ -346,7 +346,7 @@ These ensure the validation helper rejects invalid events and accepts valid ones
 1. **Run harness structure tests (no bus required)**  
    From repo root (with venv activated):
    ```bash
-   cd agents && pytest common/events/tests/test_harness_events.py -v
+   pytest common/events/tests/test_harness_events.py -v
    ```
 
 2. **Generate the same 1,000 events in your bus experiment**  
@@ -433,15 +433,15 @@ This section is a quick reference so you can plug the harness into your event_bu
 
 | Command | What it does |
 |---------|----------------|
-| **`python -m agents.common.events.view_harness`** | Generates 5 events (seed 42), validates them, prints first/last event and uniqueness/determinism. Quick sanity check. |
-| **`python -m agents.common.events.view_harness --count 1000`** | Full 1,000 events; validates all, prints first and last only. Use to confirm the full harness run. |
-| **`python -m agents.common.events.view_harness --count 1 --json`** | Prints the first event as JSON (e.g. for debugging or tooling). |
-| **`python -m agents.common.events.view_harness --count 10 --seed 99`** | 10 events with seed 99 (different stream than 42). |
-| **`python -m agents.common.events.demo_50_events`** | Generates 50 success events, then 50 mixed (success + SourceFailure + NormalizationFailed). Shows `error_type`, `severity`, `error_reason` on failure payloads. |
-| **`python -m agents.common.events.demo_bus_flow`** | Runs in-memory bus demo: happy path, stream with errors, crash-and-recover. Example of how to use the bus with success/failure events. |
-| **`cd agents && pytest common/events/tests/test_harness_events.py -v`** | Runs the 16 harness-structure tests (envelope, payload, count, determinism, uniqueness, validation). No bus required. |
-| **`cd agents && pytest common/events/tests/test_synthetic_events.py -v`** | Runs synthetic generator tests (NormalizationComplete, SourceFailure, NormalizationFailed). |
-| **`cd agents && pytest common/events/tests/test_correlation_propagation.py -v`** | Runs correlation_id propagation test (IngestBatch → NormalizationComplete). |
-| **`cd agents && pytest common/events/tests/ -v`** | Runs all event tests (harness + synthetic + correlation).
+| **`python -m common.events.view_harness`** | Generates 5 events (seed 42), validates them, prints first/last event and uniqueness/determinism. Quick sanity check. |
+| **`python -m common.events.view_harness --count 1000`** | Full 1,000 events; validates all, prints first and last only. Use to confirm the full harness run. |
+| **`python -m common.events.view_harness --count 1 --json`** | Prints the first event as JSON (e.g. for debugging or tooling). |
+| **`python -m common.events.view_harness --count 10 --seed 99`** | 10 events with seed 99 (different stream than 42). |
+| **`python -m common.events.demo_50_events`** | Generates 50 success events, then 50 mixed (success + SourceFailure + NormalizationFailed). Shows `error_type`, `severity`, `error_reason` on failure payloads. |
+| **`python -m common.events.demo_bus_flow`** | Runs in-memory bus demo: happy path, stream with errors, crash-and-recover. Example of how to use the bus with success/failure events. |
+| **`pytest common/events/tests/test_harness_events.py -v`** | Runs the 16 harness-structure tests (envelope, payload, count, determinism, uniqueness, validation). No bus required. |
+| **`pytest common/events/tests/test_synthetic_events.py -v`** | Runs synthetic generator tests (NormalizationComplete, SourceFailure, NormalizationFailed). |
+| **`pytest common/events/tests/test_correlation_propagation.py -v`** | Runs correlation_id propagation test (IngestBatch → NormalizationComplete). |
+| **`pytest common/events/tests/ -v`** | Runs all event tests (harness + synthetic + correlation).
 
 **Note:** Run Python commands from the **repo root** (`watechcoalition`) so `agents` is importable, or set `PYTHONPATH` to the repo root.

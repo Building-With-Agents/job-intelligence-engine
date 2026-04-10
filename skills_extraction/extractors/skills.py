@@ -23,22 +23,22 @@ from typing import Any
 import structlog
 from pydantic import AliasChoices, BaseModel, Field
 
-from agents.common.llm_client import (
+from common.llm_client import (
     ainvoke_structured_extraction_llm,
     invoke_structured_extraction_llm,
 )
-from agents.common.types import JobRecord, SkillRecord, TaxonomyResult, ToolRecord
-from agents.skills_extraction.extractors._retry import (
+from common.types import JobRecord, SkillRecord, TaxonomyResult, ToolRecord
+from skills_extraction.extractors._retry import (
     RATE_LIMIT_BACKOFF_SECS,
 )
-from agents.skills_extraction.extractors._retry import (
+from skills_extraction.extractors._retry import (
     is_rate_limited as _is_rate_limited,
 )
-from agents.skills_extraction.extractors._retry import (
+from skills_extraction.extractors._retry import (
     merge_retry_metadata as _merge_retry_metadata,
 )
-from agents.skills_extraction.extractors.taxonomy import resolve_taxonomy_batch
-from agents.skills_extraction.prompts import build_skills_prompt
+from skills_extraction.extractors.taxonomy import resolve_taxonomy_batch
+from skills_extraction.prompts import build_skills_prompt
 
 log = structlog.get_logger()
 
@@ -101,7 +101,7 @@ def _llm_skill_to_record(raw: _LLMSkill) -> SkillRecord | None:
     """Convert an LLM skill to a SkillRecord. SpanRecord auto-corrects offsets."""
     from pydantic import ValidationError
 
-    from agents.common.types.extraction_types import SpanRecord
+    from common.types.extraction_types import SpanRecord
 
     try:
         span = raw.source_span

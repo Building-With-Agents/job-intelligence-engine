@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.classifiers.employer_classifier import (
+from common.types.job_profile import EmployerProfile
+from enrichment.classifiers.employer_classifier import (
     EmployerClassificationLLMOutput,
     _canonical_sector,
     build_employer_profile,
@@ -29,14 +29,14 @@ def test_registry_has_exact_company_name_false_when_empty_session_unused() -> No
     assert registry_has_exact_company_name(session, "   ") is False
 
 
-@patch("agents.enrichment.classifiers.employer_classifier.invoke_structured_extraction_llm")
+@patch("enrichment.classifiers.employer_classifier.invoke_structured_extraction_llm")
 def test_build_employer_profile_degraded_returns_unknown_with_known_flag(
     mock_invoke: MagicMock,
 ) -> None:
     mock_invoke.return_value = (None, {"extraction_failed": True, "error_reason": "x"})
     session = MagicMock()
     with patch(
-        "agents.enrichment.classifiers.employer_classifier.registry_has_exact_company_name",
+        "enrichment.classifiers.employer_classifier.registry_has_exact_company_name",
         return_value=True,
     ):
         out = build_employer_profile("We use AI.", "Contoso", session)
@@ -46,7 +46,7 @@ def test_build_employer_profile_degraded_returns_unknown_with_known_flag(
     assert out.is_known_employer is True
 
 
-@patch("agents.enrichment.classifiers.employer_classifier.invoke_structured_extraction_llm")
+@patch("enrichment.classifiers.employer_classifier.invoke_structured_extraction_llm")
 def test_build_employer_profile_merges_llm_and_db_known(
     mock_invoke: MagicMock,
 ) -> None:
@@ -58,7 +58,7 @@ def test_build_employer_profile_merges_llm_and_db_known(
     mock_invoke.return_value = (parsed, {"extraction_failed": False})
     session = MagicMock()
     with patch(
-        "agents.enrichment.classifiers.employer_classifier.registry_has_exact_company_name",
+        "enrichment.classifiers.employer_classifier.registry_has_exact_company_name",
         return_value=False,
     ):
         out = build_employer_profile("desc", "Globex", session)
@@ -82,7 +82,7 @@ def test_persist_employer_metadata_skips_when_no_keys() -> None:
     session.execute.assert_not_called()
 
 
-@patch("agents.enrichment.classifiers.employer_classifier.upsert_employer_profile_by_company_id")
+@patch("enrichment.classifiers.employer_classifier.upsert_employer_profile_by_company_id")
 def test_persist_employer_metadata_upserts_when_company_id(
     mock_upsert: MagicMock,
 ) -> None:

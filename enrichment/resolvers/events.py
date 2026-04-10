@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 # Increment when ``RecordEnriched`` **batch** payload gains backward-incompatible fields.
 RECORD_ENRICHED_SCHEMA_VERSION = 3

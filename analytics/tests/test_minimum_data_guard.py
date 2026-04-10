@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table
 
-from agents.analytics.agent import (
+from analytics.agent import (
     MINIMUM_NEW_RECORDS,
     AnalyticsAgent,
     check_minimum_data,
     resolve_analytics_watermark,
 )
-from agents.common.data_store.models import AnalyticsPipelineState
-from agents.common.event_envelope import EventEnvelope
+from common.data_store.models import AnalyticsPipelineState
+from common.event_envelope import EventEnvelope
 
 
 def _minimal_job_postings_table() -> Table:
@@ -39,8 +39,8 @@ def test_check_minimum_data_false_and_exact_log_message(monkeypatch: pytest.Monk
     result.scalar_one.return_value = 12
     session.execute.return_value = result
 
-    with patch("agents.analytics.agent._job_postings_table_for_guard", return_value=jp), patch(
-        "agents.analytics.agent.log"
+    with patch("analytics.agent._job_postings_table_for_guard", return_value=jp), patch(
+        "analytics.agent.log"
     ) as log_mock:
         ok = check_minimum_data(session, datetime(2025, 1, 1, tzinfo=timezone.utc))
 
@@ -62,7 +62,7 @@ def test_check_minimum_data_true_when_count_met() -> None:
     result.scalar_one.return_value = 50
     session.execute.return_value = result
 
-    with patch("agents.analytics.agent._job_postings_table_for_guard", return_value=jp):
+    with patch("analytics.agent._job_postings_table_for_guard", return_value=jp):
         assert check_minimum_data(session, datetime(2025, 1, 1, tzinfo=timezone.utc)) is True
 
 
@@ -72,8 +72,8 @@ def test_run_pipeline_returns_none_without_emit_when_guard_fails() -> None:
     agent.health_check()
     session = MagicMock()
     with (
-        patch("agents.analytics.agent.resolve_analytics_watermark", return_value=None),
-        patch("agents.analytics.agent.check_minimum_data", return_value=False),
+        patch("analytics.agent.resolve_analytics_watermark", return_value=None),
+        patch("analytics.agent.check_minimum_data", return_value=False),
     ):
         out = agent.run_pipeline(session, event)
     assert out is None
@@ -105,17 +105,17 @@ def test_run_pipeline_updates_watermark_after_success() -> None:
     agent.health_check()
     session = MagicMock()
     with (
-        patch("agents.analytics.agent.resolve_analytics_watermark", return_value=None),
-        patch("agents.analytics.agent.check_minimum_data", return_value=True),
+        patch("analytics.agent.resolve_analytics_watermark", return_value=None),
+        patch("analytics.agent.check_minimum_data", return_value=True),
         patch(
-            "agents.analytics.aggregators.sector_weekly.compute_sector_summary_weekly",
+            "analytics.aggregators.sector_weekly.compute_sector_summary_weekly",
             return_value=[],
         ),
         patch(
-            "agents.analytics.aggregators.geo_demand.compute_geo_demand_weekly",
+            "analytics.aggregators.geo_demand.compute_geo_demand_weekly",
             return_value=[],
         ),
-        patch("agents.analytics.agent.set_last_analytics_success_at") as mock_set,
+        patch("analytics.agent.set_last_analytics_success_at") as mock_set,
     ):
         out = agent.run_pipeline(session, event)
     assert out is not None

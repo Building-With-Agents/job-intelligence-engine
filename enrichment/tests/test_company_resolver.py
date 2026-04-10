@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.enrichment.resolvers.company_resolver import (
+from enrichment.resolvers.company_resolver import (
     create_placeholder_company,
     find_best_fuzzy_match,
     lookup_company_exact,
@@ -60,7 +60,7 @@ def test_lookup_company_exact_returns_none_when_not_found() -> None:
     session.execute.assert_called_once()
 
 
-@patch("agents.enrichment.resolvers.company_resolver.fuzz")
+@patch("enrichment.resolvers.company_resolver.fuzz")
 def test_find_best_fuzzy_match_returns_id_when_above_threshold(mock_fuzz: MagicMock) -> None:
     mock_fuzz.token_sort_ratio.return_value = 90
     mock_fuzz.partial_ratio.return_value = 90
@@ -74,7 +74,7 @@ def test_find_best_fuzzy_match_returns_id_when_above_threshold(mock_fuzz: MagicM
     assert score >= 85
 
 
-@patch("agents.enrichment.resolvers.company_resolver.fuzz")
+@patch("enrichment.resolvers.company_resolver.fuzz")
 def test_find_best_fuzzy_match_returns_none_when_below_threshold(mock_fuzz: MagicMock) -> None:
     mock_fuzz.token_sort_ratio.return_value = 50
     mock_fuzz.partial_ratio.return_value = 50
@@ -117,8 +117,8 @@ def test_create_placeholder_company_returns_id_and_adds_flushes() -> None:
     assert added[0].company_name == "Acme Corp."
 
 
-@patch("agents.enrichment.resolvers.company_resolver.find_best_fuzzy_match")
-@patch("agents.enrichment.resolvers.company_resolver.lookup_company_exact")
+@patch("enrichment.resolvers.company_resolver.find_best_fuzzy_match")
+@patch("enrichment.resolvers.company_resolver.lookup_company_exact")
 def test_resolve_company_exact_match_returns_high_confidence(mock_lookup: MagicMock, mock_fuzzy: MagicMock) -> None:
     mock_lookup.return_value = _UUID_EXACT
     session = MagicMock()
@@ -130,9 +130,9 @@ def test_resolve_company_exact_match_returns_high_confidence(mock_lookup: MagicM
     mock_fuzzy.assert_not_called()
 
 
-@patch("agents.enrichment.resolvers.company_resolver.create_placeholder_company")
-@patch("agents.enrichment.resolvers.company_resolver.find_best_fuzzy_match")
-@patch("agents.enrichment.resolvers.company_resolver.lookup_company_exact")
+@patch("enrichment.resolvers.company_resolver.create_placeholder_company")
+@patch("enrichment.resolvers.company_resolver.find_best_fuzzy_match")
+@patch("enrichment.resolvers.company_resolver.lookup_company_exact")
 def test_resolve_company_fuzzy_match_returns_score_over_100(
     mock_lookup: MagicMock,
     mock_fuzzy: MagicMock,
@@ -150,9 +150,9 @@ def test_resolve_company_fuzzy_match_returns_score_over_100(
     mock_placeholder.assert_not_called()
 
 
-@patch("agents.enrichment.resolvers.company_resolver.create_placeholder_company")
-@patch("agents.enrichment.resolvers.company_resolver.find_best_fuzzy_match")
-@patch("agents.enrichment.resolvers.company_resolver.lookup_company_exact")
+@patch("enrichment.resolvers.company_resolver.create_placeholder_company")
+@patch("enrichment.resolvers.company_resolver.find_best_fuzzy_match")
+@patch("enrichment.resolvers.company_resolver.lookup_company_exact")
 def test_resolve_company_unknown_creates_placeholder(
     mock_lookup: MagicMock,
     mock_fuzzy: MagicMock,
@@ -169,9 +169,9 @@ def test_resolve_company_unknown_creates_placeholder(
     mock_placeholder.assert_called_once_with("Totally New Startup LLC", "totally new startup", session)
 
 
-@patch("agents.enrichment.resolvers.company_resolver.create_placeholder_company")
-@patch("agents.enrichment.resolvers.company_resolver.find_best_fuzzy_match")
-@patch("agents.enrichment.resolvers.company_resolver.lookup_company_exact")
+@patch("enrichment.resolvers.company_resolver.create_placeholder_company")
+@patch("enrichment.resolvers.company_resolver.find_best_fuzzy_match")
+@patch("enrichment.resolvers.company_resolver.lookup_company_exact")
 def test_resolve_company_twice_unknown_placeholder_once_then_exact(
     mock_lookup: MagicMock,
     mock_fuzzy: MagicMock,

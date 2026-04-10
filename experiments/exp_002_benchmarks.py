@@ -9,13 +9,13 @@ This standalone script measures:
     3. Unicode round-trip fidelity for text fields.
     4. Concurrent access behavior under moderate write load.
 
-Results are written to `agents/data/output/exp_002_findings.json` and logged
+Results are written to `data/output/exp_002_findings.json` and logged
 via structlog. The script is safe to run multiple times and cleans up all
 benchmark rows after each test.
 
 Run with:
 
-    PYTHONPATH=. python3 agents/experiments/exp_002_benchmarks.py
+    PYTHONPATH=. python3 experiments/exp_002_benchmarks.py
 """
 
 import json
@@ -31,7 +31,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from agents.common.data_store.models import Base, RawIngestedJob
+from common.data_store.models import Base, RawIngestedJob
 
 log = structlog.get_logger()
 

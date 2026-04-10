@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from agents.enrichment.classifiers.naics_classifier import (
+from enrichment.classifiers.naics_classifier import (
     NAICSClassificationOutput,
     _resolve_llm_naics_pick,
     classify_naics,
@@ -32,7 +32,7 @@ def test_naics_classification_output_model() -> None:
     assert m.naics_code == "unknown"
 
 
-@patch("agents.enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
+@patch("enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
 def test_classify_naics_returns_unknown_when_no_candidates(mock_llm: MagicMock) -> None:
     session = MagicMock()
     session.execute.return_value.all.return_value = []
@@ -41,7 +41,7 @@ def test_classify_naics_returns_unknown_when_no_candidates(mock_llm: MagicMock) 
     mock_llm.assert_not_called()
 
 
-@patch("agents.enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
+@patch("enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
 def test_classify_naics_validates_against_candidates(mock_llm: MagicMock) -> None:
     session = MagicMock()
     session.execute.return_value.all.return_value = [
@@ -56,7 +56,7 @@ def test_classify_naics_validates_against_candidates(mock_llm: MagicMock) -> Non
     assert out == "541511"
 
 
-@patch("agents.enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
+@patch("enrichment.classifiers.naics_classifier.invoke_structured_extraction_llm")
 def test_classify_naics_unknown_when_llm_returns_invalid_code(mock_llm: MagicMock) -> None:
     session = MagicMock()
     session.execute.return_value.all.return_value = [

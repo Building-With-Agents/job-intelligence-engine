@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-import agents.analytics.insights.guardrails as guardrails
-from agents.analytics.insights.guardrails import (
+import analytics.insights.guardrails as guardrails
+from analytics.insights.guardrails import (
     build_cardinality_warning_payload,
     build_stale_alert_payload,
     cap_cardinality,

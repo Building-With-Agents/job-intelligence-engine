@@ -1,7 +1,7 @@
 """Mock LLM provider for local development and trace generation.
 
 Returns realistic extraction results from ground truth data
-(agents/eval/extraction_ground_truth.json) without calling any real LLM.
+(eval/extraction_ground_truth.json) without calling any real LLM.
 Generates proper token counts, costs, and latency for Langfuse traces.
 
 Usage: set LLM_PROVIDER=mock in .env

@@ -11,7 +11,7 @@ after step 2 succeeds). Each refresh uses its own ``session_scope`` commit.
 Steps implemented by Pair C (IMP-023): **4** CanonicalRole discovery via HDBSCAN +
 embeddings, **5** role snapshot weekly. When ``PYTHON_DATABASE_URL`` is set and
 :func:`check_db_connection` is true, loads survivor postings, runs embedding +
-HDBSCAN via :mod:`agents.analytics.clustering`, persists ``canonical_roles`` /
+HDBSCAN via :mod:`analytics.clustering`, persists ``canonical_roles`` /
 ``job_postings.canonical_role_id`` / ``role_snapshot_weekly``, and publishes
 ``EmergenceAlert`` events on the optional alert bus.
 
@@ -19,7 +19,7 @@ Steps implemented by Pair D: **10** posting-freshness computation + staleness/ca
 guardrails (upserts to ``dbo.posting_freshness``); **11** trajectory scaffold (Phase 2
 placeholder); **12** ``generate_summaries`` over scaffold + posting freshness; **13**
 emits ``AnalyticsRefreshed`` via
-:func:`agents.analytics.insights.events.build_analytics_refreshed_event`.
+:func:`analytics.insights.events.build_analytics_refreshed_event`.
 
 Agent ID (canonical): analytics-agent
 Emits:    AnalyticsRefreshed; EmergenceAlert (bus, when registered and candidates exist)
@@ -52,9 +52,9 @@ Optional payload keys ``last_computed_at`` / ``analytics_last_computed_at`` over
 the DB watermark for backfill and tests.
 
 Thirteen-step batch runner: Step 1 is the minimum-data guard. Step 6 writes
-``dbo.sector_summary_weekly`` via :func:`agents.analytics.aggregators.sector_weekly.compute_sector_summary_weekly`.
+``dbo.sector_summary_weekly`` via :func:`analytics.aggregators.sector_weekly.compute_sector_summary_weekly`.
 Step 7 writes ``dbo.geo_demand_weekly`` via
-:func:`agents.analytics.aggregators.geo_demand.compute_geo_demand_weekly`.
+:func:`analytics.aggregators.geo_demand.compute_geo_demand_weekly`.
 ``compute_salary_percentiles`` is implemented for single dimensions without a week
 bucket; Step 6 reuses the same salary expression (:data:`SALARY_VALUE_SQL`) and
 ``percentile_disc(0.5)`` in SQL grouped by sector + week (see module docstring in
@@ -62,7 +62,7 @@ bucket; Step 6 reuses the same salary expression (:data:`SALARY_VALUE_SQL`) and
 
 Weekly rollups use ``analytics_week_start`` or ``week_start`` in the inbound payload
 (ISO date); if absent, the current UTC week's Monday is used.
-Fixture: agents/data/fixtures/fixture_analytics_refreshed.json
+Fixture: data/fixtures/fixture_analytics_refreshed.json
 """
 
 from __future__ import annotations
@@ -78,40 +78,40 @@ from sqlalchemy import MetaData, Table, func, or_, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from agents.analytics.aggregators import (
+from analytics.aggregators import (
     refresh_skill_co_occurrence,
     refresh_skill_demand_weekly,
     refresh_skill_velocity,
     refresh_tool_demand_weekly,
 )
-from agents.analytics.canonical_roles.loader import load_posting_cluster_features
-from agents.analytics.canonical_roles.persist import cleanup_orphan_canonical_roles, persist_clustering_result
-from agents.analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
-from agents.analytics.clustering.config import cluster_min_total_postings
-from agents.analytics.clustering.embeddings import embed_posting_features
-from agents.analytics.clustering.pipeline import run_clustering_pipeline
-from agents.analytics.clustering.types import ClusteringResult
-from agents.analytics.insights.events import build_analytics_refreshed_event
-from agents.analytics.insights.freshness import PostingFreshnessResult, detect_staleness
-from agents.analytics.insights.guardrails import (
+from analytics.canonical_roles.loader import load_posting_cluster_features
+from analytics.canonical_roles.persist import cleanup_orphan_canonical_roles, persist_clustering_result
+from analytics.canonical_roles.snapshots import refresh_role_snapshot_weekly
+from analytics.clustering.config import cluster_min_total_postings
+from analytics.clustering.embeddings import embed_posting_features
+from analytics.clustering.pipeline import run_clustering_pipeline
+from analytics.clustering.types import ClusteringResult
+from analytics.insights.events import build_analytics_refreshed_event
+from analytics.insights.freshness import PostingFreshnessResult, detect_staleness
+from analytics.insights.guardrails import (
     CARDINALITY_CAP,
     build_cardinality_warning_payload,
     build_stale_alert_payload,
     cap_cardinality,
     check_staleness,
 )
-from agents.analytics.insights.llm_summary import SummaryResult, generate_summaries
-from agents.analytics.insights.posting_freshness_store import (
+from analytics.insights.llm_summary import SummaryResult, generate_summaries
+from analytics.insights.posting_freshness_store import (
     build_posting_freshness_row_dicts,
     persist_posting_freshness_rows,
 )
-from agents.analytics.insights.trajectory import TrajectoryEntry, build_trajectory_map
-from agents.common.base_agent import BaseAgent
-from agents.common.data_store.database import check_db_connection, check_db_connection_detail, session_scope
-from agents.common.data_store.models import AnalyticsPipelineState
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.emergence_alert import build_emergence_alert_envelope
-from agents.enrichment.classifiers.spam_preview import get_spam_thresholds
+from analytics.insights.trajectory import TrajectoryEntry, build_trajectory_map
+from common.base_agent import BaseAgent
+from common.data_store.database import check_db_connection, check_db_connection_detail, session_scope
+from common.data_store.models import AnalyticsPipelineState
+from common.event_envelope import EventEnvelope
+from common.events.emergence_alert import build_emergence_alert_envelope
+from enrichment.classifiers.spam_preview import get_spam_thresholds
 
 log = structlog.get_logger()
 
@@ -926,7 +926,7 @@ class AnalyticsAgent(BaseAgent):
         ctx: dict[str, Any],
     ) -> None:
         """Step 6 — weekly aggregates by industry sector (posting/employer counts, p50 salary, top skills)."""
-        from agents.analytics.aggregators.sector_weekly import compute_sector_summary_weekly
+        from analytics.aggregators.sector_weekly import compute_sector_summary_weekly
 
         week_start = ctx["week_start"]
         rows = compute_sector_summary_weekly(session, week_start)
@@ -944,7 +944,7 @@ class AnalyticsAgent(BaseAgent):
         ctx: dict[str, Any],
     ) -> None:
         """Step 7 — weekly job counts by Borderplex subregion (``borderplex_subregion``)."""
-        from agents.analytics.aggregators.geo_demand import compute_geo_demand_weekly
+        from analytics.aggregators.geo_demand import compute_geo_demand_weekly
 
         week_start = ctx["week_start"]
         rows = compute_geo_demand_weekly(session, week_start)

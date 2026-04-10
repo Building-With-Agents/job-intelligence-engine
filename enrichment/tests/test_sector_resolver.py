@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from agents.enrichment.resolvers.sector_resolver import resolve_sector
+from enrichment.resolvers.sector_resolver import resolve_sector
 
 
 def test_software_engineering_returns_sector_when_row_exists() -> None:

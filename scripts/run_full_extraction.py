@@ -5,8 +5,8 @@ Resets raw_ingested_jobs to 'pending' for records that have been normalized but 
 then runs the processing loop to extract and enrich them.
 
 Usage:
-    python agents/scripts/run_full_extraction.py
-    python agents/scripts/run_full_extraction.py --batch-size 10 --delay 5
+    python scripts/run_full_extraction.py
+    python scripts/run_full_extraction.py --batch-size 10 --delay 5
 
 At ~1 min/job with Azure OpenAI, 1000 jobs takes ~16-17 hours.
 """
@@ -19,7 +19,7 @@ import os
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -29,7 +29,7 @@ load_dotenv(_REPO_ROOT / ".env")
 
 from sqlalchemy import text
 
-from agents.common.data_store.database import session_scope
+from common.data_store.database import session_scope
 
 log = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ def main() -> None:
     os.environ["NORM_BATCH_SIZE"] = str(args.batch_size)
 
     # Import and run the processing loop
-    from agents.scripts.run_processing_loop import main as run_loop
+    from scripts.run_processing_loop import main as run_loop
     sys.argv = [
         "run_processing_loop.py",
         "--max-iterations", str(max_iterations),

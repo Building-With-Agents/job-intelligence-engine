@@ -1,6 +1,6 @@
 """Integration tests: sample 15–20 ``job_postings`` rows with no ``extracted_intelligence`` linkage.
 
-Uses :mod:`agents.tests.support.job_posting_extraction_query` (see SQL and linkage rules there).
+Uses :mod:`tests.support.job_posting_extraction_query` (see SQL and linkage rules there).
 
 - ``extract_context``: real Pass 1, zero LLM tokens, ``source_span`` checks.
 - ``extract_tasks`` / ``extract_responsibilities``: LLM mocked (CI-safe); validates wiring + spans.
@@ -9,7 +9,7 @@ Requires ``PYTHON_DATABASE_URL`` and a seeded ``dbo.job_postings`` / ``dbo.compa
 
 Run (repo root)::
 
-    python -m pytest agents/tests/test_extraction_job_postings_db.py -v -m integration
+    python -m pytest tests/test_extraction_job_postings_db.py -v -m integration
 
 Omit ``-m integration`` to run with the rest of the suite (skips if DB unset).
 """
@@ -24,14 +24,14 @@ from pydantic import TypeAdapter
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-from agents.common.types import ContextSignal, JobRecord, ResponsibilityRecord, SpanRecord, TaskRecord
-from agents.skills_extraction.extractors.context import extract_context
-from agents.skills_extraction.extractors.responsibilities import (
+from common.types import ContextSignal, JobRecord, ResponsibilityRecord, SpanRecord, TaskRecord
+from skills_extraction.extractors.context import extract_context
+from skills_extraction.extractors.responsibilities import (
     _ResponsibilitiesLLMRoot,
     extract_responsibilities,
 )
-from agents.skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
-from agents.tests.support.job_posting_extraction_query import (
+from skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
+from tests.support.job_posting_extraction_query import (
     DEFAULT_MAX_SAMPLE,
     DEFAULT_MIN_SAMPLE,
     fetch_unextracted_job_posting_rows,
@@ -186,7 +186,7 @@ def test_extract_tasks_db_job_postings_mocked_llm(unextracted_job_records: list[
     jobs = unextracted_job_records
     side_effect = _make_tasks_side_effect(jobs)
     with patch(
-        "agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
+        "skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
         side_effect=side_effect,
     ):
         for job in jobs:
@@ -203,7 +203,7 @@ def test_extract_responsibilities_db_job_postings_mocked_llm(unextracted_job_rec
     jobs = unextracted_job_records
     side_effect = _make_resp_side_effect(jobs)
     with patch(
-        "agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
+        "skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
         side_effect=side_effect,
     ):
         for job in jobs:
@@ -222,11 +222,11 @@ def test_extraction_db_job_postings_combined_pass1_and_mocked_pass2(unextracted_
     resp_se = _make_resp_side_effect(jobs)
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
             side_effect=task_se,
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
             side_effect=resp_se,
         ),
     ):

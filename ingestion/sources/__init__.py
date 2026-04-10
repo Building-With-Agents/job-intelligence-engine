@@ -4,11 +4,11 @@ Provides a registry of available source adapters and a factory function
 to instantiate them by name.
 """
 
-from agents.ingestion.sources.base_adapter import SourceAdapter
-from agents.ingestion.sources.crawl4ai_indeed import Crawl4AIIndeedAdapter
-from agents.ingestion.sources.crawl4ai_usajobs import Crawl4AIUSAJobsAdapter
-from agents.ingestion.sources.jsearch_adapter import JSearchAdapter
-from agents.ingestion.sources.scraper_adapter import Crawl4AIAdapter, ScraperAdapter
+from ingestion.sources.base_adapter import SourceAdapter
+from ingestion.sources.crawl4ai_indeed import Crawl4AIIndeedAdapter
+from ingestion.sources.crawl4ai_usajobs import Crawl4AIUSAJobsAdapter
+from ingestion.sources.jsearch_adapter import JSearchAdapter
+from ingestion.sources.scraper_adapter import Crawl4AIAdapter, ScraperAdapter
 
 ADAPTER_REGISTRY: dict[str, type[SourceAdapter]] = {
     "jsearch": JSearchAdapter,

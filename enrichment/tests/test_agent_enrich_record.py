@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.agent import EnrichmentAgent
+from common.types.job_profile import EmployerProfile
+from enrichment.agent import EnrichmentAgent
 
 
-@patch("agents.enrichment.agent.persist_employer_metadata")
-@patch("agents.enrichment.agent.build_employer_profile")
-@patch("agents.enrichment.agent.classify_naics")
-@patch("agents.enrichment.agent.run_coroutine")
-@patch("agents.enrichment.agent.compute_overall_confidence")
-@patch("agents.enrichment.agent.compute_field_confidence")
-@patch("agents.enrichment.agent.resolve_location")
-@patch("agents.enrichment.agent.resolve_company")
+@patch("enrichment.agent.persist_employer_metadata")
+@patch("enrichment.agent.build_employer_profile")
+@patch("enrichment.agent.classify_naics")
+@patch("enrichment.agent.run_coroutine")
+@patch("enrichment.agent.compute_overall_confidence")
+@patch("enrichment.agent.compute_field_confidence")
+@patch("enrichment.agent.resolve_location")
+@patch("enrichment.agent.resolve_company")
 def test_enrich_record_happy_path_has_required_keys(
     mock_resolve_company: MagicMock,
     mock_resolve_location: MagicMock,
@@ -67,10 +67,10 @@ def test_enrich_record_happy_path_has_required_keys(
     mock_resolve_location.assert_called_once_with("Seattle, WA", session)
 
 
-@patch("agents.enrichment.agent.compute_overall_confidence")
-@patch("agents.enrichment.agent.compute_field_confidence")
-@patch("agents.enrichment.agent.resolve_location")
-@patch("agents.enrichment.agent.resolve_company")
+@patch("enrichment.agent.compute_overall_confidence")
+@patch("enrichment.agent.compute_field_confidence")
+@patch("enrichment.agent.resolve_location")
+@patch("enrichment.agent.resolve_company")
 def test_enrich_record_degraded_on_resolve_company_failure(
     mock_resolve_company: MagicMock,
     mock_resolve_location: MagicMock,

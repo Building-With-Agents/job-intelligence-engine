@@ -1,7 +1,7 @@
 """Location resolution against ``dbo.companies`` (#110).
 
 ``company_addresses`` is not used. Location is matched using optional HQ fields on
-:class:`~agents.common.data_store.models.Company`:
+:class:`~common.data_store.models.Company`:
 
 1. **normalized_location** — compared to :func:`normalize_location_text` of the job
    string using case-insensitive trimmed equality (``lower(trim(column))`` vs
@@ -23,7 +23,7 @@ import re
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import Company
+from common.data_store.models import Company
 
 _NON_ALNUM_COMMA = re.compile(r"[^a-z0-9,\s]+")
 

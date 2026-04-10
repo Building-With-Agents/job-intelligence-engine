@@ -12,11 +12,11 @@ Seed a fresh PostgreSQL container with reference data for the watechcoalition pl
 docker compose --env-file .env.docker up postgres -d
 
 # 2. Activate Python venv
-agents\.venv\Scripts\Activate.ps1          # Windows PowerShell
-# source agents/.venv/bin/activate         # macOS / Linux
+.venv\Scripts\Activate.ps1          # Windows PowerShell
+# source .venv/bin/activate         # macOS / Linux
 
 # 3. Install dependencies (if not done yet)
-pip install -r agents/requirements.txt
+pip install -r requirements.txt
 
 # 4. Seed reference data (tables, taxonomies, companies, etc.)
 python scripts/pg-seed-data/seed_pg_database.py
@@ -25,8 +25,8 @@ python scripts/pg-seed-data/seed_pg_database.py
 python scripts/pg-seed-data/seed_agent_data.py
 
 # 6. Verify — run the flywheel pipeline
-python agents/scripts/batch_ingest.py --dry-run
-python agents/scripts/run_processing_loop.py --dry-run
+python scripts/batch_ingest.py --dry-run
+python scripts/run_processing_loop.py --dry-run
 ```
 
 **`seed_pg_database.py`** is **idempotent** for a full refresh: it truncates (nearly) all tables, then reloads reference fixtures — safe to re-run; you always get a clean reference baseline.
@@ -121,7 +121,7 @@ scripts/pg-seed-data/
 | `ERROR executing schema DDL` | The database may have conflicting objects. Try: `docker compose down -v` then start fresh |
 | FK constraint violations | This should not happen (triggers are disabled during load). If it does, file a bug. |
 | Count mismatches after seeding | Re-run the seed script. If mismatches persist, re-export fixtures from the admin database. |
-| `Could not import agent migrations` | Ensure `agents/requirements.txt` is installed and you're in the venv. The seed still works — agent tables will be created when you first run the pipeline. |
+| `Could not import agent migrations` | Ensure `requirements.txt` is installed and you're in the venv. The seed still works — agent tables will be created when you first run the pipeline. |
 | Embeddings are NULL in skills | Expected. Embeddings are excluded from fixtures (107MB). They are regenerated via the admin embedding tool. |
 
 ## For Admins: Re-exporting Fixtures

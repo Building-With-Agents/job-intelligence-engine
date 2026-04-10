@@ -6,10 +6,10 @@ import os
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.exp007.langgraph_runner import run_from_after_ingestion_langgraph
-from agents.exp007.pure_python_runner import run_from_after_ingestion_pure_python
-from agents.ingestion.agent import IngestionAgent
+from common.event_envelope import EventEnvelope
+from exp007.langgraph_runner import run_from_after_ingestion_langgraph
+from exp007.pure_python_runner import run_from_after_ingestion_pure_python
+from ingestion.agent import IngestionAgent
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("PYTHON_DATABASE_URL"),

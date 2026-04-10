@@ -18,7 +18,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SAWarning
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import NormalizedJob
+from common.data_store.models import NormalizedJob
 
 
 @dataclass
@@ -262,7 +262,7 @@ def seed_enrichment_e2e(
             },
         )
 
-    factory = __import__("agents.common.data_store.database", fromlist=["get_session_factory"]).get_session_factory()
+    factory = __import__("common.data_store.database", fromlist=["get_session_factory"]).get_session_factory()
     session: Session = factory()
     try:
         nj = NormalizedJob(

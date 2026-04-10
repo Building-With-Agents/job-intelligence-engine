@@ -10,8 +10,8 @@ import asyncio
 
 import structlog
 
-from agents.enrichment.adapters.base import AbstractCensusAdapter
-from agents.enrichment.adapters.models import RegionalProfile
+from enrichment.adapters.base import AbstractCensusAdapter
+from enrichment.adapters.models import RegionalProfile
 
 log = structlog.get_logger()
 

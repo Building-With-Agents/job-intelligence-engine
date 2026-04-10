@@ -5,7 +5,7 @@ compute_field_confidence(), compute_overall_confidence(), and
 build_record_enriched_event(). Steps 3, 4, and 8 require PostgreSQL.
 
 Usage (from repo root, venv active):
-    python agents/scripts/verify_juan_enrique_resolution.py
+    python scripts/verify_juan_enrique_resolution.py
 
 Local DB: start Docker, then from repo root::
     docker compose --env-file .env.docker up postgres -d
@@ -26,7 +26,7 @@ from unittest.mock import MagicMock
 # ---------------------------------------------------------------------------
 # Path bootstrap
 # ---------------------------------------------------------------------------
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -91,11 +91,11 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 1. Import resolution modules ===")
     try:
-        from agents.enrichment.resolvers.company_resolver import (
+        from enrichment.resolvers.company_resolver import (
             normalize_company_name,
             resolve_company,
         )
-        from agents.enrichment.resolvers.location_resolver import resolve_location
+        from enrichment.resolvers.location_resolver import resolve_location
 
         print("  PASS: resolvers imported")
         passed += 1
@@ -104,12 +104,12 @@ def main() -> int:
         if "thefuzz" in str(e):
             print("  FIX: pip install thefuzz python-Levenshtein")
         else:
-            print("  Make sure agents/enrichment/resolvers/ directory exists on your branch.")
+            print("  Make sure enrichment/resolvers/ directory exists on your branch.")
         return 1
 
     from sqlalchemy import text as sa_text
 
-    from agents.common.data_store.database import (
+    from common.data_store.database import (
         check_db_connection_detail,
         session_scope,
     )
@@ -156,8 +156,8 @@ def main() -> int:
     else:
         print("  PASS: database reachable")
         try:
-            from agents.common.data_store.database import get_engine
-            from agents.common.data_store.migrations import run_migrations
+            from common.data_store.database import get_engine
+            from common.data_store.migrations import run_migrations
 
             run_migrations(get_engine())
             print("  PASS: idempotent run_migrations() applied (e.g. companies geo columns #110)")
@@ -260,7 +260,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 6. compute_field_confidence() + compute_overall_confidence() ===")
     try:
-        from agents.enrichment.resolvers.confidence import (
+        from enrichment.resolvers.confidence import (
             compute_field_confidence,
             compute_overall_confidence,
         )
@@ -297,7 +297,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 7. build_record_enriched_event() ===")
     try:
-        from agents.enrichment.resolvers.events import build_record_enriched_event
+        from enrichment.resolvers.events import build_record_enriched_event
 
         event = build_record_enriched_event(
             correlation_id=str(uuid.uuid4()),

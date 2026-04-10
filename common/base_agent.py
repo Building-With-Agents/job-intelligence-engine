@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 
 class AgentBase(ABC):

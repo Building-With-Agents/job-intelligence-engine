@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import structlog
 
-from agents.common.types.job_record import JobRecord
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.normalization.mappers.base import MapperBase
+from common.types.job_record import JobRecord
+from common.types.raw_job_record import RawJobRecord
+from normalization.mappers.base import MapperBase
 
 log = structlog.get_logger()
 
@@ -26,8 +26,8 @@ def _resolve_zip_code(city: str | None, state: str | None, raw_zip: str | None) 
         return None
 
     try:
-        from agents.common.data_store.database import check_db_connection, session_scope
-        from agents.common.data_store.models import PostalGeoData
+        from common.data_store.database import check_db_connection, session_scope
+        from common.data_store.models import PostalGeoData
 
         if not check_db_connection():
             return None

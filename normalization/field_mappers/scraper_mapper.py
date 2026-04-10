@@ -1,6 +1,6 @@
-"""Backward-compatibility shim — use ``agents.normalization.mappers.crawl4ai_indeed`` instead."""
+"""Backward-compatibility shim — use ``normalization.mappers.crawl4ai_indeed`` instead."""
 
-from agents.normalization.mappers.crawl4ai_indeed import Crawl4AIIndeedMapper  # noqa: F401
+from normalization.mappers.crawl4ai_indeed import Crawl4AIIndeedMapper  # noqa: F401
 
 # Keep the old name importable
 ScraperMapper = Crawl4AIIndeedMapper

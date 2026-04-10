@@ -49,7 +49,7 @@ The project uses **APScheduler only** for the ingestion run. Task Scheduler is n
 | 3-min job, 2-min interval | Next fire skipped until current run finished.    |
 | Schedule change           | Env var; no code deploy.                         |
 
-### Drift table (from `python -m agents.orchestration.last_run_state --drift-table`)
+### Drift table (from `python -m orchestration.last_run_state --drift-table`)
 
 **apscheduler** (last 5 runs)
 

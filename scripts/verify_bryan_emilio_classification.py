@@ -5,7 +5,7 @@ sample job data. No Azure LLM needed -- classification is deterministic
 (token overlap + regex rules).
 
 Usage (from repo root, venv active):
-    python agents/scripts/verify_bryan_emilio_classification.py
+    python scripts/verify_bryan_emilio_classification.py
 """
 # ruff: noqa: T201
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Path bootstrap
 # ---------------------------------------------------------------------------
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -66,7 +66,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 1. Import classification module ===")
     try:
-        from agents.enrichment.classification import (
+        from enrichment.classification import (
             classify_job,
             classify_role,
             classify_seniority,
@@ -76,7 +76,7 @@ def main() -> int:
         passed += 1
     except ImportError as e:
         print(f"  FAIL: cannot import classification -- {e}")
-        print("  Make sure agents/enrichment/classification.py exists on your branch.")
+        print("  Make sure enrichment/classification.py exists on your branch.")
         return 1
 
     # ------------------------------------------------------------------
@@ -114,7 +114,7 @@ def main() -> int:
     try:
         from sqlalchemy import text as sa_text
 
-        from agents.common.data_store.database import session_scope
+        from common.data_store.database import session_scope
 
         with session_scope() as session:
             tech_rows = session.execute(

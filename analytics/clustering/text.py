@@ -7,7 +7,7 @@ import re
 import unicodedata
 from collections.abc import Iterable
 
-from agents.analytics.clustering.types import PostingClusterFeatures, PreparedClusteringText
+from analytics.clustering.types import PostingClusterFeatures, PreparedClusteringText
 
 _SECTION_SEPARATOR = " || "
 _LIST_SEPARATOR = " ; "

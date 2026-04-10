@@ -8,14 +8,14 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from agents.common.message_bus.candidate_factories import build_transport_candidates
-from agents.common.message_bus.comparison import (
+from common.message_bus.candidate_factories import build_transport_candidates
+from common.message_bus.comparison import (
     ComparisonScenario,
     TransportComparisonResult,
     compare_transport_candidates,
     results_to_rows,
 )
-from agents.common.message_bus.run_comparison import _parse_bootstrap_servers
+from common.message_bus.run_comparison import _parse_bootstrap_servers
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("agents/docs/exp004_transport_report.html"),
+        default=Path("docs/exp004_transport_report.html"),
         help="Output HTML path.",
     )
     parser.add_argument("--redis-url", default=None, help="Live Redis URL (optional).")
@@ -440,7 +440,7 @@ def main() -> int:
     out = args.output
     if not out.is_absolute():
         # Assume run from repo root
-        repo = Path(__file__).resolve().parent.parent.parent.parent
+        repo = Path(__file__).resolve().parent.parent.parent
         out = repo / out
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")

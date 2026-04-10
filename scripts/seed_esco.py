@@ -258,7 +258,7 @@ def parse_args() -> Config:
             parser.error(
                 "Provide either --download-url or --extracted-dir, or place "
                 "digitalSkillsCollection_en.csv and skills_en.csv under "
-                "agents/skills_extraction/taxonomy/"
+                "skills_extraction/taxonomy/"
             )
 
     return Config(

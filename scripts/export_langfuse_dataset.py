@@ -4,8 +4,8 @@ Round-trip companion to upload_langfuse_dataset.py. Reads dataset items
 from Langfuse and writes them as extraction_ground_truth.json format.
 
 Usage:
-  python agents/scripts/export_langfuse_dataset.py
-  python agents/scripts/export_langfuse_dataset.py --dataset-name my-custom-name --output custom.json
+  python scripts/export_langfuse_dataset.py
+  python scripts/export_langfuse_dataset.py --dataset-name my-custom-name --output custom.json
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import logging
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 
 from dotenv import load_dotenv  # noqa: E402

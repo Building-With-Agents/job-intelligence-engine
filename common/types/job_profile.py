@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from agents.common.types.job_record import JobRecord
+from common.types.job_record import JobRecord
 
 CompanySize = Literal["startup", "smb", "mid_market", "enterprise", "unknown"]
 AiMaturitySignal = Literal["ai_native", "ai_adopting", "ai_exploring", "traditional", "unknown"]

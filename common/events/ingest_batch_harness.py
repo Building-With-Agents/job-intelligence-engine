@@ -11,9 +11,9 @@ import uuid
 from collections.abc import Iterator
 from datetime import datetime, timedelta
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.typed_events import IngestBatchEvent
-from agents.ingestion.events import ingest_batch_payload
+from common.event_envelope import EventEnvelope
+from common.events.typed_events import IngestBatchEvent
+from ingestion.events import ingest_batch_payload
 
 # Keys required in an IngestBatch payload (must match ingest_batch_payload()).
 INGEST_BATCH_PAYLOAD_KEYS = frozenset(

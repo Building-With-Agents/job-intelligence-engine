@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from agents.dashboard.observability_queries import (
+from dashboard.observability_queries import (
     resolve_ingestion_obs,
     resolve_normalization_obs,
 )

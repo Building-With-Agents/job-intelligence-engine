@@ -2,7 +2,7 @@
 test_llm_adapter.py — unit tests for llm_adapter.log_extraction_event.
 
 Run with:
-    cd agents
+    
     pytest common/tests/test_llm_adapter.py -v
 """
 
@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.common.llm_adapter import log_extraction_event
+from common.llm_adapter import log_extraction_event
 
 
 def _session_scope_mock(session: MagicMock) -> MagicMock:
@@ -35,8 +35,8 @@ def test_log_extraction_event_success() -> None:
     session = MagicMock()
 
     with (
-        patch("agents.common.llm_adapter.session_scope", _session_scope_mock(session)),
-        patch("agents.common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
+        patch("common.llm_adapter.session_scope", _session_scope_mock(session)),
+        patch("common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
     ):
         log_extraction_event(
             agent_name="test_agent",
@@ -74,8 +74,8 @@ def test_log_extraction_event_failure() -> None:
     session = MagicMock()
 
     with (
-        patch("agents.common.llm_adapter.session_scope", _session_scope_mock(session)),
-        patch("agents.common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
+        patch("common.llm_adapter.session_scope", _session_scope_mock(session)),
+        patch("common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
     ):
         log_extraction_event(
             agent_name="test_agent",
@@ -114,8 +114,8 @@ def test_log_extraction_event_token_count_equals_sum(input_t: int, output_t: int
     session = MagicMock()
 
     with (
-        patch("agents.common.llm_adapter.session_scope", _session_scope_mock(session)),
-        patch("agents.common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
+        patch("common.llm_adapter.session_scope", _session_scope_mock(session)),
+        patch("common.llm_adapter.LLMAuditLog") as MockLLMAuditLog,
     ):
         log_extraction_event(
             agent_name="a",
@@ -169,8 +169,8 @@ def test_log_extraction_event_uses_fresh_session_per_concurrent_call() -> None:
         )
 
     with (
-        patch("agents.common.llm_adapter.session_scope", side_effect=_session_scope_factory),
-        patch("agents.common.llm_adapter.LLMAuditLog", side_effect=lambda **kwargs: kwargs),
+        patch("common.llm_adapter.session_scope", side_effect=_session_scope_factory),
+        patch("common.llm_adapter.LLMAuditLog", side_effect=lambda **kwargs: kwargs),
         ThreadPoolExecutor(max_workers=6) as executor,
     ):
         list(executor.map(_write_one, range(12)))

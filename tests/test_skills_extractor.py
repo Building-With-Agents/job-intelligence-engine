@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from agents.common.llm_client import _extract_retry_after
-from agents.common.types import JobRecord, SpanRecord, ToolRecord
-from agents.skills_extraction.extractors.skills import (
+from common.llm_client import _extract_retry_after
+from common.types import JobRecord, SpanRecord, ToolRecord
+from skills_extraction.extractors.skills import (
     _LLMSkill,
     _SkillsLLMRoot,
     extract_skills,
@@ -43,7 +43,7 @@ def _make_skills_root(*skills_data: dict) -> _SkillsLLMRoot:
     )
 
 
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extract_skills_returns_skill_records_and_metadata_when_llm_succeeds(
     mock_invoke,
 ) -> None:
@@ -65,7 +65,7 @@ def test_extract_skills_returns_skill_records_and_metadata_when_llm_succeeds(
     assert meta.get("tokens_used") == 100
 
 
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extract_skills_calls_taxonomy_and_sets_esco_uri(
     mock_invoke,
 ) -> None:
@@ -82,7 +82,7 @@ def test_extract_skills_calls_taxonomy_and_sets_esco_uri(
     assert hasattr(skills[0], "is_genai_extension")
 
 
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extract_skills_empty_response_returns_failed(
     mock_invoke,
 ) -> None:
@@ -93,7 +93,7 @@ def test_extract_skills_empty_response_returns_failed(
     assert meta["extraction_failed"] is True
 
 
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extract_skills_includes_pass1_tools_in_prompt_context(
     mock_invoke,
 ) -> None:
@@ -128,8 +128,8 @@ def test_extract_retry_after_parses_azure_message() -> None:
     assert _extract_retry_after("") is None
 
 
-@patch("agents.skills_extraction.extractors.skills.time")
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.time")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extract_skills_retries_on_429_with_backoff(
     mock_invoke,
     mock_time,

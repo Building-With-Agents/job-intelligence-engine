@@ -9,14 +9,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus import InProcessEventBus
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.agent import register_alert_bus as register_enrichment_alert_bus
-from agents.enrichment.classification import classify_job
-from agents.enrichment.classifiers.spam_preview import SpamPreviewResult
-from agents.enrichment.resolvers.record_enriched_contract import RECORD_ENRICHED_BATCH_PAYLOAD_KEYS
-from agents.scripts.jsearch_enrichment_preview_lib import build_extraction_dict
+from common.event_envelope import EventEnvelope
+from common.message_bus import InProcessEventBus
+from enrichment.agent import EnrichmentAgent
+from enrichment.agent import register_alert_bus as register_enrichment_alert_bus
+from enrichment.classification import classify_job
+from enrichment.classifiers.spam_preview import SpamPreviewResult
+from enrichment.resolvers.record_enriched_contract import RECORD_ENRICHED_BATCH_PAYLOAD_KEYS
+from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 _RECORD_ENRICHED_KEYS = RECORD_ENRICHED_BATCH_PAYLOAD_KEYS
 
@@ -87,10 +87,10 @@ class TestEnrichmentAgent:
         )
 
         with (
-            patch("agents.enrichment.agent.session_scope") as mock_scope,
-            patch("agents.enrichment.agent.resolve_job_posting_row", return_value=resolved_job_posting),
-            patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret),
-            patch("agents.enrichment.agent.apply_enrichment_to_job_postings"),
+            patch("enrichment.agent.session_scope") as mock_scope,
+            patch("enrichment.agent.resolve_job_posting_row", return_value=resolved_job_posting),
+            patch("enrichment.agent.score_spam_preview", return_value=spam_ret),
+            patch("enrichment.agent.apply_enrichment_to_job_postings"),
         ):
             mock_scope.return_value.__enter__.return_value = mock_session
             mock_scope.return_value.__exit__.return_value = None
@@ -146,12 +146,12 @@ class TestEnrichmentAgent:
         )
 
         with (
-            patch("agents.enrichment.agent.session_scope") as mock_scope,
-            patch("agents.enrichment.agent.resolve_job_posting_row", return_value=resolved_job_posting),
-            patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret),
-            patch("agents.enrichment.agent.apply_enrichment_to_job_postings"),
+            patch("enrichment.agent.session_scope") as mock_scope,
+            patch("enrichment.agent.resolve_job_posting_row", return_value=resolved_job_posting),
+            patch("enrichment.agent.score_spam_preview", return_value=spam_ret),
+            patch("enrichment.agent.apply_enrichment_to_job_postings"),
             patch(
-                "agents.enrichment.agent.EnrichedJobProfile",
+                "enrichment.agent.EnrichedJobProfile",
                 side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
             ) as mock_profile,
         ):
@@ -177,7 +177,7 @@ class TestEnrichmentAgent:
             "PYTHON_DATABASE_URL",
             "postgresql+psycopg2://user:pass@localhost:5432/db",
         )
-        with patch("agents.enrichment.agent.check_db_connection", return_value=True):
+        with patch("enrichment.agent.check_db_connection", return_value=True):
             agent = EnrichmentAgent()
             result = agent.health_check()
         assert result["status"] == "ok"
@@ -187,7 +187,7 @@ class TestEnrichmentAgent:
             "PYTHON_DATABASE_URL",
             "postgresql+psycopg2://user:pass@localhost:5432/db",
         )
-        with patch("agents.enrichment.agent.check_db_connection", return_value=False):
+        with patch("enrichment.agent.check_db_connection", return_value=False):
             agent = EnrichmentAgent()
             result = agent.health_check()
         assert result["status"] == "down"
@@ -486,9 +486,9 @@ class TestEnrichmentAgent:
         )
 
         with (
-            patch("agents.enrichment.agent.session_scope") as mock_scope,
-            patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret) as mock_score,
-            patch("agents.enrichment.agent.apply_enrichment_to_job_postings"),
+            patch("enrichment.agent.session_scope") as mock_scope,
+            patch("enrichment.agent.score_spam_preview", return_value=spam_ret) as mock_score,
+            patch("enrichment.agent.apply_enrichment_to_job_postings"),
         ):
             mock_scope.return_value.__enter__.return_value = mock_session
             mock_scope.return_value.__exit__.return_value = None
@@ -568,12 +568,12 @@ class TestEnrichmentAgent:
 
         try:
             with (
-                patch("agents.enrichment.agent.session_scope") as mock_scope,
+                patch("enrichment.agent.session_scope") as mock_scope,
                 patch(
-                    "agents.enrichment.agent.score_spam_preview",
+                    "enrichment.agent.score_spam_preview",
                     return_value=degraded_ret,
                 ),
-                patch("agents.enrichment.agent.apply_enrichment_to_job_postings"),
+                patch("enrichment.agent.apply_enrichment_to_job_postings"),
             ):
                 mock_scope.return_value.__enter__.return_value = mock_session
                 mock_scope.return_value.__exit__.return_value = None
@@ -615,7 +615,7 @@ class TestEnrichmentAgentBatchRecords:
         )
         with (
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
         assert out.payload["event_type"] == "RecordEnriched"
@@ -641,7 +641,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", side_effect=capture_enrich),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             agent.process(event)
         assert captured.get("skills") == skills_event.payload["skills"]
@@ -695,7 +695,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
         assert "enriched_count" in out.payload
@@ -715,7 +715,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", side_effect=Exception("fail")),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
         assert out.payload["event_type"] == "RecordEnriched"
@@ -742,7 +742,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
         assert out.payload["batch_id"] == "batch-multi"
@@ -801,7 +801,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", side_effect=capture_enrich),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
 
@@ -844,7 +844,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", return_value=mock_enriched),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
 
@@ -868,10 +868,10 @@ class TestEnrichmentAgentBatchRecords:
 
         agent = EnrichmentAgent()
         with (
-            patch("agents.enrichment.agent.check_db_connection", return_value=True),
-            patch("agents.enrichment.agent.session_scope", return_value=cm),
+            patch("enrichment.agent.check_db_connection", return_value=True),
+            patch("enrichment.agent.session_scope", return_value=cm),
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}) as mock_enrich,
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             agent.process(event)
 
@@ -890,10 +890,10 @@ class TestEnrichmentAgentBatchRecords:
         )
         agent = EnrichmentAgent()
         with (
-            patch("agents.enrichment.agent.check_db_connection", return_value=False),
-            patch("agents.enrichment.agent.session_scope") as mock_scope,
+            patch("enrichment.agent.check_db_connection", return_value=False),
+            patch("enrichment.agent.session_scope") as mock_scope,
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}) as mock_enrich,
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             agent.process(event)
 
@@ -947,7 +947,7 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         with (
             patch.object(EnrichmentAgent, "enrich_record", side_effect=enrich_side_effect),
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             out = agent.process(event)
 
@@ -974,10 +974,10 @@ class TestEnrichmentAgentBatchRecords:
 
         agent = EnrichmentAgent()
         with (
-            patch("agents.enrichment.agent.check_db_connection", return_value=True),
-            patch("agents.enrichment.agent.session_scope", return_value=cm),
+            patch("enrichment.agent.check_db_connection", return_value=True),
+            patch("enrichment.agent.session_scope", return_value=cm),
             patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}) as mock_enrich,
-            patch("agents.enrichment.agent.resolve_sector", return_value=None),
+            patch("enrichment.agent.resolve_sector", return_value=None),
         ):
             agent.process(event)
 
@@ -1046,13 +1046,13 @@ class TestEnrichmentAgentBatchRecords:
 
         loc_uuid = "550e8400-e29b-41d4-a716-446655440096"
         with (
-            patch("agents.enrichment.agent.check_db_connection", return_value=False),
-            patch("agents.enrichment.agent.resolve_company", return_value=(4242, 0.97)) as mock_company,
+            patch("enrichment.agent.check_db_connection", return_value=False),
+            patch("enrichment.agent.resolve_company", return_value=(4242, 0.97)) as mock_company,
             patch(
-                "agents.enrichment.agent.resolve_location",
+                "enrichment.agent.resolve_location",
                 return_value=(loc_uuid, 0.94, "El Paso, TX", "el_paso"),
             ) as mock_location,
-            patch("agents.enrichment.agent.resolve_sector", return_value="sector-e2e") as mock_sector,
+            patch("enrichment.agent.resolve_sector", return_value="sector-e2e") as mock_sector,
         ):
             out = agent.process(event)
 
@@ -1145,13 +1145,13 @@ class TestEnrichmentAgentBatchRecords:
 
         loc_uuid = "550e8400-e29b-41d4-a716-446655440096"
         with (
-            patch("agents.enrichment.agent.check_db_connection", return_value=False),
-            patch("agents.enrichment.agent.resolve_company", return_value=(4242, 0.97)) as mock_company,
+            patch("enrichment.agent.check_db_connection", return_value=False),
+            patch("enrichment.agent.resolve_company", return_value=(4242, 0.97)) as mock_company,
             patch(
-                "agents.enrichment.agent.resolve_location",
+                "enrichment.agent.resolve_location",
                 return_value=(loc_uuid, 0.94, "El Paso, TX", "el_paso"),
             ) as mock_location,
-            patch("agents.enrichment.agent.resolve_sector", return_value="sector-e2e") as mock_sector,
+            patch("enrichment.agent.resolve_sector", return_value="sector-e2e") as mock_sector,
         ):
             agent.process(event)
 
@@ -1233,9 +1233,9 @@ class TestEnrichmentAgentBatchRecords:
         agent = EnrichmentAgent()
         try:
             with (
-                patch("agents.enrichment.agent.check_db_connection", return_value=False),
+                patch("enrichment.agent.check_db_connection", return_value=False),
                 patch.object(EnrichmentAgent, "enrich_record", side_effect=fake_enrich_record),
-                patch("agents.enrichment.agent.resolve_sector", return_value="sector-batch"),
+                patch("enrichment.agent.resolve_sector", return_value="sector-batch"),
             ):
                 out = agent.process(event)
         finally:

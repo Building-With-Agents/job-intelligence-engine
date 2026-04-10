@@ -16,7 +16,7 @@
 
 | Change | Cost | Rationale |
 |--------|------|-----------|
-| `QueryRequest` + `QueryPersona` on API | Low | Forward-compatible; Phase 1 ignores `persona`. Implemented in `agents/common/types/query_request.py`. |
+| `QueryRequest` + `QueryPersona` on API | Low | Forward-compatible; Phase 1 ignores `persona`. Implemented in `common/types/query_request.py`. |
 | Optional `proficiency_level` on `SkillRecord` | Low–medium | See below; additive field with default `unknown` minimizes breakage. |
 | `tool_vendor` on `ToolRecord` | Low | Additive; helps Phase 2 vendor-specific analytics. |
 | New tables for candidates / cohorts | High | Requires product, consent, retention policy, and access control — defer to Phase 2 program.

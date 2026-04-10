@@ -2,10 +2,10 @@
 description: "skill_name is the authoritative field name for skills — never use 'label' as a field name"
 alwaysApply: true
 globs:
-  - "agents/skills_extraction/**/*.py"
-  - "agents/common/mock_llm_provider.py"
-  - "agents/eval/**/*.py"
-  - "agents/tests/**/*.py"
+  - "skills_extraction/**/*.py"
+  - "common/mock_llm_provider.py"
+  - "eval/**/*.py"
+  - "tests/**/*.py"
 ---
 
 # Skills Field Naming: skill_name (NOT label)
@@ -49,7 +49,7 @@ name = s.get("label") or s.get("skill_name") or ""
 
 ## Files that enforce this
 
-- `agents/skills_extraction/extractors/skills.py` — `_LLMSkill.skill_name`
-- `agents/skills_extraction/prompts/skills_extraction_v4.py` — prompt uses `skill_name`
-- `agents/common/mock_llm_provider.py` — mock returns `skill_name` key
-- `agents/common/types/extraction_types.py` — `SkillRecord.skill_name`
+- `skills_extraction/extractors/skills.py` — `_LLMSkill.skill_name`
+- `skills_extraction/prompts/skills_extraction_v4.py` — prompt uses `skill_name`
+- `common/mock_llm_provider.py` — mock returns `skill_name` key
+- `common/types/extraction_types.py` — `SkillRecord.skill_name`

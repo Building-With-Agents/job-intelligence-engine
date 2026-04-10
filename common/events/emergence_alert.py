@@ -9,8 +9,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from agents.analytics.clustering.types import EmergenceCandidate, RankedSkill, RankedTool
-from agents.common.event_envelope import EventEnvelope
+from analytics.clustering.types import EmergenceCandidate, RankedSkill, RankedTool
+from common.event_envelope import EventEnvelope
 
 
 def _ranked_skills_payload(skills: list[RankedSkill]) -> list[dict[str, Any]]:

@@ -2,26 +2,26 @@
 description: "Testing patterns and requirements for agent pipeline code using pytest"
 alwaysApply: false
 globs:
-  - "agents/**/test_*.py"
-  - "agents/**/tests/**"
-  - "agents/tests/**"
+  - "**/test_*.py"
+  - "**/tests/**"
+  - "tests/**"
 ---
 
 # Testing Standards
 
 ## Test Locations
 
-- **Unit tests:** `agents/<agent_name>/tests/` — test individual agent behavior
-- **Integration tests:** `agents/tests/` — test multi-agent pipeline flows
+- **Unit tests:** `<agent_name>/tests/` — test individual agent behavior
+- **Integration tests:** `tests/` — test multi-agent pipeline flows
 - **Naming:** `test_*.py` files, `Test*` classes, `test_*` methods
 
 ## Running Tests
 
 ```bash
-cd agents && pytest tests/                           # all tests
-cd agents && pytest ingestion/tests/                 # single agent
-cd agents && pytest tests/test_pipeline_integration.py  # integration
-cd agents && pytest -x -v                            # stop on first failure, verbose
+pytest tests/                           # all tests
+pytest ingestion/tests/                 # single agent
+pytest tests/test_pipeline_integration.py  # integration
+pytest -x -v                            # stop on first failure, verbose
 ```
 
 ## Test Structure Example

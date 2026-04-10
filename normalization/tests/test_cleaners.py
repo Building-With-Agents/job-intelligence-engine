@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.normalization.cleaners import (
+from normalization.cleaners import (
     clean_text,
     clean_whitespace,
     normalize_date,

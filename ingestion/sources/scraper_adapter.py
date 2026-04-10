@@ -1,7 +1,7 @@
 """Crawl4AI scraper adapter with fixture fallback.
 
 When ``SCRAPING_TARGETS`` is empty (or unset), falls back to the fixture
-file at ``agents/data/fixtures/fallback_scrape_sample.json``.
+file at ``data/fixtures/fallback_scrape_sample.json``.
 """
 
 from __future__ import annotations
@@ -12,14 +12,14 @@ from pathlib import Path
 
 import structlog
 
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.common.types.region_config import RegionConfig
-from agents.ingestion.sources.base_adapter import SourceAdapter
+from common.types.raw_job_record import RawJobRecord
+from common.types.region_config import RegionConfig
+from ingestion.sources.base_adapter import SourceAdapter
 
 log = structlog.get_logger()
 
 _FALLBACK_SCRAPE = (
-    Path(__file__).parent.parent.parent  # agents/
+    Path(__file__).parent.parent  # agents/
     / "data"
     / "fixtures"
     / "fallback_scrape_sample.json"

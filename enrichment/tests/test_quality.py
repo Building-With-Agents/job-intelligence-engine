@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.enrichment.classifiers.quality import score_quality
+from enrichment.classifiers.quality import score_quality
 
 
 def test_score_quality_empty_is_low_but_bounded() -> None:

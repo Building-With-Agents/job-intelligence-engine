@@ -3,13 +3,13 @@
 
 Usage (from repo root, venv activated):
 
-    python agents/scripts/db_check.py tables          # list dbo tables
-    python agents/scripts/db_check.py counts          # row counts for agent tables
-    python agents/scripts/db_check.py query "SELECT 1"  # run arbitrary SELECT
-    python agents/scripts/db_check.py migrate         # run agent migrations
-    python agents/scripts/db_check.py reset           # truncate all agent tables (for fresh re-runs)
-    python agents/scripts/run_enrichment_promotion_demo.py  # seed + enrich + print job_postings (keeps rows)
-    python agents/scripts/run_enrichment_promotion_demo.py --live-llm  # same, real Azure/LLM calls
+    python scripts/db_check.py tables          # list dbo tables
+    python scripts/db_check.py counts          # row counts for agent tables
+    python scripts/db_check.py query "SELECT 1"  # run arbitrary SELECT
+    python scripts/db_check.py migrate         # run agent migrations
+    python scripts/db_check.py reset           # truncate all agent tables (for fresh re-runs)
+    python scripts/run_enrichment_promotion_demo.py  # seed + enrich + print job_postings (keeps rows)
+    python scripts/run_enrichment_promotion_demo.py --live-llm  # same, real Azure/LLM calls
 
 Reads PYTHON_DATABASE_URL from .env automatically.
 """
@@ -19,13 +19,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Ensure repo root is on sys.path so "agents.*" imports work
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# Ensure repo root is on sys.path so "*" imports work
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import text  # noqa: E402
 
-from agents.common.data_store.database import get_engine  # noqa: E402
-from agents.common.env import load_repo_root_dotenv  # noqa: E402
+from common.data_store.database import get_engine  # noqa: E402
+from common.env import load_repo_root_dotenv  # noqa: E402
 
 load_repo_root_dotenv()
 
@@ -65,7 +65,7 @@ def counts() -> None:
 
 def migrate() -> None:
     """Run agent migrations."""
-    from agents.common.data_store.migrations import run_migrations
+    from common.data_store.migrations import run_migrations
 
     run_migrations(get_engine())
     print("Migrations complete")
@@ -128,9 +128,9 @@ COMMANDS = {
 
 def main() -> None:
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print(f"Usage: python agents/scripts/db_check.py <{'|'.join(COMMANDS)}>")
+        print(f"Usage: python scripts/db_check.py <{'|'.join(COMMANDS)}>")
         print("  query requires a SQL string argument, e.g.:")
-        print('  python agents/scripts/db_check.py query "SELECT COUNT(*) FROM dbo.raw_ingested_jobs"')
+        print('  python scripts/db_check.py query "SELECT COUNT(*) FROM dbo.raw_ingested_jobs"')
         sys.exit(1)
 
     cmd = sys.argv[1]

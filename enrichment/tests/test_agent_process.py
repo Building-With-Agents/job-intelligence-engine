@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from agents.common.event_envelope import EventEnvelope
-from agents.enrichment.agent import EnrichmentAgent
+from common.event_envelope import EventEnvelope
+from enrichment.agent import EnrichmentAgent
 
 
 def _base_payload(**row_overrides: object) -> dict:
@@ -56,7 +56,7 @@ def test_process_is_spam_none_flagged_for_review() -> None:
     assert out.payload["flagged_for_review_count"] == 1
 
 
-@patch("agents.enrichment.agent.resolve_sector", return_value=None)
+@patch("enrichment.agent.resolve_sector", return_value=None)
 @patch.object(EnrichmentAgent, "enrich_record")
 def test_process_is_spam_false_calls_enrich_once(
     mock_enrich: MagicMock,
@@ -77,7 +77,7 @@ def test_process_is_spam_false_calls_enrich_once(
     assert out.payload["flagged_for_review_count"] == 0
 
 
-@patch("agents.enrichment.agent.resolve_sector", return_value=None)
+@patch("enrichment.agent.resolve_sector", return_value=None)
 @patch.object(EnrichmentAgent, "enrich_record")
 def test_process_degraded_on_enrich_raises(
     mock_enrich: MagicMock,

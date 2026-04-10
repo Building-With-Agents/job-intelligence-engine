@@ -60,17 +60,17 @@ python -c "from agents.common.data_store.database import check_db_connection; pr
 ### Windows (PowerShell)
 
 ```powershell
-py -3.11 -m venv agents/.venv
-agents\.venv\Scripts\Activate.ps1
-pip install -r agents/requirements.txt
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
 ### Linux / macOS
 
 ```bash
-python3.11 -m venv agents/.venv
-source agents/.venv/bin/activate
-pip install -r agents/requirements.txt
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ---
@@ -171,7 +171,7 @@ Expected tables:
 Run ingestion standalone with a small limit:
 
 ```bash
-python -m agents.ingestion.agent --source all --limit 5 --migrate
+python -m ingestion.agent --source all --limit 5 --migrate
 ```
 
 **Verify in the database:**
@@ -221,16 +221,16 @@ Run the flywheel pipeline (decoupled ingestion + processing):
 
 ```bash
 # Loop 1: Ingest from JSearch API
-python agents/scripts/batch_ingest.py
+python scripts/batch_ingest.py
 
 # Loop 2: Process pending records (normalize → extract → enrich)
-python agents/scripts/run_processing_loop.py --batch-size 50 --delay 2
+python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
 **Demo run** (fixture data only, Week 2 demo):
 
 ```bash
-python agents/pipeline_runner.py
+python pipeline_runner.py
 ```
 
 **Verify normalization:**
@@ -280,26 +280,26 @@ HAVING COUNT(*) > 1;
 
 ```bash
 # Windows
-python -m pytest agents/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 
 # Linux / macOS
-python -m pytest agents/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 ```
 
 ### Per-module
 
 ```bash
 # Ingestion tests only
-python -m pytest agents/ingestion/tests/ -v --tb=short
+python -m pytest ingestion/tests/ -v --tb=short
 
 # Normalization tests only
-python -m pytest agents/normalization/tests/ -v --tb=short
+python -m pytest normalization/tests/ -v --tb=short
 
 # Pipeline runner tests
-python -m pytest agents/tests/test_pipeline_runner.py -v --tb=short
+python -m pytest tests/test_pipeline_runner.py -v --tb=short
 
 # Streamlit dashboard tests
-python -m pytest agents/tests/test_streamlit_app.py -v --tb=short
+python -m pytest tests/test_streamlit_app.py -v --tb=short
 ```
 
 **Expected:** 114 passed, 0 skipped.
@@ -307,9 +307,9 @@ python -m pytest agents/tests/test_streamlit_app.py -v --tb=short
 
 | Suite                                         | Expected   |
 | --------------------------------------------- | ---------- |
-| Full run (`agents/tests/`)                    | 114 passed |
-| Ingestion (`agents/ingestion/tests/`)         | 38 passed  |
-| Normalization (`agents/normalization/tests/`) | 38 passed  |
+| Full run (`tests/`)                    | 114 passed |
+| Ingestion (`ingestion/tests/`)         | 38 passed  |
+| Normalization (`normalization/tests/`) | 38 passed  |
 | Pipeline runner (`test_pipeline_runner.py`)   | 7 passed   |
 | Streamlit dashboard (`test_streamlit_app.py`) | 20 passed  |
 
@@ -317,7 +317,7 @@ python -m pytest agents/tests/test_streamlit_app.py -v --tb=short
 ### Ruff lint
 
 ```bash
-python -m ruff check agents/
+python -m ruff check .
 ```
 
 **Expected:** `All checks passed!`
@@ -327,16 +327,16 @@ python -m ruff check agents/
 ## 10. Dashboard (Streamlit)
 
 ```bash
-streamlit run agents/dashboard/app.py
-# Alias: streamlit run agents/dashboard/streamlit_app.py
+streamlit run dashboard/app.py
+# Alias: streamlit run dashboard/streamlit_app.py
 ```
 
 Opens in browser at `http://localhost:8501`.
 
 **Data source:** The dashboard auto-detects whether PostgreSQL is available via `PYTHON_DATABASE_URL` or `PYTHON_DATABASE_URL_READONLY`.
 
-- **Connected:** Sidebar shows "Connected to PostgreSQL (read-only)" — dashboard uses a separate SQLAlchemy engine with `default_transaction_read_only=on` (see `agents/dashboard/readonly_engine.py`).
-- **Fallback:** Sidebar shows "Using fixture data (JSON)" — journey pages read from `agents/data/output/pipeline_run.json`. Week 6 observability pages require PostgreSQL.
+- **Connected:** Sidebar shows "Connected to PostgreSQL (read-only)" — dashboard uses a separate SQLAlchemy engine with `default_transaction_read_only=on` (see `dashboard/readonly_engine.py`).
+- **Fallback:** Sidebar shows "Using fixture data (JSON)" — journey pages read from `data/output/pipeline_run.json`. Week 6 observability pages require PostgreSQL.
 
 **Week 6 observability pages:**
 
@@ -466,28 +466,28 @@ Or pass it on the command line (see below).
 From repo root with venv activated:
 
 ```bash
-python -m agents.scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
+python -m scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
 ```
 
 Or use the env var:
 
 ```bash
-python -m agents.scripts.run_full_pipeline_redis
+python -m scripts.run_full_pipeline_redis
 ```
 
 ### Job limit (faster runs)
 
 The script runs with a **limit of 10 jobs** so full pipeline runs finish in minutes instead of much longer. Ingestion fetches at most 10 records, and skills extraction processes at most 10 work items per run.
 
-- **To change the ingestion cap:** Edit `agents/scripts/run_full_pipeline_redis.py` and in `_trigger_payload()` set `"limit"` and/or `"region_config"["limit"]` to the desired number (e.g. 50 or 100).
+- **To change the ingestion cap:** Edit `scripts/run_full_pipeline_redis.py` and in `_trigger_payload()` set `"limit"` and/or `"region_config"["limit"]` to the desired number (e.g. 50 or 100).
 - **To change the skills cap:** Set the env var `SKILLS_EXTRACTION_MAX_JOBS` (default 10). For example `SKILLS_EXTRACTION_MAX_JOBS=20` to process up to 20 jobs in the skills stage.
 
 When the trigger does not include a limit, ingestion uses a default of 50.
 
 ### View the report
 
-- **JSON:** `agents/eval/full_pipeline_redis_metrics.json` — metrics for tooling/comparison.
-- **HTML:** `agents/eval/full_pipeline_redis_metrics.html` — open in a browser to visualize:
+- **JSON:** `eval/full_pipeline_redis_metrics.json` — metrics for tooling/comparison.
+- **HTML:** `eval/full_pipeline_redis_metrics.html` — open in a browser to visualize:
   - Timeline of stages (locate the failing stage at a glance)
   - Per-stage latency, event types in/out, status (OK/ERROR)
   - Error message and traceback for any failed stage
@@ -498,7 +498,7 @@ When the trigger does not include a limit, ingestion uses a default of 50.
 start agents\eval\full_pipeline_redis_metrics.html
 
 # macOS / Linux
-open agents/eval/full_pipeline_redis_metrics.html
+open eval/full_pipeline_redis_metrics.html
 ```
 
 If Redis is unavailable, the script exits with a clear error and non-zero exit code; no report is written.
@@ -508,7 +508,7 @@ If Redis is unavailable, the script exits with a clear error and non-zero exit c
 Tests that require Redis are skipped when `REDIS_URL` is not set:
 
 ```bash
-pytest agents/tests/test_full_pipeline_redis.py -v
+pytest tests/test_full_pipeline_redis.py -v
 ```
 
 ---

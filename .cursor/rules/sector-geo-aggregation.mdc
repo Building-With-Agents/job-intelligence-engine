@@ -1,16 +1,16 @@
 ---
 description: Pair B (Fatima + Nestor) Week 7 — sector/geo weekly aggregates, salary percentiles API, minimum-data guard (#179), analytics integration.
-globs: agents/analytics/**/*.py,agents/common/data_store/models.py,agents/common/data_store/migrations.py
+globs: analytics/**/*.py,common/data_store/models.py,common/data_store/migrations.py
 alwaysApply: false
 ---
 
 # Sector & geo aggregation — Pair B Week 7 integration contract
 
-Cross-pair coordination: **Pair C (Bryan + Emilio)** consumes `compute_salary_percentiles()` for `role_snapshot_weekly` — track in **issue #188**. Aggregates are written by the **Analytics Agent** Week 7 implementation (`agents/analytics/agent.py`); today that module is still a walking-skeleton stub until real batch aggregation lands.
+Cross-pair coordination: **Pair C (Bryan + Emilio)** consumes `compute_salary_percentiles()` for `role_snapshot_weekly` — track in **issue #188**. Aggregates are written by the **Analytics Agent** Week 7 implementation (`analytics/agent.py`); today that module is still a walking-skeleton stub until real batch aggregation lands.
 
-## 1. SQLAlchemy models (`agents/common/data_store/models.py`)
+## 1. SQLAlchemy models (`common/data_store/models.py`)
 
-**Status:** These tables are specified for Week 7; add the classes below to `agents/common/data_store/models.py` (and matching idempotent DDL in `migrations.py` / `create_all`) when implementing. Use schema **`dbo`**, same patterns as other agent tables (`Index`, `{"schema": "dbo"}`).
+**Status:** These tables are specified for Week 7; add the classes below to `common/data_store/models.py` (and matching idempotent DDL in `migrations.py` / `create_all`) when implementing. Use schema **`dbo`**, same patterns as other agent tables (`Index`, `{"schema": "dbo"}`).
 
 ### `sector_summary_weekly`
 
@@ -60,7 +60,7 @@ class GeoDemandWeekly(Base):
 
 ## 2. `compute_salary_percentiles()` — Pair C interface
 
-Shared helper (intended location: analytics module alongside Week 7 aggregation code, e.g. under `agents/analytics/`). **Pair C** uses this output to populate **`role_snapshot_weekly`**.
+Shared helper (intended location: analytics module alongside Week 7 aggregation code, e.g. under `analytics/`). **Pair C** uses this output to populate **`role_snapshot_weekly`**.
 
 **Signature:**
 
@@ -118,7 +118,7 @@ Filter to **active / in-scope** postings as defined by the analytics batch (e.g.
 | Owner | Responsibility |
 |-------|----------------|
 | **Pair B (Fatima + Nestor)** | `sector_summary_weekly` / `geo_demand_weekly` models & migrations; aggregation logic; minimum-data guard (#179); expose `compute_salary_percentiles()`. |
-| **Analytics Agent** | `agents/analytics/agent.py` — Week 7 replaces stub with batch aggregation, watermarking, and `AnalyticsRefreshed` emission after successful runs. |
+| **Analytics Agent** | `analytics/agent.py` — Week 7 replaces stub with batch aggregation, watermarking, and `AnalyticsRefreshed` emission after successful runs. |
 | **Pair C (Bryan + Emilio)** | Consumes **`compute_salary_percentiles()`** for **`role_snapshot_weekly`**; coordinate schema and column allowlists via **issue #188**. |
 
 **References:** `docs/planning/ARCHITECTURE_DEEP.md` (table names), `.cursor/rules/soc-naics-enrichment.mdc` (enrichment columns on postings), `.cursor/rules/integration-schema.mdc` (locked `borderplex_subregion` values).

@@ -21,8 +21,8 @@ Phase 2 replaces this stub with:
 
 from __future__ import annotations
 
-from agents.common.base_agent import BaseAgent
-from agents.common.event_envelope import EventEnvelope
+from common.base_agent import BaseAgent
+from common.event_envelope import EventEnvelope
 
 
 class DemandAnalysisAgent(BaseAgent):

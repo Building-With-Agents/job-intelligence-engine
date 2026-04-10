@@ -1,7 +1,7 @@
 """Compare ground truth vs one or two extraction eval snapshots (run now or load JSON).
 
 Usage (repo root):
-    streamlit run agents/eval/streamlit_eval_app.py
+    streamlit run eval/streamlit_eval_app.py
 """
 
 from __future__ import annotations
@@ -11,15 +11,15 @@ import sys
 from pathlib import Path
 
 # Repo root must be on sys.path so `import agents` works when Streamlit runs this file.
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 import pandas as pd
 import streamlit as st
 
-from agents.eval.extraction_eval_core import load_ground_truth, run_eval_dataset
-from agents.eval.snapshot_schema import SNAPSHOT_SCHEMA_VERSION, ExtractionEvalSnapshot, load_snapshot
+from eval.extraction_eval_core import load_ground_truth, run_eval_dataset
+from eval.snapshot_schema import SNAPSHOT_SCHEMA_VERSION, ExtractionEvalSnapshot, load_snapshot
 
 _EVAL_DIR = Path(__file__).resolve().parent
 _DEFAULT_GT = _EVAL_DIR / "extraction_ground_truth.json"
@@ -60,7 +60,7 @@ def _run_snapshot(
 
 
 def _load_snapshot_ui(key: str) -> ExtractionEvalSnapshot | None:
-    st.caption("Load a JSON file from `agents/eval/runs/` or upload.")
+    st.caption("Load a JSON file from `eval/runs/` or upload.")
     snap_paths = _list_run_snapshots()
     options = ["(Upload file…)"] + [p.name for p in snap_paths]
     choice = st.selectbox(f"Saved snapshot ({key})", options, key=f"sel_{key}")

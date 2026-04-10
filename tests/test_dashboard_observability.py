@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from agents.dashboard.observability_metrics import (
+from dashboard.observability_metrics import (
     compute_conformance_pct,
     compute_dedup_rate_pct,
     compute_error_rate_pct,

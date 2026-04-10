@@ -12,7 +12,7 @@ from typing import Any
 
 import structlog
 
-from agents.common.tracer_base import TracerBase
+from common.tracer_base import TracerBase
 
 
 class StructlogTracer(TracerBase):

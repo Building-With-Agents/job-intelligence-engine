@@ -15,9 +15,9 @@ Prerequisites:
   - Optional: NORM_BATCH_SIZE env var (default: 50)
 
 Usage (from repo root):
-  python agents/scripts/run_processing_loop.py
-  python agents/scripts/run_processing_loop.py --batch-size 25 --delay 15
-  python agents/scripts/run_processing_loop.py --max-iterations 5
+  python scripts/run_processing_loop.py
+  python scripts/run_processing_loop.py --batch-size 25 --delay 15
+  python scripts/run_processing_loop.py --max-iterations 5
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 # Path bootstrap
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -66,8 +66,8 @@ def _init_tracer() -> None:
     if not os.getenv("LANGFUSE_SECRET_KEY"):
         return
     try:
-        from agents.common.llm_adapter import register_tracer
-        from agents.common.observability import LangfuseTracer
+        from common.llm_adapter import register_tracer
+        from common.observability import LangfuseTracer
 
         _tracer = LangfuseTracer(agent_id="processing-loop")
         register_tracer(_tracer)
@@ -80,7 +80,7 @@ def _shutdown_tracer() -> None:
     global _tracer
     if _tracer is not None:
         with contextlib.suppress(Exception):
-            from agents.common.llm_adapter import register_tracer
+            from common.llm_adapter import register_tracer
 
             _tracer.shutdown()
             register_tracer(None)
@@ -90,8 +90,8 @@ def _shutdown_tracer() -> None:
 def _count_pending() -> int:
     """Count raw_ingested_jobs with processing_status='pending'."""
     try:
-        from agents.common.data_store.database import session_scope
-        from agents.common.data_store.models import RawIngestedJob
+        from common.data_store.database import session_scope
+        from common.data_store.models import RawIngestedJob
 
         with session_scope() as session:
             return session.query(RawIngestedJob).filter(
@@ -105,8 +105,8 @@ def _count_pending() -> int:
 def _count_unextracted() -> int:
     """Count normalized_jobs that don't have an extracted_intelligence row yet."""
     try:
-        from agents.common.data_store.database import session_scope
-        from agents.common.data_store.models import ExtractedIntelligence, NormalizedJob
+        from common.data_store.database import session_scope
+        from common.data_store.models import ExtractedIntelligence, NormalizedJob
 
         with session_scope() as session:
             return (
@@ -126,7 +126,7 @@ def _count_unextracted() -> int:
 def _count_enriched() -> int:
     """Count job_postings (enriched output)."""
     try:
-        from agents.common.data_store.database import session_scope
+        from common.data_store.database import session_scope
 
         with session_scope() as session:
             from sqlalchemy import text
@@ -184,10 +184,10 @@ def main() -> None:
         return
 
     # Late imports — heavy pipeline dependencies
-    from agents.common.event_envelope import EventEnvelope
-    from agents.enrichment.agent import EnrichmentAgent
-    from agents.normalization.agent import NormalizationAgent
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from common.event_envelope import EventEnvelope
+    from enrichment.agent import EnrichmentAgent
+    from normalization.agent import NormalizationAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     norm_agent = NormalizationAgent()
     extract_agent = SkillsExtractionAgent()

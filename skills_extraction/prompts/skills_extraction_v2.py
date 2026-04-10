@@ -1,6 +1,6 @@
 """Skills extraction prompt v2 — suppress generic soft-skill over-extraction.
 
-Document changes in agents/eval/prompt_iteration_log.md.
+Document changes in eval/prompt_iteration_log.md.
 """
 
 from __future__ import annotations

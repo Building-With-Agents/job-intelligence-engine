@@ -21,7 +21,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import RawIngestedJob
+from common.data_store.models import RawIngestedJob
 
 log = structlog.get_logger()
 

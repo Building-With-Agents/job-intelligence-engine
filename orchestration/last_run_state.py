@@ -2,7 +2,7 @@
 Last run start/finish timestamps for the ingestion trigger (EXP-005 observability).
 
 Writes a small JSON file on each pipeline run so we can query "last run start"
-and "last run finish" without a database. Path is agents/data/scheduler_last_run.json
+and "last run finish" without a database. Path is data/scheduler_last_run.json
 by default, or SCHEDULER_STATE_PATH (env) for an absolute path.
 
 In normal operation only the apscheduler section is written (scheduler.py sets
@@ -19,8 +19,8 @@ last_5_runs (for drift: expected_fire_at, actual_fire_at, drift_seconds per run)
 
 Read from command line:
 
-    python -m agents.orchestration.last_run_state
-    python -m agents.orchestration.last_run_state --drift-table [apscheduler|task_scheduler]
+    python -m orchestration.last_run_state
+    python -m orchestration.last_run_state --drift-table [apscheduler|task_scheduler]
 """
 
 from __future__ import annotations

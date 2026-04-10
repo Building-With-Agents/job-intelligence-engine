@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.enrichment.resolvers.confidence import (
+from enrichment.resolvers.confidence import (
     compute_field_confidence,
     compute_overall_confidence,
 )

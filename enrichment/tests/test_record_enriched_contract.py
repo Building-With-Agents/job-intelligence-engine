@@ -6,10 +6,10 @@ from unittest.mock import patch
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.resolvers.events import RECORD_ENRICHED_SCHEMA_VERSION, build_record_enriched_event
-from agents.enrichment.resolvers.record_enriched_contract import (
+from common.event_envelope import EventEnvelope
+from enrichment.agent import EnrichmentAgent
+from enrichment.resolvers.events import RECORD_ENRICHED_SCHEMA_VERSION, build_record_enriched_event
+from enrichment.resolvers.record_enriched_contract import (
     RECORD_ENRICHED_BATCH_PAYLOAD_KEYS,
     RECORD_ENRICHED_DEDUP_BLOCK_KEYS,
     RECORD_ENRICHED_SINGLE_RECORD_CORE_KEYS,
@@ -110,7 +110,7 @@ def test_batch_process_rollups_dedup_stub_from_posting_row() -> None:
     agent = EnrichmentAgent()
     with (
         patch.object(EnrichmentAgent, "enrich_record", return_value={"ok": True}),
-        patch("agents.enrichment.agent.resolve_sector", return_value=None),
+        patch("enrichment.agent.resolve_sector", return_value=None),
     ):
         out = agent.process(event)
     assert out.payload["dedup"]["stub_count"] == 1

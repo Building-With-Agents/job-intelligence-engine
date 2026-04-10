@@ -27,12 +27,12 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agents.enrichment.classifiers.borderplex_subregion import classify_borderplex_subregion
-from agents.enrichment.classifiers.spam_preview import apply_spam_tiers
-from agents.enrichment.classifiers.temporal_period import classify_temporal_period
-from agents.enrichment.dedup import run_fuzzy_dedup
-from agents.enrichment.dedup.types import FuzzyDedupResult
-from agents.enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
+from enrichment.classifiers.borderplex_subregion import classify_borderplex_subregion
+from enrichment.classifiers.spam_preview import apply_spam_tiers
+from enrichment.classifiers.temporal_period import classify_temporal_period
+from enrichment.dedup import run_fuzzy_dedup
+from enrichment.dedup.types import FuzzyDedupResult
+from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 
 log = structlog.get_logger()
 

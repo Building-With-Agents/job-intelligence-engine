@@ -308,8 +308,8 @@ def run_agent_migrations(conn: psycopg2.extensions.connection) -> None:
     try:
         # Import lazily — agents/ may not be on PYTHONPATH in all setups
         sys.path.insert(0, str(_REPO_ROOT))
-        from agents.common.data_store.database import get_engine
-        from agents.common.data_store.migrations import run_migrations
+        from common.data_store.database import get_engine
+        from common.data_store.migrations import run_migrations
 
         engine = get_engine()
         run_migrations(engine)
@@ -460,7 +460,7 @@ def seed_database() -> None:
 
     print("\nNext steps:")
     print("  1. Activate venv:  agents\\.venv\\Scripts\\Activate.ps1")
-    print("  2. Run pipeline:   python agents/pipeline_runner.py")
+    print("  2. Run pipeline:   python pipeline_runner.py")
     print("=" * 60)
 
 

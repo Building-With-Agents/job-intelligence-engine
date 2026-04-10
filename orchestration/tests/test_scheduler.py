@@ -14,28 +14,28 @@ from unittest.mock import MagicMock, patch
 class TestTriggerReliability:
     """The job callable invokes the ingestion entrypoint when it runs."""
 
-    @patch("agents.orchestration.scheduler.log")
-    @patch("agents.orchestration.run_ingestion.main")
+    @patch("orchestration.scheduler.log")
+    @patch("orchestration.run_ingestion.main")
     def test_scheduled_job_invokes_run_ingestion_once(
         self,
         mock_run_ingestion: MagicMock,
         _mock_log: MagicMock,
     ) -> None:
         """When the scheduler fires the job, it calls run_ingestion.main exactly once."""
-        from agents.orchestration.scheduler import _scheduled_job
+        from orchestration.scheduler import _scheduled_job
 
         _scheduled_job()
         mock_run_ingestion.assert_called_once()
 
-    @patch("agents.orchestration.scheduler.log")
-    @patch("agents.orchestration.run_ingestion.main")
+    @patch("orchestration.scheduler.log")
+    @patch("orchestration.run_ingestion.main")
     def test_scheduled_job_invokes_entrypoint_even_if_import_late(
         self,
         mock_run_ingestion: MagicMock,
         _mock_log: MagicMock,
     ) -> None:
         """Job callable uses the same entrypoint as APScheduler/Task Scheduler (run_ingestion.main)."""
-        from agents.orchestration.scheduler import _scheduled_job
+        from orchestration.scheduler import _scheduled_job
 
         _scheduled_job()
         mock_run_ingestion.assert_called_once()
@@ -47,7 +47,7 @@ class TestScheduleFromEnvironment:
 
     def test_interval_minutes_default(self) -> None:
         """Without INGESTION_INTERVAL_MINUTES, default is 2."""
-        from agents.orchestration.scheduler import _interval_minutes
+        from orchestration.scheduler import _interval_minutes
 
         with patch.dict(os.environ, {}, clear=False):
             if "INGESTION_INTERVAL_MINUTES" in os.environ:
@@ -56,7 +56,7 @@ class TestScheduleFromEnvironment:
 
     def test_interval_minutes_from_env(self) -> None:
         """INGESTION_INTERVAL_MINUTES sets the interval (min 1)."""
-        from agents.orchestration.scheduler import _interval_minutes
+        from orchestration.scheduler import _interval_minutes
 
         with patch.dict(os.environ, {"INGESTION_INTERVAL_MINUTES": "5"}):
             assert _interval_minutes() == 5
@@ -67,25 +67,25 @@ class TestScheduleFromEnvironment:
 
     def test_interval_minutes_invalid_falls_back_to_2(self) -> None:
         """Invalid INGESTION_INTERVAL_MINUTES falls back to 2."""
-        from agents.orchestration.scheduler import _interval_minutes
+        from orchestration.scheduler import _interval_minutes
 
         with patch.dict(os.environ, {"INGESTION_INTERVAL_MINUTES": "not_a_number"}):
             assert _interval_minutes() == 2
 
-    @patch("agents.orchestration.scheduler.BackgroundScheduler")
+    @patch("orchestration.scheduler.BackgroundScheduler")
     def test_scheduler_add_job_receives_interval_from_env(
         self,
         mock_scheduler_class: MagicMock,
     ) -> None:
         """When main() runs without cron, add_job is called with minutes from INGESTION_INTERVAL_MINUTES."""
-        from agents.orchestration.scheduler import main
+        from orchestration.scheduler import main
 
         mock_scheduler = MagicMock()
         mock_scheduler_class.return_value = mock_scheduler
         # Make sleep raise so main() exits (it catches KeyboardInterrupt and returns)
         with (
             patch.dict(os.environ, {"INGESTION_CRON_EXPRESSION": "", "INGESTION_INTERVAL_MINUTES": "7"}),
-            patch("agents.orchestration.scheduler.time.sleep", side_effect=KeyboardInterrupt),
+            patch("orchestration.scheduler.time.sleep", side_effect=KeyboardInterrupt),
         ):
             main()
 
@@ -94,7 +94,7 @@ class TestScheduleFromEnvironment:
         assert call_kwargs["minutes"] == 7
         assert call_kwargs["trigger"] == "interval"
 
-    @patch("agents.orchestration.scheduler.BackgroundScheduler")
+    @patch("orchestration.scheduler.BackgroundScheduler")
     def test_scheduler_add_job_receives_cron_from_env(
         self,
         mock_scheduler_class: MagicMock,
@@ -102,7 +102,7 @@ class TestScheduleFromEnvironment:
         """When INGESTION_CRON_EXPRESSION is set, add_job is called with a cron trigger (no minutes)."""
         from apscheduler.triggers.cron import CronTrigger
 
-        from agents.orchestration.scheduler import main
+        from orchestration.scheduler import main
 
         mock_scheduler = MagicMock()
         mock_scheduler_class.return_value = mock_scheduler
@@ -111,7 +111,7 @@ class TestScheduleFromEnvironment:
                 os.environ,
                 {"INGESTION_CRON_EXPRESSION": "*/3 * * * *", "INGESTION_INTERVAL_MINUTES": "2"},
             ),
-            patch("agents.orchestration.scheduler.time.sleep", side_effect=KeyboardInterrupt),
+            patch("orchestration.scheduler.time.sleep", side_effect=KeyboardInterrupt),
         ):
             main()
 
@@ -132,7 +132,7 @@ class TestOverlapHandling:
         finishes (max_instances=1 means only one concurrent run). Our scheduler
         module does not pass max_instances to add_job, so this default applies.
         """
-        from agents.orchestration.scheduler import _scheduled_job
+        from orchestration.scheduler import _scheduled_job
 
         # Our job is the real _scheduled_job; we don't pass max_instances to add_job
         assert callable(_scheduled_job)
@@ -156,7 +156,7 @@ class TestCrashRecoveryDocumentation:
         """Task Scheduler: next cycle fires on schedule in a new process.
 
         Each Task Scheduler run starts a new process (run_ingestion_task.bat
-        runs python -m agents.orchestration.run_ingestion). If that process
+        runs python -m orchestration.run_ingestion). If that process
         crashes, the OS does not restart it; the next run is at the next
         scheduled trigger time (e.g. 2 minutes later). So "next cycle fires
         even if the agent crashed on previous run" is satisfied: a new

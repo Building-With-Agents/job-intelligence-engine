@@ -4,7 +4,7 @@ Pulls pre-computed embeddings from the shared Azure database and writes them
 to your local PostgreSQL. No Azure OpenAI API calls — zero LLM cost.
 
 Usage:
-    cd agents
+    
     .venv\\Scripts\\Activate.ps1   # Windows
     # source .venv/bin/activate   # macOS/Linux
 
@@ -51,7 +51,7 @@ load_dotenv(os.path.join(_repo_root, ".env"))
 load_dotenv(os.path.join(_repo_root, "agents", ".env"))
 load_dotenv()  # fallback: CWD
 
-from agents.common.data_store.database import session_scope  # noqa: E402
+from common.data_store.database import session_scope  # noqa: E402
 
 log = structlog.get_logger()
 

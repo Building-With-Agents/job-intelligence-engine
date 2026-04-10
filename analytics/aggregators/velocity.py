@@ -2,7 +2,7 @@
 
 Uses **Pandas** for 4-week rolling means and week-over-week ``pct_change`` per
 IMP-021 / runbook. ``target_week`` must be the same Monday-anchored ``DATE`` as
-``date_trunc('week', ...)::date`` in :mod:`agents.analytics.aggregators.demand_weekly`.
+``date_trunc('week', ...)::date`` in :mod:`analytics.aggregators.demand_weekly`.
 
 Run **step 2** for ``target_week`` before this refresh so ``demand_count`` and
 ``esco_uri`` match that week.
@@ -26,7 +26,7 @@ import structlog
 from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import SkillDemandWeekly, SkillVelocity
+from common.data_store.models import SkillDemandWeekly, SkillVelocity
 
 log = structlog.get_logger()
 

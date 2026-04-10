@@ -16,7 +16,7 @@ log = structlog.get_logger()
 
 
 def _default_csv_path() -> Path:
-    return Path(os.getenv("EXP004_COMPARISON_CSV", "agents/data/output/exp004_comparison.csv"))
+    return Path(os.getenv("EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"))
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:

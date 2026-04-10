@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.enrichment.classification import (
+from enrichment.classification import (
     build_job_corpus,
     classify_job,
     classify_role,

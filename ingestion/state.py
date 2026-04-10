@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from pydantic import BaseModel
 
-from agents.common.types import RawJobRecord
+from common.types import RawJobRecord
 
 
 class SourceResult(BaseModel):

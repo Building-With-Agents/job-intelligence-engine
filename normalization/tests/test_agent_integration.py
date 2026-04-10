@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.data_store.database import check_db_connection
-from agents.common.event_envelope import EventEnvelope
-from agents.normalization.agent import NormalizationAgent
+from common.data_store.database import check_db_connection
+from common.event_envelope import EventEnvelope
+from normalization.agent import NormalizationAgent
 
 pytestmark = pytest.mark.integration
 

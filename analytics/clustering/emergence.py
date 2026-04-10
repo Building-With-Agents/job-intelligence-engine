@@ -9,14 +9,14 @@ from collections.abc import Sequence
 import numpy as np
 import structlog
 
-from agents.analytics.clustering.config import (
+from analytics.clustering.config import (
     cluster_label_dominance_threshold,
     emergence_min_distinct_employers,
     emergence_min_novel_skills,
     emergence_min_quality_score,
 )
-from agents.analytics.clustering.text import normalize_clustering_text_fragment
-from agents.analytics.clustering.types import (
+from analytics.clustering.text import normalize_clustering_text_fragment
+from analytics.clustering.types import (
     ClusteringResult,
     ClusterSummary,
     EmbeddedPostingText,

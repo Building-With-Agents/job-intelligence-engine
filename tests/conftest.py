@@ -5,14 +5,14 @@ Each fixture produces an EventEnvelope matching a specific pipeline stage,
 so agent tests can feed the correct upstream event without duplicating setup.
 All fixtures use correlation_id="test-1" for traceability.
 
-Note: .env loading is handled by agents/conftest.py (root conftest).
+Note: .env loading is handled by conftest.py (root conftest).
 """
 
 from __future__ import annotations
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 # ---------------------------------------------------------------------------
 # Raw posting (input to pipeline runner / Ingestion Agent)

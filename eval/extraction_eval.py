@@ -41,14 +41,14 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from agents.common.types import JobRecord
-from agents.eval.extraction_eval_core import (
+from common.types import JobRecord
+from eval.extraction_eval_core import (
     compute_metrics,
     f1_from_precision_recall,
     normalize_tool_label_for_eval,
 )
-from agents.skills_extraction.extractors.skills import extract_skills
-from agents.skills_extraction.extractors.tools import extract_tools
+from skills_extraction.extractors.skills import extract_skills
+from skills_extraction.extractors.tools import extract_tools
 
 GROUND_TRUTH_PATH = Path(__file__).parent / "extraction_ground_truth.json"
 

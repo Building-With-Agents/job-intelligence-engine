@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from agents.enrichment.classifiers.spam_preview import (
+from enrichment.classifiers.spam_preview import (
     apply_spam_tiers,
     score_spam_preview,
 )
@@ -28,7 +28,7 @@ def test_apply_spam_tiers_custom_thresholds() -> None:
 
 def test_score_spam_preview_degraded_no_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SPAM_PREVIEW_ALLOW_HEURISTIC", raising=False)
-    with patch("agents.common.llm_client.invoke_skills_llm") as m:
+    with patch("common.llm_client.invoke_skills_llm") as m:
         m.side_effect = ValueError("no deployment")
         r = score_spam_preview(
             job_title="Engineer",
@@ -46,7 +46,7 @@ def test_score_spam_preview_degraded_no_llm(monkeypatch: pytest.MonkeyPatch) -> 
 
 def test_score_spam_preview_successful_parse() -> None:
     payload = '{"spam_score": 0.4, "rationale": "ok", "spam_confidence": 0.9}'
-    with patch("agents.common.llm_client.invoke_skills_llm") as m:
+    with patch("common.llm_client.invoke_skills_llm") as m:
         m.return_value = (
             payload,
             {

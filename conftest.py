@@ -1,14 +1,14 @@
 """Root conftest for the agents package.
 
 Pytest discovers this file automatically for ALL test subdirectories
-under agents/, ensuring .env is loaded before any test collection.
+at repo root, ensuring .env is loaded before any test collection.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from agents.common.env import load_repo_root_dotenv
+from common.env import load_repo_root_dotenv
 
 # Canonical repo-root .env before collection so skip markers and integration
 # fixtures resolve against the same local configuration.

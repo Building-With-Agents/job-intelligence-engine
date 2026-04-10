@@ -7,8 +7,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from agents.analytics.agent import AnalyticsAgent, _resolve_target_week, default_analytics_target_week
-from agents.common.event_envelope import EventEnvelope
+from analytics.agent import AnalyticsAgent, _resolve_target_week, default_analytics_target_week
+from common.event_envelope import EventEnvelope
 
 
 class TestAnalyticsAgent:
@@ -18,7 +18,7 @@ class TestAnalyticsAgent:
         agent = AnalyticsAgent()
         assert agent.agent_id == "analytics-agent"
 
-    @patch("agents.analytics.agent.check_db_connection", return_value=True)
+    @patch("analytics.agent.check_db_connection", return_value=True)
     @patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"})
     def test_health_check_ok_when_db_configured_and_reachable(self, _mock_check: MagicMock) -> None:
         agent = AnalyticsAgent()
@@ -26,15 +26,15 @@ class TestAnalyticsAgent:
         assert result["status"] == "ok"
         assert result["agent"] == "analytics-agent"
 
-    @patch("agents.analytics.agent._db_url_configured", return_value=False)
+    @patch("analytics.agent._db_url_configured", return_value=False)
     def test_health_check_degraded_without_db_url(self, _mock_url: MagicMock) -> None:
         agent = AnalyticsAgent()
         result = agent.health_check()
         assert result["status"] == "degraded"
         assert "PYTHON_DATABASE_URL" in result["metrics"].get("reason", "")
 
-    @patch("agents.analytics.agent.check_db_connection_detail", return_value=(False, "connection refused"))
-    @patch("agents.analytics.agent.check_db_connection", return_value=False)
+    @patch("analytics.agent.check_db_connection_detail", return_value=(False, "connection refused"))
+    @patch("analytics.agent.check_db_connection", return_value=False)
     @patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"})
     def test_health_check_degraded_when_db_unreachable_but_fixture_exists(
         self, _mock_conn: MagicMock, _mock_detail: MagicMock
@@ -45,9 +45,9 @@ class TestAnalyticsAgent:
         assert result["metrics"].get("reason") == "database_unreachable"
         assert result["metrics"].get("fixture_overlay_available") is True
 
-    @patch("agents.analytics.agent._FIXTURE_PATH")
-    @patch("agents.analytics.agent.check_db_connection_detail", return_value=(False, "connection refused"))
-    @patch("agents.analytics.agent.check_db_connection", return_value=False)
+    @patch("analytics.agent._FIXTURE_PATH")
+    @patch("analytics.agent.check_db_connection_detail", return_value=(False, "connection refused"))
+    @patch("analytics.agent.check_db_connection", return_value=False)
     @patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"})
     def test_health_check_down_when_db_unreachable_and_no_fixture(
         self,
@@ -60,11 +60,11 @@ class TestAnalyticsAgent:
         result = agent.health_check()
         assert result["status"] == "down"
 
-    @patch("agents.analytics.agent.refresh_skill_co_occurrence", return_value=9)
-    @patch("agents.analytics.agent.refresh_skill_velocity", return_value=8)
-    @patch("agents.analytics.agent.refresh_tool_demand_weekly", return_value=3)
-    @patch("agents.analytics.agent.refresh_skill_demand_weekly", return_value=2)
-    @patch("agents.analytics.agent.session_scope")
+    @patch("analytics.agent.refresh_skill_co_occurrence", return_value=9)
+    @patch("analytics.agent.refresh_skill_velocity", return_value=8)
+    @patch("analytics.agent.refresh_tool_demand_weekly", return_value=3)
+    @patch("analytics.agent.refresh_skill_demand_weekly", return_value=2)
+    @patch("analytics.agent.session_scope")
     @patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"})
     def test_process_runs_aggregates_in_order_with_row_counts(
         self,
@@ -97,11 +97,11 @@ class TestAnalyticsAgent:
         assert _mock_r9.call_count == 1
         assert _mock_scope.call_count == 4
 
-    @patch("agents.analytics.agent.refresh_skill_co_occurrence")
-    @patch("agents.analytics.agent.refresh_skill_velocity")
-    @patch("agents.analytics.agent.refresh_tool_demand_weekly", return_value=1)
-    @patch("agents.analytics.agent.refresh_skill_demand_weekly", side_effect=RuntimeError("step2 failed"))
-    @patch("agents.analytics.agent.session_scope")
+    @patch("analytics.agent.refresh_skill_co_occurrence")
+    @patch("analytics.agent.refresh_skill_velocity")
+    @patch("analytics.agent.refresh_tool_demand_weekly", return_value=1)
+    @patch("analytics.agent.refresh_skill_demand_weekly", side_effect=RuntimeError("step2 failed"))
+    @patch("analytics.agent.session_scope")
     @patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"})
     def test_process_skips_steps_8_and_9_when_step_2_fails(
         self,
@@ -128,9 +128,9 @@ class TestAnalyticsAgent:
 
     def test_process_skips_db_refresh_without_url(self, enriched_event: EventEnvelope) -> None:
         with (
-            patch("agents.analytics.agent._db_url_configured", return_value=False),
-            patch("agents.analytics.agent.refresh_skill_demand_weekly") as mock_r2,
-            patch("agents.analytics.agent.session_scope") as mock_scope,
+            patch("analytics.agent._db_url_configured", return_value=False),
+            patch("analytics.agent.refresh_skill_demand_weekly") as mock_r2,
+            patch("analytics.agent.session_scope") as mock_scope,
         ):
             agent = AnalyticsAgent()
             out = agent.process(enriched_event)
@@ -142,11 +142,11 @@ class TestAnalyticsAgent:
     def test_process_emits_analytics_refreshed(self, enriched_event: EventEnvelope) -> None:
         with (
             patch.dict(os.environ, {"PYTHON_DATABASE_URL": "postgresql+psycopg2://localhost/test"}),
-            patch("agents.analytics.agent.session_scope") as mock_scope,
-            patch("agents.analytics.agent.refresh_skill_demand_weekly", return_value=0),
-            patch("agents.analytics.agent.refresh_tool_demand_weekly", return_value=0),
-            patch("agents.analytics.agent.refresh_skill_velocity", return_value=0),
-            patch("agents.analytics.agent.refresh_skill_co_occurrence", return_value=0),
+            patch("analytics.agent.session_scope") as mock_scope,
+            patch("analytics.agent.refresh_skill_demand_weekly", return_value=0),
+            patch("analytics.agent.refresh_tool_demand_weekly", return_value=0),
+            patch("analytics.agent.refresh_skill_velocity", return_value=0),
+            patch("analytics.agent.refresh_skill_co_occurrence", return_value=0),
         ):
             mock_cm = MagicMock()
             mock_cm.__enter__.return_value = MagicMock()
@@ -162,7 +162,7 @@ class TestAnalyticsAgent:
         agent = AnalyticsAgent()
         agent.health_check()
         with (
-            patch("agents.analytics.agent.check_db_connection", return_value=False),
+            patch("analytics.agent.check_db_connection", return_value=False),
             patch.dict(os.environ, {"PYTHON_DATABASE_URL": ""}),
         ):
             out = agent.process(enriched_event)
@@ -179,7 +179,7 @@ class TestAnalyticsAgent:
         """Clustering output payload contains clustering-related keys."""
         agent = AnalyticsAgent()
         with (
-            patch("agents.analytics.agent.check_db_connection", return_value=False),
+            patch("analytics.agent.check_db_connection", return_value=False),
             patch.dict(os.environ, {"PYTHON_DATABASE_URL": ""}),
         ):
             out = agent.process_clustering(enriched_event)

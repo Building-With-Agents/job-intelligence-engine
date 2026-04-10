@@ -9,8 +9,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from agents.dashboard.readonly_engine import get_dashboard_engine
-from agents.dashboard.relation_safe import read_sql_relation_safe
+from dashboard.readonly_engine import get_dashboard_engine
+from dashboard.relation_safe import read_sql_relation_safe
 
 _SKILL_DEMAND_TABLE = "skill_demand_weekly"
 

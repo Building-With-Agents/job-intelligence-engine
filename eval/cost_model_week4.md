@@ -5,7 +5,7 @@
 Run real LLM extractions (Week 4 full implementation) then re-run this script:
 
 ```bash
-python -m agents.eval.cost_projection
+python -m eval.cost_projection
 ```
 
 ## Expected Sections (once data is available)

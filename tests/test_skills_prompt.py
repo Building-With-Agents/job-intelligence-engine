@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.skills_extraction.prompts import SKILLS_PROMPT_VERSION, build_skills_prompt
+from skills_extraction.prompts import SKILLS_PROMPT_VERSION, build_skills_prompt
 
 
 def test_active_skills_prompt_version_is_v4() -> None:

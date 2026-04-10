@@ -1,1 +1,1 @@
-"""Tests for agents/scripts helpers."""
+"""Tests for scripts helpers."""

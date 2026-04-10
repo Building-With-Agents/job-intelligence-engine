@@ -2,20 +2,20 @@
 description: "Week 7 Pair A (IMP-021) — skill/tool demand, velocity, co-occurrence, Weekly Insights contract"
 alwaysApply: false
 globs:
-  - "agents/analytics/**"
-  - "agents/common/data_store/**"
-  - "agents/dashboard/**"
+  - "analytics/**"
+  - "common/data_store/**"
+  - "dashboard/**"
 ---
 
 # Skill & tool demand (Pair A — IMP-021)
 
 **Owners:** Ángel + Fabian. **Steps in scope:** 2, 3, 8, 9 + **Weekly Insights** Streamlit (see `.cursor/rules/streamlit-dashboard.mdc`).
 
-**Specs:** `docs/planning/ARCHITECTURE_DEEP.md` (table names + base columns); **IMP-021** (dependency ordering, refresh behavior, velocity/co-occurrence behavior, dashboard expectations). ORM + DDL: `agents/common/data_store/models.py`, `migrations.py`.
+**Specs:** `docs/planning/ARCHITECTURE_DEEP.md` (table names + base columns); **IMP-021** (dependency ordering, refresh behavior, velocity/co-occurrence behavior, dashboard expectations). ORM + DDL: `common/data_store/models.py`, `migrations.py`.
 
 **Coordinate:** Pair C (`role_snapshot_weekly`) consumes **`skill_demand_weekly`** — align schema before they ship.
 
-**Orchestration:** `agents/analytics/agent.py` `process()` runs **`refresh_skill_demand_weekly` → `refresh_tool_demand_weekly` → (`refresh_skill_velocity`, `refresh_skill_co_occurrence` only after step 2 succeeds)**, each in its own `session_scope()` — maps to ARCHITECTURE_DEEP **13-step** internal steps **2, 3, 8, 9**.
+**Orchestration:** `analytics/agent.py` `process()` runs **`refresh_skill_demand_weekly` → `refresh_tool_demand_weekly` → (`refresh_skill_velocity`, `refresh_skill_co_occurrence` only after step 2 succeeds)**, each in its own `session_scope()` — maps to ARCHITECTURE_DEEP **13-step** internal steps **2, 3, 8, 9**.
 
 ---
 
@@ -45,7 +45,7 @@ Steps **2 and 3** are independent (either order). **8 must not run before 2** (v
 
 ## Table columns — **frozen IMP-021 implementation (Week 7 final)**
 
-Authoritative ORM: `agents/common/data_store/models.py`. Aggregators: `agents/analytics/aggregators/demand_weekly.py`, `velocity.py`, `co_occurrence.py`. Older **ARCHITECTURE_DEEP** snippets that mention `growth_rate` or omit these columns are **superseded** by this section.
+Authoritative ORM: `common/data_store/models.py`. Aggregators: `analytics/aggregators/demand_weekly.py`, `velocity.py`, `co_occurrence.py`. Older **ARCHITECTURE_DEEP** snippets that mention `growth_rate` or omit these columns are **superseded** by this section.
 
 ### Step 2 — `dbo.skill_demand_weekly`
 
@@ -76,7 +76,7 @@ Authoritative ORM: `agents/common/data_store/models.py`. Aggregators: `agents/an
 
 ## Weekly Insights (dashboard)
 
-- **Read-only** DB access; **`PYTHON_DATABASE_URL`** consistent with `agents/common/data_store/database.py`.
+- **Read-only** DB access; **`PYTHON_DATABASE_URL`** consistent with `common/data_store/database.py`.
 - **Chart mapping (IMP-021):** demand tables → horizontal bar (`px.bar`, `orientation="h"`); velocity → sparkline / line per skill; co-occurrence → heatmap (`px.imshow`).
 - **Partial data:** If step 2 ran but step 8 did not, show demand charts and a clear **“Velocity not yet available”** (or similar) message — **no blank panels**.
 - **Staleness:** If `computed_at` (or run timestamp) exceeds policy age, show a **staleness banner** in addition to Streamlit TTL rules.
@@ -85,7 +85,7 @@ Authoritative ORM: `agents/common/data_store/models.py`. Aggregators: `agents/an
 
 ## Events
 
-`AnalyticsRefreshed` / payload details: **`.cursor/rules/event-contracts.mdc`** and `agents/common/events/` — extend there when batch metadata changes.
+`AnalyticsRefreshed` / payload details: **`.cursor/rules/event-contracts.mdc`** and `common/events/` — extend there when batch metadata changes.
 
 ---
 

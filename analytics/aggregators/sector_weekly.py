@@ -3,7 +3,7 @@
 ``compute_salary_percentiles`` (Pair C) groups by a single column (``naics_code``,
 ``soc_code``, or ``borderplex_subregion``) with **no** ``week_start`` dimension, so it
 cannot drive Step 6 directly. This module uses the same salary expression as
-:data:`agents.analytics.aggregators.salary_percentiles.SALARY_VALUE_SQL` and applies
+:data:`analytics.aggregators.salary_percentiles.SALARY_VALUE_SQL` and applies
 ``percentile_disc(0.5)`` in SQL grouped by ``industry_sectors.sector_title`` and week.
 """
 
@@ -15,8 +15,8 @@ import structlog
 from sqlalchemy import delete, text
 from sqlalchemy.orm import Session
 
-from agents.analytics.aggregators.salary_percentiles import SALARY_VALUE_SQL
-from agents.common.data_store.models import SectorSummaryWeekly
+from analytics.aggregators.salary_percentiles import SALARY_VALUE_SQL
+from common.data_store.models import SectorSummaryWeekly
 
 log = structlog.get_logger()
 

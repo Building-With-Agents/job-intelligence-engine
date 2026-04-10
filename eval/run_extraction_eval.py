@@ -2,8 +2,8 @@
 """CLI: run extraction eval with optional snapshot + prompt backlog artifacts.
 
 Usage (repo root, venv active):
-    python -m agents.eval.run_extraction_eval --mode stub
-    python -m agents.eval.run_extraction_eval --mode pipeline --label my-run --limit 5
+    python -m eval.run_extraction_eval --mode stub
+    python -m eval.run_extraction_eval --mode pipeline --label my-run --limit 5
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from agents.eval.extraction_eval_core import (
+from eval.extraction_eval_core import (
     load_ground_truth,
     print_console,
     run_eval_dataset,

@@ -5,10 +5,10 @@ and by taxonomy Step 4 embedding calls via log_extraction_event in taxonomy._emb
 issue #108: agent_name=taxonomy-resolver, model=text-embedding-3-small),
 separates Pass 1 (pattern matching, free) from Pass 2 (LLM inference + embeddings, paid),
 groups costs by model tier (sonnet vs haiku vs other), projects at 1k / 10k / 100k
-postings, and writes agents/eval/cost_model_week4.md.
+postings, and writes eval/cost_model_week4.md.
 
 Usage (from repo root, venv activated, .env loaded):
-    python -m agents.eval.cost_projection [--output agents/eval/cost_model_week4.md]
+    python -m eval.cost_projection [--output eval/cost_model_week4.md]
 
 Pass 1 vs Pass 2 distinction:
     Pass 1 — pattern matching / rule-based extraction. No LLM call, cost = $0.
@@ -28,7 +28,7 @@ import argparse
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).parent.parent.parent
+REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT / "agents"))
 
 from dotenv import load_dotenv
@@ -38,7 +38,7 @@ load_dotenv(REPO_ROOT / ".env")
 import structlog
 from sqlalchemy import text
 
-from agents.common.data_store.database import get_engine
+from common.data_store.database import get_engine
 
 log = structlog.get_logger()
 
@@ -217,7 +217,7 @@ def _write_empty_report(output_path: Path) -> None:
 Run real LLM extractions (Week 4 full implementation) then re-run this script:
 
 ```bash
-python -m agents.eval.cost_projection
+python -m eval.cost_projection
 ```
 
 ## Expected Sections (once data is available)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         "--output",
         type=Path,
         default=_OUTPUT_PATH,
-        help="Path to write cost_model_week4.md (default: agents/eval/cost_model_week4.md)",
+        help="Path to write cost_model_week4.md (default: eval/cost_model_week4.md)",
     )
     args = parser.parse_args()
     run(output_path=args.output)

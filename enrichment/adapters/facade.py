@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from agents.enrichment.adapters.base import AbstractBLSAdapter, AbstractCensusAdapter, AbstractONETAdapter
-from agents.enrichment.adapters.bls_adapter import MockBLSAdapter
-from agents.enrichment.adapters.census_adapter import MockCensusAdapter
-from agents.enrichment.adapters.onet_adapter import MockONETAdapter
+from enrichment.adapters.base import AbstractBLSAdapter, AbstractCensusAdapter, AbstractONETAdapter
+from enrichment.adapters.bls_adapter import MockBLSAdapter
+from enrichment.adapters.census_adapter import MockCensusAdapter
+from enrichment.adapters.onet_adapter import MockONETAdapter
 
 
 class ExternalEnrichmentFacade:

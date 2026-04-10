@@ -365,7 +365,7 @@ class CanonicalRole(Base):
     and ``role_snapshot_weekly.canonical_role_id``). ``cluster_centroid`` stores the
     mean embedding as a JSON array of floats (same dimension as posting embeddings).
 
-    See: ``agents/docs/week 7/WEEK-07-canonical-role-clustering-bryan-emilio-runbook.md``
+    See: ``docs/week 7/WEEK-07-canonical-role-clustering-bryan-emilio-runbook.md``
     and ``.cursor/rules/canonical-role-clustering.mdc``.
     """
 
@@ -744,7 +744,7 @@ class SectorSummaryWeekly(Base):
     """Weekly aggregates by industry sector (Pair B — Analytics Step 6).
 
     ``avg_salary`` stores the salary **median (p50)** (same basis as
-    :func:`agents.analytics.aggregators.salary_percentiles.compute_salary_percentiles`).
+    :func:`analytics.aggregators.salary_percentiles.compute_salary_percentiles`).
     ``top_skills`` is the top 10 most frequent extracted ``skill_name`` values for the sector-week.
     """
 

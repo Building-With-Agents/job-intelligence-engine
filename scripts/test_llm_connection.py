@@ -1,7 +1,7 @@
 """Test that the skills-extraction LLM (Azure OpenAI) can be created and invoked.
 
 Usage (from repo root with venv activated):
-  python -m agents.scripts.test_llm_connection
+  python -m scripts.test_llm_connection
 
 Requires: AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, and one of
   AZURE_OPENAI_DEPLOYMENT_NAME, EXTRACTION_DEPLOYMENT_SKILLS, EXTRACTION_MODEL_SKILLS.
@@ -14,7 +14,7 @@ import os
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -28,7 +28,7 @@ except ImportError:
 
 
 def main() -> int:
-    from agents.common.llm_client import _get_llm, invoke_skills_llm
+    from common.llm_client import _get_llm, invoke_skills_llm
 
     print("Testing LLM connection for skills extraction...")
     print()

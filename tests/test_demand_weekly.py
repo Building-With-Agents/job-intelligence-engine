@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import DateTime, create_engine, func, literal, select
 
-from agents.analytics.aggregators import demand_weekly as dw
+from analytics.aggregators import demand_weekly as dw
 
 
 def test_refresh_skill_demand_weekly_delete_then_insert() -> None:
@@ -69,7 +69,7 @@ def test_refresh_skill_runs_against_db() -> None:
     from sqlalchemy.orm import Session
 
     load_dotenv()
-    from agents.common.data_store.database import get_engine
+    from common.data_store.database import get_engine
 
     with Session(get_engine()) as session:
         n = dw.refresh_skill_demand_weekly(session, date(2025, 1, 6))

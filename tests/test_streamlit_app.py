@@ -46,7 +46,7 @@ class TestBuildRecordMap:
     """Grouping entries by correlation_id."""
 
     def test_groups_by_correlation_id(self) -> None:
-        from agents.dashboard.streamlit_app import _build_record_map
+        from dashboard.streamlit_app import _build_record_map
 
         entries = [
             _make_entry("ingestion-agent", "c-1"),
@@ -60,12 +60,12 @@ class TestBuildRecordMap:
         assert len(result["c-2"]) == 1
 
     def test_empty_list_returns_empty_dict(self) -> None:
-        from agents.dashboard.streamlit_app import _build_record_map
+        from dashboard.streamlit_app import _build_record_map
 
         assert _build_record_map([]) == {}
 
     def test_missing_correlation_id_grouped_as_unknown(self) -> None:
-        from agents.dashboard.streamlit_app import _build_record_map
+        from dashboard.streamlit_app import _build_record_map
 
         entries = [{"agent_id": "ingestion-agent", "payload": {}}]
         result = _build_record_map(entries)
@@ -83,17 +83,17 @@ class TestSortKey:
     """Numeric sort key for correlation IDs."""
 
     def test_numeric_string(self) -> None:
-        from agents.dashboard.streamlit_app import _sort_key
+        from dashboard.streamlit_app import _sort_key
 
         assert _sort_key("42") == 42
 
     def test_non_numeric_returns_zero(self) -> None:
-        from agents.dashboard.streamlit_app import _sort_key
+        from dashboard.streamlit_app import _sort_key
 
         assert _sort_key("pipeline-0e2444d0") == 0
 
     def test_sort_order(self) -> None:
-        from agents.dashboard.streamlit_app import _sort_key
+        from dashboard.streamlit_app import _sort_key
 
         cids = ["10", "2", "1", "abc"]
         assert sorted(cids, key=_sort_key) == ["abc", "1", "2", "10"]
@@ -108,9 +108,9 @@ class TestLoadRunLog:
     """JSON file loading with caching."""
 
     def test_returns_empty_list_when_file_missing(self, tmp_path: Path) -> None:
-        from agents.dashboard.streamlit_app import _load_run_log
+        from dashboard.streamlit_app import _load_run_log
 
-        with patch("agents.dashboard.streamlit_app._RUN_LOG_PATH", tmp_path / "nope.json"):
+        with patch("dashboard.streamlit_app._RUN_LOG_PATH", tmp_path / "nope.json"):
             # Clear Streamlit cache for this function
             _load_run_log.clear()
             result = _load_run_log()
@@ -118,13 +118,13 @@ class TestLoadRunLog:
         assert result == []
 
     def test_loads_valid_json(self, tmp_path: Path) -> None:
-        from agents.dashboard.streamlit_app import _load_run_log
+        from dashboard.streamlit_app import _load_run_log
 
         data = [_make_entry("ingestion-agent")]
         json_path = tmp_path / "pipeline_run.json"
         json_path.write_text(json.dumps(data), encoding="utf-8")
 
-        with patch("agents.dashboard.streamlit_app._RUN_LOG_PATH", json_path):
+        with patch("dashboard.streamlit_app._RUN_LOG_PATH", json_path):
             _load_run_log.clear()
             result = _load_run_log()
 
@@ -141,31 +141,31 @@ class TestDbAvailable:
     """Database availability detection."""
 
     def test_returns_false_when_env_var_missing(self) -> None:
-        from agents.dashboard.streamlit_app import _db_available
+        from dashboard.streamlit_app import _db_available
 
         with patch.dict("os.environ", {}, clear=True):
             assert _db_available() is False
 
-    @patch("agents.dashboard.readonly_engine.check_dashboard_db_connection", return_value=True)
+    @patch("dashboard.readonly_engine.check_dashboard_db_connection", return_value=True)
     def test_returns_true_when_db_reachable(self, mock_check: MagicMock) -> None:
-        from agents.dashboard.streamlit_app import _db_available
+        from dashboard.streamlit_app import _db_available
 
         with patch.dict("os.environ", {"PYTHON_DATABASE_URL": "postgresql+psycopg2://u:p@h/db"}):
             assert _db_available() is True
 
     @patch(
-        "agents.dashboard.readonly_engine.check_dashboard_db_connection",
+        "dashboard.readonly_engine.check_dashboard_db_connection",
         side_effect=Exception("conn refused"),
     )
     def test_returns_false_when_db_unreachable(self, mock_check: MagicMock) -> None:
-        from agents.dashboard.streamlit_app import _db_available
+        from dashboard.streamlit_app import _db_available
 
         with patch.dict("os.environ", {"PYTHON_DATABASE_URL": "postgresql+psycopg2://u:p@h/db"}):
             assert _db_available() is False
 
-    @patch("agents.dashboard.readonly_engine.check_dashboard_db_connection", return_value=True)
+    @patch("dashboard.readonly_engine.check_dashboard_db_connection", return_value=True)
     def test_returns_true_when_only_readonly_url_set(self, mock_check: MagicMock) -> None:
-        from agents.dashboard.streamlit_app import _db_available
+        from dashboard.streamlit_app import _db_available
 
         env = {
             "PYTHON_DATABASE_URL_READONLY": "postgresql+psycopg2://ro:pw@h/db",
@@ -183,23 +183,23 @@ class TestAgentOrder:
     """Agent ordering constants are consistent."""
 
     def test_agent_order_has_eight_agents(self) -> None:
-        from agents.dashboard.streamlit_app import _AGENT_ORDER
+        from dashboard.streamlit_app import _AGENT_ORDER
 
         assert len(_AGENT_ORDER) == 8
 
     def test_agent_order_index_matches_list(self) -> None:
-        from agents.dashboard.streamlit_app import _AGENT_ORDER, _AGENT_ORDER_INDEX
+        from dashboard.streamlit_app import _AGENT_ORDER, _AGENT_ORDER_INDEX
 
         for i, agent in enumerate(_AGENT_ORDER):
             assert _AGENT_ORDER_INDEX[agent] == i
 
     def test_ingestion_is_first(self) -> None:
-        from agents.dashboard.streamlit_app import _AGENT_ORDER
+        from dashboard.streamlit_app import _AGENT_ORDER
 
         assert _AGENT_ORDER[0] == "ingestion-agent"
 
     def test_demand_analysis_is_last(self) -> None:
-        from agents.dashboard.streamlit_app import _AGENT_ORDER
+        from dashboard.streamlit_app import _AGENT_ORDER
 
         assert _AGENT_ORDER[-1] == "demand-analysis-agent"
 
@@ -208,7 +208,7 @@ class TestRawRowIngestionSucceeded:
     """Pipeline Run Summary — ingestion column matches raw_ingested_jobs.processing_status semantics."""
 
     def test_pending_and_downstream_states_are_pass(self) -> None:
-        from agents.dashboard.streamlit_app import _raw_row_ingestion_succeeded
+        from dashboard.streamlit_app import _raw_row_ingestion_succeeded
 
         assert _raw_row_ingestion_succeeded("pending") is True
         assert _raw_row_ingestion_succeeded("normalized") is True
@@ -216,7 +216,7 @@ class TestRawRowIngestionSucceeded:
         assert _raw_row_ingestion_succeeded("PENDING") is True
 
     def test_unknown_or_empty_is_fail(self) -> None:
-        from agents.dashboard.streamlit_app import _raw_row_ingestion_succeeded
+        from dashboard.streamlit_app import _raw_row_ingestion_succeeded
 
         assert _raw_row_ingestion_succeeded("staged_bad") is False
         assert _raw_row_ingestion_succeeded("") is False
@@ -233,7 +233,7 @@ class TestJsonFallbackLogic:
 
     def test_completion_table_marks_all_pass_when_all_agents_present(self) -> None:
         """Simulate the completion table logic from page_run_summary_json."""
-        from agents.dashboard.streamlit_app import _AGENT_ORDER, _build_record_map
+        from dashboard.streamlit_app import _AGENT_ORDER, _build_record_map
 
         entries = _full_pipeline_entries("1")
         record_map = _build_record_map(entries)
@@ -246,7 +246,7 @@ class TestJsonFallbackLogic:
 
     def test_completion_table_marks_fail_when_agent_missing(self) -> None:
         """Missing an agent should not count as all-complete."""
-        from agents.dashboard.streamlit_app import _AGENT_ORDER, _build_record_map
+        from dashboard.streamlit_app import _AGENT_ORDER, _build_record_map
 
         entries = _full_pipeline_entries("1")
         # Remove the analytics-agent entry
@@ -261,7 +261,7 @@ class TestJsonFallbackLogic:
 
     def test_record_journey_sorts_by_agent_order(self) -> None:
         """Entries should be sortable by canonical agent order."""
-        from agents.dashboard.streamlit_app import _AGENT_ORDER_INDEX
+        from dashboard.streamlit_app import _AGENT_ORDER_INDEX
 
         entries = [
             _make_entry("analytics-agent"),

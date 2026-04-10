@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from agents.analytics.clustering.types import EmergenceCandidate, RankedSkill, RankedTool
-from agents.common.events.emergence_alert import (
+from analytics.clustering.types import EmergenceCandidate, RankedSkill, RankedTool
+from common.events.emergence_alert import (
     build_emergence_alert_envelope,
     build_emergence_alert_payload,
 )
-from agents.common.events.typed_events import EmergenceAlertEvent
+from common.events.typed_events import EmergenceAlertEvent
 
 
 def test_build_emergence_alert_maps_nearest_cluster_to_role_id() -> None:
@@ -58,7 +58,7 @@ def test_emergence_alert_event_wrapper() -> None:
 
 
 def test_emergence_alert_event_rejects_wrong_type() -> None:
-    from agents.common.event_envelope import EventEnvelope
+    from common.event_envelope import EventEnvelope
 
     bad = EventEnvelope(
         correlation_id="x",

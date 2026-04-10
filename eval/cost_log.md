@@ -25,7 +25,7 @@ Per Decision #33 and the token-cost memo, this log tracks all three cost surface
 
 ### Week 5 — measured audit cohort (Phase 4 / Issue #90)
 
-Source: [`agents/eval/cost_audit_week5.md`](cost_audit_week5.md) (`dbo.llm_audit_log` aggregates for the captured window; see audit for caveats on tasks/responsibilities callers).
+Source: [`eval/cost_audit_week5.md`](cost_audit_week5.md) (`dbo.llm_audit_log` aggregates for the captured window; see audit for caveats on tasks/responsibilities callers).
 
 | Metric | Source | Value |
 |--------|--------|------:|
@@ -36,7 +36,7 @@ Source: [`agents/eval/cost_audit_week5.md`](cost_audit_week5.md) (`dbo.llm_audit
 | Responsibilities + tasks | non–main-path `agent_name`s | **~8.5%** (see audit §5) |
 | Tools / context LLM cost | Pass 1 pattern + context stub | **$0** (no LLM rows) |
 
-**Exact `extracted_intelligence` sums and env-aware Sonnet/Haiku rollup:** run `python -m agents.eval.cost_audit_week5_report` and paste into the audit §3b / §6 (per successful EI row cost and tier tables).
+**Exact `extracted_intelligence` sums and env-aware Sonnet/Haiku rollup:** run `python -m eval.cost_audit_week5_report` and paste into the audit §3b / §6 (per successful EI row cost and tier tables).
 
 | Metric | Source | Value |
 |--------|--------|-------|
@@ -48,11 +48,11 @@ Source: [`agents/eval/cost_audit_week5.md`](cost_audit_week5.md) (`dbo.llm_audit
 
 | Metric                    | Source                          | Value |
 |---------------------------|----------------------------------|-------|
-| Avg tokens per record     | `python -m agents.eval.cost_projection` | _Regenerate `cost_model_week4.md`_ |
+| Avg tokens per record     | `python -m eval.cost_projection` | _Regenerate `cost_model_week4.md`_ |
 | Sonnet vs Haiku split     | `cost_audit_week5_report` or projection | _Prefer week 5 report for Azure deployment names_ |
-| Cost per 1k / 10k / 100k  | `agents/eval/cost_model_week4.md` | After running `cost_projection` |
+| Cost per 1k / 10k / 100k  | `eval/cost_model_week4.md` | After running `cost_projection` |
 
-**How to fill:** Run extractions, then `python -m agents.eval.cost_projection`; for Issue #90 tier accuracy use `python -m agents.eval.cost_audit_week5_report`.
+**How to fill:** Run extractions, then `python -m eval.cost_projection`; for Issue #90 tier accuracy use `python -m eval.cost_audit_week5_report`.
 
 ---
 

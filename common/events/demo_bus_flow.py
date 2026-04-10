@@ -4,7 +4,7 @@ Sample: how the event bus could be used — run with no errors, with errors, and
 This is an IN-MEMORY simulation (list as queue). Real implementation would use
 Redis Streams, Kafka, or the in-process message bus. Run from repo root:
 
-  python -m agents.common.events.demo_bus_flow
+  python -m common.events.demo_bus_flow
 
 Scenarios:
   A. Happy path: publish 20 events, consume all.
@@ -15,12 +15,12 @@ Scenarios:
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.events.ingest_batch_harness import (
+from common.event_envelope import EventEnvelope
+from common.events.ingest_batch_harness import (
     assert_valid_ingest_batch_envelope,
     generate_synthetic_ingest_batches,
 )
-from agents.common.events.synthetic_events import (
+from common.events.synthetic_events import (
     generate_synthetic_source_failures,
 )
 

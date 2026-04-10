@@ -6,7 +6,7 @@ Composite of four signals (each 0–1), equally weighted:
 - **AI / tech keyword density** — relevant terms vs corpus size (capped; weak floor when absent)
 - **Structural coherence** — multi-line description, bullets, common section headers
 
-Uses the same job corpus as role classification via :func:`agents.enrichment.classification.build_job_corpus`.
+Uses the same job corpus as role classification via :func:`enrichment.classification.build_job_corpus`.
 No LLM calls — safe for CI and consistent with ``score_spam_preview`` inputs.
 """
 
@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from agents.enrichment.classification import build_job_corpus
+from enrichment.classification import build_job_corpus
 
 # Multi-word phrases first (substring match on whitespace-normalized corpus).
 _AI_TECH_PHRASES: tuple[str, ...] = (

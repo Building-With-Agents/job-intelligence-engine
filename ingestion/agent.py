@@ -9,7 +9,7 @@ Emits:    IngestBatch | SourceFailure
 Consumes: trigger event with ``region_config`` dict
 
 CLI usage (from repo root):
-    python -m agents.ingestion.agent --source crawl4ai --limit 10 --migrate
+    python -m ingestion.agent --source crawl4ai --limit 10 --migrate
 """
 
 from __future__ import annotations
@@ -23,18 +23,18 @@ from pathlib import Path
 import structlog
 from langgraph.graph import END, StateGraph
 
-from agents.common.base_agent import AgentBase
-from agents.common.data_store.database import check_db_connection, session_scope
-from agents.common.data_store.models import (
+from common.base_agent import AgentBase
+from common.data_store.database import check_db_connection, session_scope
+from common.data_store.models import (
     JobIngestionRun,
     RawIngestedJob,
 )
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import RawJobRecord, RegionConfig
-from agents.ingestion.deduplicator import deduplicate_batch
-from agents.ingestion.events import ingest_batch_payload, source_failure_payload
-from agents.ingestion.sources import get_adapter
-from agents.ingestion.state import IngestionState, SourceResult
+from common.event_envelope import EventEnvelope
+from common.types import RawJobRecord, RegionConfig
+from ingestion.deduplicator import deduplicate_batch
+from ingestion.events import ingest_batch_payload, source_failure_payload
+from ingestion.sources import get_adapter
+from ingestion.state import IngestionState, SourceResult
 
 log = structlog.get_logger()
 
@@ -487,7 +487,7 @@ def _cli() -> None:
 
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
     parser = argparse.ArgumentParser(description="Run the Ingestion Agent")
     parser.add_argument("--source", choices=["jsearch", "crawl4ai", "all"], default="all")
@@ -498,8 +498,8 @@ def _cli() -> None:
     args = parser.parse_args()
 
     if args.migrate:
-        from agents.common.data_store.database import get_engine
-        from agents.common.data_store.migrations import run_migrations
+        from common.data_store.database import get_engine
+        from common.data_store.migrations import run_migrations
 
         run_migrations(get_engine())
 

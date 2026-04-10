@@ -24,11 +24,11 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types.job_profile import EmployerProfile
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.classifiers.spam_preview import SpamPreviewResult
-from agents.tests.db_seed_enrichment_e2e import (
+from common.event_envelope import EventEnvelope
+from common.types.job_profile import EmployerProfile
+from enrichment.agent import EnrichmentAgent
+from enrichment.classifiers.spam_preview import SpamPreviewResult
+from tests.db_seed_enrichment_e2e import (
     EnrichmentE2ESeed,
     seed_enrichment_e2e,
     teardown_enrichment_e2e,
@@ -51,7 +51,7 @@ def promotion_e2e_engine() -> Engine:
 def _promotion_e2e_require_uuid_employer_profiles(promotion_e2e_engine: Engine) -> None:
     insp = inspect(promotion_e2e_engine)
     if not insp.has_table("employer_profiles", schema="dbo"):
-        pytest.skip("dbo.employer_profiles missing — run: python agents/scripts/db_check.py migrate")
+        pytest.skip("dbo.employer_profiles missing — run: python scripts/db_check.py migrate")
     with promotion_e2e_engine.connect() as conn:
         dt = conn.execute(
             text(
@@ -161,10 +161,10 @@ def _mocked_llm_promotion_stack(
         return soc_code
 
     with (
-        patch("agents.enrichment.agent.score_spam_preview", return_value=spam),
-        patch("agents.enrichment.agent.classify_naics", return_value=naics_code),
-        patch("agents.enrichment.agent.classify_soc", side_effect=_fake_soc),
-        patch("agents.enrichment.agent.build_employer_profile", return_value=employer),
+        patch("enrichment.agent.score_spam_preview", return_value=spam),
+        patch("enrichment.agent.classify_naics", return_value=naics_code),
+        patch("enrichment.agent.classify_soc", side_effect=_fake_soc),
+        patch("enrichment.agent.build_employer_profile", return_value=employer),
     ):
         yield None
 
@@ -269,10 +269,10 @@ def test_mocked_unknown_naics_soc_and_partial_employer_fields_persist_without_er
 
     spam = _clean_spam_preview()
     with (
-        patch("agents.enrichment.agent.score_spam_preview", return_value=spam),
-        patch("agents.enrichment.agent.classify_naics", return_value="unknown"),
-        patch("agents.enrichment.agent.classify_soc", side_effect=_soc_unclassified),
-        patch("agents.enrichment.agent.build_employer_profile", return_value=unknown_employer),
+        patch("enrichment.agent.score_spam_preview", return_value=spam),
+        patch("enrichment.agent.classify_naics", return_value="unknown"),
+        patch("enrichment.agent.classify_soc", side_effect=_soc_unclassified),
+        patch("enrichment.agent.build_employer_profile", return_value=unknown_employer),
     ):
         _run_enrichment_agent(seed)
 

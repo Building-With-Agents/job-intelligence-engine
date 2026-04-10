@@ -7,13 +7,13 @@ from collections.abc import Sequence
 
 import structlog
 
-from agents.analytics.clustering.config import (
+from analytics.clustering.config import (
     DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME,
     DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE,
 )
-from agents.analytics.clustering.text import prepare_clustering_texts
-from agents.analytics.clustering.types import EmbeddedPostingText, PostingClusterFeatures, PreparedClusteringText
-from agents.skills_extraction.extractors.taxonomy import _embed_texts_azure
+from analytics.clustering.text import prepare_clustering_texts
+from analytics.clustering.types import EmbeddedPostingText, PostingClusterFeatures, PreparedClusteringText
+from skills_extraction.extractors.taxonomy import _embed_texts_azure
 
 log = structlog.get_logger()
 

@@ -7,19 +7,19 @@ from unittest.mock import patch
 import pytest
 from pydantic import TypeAdapter
 
-from agents.common.types import (
+from common.types import (
     ContextSignal,
     JobRecord,
     ResponsibilityRecord,
     SpanRecord,
     TaskRecord,
 )
-from agents.skills_extraction.extractors.context import extract_context
-from agents.skills_extraction.extractors.responsibilities import (
+from skills_extraction.extractors.context import extract_context
+from skills_extraction.extractors.responsibilities import (
     _ResponsibilitiesLLMRoot,
     extract_responsibilities,
 )
-from agents.skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
+from skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
 
 
 @pytest.fixture
@@ -88,7 +88,7 @@ def test_extract_context_finds_hybrid() -> None:
     assert any(s.signal_type == "remote_policy" for s in signals)
 
 
-@patch("agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
 def test_extract_tasks_returns_empty_on_llm_failure(
     mock_invoke: object,
     dummy_job: JobRecord,
@@ -101,7 +101,7 @@ def test_extract_tasks_returns_empty_on_llm_failure(
     TypeAdapter(list[TaskRecord]).validate_python(tasks)
 
 
-@patch("agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
 def test_extract_tasks_validates_schema_on_success(
     mock_invoke: object,
     dummy_job: JobRecord,
@@ -121,7 +121,7 @@ def test_extract_tasks_validates_schema_on_success(
     TypeAdapter(list[TaskRecord]).validate_python(tasks)
 
 
-@patch("agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
 def test_extract_responsibilities_returns_empty_on_llm_failure(
     mock_invoke: object,
     dummy_job: JobRecord,
@@ -133,7 +133,7 @@ def test_extract_responsibilities_returns_empty_on_llm_failure(
     TypeAdapter(list[ResponsibilityRecord]).validate_python(rows)
 
 
-@patch("agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
 def test_extract_responsibilities_validates_schema_on_success(
     mock_invoke: object,
     dummy_job: JobRecord,

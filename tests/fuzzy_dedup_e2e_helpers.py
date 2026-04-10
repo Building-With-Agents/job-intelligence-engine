@@ -13,9 +13,9 @@ from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import SAWarning
 from sqlalchemy.orm import Session, sessionmaker
 
-from agents.common.data_store.models import NormalizedJob
-from agents.enrichment.dedup.fuzzy_dedup import run_fuzzy_dedup
-from agents.enrichment.job_postings_promotion import apply_fuzzy_dedup_result
+from common.data_store.models import NormalizedJob
+from enrichment.dedup.fuzzy_dedup import run_fuzzy_dedup
+from enrichment.job_postings_promotion import apply_fuzzy_dedup_result
 
 
 def embedding_env_ready() -> bool:

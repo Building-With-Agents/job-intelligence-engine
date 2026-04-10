@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from agents.common.data_store.models import (
+from common.data_store.models import (
     FRESH_THRESHOLD_DAYS,
     STALE_THRESHOLD_DAYS,
     classify_freshness,

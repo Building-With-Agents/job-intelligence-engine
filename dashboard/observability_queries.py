@@ -9,12 +9,12 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from agents.dashboard.observability_metrics import (
+from dashboard.observability_metrics import (
     compute_dedup_rate_pct,
     compute_error_rate_pct,
 )
-from agents.dashboard.readonly_engine import get_dashboard_engine
-from agents.dashboard.relation_safe import read_sql_relation_safe
+from dashboard.readonly_engine import get_dashboard_engine
+from dashboard.relation_safe import read_sql_relation_safe
 
 SESSION_KEY_INGESTION_GOOD = "_obs_last_good_ingestion"
 SESSION_KEY_NORM_GOOD = "_obs_last_good_normalization"

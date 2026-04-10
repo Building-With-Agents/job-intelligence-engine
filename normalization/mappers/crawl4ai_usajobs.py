@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from agents.common.types.job_record import JobRecord
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.normalization.cleaners import (
+from common.types.job_record import JobRecord
+from common.types.raw_job_record import RawJobRecord
+from normalization.cleaners import (
     clean_text,
     normalize_date,
     normalize_employment_type,
     parse_salary,
 )
-from agents.normalization.mappers.base import MapperBase
+from normalization.mappers.base import MapperBase
 
 
 class Crawl4AIUSAJobsMapper(MapperBase):

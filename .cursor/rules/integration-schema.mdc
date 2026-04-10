@@ -2,16 +2,16 @@
 description: "Cross-pair field registry, bus payload naming, and RecordEnriched shapes (Pair D + fuzzy dedup)"
 alwaysApply: false
 globs:
-  - "agents/enrichment/**"
-  - "agents/common/message_bus/**"
-  - "agents/common/data_store/**"
-  - "agents/analytics/**"
-  - "agents/ingestion/**"
+  - "enrichment/**"
+  - "common/message_bus/**"
+  - "common/data_store/**"
+  - "analytics/**"
+  - "ingestion/**"
 ---
 
 # Integration schema (cross-pair)
 
-**Source of truth for frozen key sets:** `agents/enrichment/resolvers/record_enriched_contract.py` (import in tests).
+**Source of truth for frozen key sets:** `enrichment/resolvers/record_enriched_contract.py` (import in tests).
 
 **Event catalog overview:** `.cursor/rules/event-contracts.mdc`
 
@@ -22,11 +22,11 @@ globs:
 
 ## SOC / O*NET normalization (canonical)
 
-Incoming **SOC codes** may include an O*NET-style decimal suffix (e.g. `15-1252.00`). Before BLS wage lookup and O*NET occupation lookup, adapters normalize to the **major form without the fractional segment** (e.g. `15-1252`). Implementations: `agents/enrichment/adapters/bls_adapter.py` and `agents/enrichment/adapters/onet_adapter.py` (`_normalize_soc`). Callers may pass either form; do not persist two different shapes for the same logical SOC without an explicit migration decision.
+Incoming **SOC codes** may include an O*NET-style decimal suffix (e.g. `15-1252.00`). Before BLS wage lookup and O*NET occupation lookup, adapters normalize to the **major form without the fractional segment** (e.g. `15-1252`). Implementations: `enrichment/adapters/bls_adapter.py` and `enrichment/adapters/onet_adapter.py` (`_normalize_soc`). Callers may pass either form; do not persist two different shapes for the same logical SOC without an explicit migration decision.
 
 ## Phase 1 async bridge (Phase 2 optimization)
 
-`EnrichmentAgent` and `enrich_record` run **synchronously**. `ExternalEnrichmentFacade.fetch_for_posting` is **async**; the sync path invokes it via `agents/enrichment/async_bridge.run_coroutine`, which uses `asyncio.run` when no loop is running (effectively **one new event loop per call** in that case). This is intentional for Phase 1 volume and simplicity. **Phase 2** should replace this with a strategy that reduces overhead: e.g. shared loop, batched adapter calls, or an async-first agent API.
+`EnrichmentAgent` and `enrich_record` run **synchronously**. `ExternalEnrichmentFacade.fetch_for_posting` is **async**; the sync path invokes it via `enrichment/async_bridge.run_coroutine`, which uses `asyncio.run` when no loop is running (effectively **one new event loop per call** in that case). This is intentional for Phase 1 volume and simplicity. **Phase 2** should replace this with a strategy that reduces overhead: e.g. shared loop, batched adapter calls, or an async-first agent API.
 
 ## Locked enrichment enums (Angel + Fabian)
 
@@ -50,7 +50,7 @@ The following string values are **locked** for columns persisted on **`job_posti
 
 ## Enriched job profile / Pair enrichment fields (Nestor + Fatima)
 
-Canonical field names for the **enriched job profile** shape (Pydantic `EnrichedJobProfile` in `agents/enrichment/schemas.py` and posting dicts that carry the same logical fields). Source: **Nestor + Fatima**.
+Canonical field names for the **enriched job profile** shape (Pydantic `EnrichedJobProfile` in `enrichment/schemas.py` and posting dicts that carry the same logical fields). Source: **Nestor + Fatima**.
 
 | Pair name | Type | Notes |
 |-----------|------|--------|
@@ -58,7 +58,7 @@ Canonical field names for the **enriched job profile** shape (Pydantic `Enriched
 | **`naics_code`** | `str \| None` | Employer / sector industry classification string. |
 | **`employer`** | nested **employer profile** | Pair canonical name for company-level enrichment (`company_size`, `ai_maturity_signal`, `sector`, `is_known_employer`, etc.). |
 
-**Code vs pair naming (TODO):** The repository currently exposes **`employer_profile: dict[str, Any] | None`** on `EnrichedJobProfile`, not a field named `employer` or a nested Pydantic `EmployerProfile` model. Treat **`employer`** as the target public name; converge implementation (rename + typed model) in a follow-up when pairs agree. Do not confuse with SQLAlchemy **`EmployerProfile`** / `dbo.employer_profiles` (`agents/common/data_store/models.py`), which is the persistence table—map to/from the enriched shape at promotion time.
+**Code vs pair naming (TODO):** The repository currently exposes **`employer_profile: dict[str, Any] | None`** on `EnrichedJobProfile`, not a field named `employer` or a nested Pydantic `EmployerProfile` model. Treat **`employer`** as the target public name; converge implementation (rename + typed model) in a follow-up when pairs agree. Do not confuse with SQLAlchemy **`EmployerProfile`** / `dbo.employer_profiles` (`common/data_store/models.py`), which is the persistence table—map to/from the enriched shape at promotion time.
 
 ## `RecordEnriched` — two shapes (same `event_type`)
 
@@ -83,7 +83,7 @@ Nested **`dedup`** (always present on batch shape):
 | `rows_with_duplicate_cluster_id` | int | Rows with non-empty `duplicate_cluster_id` on posting or enriched |
 | `rows_with_matched_job_posting_id` | int | Rows with non-empty `matched_job_posting_id` |
 
-**`freshness_records`** (always present on batch shape; may be an empty `list`): list of `dict` rows built by `agents/enrichment/resolvers/freshness_slice.py` for **AnalyticsAgent** Step 10 (posting freshness + guardrails). Typical keys include `posting_id`, `days_since_posted`, `skills`, and dedup/repost-related fields. See `.cursor/rules/analytics-guardrails.mdc`.
+**`freshness_records`** (always present on batch shape; may be an empty `list`): list of `dict` rows built by `enrichment/resolvers/freshness_slice.py` for **AnalyticsAgent** Step 10 (posting freshness + guardrails). Typical keys include `posting_id`, `days_since_posted`, `skills`, and dedup/repost-related fields. See `.cursor/rules/analytics-guardrails.mdc`.
 
 ## Cross-pair field registry (canonical)
 
@@ -148,7 +148,7 @@ Nested **`dedup`** (always present on batch shape):
 - `error_reason` — TEXT nullable  
 - `created_at` — TIMESTAMPTZ  
 
-ORM: `LLMAuditLog` in `agents/common/data_store/models.py`.
+ORM: `LLMAuditLog` in `common/data_store/models.py`.
 
 ### TODO — other pairs
 

@@ -7,7 +7,7 @@ for drift measurement and last-run observability.
 
 Run from repo root:
 
-    python -m agents.orchestration.scheduler
+    python -m orchestration.scheduler
 
 Environment variables:
 
@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Ensure repo root is on path when run as __main__ from any cwd.
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -55,7 +55,7 @@ def _scheduled_job() -> None:
     )
     try:
         os.environ["SCHEDULER_TYPE"] = "apscheduler"
-        from agents.orchestration.run_ingestion import main as run_ingestion_main  # noqa: E402
+        from orchestration.run_ingestion import main as run_ingestion_main  # noqa: E402
 
         run_ingestion_main()
     except SystemExit as e:

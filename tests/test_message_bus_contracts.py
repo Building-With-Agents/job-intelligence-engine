@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus.base import EventBusBase
-from agents.common.message_bus.contracts import (
+from common.event_envelope import EventEnvelope
+from common.message_bus.base import EventBusBase
+from common.message_bus.contracts import (
     ORCHESTRATOR_AGENT_ID,
     InvalidEventTypeError,
     InvalidSubscriptionError,

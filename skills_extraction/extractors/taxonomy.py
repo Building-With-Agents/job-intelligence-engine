@@ -35,7 +35,7 @@ import httpx
 import numpy as np
 import structlog
 
-from agents.common.types import TaxonomyResult
+from common.types import TaxonomyResult
 
 log = structlog.get_logger()
 
@@ -397,7 +397,7 @@ def _log_embedding_audit_event(
     Uses response ``usage`` when available so cost tracking works for successful
     calls and any failure responses that still report token usage.
     """
-    from agents.common.llm_adapter import log_extraction_event
+    from common.llm_adapter import log_extraction_event
 
     input_tokens = _embedding_usage_input_tokens(data)
     log_extraction_event(
@@ -557,12 +557,12 @@ def _load_embeddings_from_db() -> tuple[list[tuple[str, str]], np.ndarray] | Non
     """Load pre-computed skill embeddings from PostgreSQL (pgvector).
 
     Returns (meta, L2-normalized matrix) where meta is list of (skill_name, skill_name).
-    Embeddings are seeded by admin via agents/scripts/seed_esco_embeddings.py.
+    Embeddings are seeded by admin via scripts/seed_esco_embeddings.py.
     """
     try:
         from sqlalchemy import text as sa_text
 
-        from agents.common.data_store.database import session_scope
+        from common.data_store.database import session_scope
 
         with session_scope() as session:
             rows = session.execute(
@@ -853,7 +853,7 @@ def resolve_taxonomy_batch(labels: list[str]) -> list[TaxonomyResult]:
 
     # Log taxonomy resolution metrics to Langfuse tracer (if registered)
     with contextlib.suppress(Exception):
-        from agents.common.llm_adapter import get_tracer
+        from common.llm_adapter import get_tracer
 
         tracer = get_tracer()
         if tracer:

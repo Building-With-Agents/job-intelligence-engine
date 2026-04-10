@@ -8,19 +8,19 @@ from pathlib import Path
 
 import structlog
 
-from agents.common.message_bus.candidate_factories import build_transport_candidates
-from agents.common.message_bus.comparison import (
+from common.message_bus.candidate_factories import build_transport_candidates
+from common.message_bus.comparison import (
     ComparisonScenario,
     compare_transport_candidates,
     results_to_rows,
 )
-from agents.common.message_bus.comparison_charts import generate_charts
+from common.message_bus.comparison_charts import generate_charts
 
 log = structlog.get_logger()
 
 
 def _default_csv_path() -> Path:
-    return Path(os.getenv("EXP004_COMPARISON_CSV", "agents/data/output/exp004_comparison.csv"))
+    return Path(os.getenv("EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"))
 
 
 def _ensure_parent_dir(path: Path) -> None:

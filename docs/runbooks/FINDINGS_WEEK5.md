@@ -1,8 +1,8 @@
 # Week 5 — Tasks, Responsibilities & Context Extraction — Code Audit Findings
 
 **Branch context:** `week-05/tasks-responsibilities-context` (and merged development patterns).  
-**Scope:** `agents/skills_extraction/extractors/{tasks,responsibilities,context}.py`, `agents/skills_extraction/agent.py`.  
-**Template:** Aligned with the findings structure used in `agents/docs/EXP-004_FINDINGS_AND_ASSETS.md` (What we tested / What we found / Recommendation / Tradeoffs / Evidence / Conclusion).
+**Scope:** `skills_extraction/extractors/{tasks,responsibilities,context}.py`, `skills_extraction/agent.py`.  
+**Template:** Aligned with the findings structure used in `docs/EXP-004_FINDINGS_AND_ASSETS.md` (What we tested / What we found / Recommendation / Tradeoffs / Evidence / Conclusion).
 
 ---
 
@@ -23,9 +23,9 @@
 
 | Dimension | Implementation | Evidence |
 |-----------|------------------|----------|
-| **Tasks (Pass 2)** | Documented as Haiku-class; `invoke_structured_extraction_llm(..., model_tier_for_cost="haiku")`; deployment resolution order `EXTRACTION_DEPLOYMENT_TASKS` → `EXTRACTION_MODEL_TASKS` → `AZURE_OPENAI_DEPLOYMENT_NAME`. | `agents/skills_extraction/extractors/tasks.py` |
-| **Responsibilities (Pass 2)** | Documented as Sonnet-class; `model_tier_for_cost="sonnet"`; keys `EXTRACTION_DEPLOYMENT_RESPONSIBILITIES` → `EXTRACTION_MODEL_RESPONSIBILITIES` → fallback deployment. | `agents/skills_extraction/extractors/responsibilities.py` |
-| **Context (Pass 1)** | Regex/keyword only; metadata sets `tokens_used: 0`, `provider: "pattern-matching"`, `model: "none"`, no LLM invoke. | `agents/skills_extraction/extractors/context.py` |
+| **Tasks (Pass 2)** | Documented as Haiku-class; `invoke_structured_extraction_llm(..., model_tier_for_cost="haiku")`; deployment resolution order `EXTRACTION_DEPLOYMENT_TASKS` → `EXTRACTION_MODEL_TASKS` → `AZURE_OPENAI_DEPLOYMENT_NAME`. | `skills_extraction/extractors/tasks.py` |
+| **Responsibilities (Pass 2)** | Documented as Sonnet-class; `model_tier_for_cost="sonnet"`; keys `EXTRACTION_DEPLOYMENT_RESPONSIBILITIES` → `EXTRACTION_MODEL_RESPONSIBILITIES` → fallback deployment. | `skills_extraction/extractors/responsibilities.py` |
+| **Context (Pass 1)** | Regex/keyword only; metadata sets `tokens_used: 0`, `provider: "pattern-matching"`, `model: "none"`, no LLM invoke. | `skills_extraction/extractors/context.py` |
 
 **Caveat:** “Haiku” and “Sonnet” here are **tier labels for cost estimation** (`compute_extraction_cost`) and **separate Azure deployment env slots**. The runtime model is whatever deployment name those env vars point to. Operators must map deployments consistently with intended capability/cost (Haiku-like for tasks, Sonnet-like for responsibilities).
 
@@ -33,7 +33,7 @@
 
 ### 2.2 Transaction / JSONB persistence (PASS — one commit per `save()` call)
 
-`SQLAlchemyExtractionStore.save()` wraps **all** `ExtractionResult` rows in a **single** `session_scope()` context manager (`agents/common/data_store/database.py`: commit on success, rollback on exception).
+`SQLAlchemyExtractionStore.save()` wraps **all** `ExtractionResult` rows in a **single** `session_scope()` context manager (`common/data_store/database.py`: commit on success, rollback on exception).
 
 For each result with a non-null `normalized_job_id`, the same ORM row is updated with **all** of:
 
@@ -97,12 +97,12 @@ The legacy fixture path (`_legacy_fixture_response`) sets these counts to `0` wi
 
 | File | Relevant symbols / behavior |
 |------|-----------------------------|
-| `agents/skills_extraction/extractors/tasks.py` | `model_tier_for_cost="haiku"`, `_TASKS_DEPLOYMENT_KEYS`, `_format_pass1_context_for_prompt` in prompt |
-| `agents/skills_extraction/extractors/responsibilities.py` | `model_tier_for_cost="sonnet"`, `_RESP_DEPLOYMENT_KEYS`, Pass 1 block in prompt |
-| `agents/skills_extraction/extractors/context.py` | `_CONTEXT_PATTERNS`, `extract_context`, `_format_pass1_context_for_prompt` |
-| `agents/skills_extraction/agent.py` | `_extract_work_item_no_taxonomy` (order: context → tools → tasks → responsibilities → skills no-taxonomy), `SQLAlchemyExtractionStore.save`, `_build_payload`, `_result_summary` |
-| `agents/common/data_store/database.py` | `session_scope()` transaction semantics |
-| `agents/common/data_store/models.py` | `ExtractedIntelligence` JSONB columns: `skills`, `tools`, `tasks`, `responsibilities`, `context` |
+| `skills_extraction/extractors/tasks.py` | `model_tier_for_cost="haiku"`, `_TASKS_DEPLOYMENT_KEYS`, `_format_pass1_context_for_prompt` in prompt |
+| `skills_extraction/extractors/responsibilities.py` | `model_tier_for_cost="sonnet"`, `_RESP_DEPLOYMENT_KEYS`, Pass 1 block in prompt |
+| `skills_extraction/extractors/context.py` | `_CONTEXT_PATTERNS`, `extract_context`, `_format_pass1_context_for_prompt` |
+| `skills_extraction/agent.py` | `_extract_work_item_no_taxonomy` (order: context → tools → tasks → responsibilities → skills no-taxonomy), `SQLAlchemyExtractionStore.save`, `_build_payload`, `_result_summary` |
+| `common/data_store/database.py` | `session_scope()` transaction semantics |
+| `common/data_store/models.py` | `ExtractedIntelligence` JSONB columns: `skills`, `tools`, `tasks`, `responsibilities`, `context` |
 
 ---
 

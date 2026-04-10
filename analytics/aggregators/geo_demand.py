@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import GeoDemandWeekly
+from common.data_store.models import GeoDemandWeekly
 
 log = structlog.get_logger()
 

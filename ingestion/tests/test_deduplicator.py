@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from agents.ingestion.deduplicator import (
+from ingestion.deduplicator import (
     compute_fingerprint,
     compute_storage_hash,
     deduplicate_batch,

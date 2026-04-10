@@ -12,14 +12,14 @@ Every time you open a new terminal, activate before running any commands:
 
 ```powershell
 cd C:\Users\garyl\repos\cfa-projects\building-with-agents-curriculum\watechcoalition
-agents\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
 **Linux / macOS:**
 
 ```bash
-cd ~/repos/cfa-projects/building-with-agents-curriculum/watechcoalition
-source agents/.venv/bin/activate
+cd ~/repos/cfa-projects/building-with-agents-curriculum/job-intelligence-engine
+source .venv/bin/activate
 ```
 
 Your prompt should show `(.venv)` when activated. If you see `ModuleNotFoundError` on any command below, you forgot this step.
@@ -80,7 +80,7 @@ Ingestion  -->  Normalization  -->  Skills Extraction  -->  Enrichment  -->  ...
 ### File locations
 
 ```
-agents/
+./
   common/
     llm_adapter.py               <-- Centralized LLM adapter: complete(), log_extraction_event(),
     |                               cost computation, retry, back-off, alert emission
@@ -196,17 +196,17 @@ python -c "from dotenv import load_dotenv; load_dotenv(); import os; print('DB:'
 
 ### What it does
 
-The database layer provides PostgreSQL storage for all agent tables. SQLAlchemy ORM models in `agents/common/data_store/models.py` define the schema; `migrations.py` creates tables idempotently.
+The database layer provides PostgreSQL storage for all agent tables. SQLAlchemy ORM models in `common/data_store/models.py` define the schema; `migrations.py` creates tables idempotently.
 
 ### Key files
 
 
 | File                                     | Purpose                                                                   |
 | ---------------------------------------- | ------------------------------------------------------------------------- |
-| `agents/common/data_store/database.py`   | Engine singleton, `session_scope()`, `check_db_connection()`              |
-| `agents/common/data_store/models.py`     | ORM models: `LLMAuditLog`, `ExtractedIntelligence`, `NormalizedJob`, etc. |
-| `agents/common/data_store/migrations.py` | `run_migrations(engine)` — creates all tables + Phase 1 columns           |
-| `agents/scripts/db_check.py`             | CLI tool for DB operations                                                |
+| `common/data_store/database.py`   | Engine singleton, `session_scope()`, `check_db_connection()`              |
+| `common/data_store/models.py`     | ORM models: `LLMAuditLog`, `ExtractedIntelligence`, `NormalizedJob`, etc. |
+| `common/data_store/migrations.py` | `run_migrations(engine)` — creates all tables + Phase 1 columns           |
+| `scripts/db_check.py`             | CLI tool for DB operations                                                |
 
 
 ### Tables created by Week 04
@@ -223,7 +223,7 @@ The database layer provides PostgreSQL storage for all agent tables. SQLAlchemy 
 **Step 1 — Verify connectivity:**
 
 ```bash
-python agents/scripts/db_check.py tables
+python scripts/db_check.py tables
 ```
 
 Expected: List of tables in `dbo` schema. If this fails, your `PYTHON_DATABASE_URL` is wrong or the database is unreachable.
@@ -231,7 +231,7 @@ Expected: List of tables in `dbo` schema. If this fails, your `PYTHON_DATABASE_U
 **Step 2 — Run migrations:**
 
 ```bash
-python agents/scripts/db_check.py migrate
+python scripts/db_check.py migrate
 ```
 
 Expected: `Migrations complete` message. Safe to run multiple times (idempotent).
@@ -239,7 +239,7 @@ Expected: `Migrations complete` message. Safe to run multiple times (idempotent)
 **Step 3 — Verify Week 04 tables exist:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'dbo' AND table_name IN ('extracted_intelligence', 'llm_audit_log') ORDER BY table_name"
+python scripts/db_check.py query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'dbo' AND table_name IN ('extracted_intelligence', 'llm_audit_log') ORDER BY table_name"
 ```
 
 Expected output:
@@ -252,7 +252,7 @@ llm_audit_log
 **Step 4 — Verify extracted_intelligence schema:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'extracted_intelligence' ORDER BY ordinal_position"
+python scripts/db_check.py query "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'extracted_intelligence' ORDER BY ordinal_position"
 ```
 
 Key columns to verify: `normalized_job_id` (integer, NOT NULL), `skills` (jsonb), `tools` (jsonb), `extraction_metadata` (jsonb, nullable).
@@ -260,7 +260,7 @@ Key columns to verify: `normalized_job_id` (integer, NOT NULL), `skills` (jsonb)
 **Step 5 — Verify llm_audit_log schema:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'llm_audit_log' ORDER BY ordinal_position"
+python scripts/db_check.py query "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'dbo' AND table_name = 'llm_audit_log' ORDER BY ordinal_position"
 ```
 
 Key columns to verify: `input_tokens`, `output_tokens`, `token_count` (all three must exist), `cost_usd`, `success`.
@@ -268,7 +268,7 @@ Key columns to verify: `input_tokens`, `output_tokens`, `token_count` (all three
 **Step 6 — Run DB tests:**
 
 ```bash
-python -m pytest agents/tests/test_database.py -v --tb=short
+python -m pytest tests/test_database.py -v --tb=short
 ```
 
 Expected: All tests pass (requires live DB connection).
@@ -279,7 +279,7 @@ Expected: All tests pass (requires live DB connection).
 | Symptom                       | Cause              | Fix                                             |
 | ----------------------------- | ------------------ | ----------------------------------------------- |
 | `connection refused`          | DB not running     | `docker compose up -d` or check Azure firewall  |
-| `schema "dbo" does not exist` | Old migration      | Run `python agents/scripts/db_check.py migrate` |
+| `schema "dbo" does not exist` | Old migration      | Run `python scripts/db_check.py migrate` |
 | `table does not exist`        | Migrations not run | Run migrations (Step 2)                         |
 | `sslmode=require` error       | Azure without SSL  | Add `?sslmode=require` to `PYTHON_DATABASE_URL` |
 
@@ -297,8 +297,8 @@ Pattern-based extraction of tools and technologies from job posting text. **Zero
 
 | File                                           | Purpose                                                |
 | ---------------------------------------------- | ------------------------------------------------------ |
-| `agents/skills_extraction/extractors/tools.py` | Tool catalog, alias matching, context-aware extraction |
-| `agents/common/types/extraction_types.py`      | `ToolRecord` Pydantic model                            |
+| `skills_extraction/extractors/tools.py` | Tool catalog, alias matching, context-aware extraction |
+| `common/types/extraction_types.py`      | `ToolRecord` Pydantic model                            |
 
 
 ### How it connects
@@ -312,7 +312,7 @@ Pattern-based extraction of tools and technologies from job posting text. **Zero
 **Step 1 — Run unit tests:**
 
 ```bash
-python -m pytest agents/tests/test_tools_extractor.py -v --tb=short
+python -m pytest tests/test_tools_extractor.py -v --tb=short
 ```
 
 Expected: All tests pass. Tests cover canonical matches, alias resolution, ambiguous term handling (e.g., "Go" requires technical context), and deduplication.
@@ -383,10 +383,10 @@ Sends normalized job text to Azure OpenAI (Sonnet-class model) with a structured
 
 | File                                            | Purpose                                                                        |
 | ----------------------------------------------- | ------------------------------------------------------------------------------ |
-| `agents/common/llm_client.py`                   | Azure OpenAI wrapper: `invoke_skills_llm(prompt)`                              |
-| `agents/common/llm_adapter.py`                  | `complete()` with retry, back-off, cost, audit logging                         |
-| `agents/skills_extraction/extractors/skills.py` | `extract_skills(job_record, pass1_tools)` — prompt building + response parsing |
-| `agents/skills_extraction/prompts/`             | Prompt templates (versioned)                                                   |
+| `common/llm_client.py`                   | Azure OpenAI wrapper: `invoke_skills_llm(prompt)`                              |
+| `common/llm_adapter.py`                  | `complete()` with retry, back-off, cost, audit logging                         |
+| `skills_extraction/extractors/skills.py` | `extract_skills(job_record, pass1_tools)` — prompt building + response parsing |
+| `skills_extraction/prompts/`             | Prompt templates (versioned)                                                   |
 
 
 ### How it connects
@@ -400,7 +400,7 @@ Sends normalized job text to Azure OpenAI (Sonnet-class model) with a structured
 **Step 1 — Verify Azure OpenAI connectivity:**
 
 ```bash
-python -m agents.scripts.test_llm_connection
+python -m scripts.test_llm_connection
 ```
 
 Expected: Returns a model response. If this fails, your Azure OpenAI env vars are wrong.
@@ -408,7 +408,7 @@ Expected: Returns a model response. If this fails, your Azure OpenAI env vars ar
 **Step 2 — Run unit tests (mocked LLM):**
 
 ```bash
-python -m pytest agents/tests/test_skills_extractor.py -v --tb=short
+python -m pytest tests/test_skills_extractor.py -v --tb=short
 ```
 
 Expected: All tests pass. Tests mock `invoke_skills_llm()` — no real LLM calls or cost.
@@ -425,7 +425,7 @@ The script sends this job posting to the LLM for skills extraction:
 - **Requirements:** 5+ years Python, 3+ years deep learning frameworks
 
 ```bash
-python agents/scripts/test_skills_extraction_live.py
+python scripts/test_skills_extraction_live.py
 ```
 
 Expected: Skills like "Machine Learning", "Deep Learning", "MLOps" extracted with types and confidence scores. `success=True`.
@@ -433,7 +433,7 @@ Expected: Skills like "Machine Learning", "Deep Learning", "MLOps" extracted wit
 **Step 4 — Verify prompt includes Pass 1 tools context:**
 
 ```bash
-python -m pytest agents/tests/test_skills_extractor.py::test_extract_skills_includes_pass1_tools_in_prompt_context -v --tb=long
+python -m pytest tests/test_skills_extractor.py::test_extract_skills_includes_pass1_tools_in_prompt_context -v --tb=long
 ```
 
 Expected: The prompt sent to the LLM includes "Already extracted tools: Python" so the LLM avoids duplicating Pass 1 results.
@@ -471,10 +471,10 @@ After extraction, each skill is linked to the ESCO digital skills taxonomy using
 
 | File                                                         | Purpose                                                                |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `agents/skills_extraction/extractors/taxonomy.py`            | `resolve_taxonomy()`, `resolve_taxonomy_batch()`, `resolution_stats()` |
-| `agents/skills_extraction/taxonomy/esco_digital_skills.json` | ESCO corpus                                                            |
-| `agents/skills_extraction/taxonomy/genai_extension.json`     | 10 GenAI skills                                                        |
-| `agents/skills_extraction/taxonomy/onet_skills.txt`          | O*NET codes                                                            |
+| `skills_extraction/extractors/taxonomy.py`            | `resolve_taxonomy()`, `resolve_taxonomy_batch()`, `resolution_stats()` |
+| `skills_extraction/taxonomy/esco_digital_skills.json` | ESCO corpus                                                            |
+| `skills_extraction/taxonomy/genai_extension.json`     | 10 GenAI skills                                                        |
+| `skills_extraction/taxonomy/onet_skills.txt`          | O*NET codes                                                            |
 
 
 ### How it connects
@@ -488,7 +488,7 @@ After extraction, each skill is linked to the ESCO digital skills taxonomy using
 **Step 1 — Run taxonomy unit tests:**
 
 ```bash
-python -m pytest agents/tests/test_taxonomy_resolver.py -v --tb=short
+python -m pytest tests/test_taxonomy_resolver.py -v --tb=short
 ```
 
 Expected: All tests pass. Covers all 6 resolution steps, batch processing, dedup, and stats.
@@ -498,7 +498,7 @@ Expected: All tests pass. Covers all 6 resolution steps, batch processing, dedup
 The script resolves these skill labels through the taxonomy pipeline: **Python**, **Machine Learning**, **React**, and **nonexistent-skill-xyz** (deliberate miss).
 
 ```bash
-python agents/scripts/test_taxonomy_resolution.py
+python scripts/test_taxonomy_resolution.py
 ```
 
 Expected: Known skills resolve at steps 1-4 with ESCO URIs. Unknown skills fall to step 6 with `esco_uri=None`. Coverage should be >0% for real skill names.
@@ -522,7 +522,7 @@ Expected: GenAI skills resolve at step 1 with `is_genai_extension=True`.
 
 | Symptom                                       | Cause                           | Fix                                                     |
 | --------------------------------------------- | ------------------------------- | ------------------------------------------------------- |
-| `FileNotFoundError: esco_digital_skills.json` | Taxonomy data missing           | Check `agents/skills_extraction/taxonomy/` directory    |
+| `FileNotFoundError: esco_digital_skills.json` | Taxonomy data missing           | Check `skills_extraction/taxonomy/` directory    |
 | All skills resolve at step 6                  | Corpus not loaded               | Verify `esco_digital_skills.json` is valid JSON         |
 | Low coverage (<50%)                           | Many niche or misspelled skills | Expected for specialized domains; check raw skill names |
 
@@ -540,9 +540,9 @@ Every LLM call is logged to `dbo.llm_audit_log` with prompt hash, model, token c
 
 | File                                 | Purpose                                                  |
 | ------------------------------------ | -------------------------------------------------------- |
-| `agents/common/llm_adapter.py`       | `log_extraction_event()` — writes to `dbo.llm_audit_log` |
-| `agents/common/data_store/models.py` | `LLMAuditLog` ORM model                                  |
-| `agents/eval/cost_projection.py`     | Queries audit log for cost analysis                      |
+| `common/llm_adapter.py`       | `log_extraction_event()` — writes to `dbo.llm_audit_log` |
+| `common/data_store/models.py` | `LLMAuditLog` ORM model                                  |
+| `eval/cost_projection.py`     | Queries audit log for cost analysis                      |
 
 
 ### How it connects
@@ -557,7 +557,7 @@ Every LLM call is logged to `dbo.llm_audit_log` with prompt hash, model, token c
 **Step 1 — Verify table exists and check current row count:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT COUNT(*) AS audit_rows FROM dbo.llm_audit_log"
+python scripts/db_check.py query "SELECT COUNT(*) AS audit_rows FROM dbo.llm_audit_log"
 ```
 
 Note the count. After running the pipeline, it should increase.
@@ -565,13 +565,13 @@ Note the count. After running the pipeline, it should increase.
 **Step 2 — Run a pipeline that triggers LLM calls:**
 
 ```bash
-python agents/pipeline_runner.py
+python pipeline_runner.py
 ```
 
 **Step 3 — Verify audit log rows were written:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT agent_name, model, provider, latency_ms, input_tokens, output_tokens, token_count, cost_usd, success, error_reason FROM dbo.llm_audit_log ORDER BY created_at DESC LIMIT 5"
+python scripts/db_check.py query "SELECT agent_name, model, provider, latency_ms, input_tokens, output_tokens, token_count, cost_usd, success, error_reason FROM dbo.llm_audit_log ORDER BY created_at DESC LIMIT 5"
 ```
 
 Expected: Rows with `agent_name='skills-extraction-agent'`, `success=true`, and non-zero `input_tokens`, `output_tokens`, `cost_usd`.
@@ -579,7 +579,7 @@ Expected: Rows with `agent_name='skills-extraction-agent'`, `success=true`, and 
 **Step 4 — Verify cost computation:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT model, COUNT(*) AS calls, SUM(input_tokens) AS total_in, SUM(output_tokens) AS total_out, ROUND(SUM(cost_usd)::numeric, 4) AS total_cost FROM dbo.llm_audit_log WHERE success = true GROUP BY model"
+python scripts/db_check.py query "SELECT model, COUNT(*) AS calls, SUM(input_tokens) AS total_in, SUM(output_tokens) AS total_out, ROUND(SUM(cost_usd)::numeric, 4) AS total_cost FROM dbo.llm_audit_log WHERE success = true GROUP BY model"
 ```
 
 Expected: Cost totals grouped by model tier. Verify costs are non-zero and proportional to token counts.
@@ -587,7 +587,7 @@ Expected: Cost totals grouped by model tier. Verify costs are non-zero and propo
 **Step 5 — Check for failed LLM calls:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT agent_name, error_reason, created_at FROM dbo.llm_audit_log WHERE success = false ORDER BY created_at DESC LIMIT 5"
+python scripts/db_check.py query "SELECT agent_name, error_reason, created_at FROM dbo.llm_audit_log WHERE success = false ORDER BY created_at DESC LIMIT 5"
 ```
 
 Expected: Either no rows (all calls succeeded) or rows with meaningful `error_reason` (timeout, rate limit, etc.).
@@ -616,9 +616,9 @@ Compares extraction output against a hand-labeled ground truth dataset of job po
 
 | File                                       | Purpose                                                |
 | ------------------------------------------ | ------------------------------------------------------ |
-| `agents/eval/extraction_eval.py`           | Evaluation runner: load ground truth, extract, compare |
-| `agents/eval/extraction_ground_truth.json` | Hand-labeled records with expected skills/tools        |
-| `agents/eval/prompt_iteration_log.md`      | Track prompt changes and metric deltas                 |
+| `eval/extraction_eval.py`           | Evaluation runner: load ground truth, extract, compare |
+| `eval/extraction_ground_truth.json` | Hand-labeled records with expected skills/tools        |
+| `eval/prompt_iteration_log.md`      | Track prompt changes and metric deltas                 |
 
 
 ### How it connects
@@ -671,7 +671,7 @@ Each record contains:
 **Step 1 — Verify ground truth dataset:**
 
 ```bash
-python agents/scripts/test_ground_truth.py
+python scripts/test_ground_truth.py
 ```
 
 Expected: 30 records with keys: `ground_truth_id`, `external_id`, `source`, `title`, `company`, `city`, `state`, `description`, `requirements`, `responsibilities`, `skills`, `tools`, `labeler_notes`.
@@ -679,7 +679,7 @@ Expected: 30 records with keys: `ground_truth_id`, `external_id`, `source`, `tit
 **Step 2 — Run the evaluation harness:**
 
 ```bash
-python -m agents.eval.extraction_eval
+python -m eval.extraction_eval
 ```
 
 Expected output: Per-record breakdown showing GT vs predicted skills/tools with set intersections, then aggregate metrics:
@@ -704,14 +704,14 @@ Tools Recall:    <0-1>
 
 **Step 3 — Record baseline metrics:**
 
-After running the harness, update `agents/eval/prompt_iteration_log.md` with the version, date, and metrics. This becomes the baseline for prompt iteration.
+After running the harness, update `eval/prompt_iteration_log.md` with the version, date, and metrics. This becomes the baseline for prompt iteration.
 
 ### Troubleshooting
 
 
 | Symptom                                           | Cause                               | Fix                                                                 |
 | ------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------- |
-| `FileNotFoundError: extraction_ground_truth.json` | File missing                        | Verify `agents/eval/` directory                                     |
+| `FileNotFoundError: extraction_ground_truth.json` | File missing                        | Verify `eval/` directory                                     |
 | `UnicodeDecodeError: 'charmap'`                   | Windows CP1252 encoding             | Ensure file reads use `encoding="utf-8"`                            |
 | `KeyError: 'skill_name'`                          | Old records using `label` key       | Run schema normalization (rename `label` → `skill_name` in records) |
 | Very low precision (<50%)                         | Extractor producing false positives | Check confidence threshold (`SKILL_CONFIDENCE_THRESHOLD`)           |
@@ -731,8 +731,8 @@ Runs the complete pipeline end-to-end: Ingestion -> Normalization -> Skills Extr
 
 | File                                        | Purpose                                  |
 | ------------------------------------------- | ---------------------------------------- |
-| `agents/pipeline_runner.py`                 | Sequential pipeline orchestrator         |
-| `agents/scripts/run_full_pipeline_redis.py` | Redis Streams variant (with HTML report) |
+| `pipeline_runner.py`                 | Sequential pipeline orchestrator         |
+| `scripts/run_full_pipeline_redis.py` | Redis Streams variant (with HTML report) |
 
 
 ### Test steps
@@ -740,21 +740,21 @@ Runs the complete pipeline end-to-end: Ingestion -> Normalization -> Skills Extr
 **Step 1 — Reset database (optional, for clean run):**
 
 ```bash
-python agents/scripts/db_check.py reset
+python scripts/db_check.py reset
 ```
 
 **Step 2 — Run the in-process pipeline:**
 
 ```bash
-python agents/pipeline_runner.py
+python pipeline_runner.py
 ```
 
-Expected: All agents report health, pipeline completes without error, output written to `agents/data/output/pipeline_run.json`.
+Expected: All agents report health, pipeline completes without error, output written to `data/output/pipeline_run.json`.
 
 **Step 3 — Verify all tables populated:**
 
 ```bash
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 ```
 
 Expected output:
@@ -770,7 +770,7 @@ job_ingestion_runs:      >0
 **Step 4 — Verify extracted_intelligence has data:**
 
 ```bash
-python agents/scripts/db_check.py query "SELECT ei.id, nj.title, ei.extraction_version, ei.extraction_model, jsonb_array_length(ei.skills) AS skill_count, ei.extraction_cost_usd, ei.extraction_failed FROM dbo.extracted_intelligence ei JOIN dbo.normalized_jobs nj ON ei.normalized_job_id = nj.id ORDER BY ei.id DESC LIMIT 5"
+python scripts/db_check.py query "SELECT ei.id, nj.title, ei.extraction_version, ei.extraction_model, jsonb_array_length(ei.skills) AS skill_count, ei.extraction_cost_usd, ei.extraction_failed FROM dbo.extracted_intelligence ei JOIN dbo.normalized_jobs nj ON ei.normalized_job_id = nj.id ORDER BY ei.id DESC LIMIT 5"
 ```
 
 Expected: Rows showing job titles with skill counts, extraction version, and cost.
@@ -779,7 +779,7 @@ Expected: Rows showing job titles with skill counts, extraction version, and cos
 
 ```bash
 # Pick a raw job ID and trace it through all stages
-python agents/scripts/db_check.py query "
+python scripts/db_check.py query "
 SELECT 'raw' AS stage, rij.id, rij.title, rij.processing_status AS status
 FROM dbo.raw_ingested_jobs rij WHERE rij.id = 1
 UNION ALL
@@ -798,7 +798,7 @@ Expected: Three rows showing the record progressing through raw -> normalized ->
 **Step 6 — Run with Redis Streams (optional):**
 
 ```bash
-python -m agents.scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
+python -m scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
 ```
 
 Then open the HTML report:
@@ -808,13 +808,13 @@ Then open the HTML report:
 start agents\eval\full_pipeline_redis_metrics.html
 
 # macOS/Linux
-open agents/eval/full_pipeline_redis_metrics.html
+open eval/full_pipeline_redis_metrics.html
 ```
 
 **Step 7 — Run full test suite:**
 
 ```bash
-python -m pytest agents/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 ```
 
 Expected: 138+ passed, 0 failed. DB-dependent tests require a live connection. Tests skipped without DB are expected.
@@ -844,14 +844,14 @@ Visual verification of pipeline results. Shows ingestion runs, record journeys, 
 
 | File                                | Purpose                    |
 | ----------------------------------- | -------------------------- |
-| `agents/dashboard/streamlit_app.py` | Main app entry point       |
-| `agents/dashboard/pages/`           | Individual dashboard pages |
+| `dashboard/streamlit_app.py` | Main app entry point       |
+| `dashboard/pages/`           | Individual dashboard pages |
 
 
 ### How it connects
 
 - **Reads:** `dbo.raw_ingested_jobs`, `dbo.normalized_jobs`, `dbo.job_ingestion_runs` via SQLAlchemy (read-only)
-- **Fallback:** JSON files in `agents/data/output/` if DB is unavailable
+- **Fallback:** JSON files in `data/output/` if DB is unavailable
 - **Cache:** 60-second TTL with staleness banner
 
 ### Test steps
@@ -859,13 +859,13 @@ Visual verification of pipeline results. Shows ingestion runs, record journeys, 
 **Step 1 — Run dashboard tests:**
 
 ```bash
-python -m pytest agents/tests/test_streamlit_app.py -v --tb=short
+python -m pytest tests/test_streamlit_app.py -v --tb=short
 ```
 
 **Step 2 — Launch the dashboard:**
 
 ```bash
-streamlit run agents/dashboard/streamlit_app.py
+streamlit run dashboard/streamlit_app.py
 ```
 
 Opens at `http://localhost:8501`.
@@ -918,25 +918,25 @@ Quick-reference: when something fails, identify which layer and check here.
 python -c "from dotenv import load_dotenv; load_dotenv(); from agents.common.data_store import check_db_connection; print('DB:', 'OK' if check_db_connection() else 'FAIL')"
 
 # 2. Do all tables exist?
-python agents/scripts/db_check.py tables
+python scripts/db_check.py tables
 
 # 3. Are there rows in key tables?
-python agents/scripts/db_check.py counts
+python scripts/db_check.py counts
 
 # 4. Is Azure OpenAI reachable?
-python -m agents.scripts.test_llm_connection
+python -m scripts.test_llm_connection
 
 # 5. Can the skills extractor parse a response?
-python -m pytest agents/tests/test_skills_extractor.py -v --tb=short
+python -m pytest tests/test_skills_extractor.py -v --tb=short
 
 # 6. Does the taxonomy resolver work?
-python -m pytest agents/tests/test_taxonomy_resolver.py -v --tb=short
+python -m pytest tests/test_taxonomy_resolver.py -v --tb=short
 
 # 7. Do all tests pass?
-python -m pytest agents/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 
 # 8. Is ruff clean?
-python -m ruff check agents/
+python -m ruff check .
 ```
 
 ### Common cross-layer issues
@@ -958,15 +958,15 @@ python -m ruff check agents/
 
 | Layer            | Test command                                          | Requires DB | Requires LLM | Expected    |
 | ---------------- | ----------------------------------------------------- | ----------- | ------------ | ----------- |
-| Database         | `pytest agents/tests/test_database.py`                | Yes         | No           | All pass    |
-| ORM Models       | `pytest agents/tests/test_models.py`                  | Yes         | No           | All pass    |
-| Tools (Pass 1)   | `pytest agents/tests/test_tools_extractor.py`         | No          | No           | All pass    |
-| Skills (Pass 2)  | `pytest agents/tests/test_skills_extractor.py`        | No          | No (mocked)  | All pass    |
-| Taxonomy         | `pytest agents/tests/test_taxonomy_resolver.py`       | No          | No           | All pass    |
-| Agent (bridge)   | `pytest agents/tests/test_skills_extraction_agent.py` | No          | No (mocked)  | All pass    |
-| Pipeline         | `pytest agents/tests/test_pipeline_runner.py`         | No          | No           | All pass    |
-| Extraction stubs | `pytest agents/skills_extraction/tests/`              | No          | No           | All pass    |
-| Dashboard        | `pytest agents/tests/test_streamlit_app.py`           | No          | No           | All pass    |
-| Full suite       | `pytest agents/tests/ -v`                             | Partial     | No           | 138+ passed |
+| Database         | `pytest tests/test_database.py`                | Yes         | No           | All pass    |
+| ORM Models       | `pytest tests/test_models.py`                  | Yes         | No           | All pass    |
+| Tools (Pass 1)   | `pytest tests/test_tools_extractor.py`         | No          | No           | All pass    |
+| Skills (Pass 2)  | `pytest tests/test_skills_extractor.py`        | No          | No (mocked)  | All pass    |
+| Taxonomy         | `pytest tests/test_taxonomy_resolver.py`       | No          | No           | All pass    |
+| Agent (bridge)   | `pytest tests/test_skills_extraction_agent.py` | No          | No (mocked)  | All pass    |
+| Pipeline         | `pytest tests/test_pipeline_runner.py`         | No          | No           | All pass    |
+| Extraction stubs | `pytest skills_extraction/tests/`              | No          | No           | All pass    |
+| Dashboard        | `pytest tests/test_streamlit_app.py`           | No          | No           | All pass    |
+| Full suite       | `pytest tests/ -v`                             | Partial     | No           | 138+ passed |
 
 

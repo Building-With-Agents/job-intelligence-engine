@@ -9,16 +9,16 @@ from typing import Any
 import numpy as np
 import structlog
 
-from agents.analytics.clustering.config import (
+from analytics.clustering.config import (
     cluster_distance_metric,
     cluster_min_cluster_size,
     cluster_min_samples,
     cluster_min_total_postings,
     cluster_selection_epsilon,
 )
-from agents.analytics.clustering.emergence import detect_emergence_candidates
-from agents.analytics.clustering.labeling import ClusterLabeler, label_clusters
-from agents.analytics.clustering.types import (
+from analytics.clustering.emergence import detect_emergence_candidates
+from analytics.clustering.labeling import ClusterLabeler, label_clusters
+from analytics.clustering.types import (
     ClusteredPosting,
     ClusteringResult,
     ClusterSummary,
@@ -40,7 +40,7 @@ def _default_clusterer_factory(**kwargs: Any) -> Any:
         import hdbscan
     except ModuleNotFoundError as exc:
         raise RuntimeError(
-            "hdbscan is not installed; install agents/requirements.txt before running clustering"
+            "hdbscan is not installed; install requirements.txt before running clustering"
         ) from exc
     return hdbscan.HDBSCAN(**kwargs)
 

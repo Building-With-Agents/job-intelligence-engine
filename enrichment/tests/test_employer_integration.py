@@ -11,26 +11,26 @@ Steps:
 
 Usage (repo root, agents venv active)::
 
-    python agents/enrichment/tests/test_employer_integration.py
-    python -m agents.enrichment.tests.test_employer_integration
-    python agents/enrichment/tests/test_employer_integration.py --job-id 42
-    python agents/enrichment/tests/test_employer_integration.py --dry-run
+    python enrichment/tests/test_employer_integration.py
+    python -m enrichment.tests.test_employer_integration
+    python enrichment/tests/test_employer_integration.py --job-id 42
+    python enrichment/tests/test_employer_integration.py --dry-run
 
     # Real LLM, but replace description with strong signals (often non-unknown):
-    python agents/enrichment/tests/test_employer_integration.py --job-id 11 --rich-demo
+    python enrichment/tests/test_employer_integration.py --job-id 11 --rich-demo
 
     # No LLM — use a JSON file (recommended on Windows / PowerShell):
-    python agents/enrichment/tests/test_employer_integration.py --job-id 11 --inject-profile-file agents/enrichment/tests/fixtures/employer_inject.sample.json
+    python enrichment/tests/test_employer_integration.py --job-id 11 --inject-profile-file enrichment/tests/fixtures/employer_inject.sample.json
 
     # PowerShell: avoid inline JSON (commas/quotes break parsing); use a variable:
     #   $j = '{"company_size":"enterprise","ai_maturity_signal":"ai_adopting","sector":"technology"}'
-    #   python agents/enrichment/tests/test_employer_integration.py --job-id 11 --inject-profile $j
+    #   python enrichment/tests/test_employer_integration.py --job-id 11 --inject-profile $j
 
     # Real LLM on several rows (longest combined job text first):
-    python agents/enrichment/tests/test_employer_integration.py --llm-scan --llm-scan-limit 10 --min-description-chars 400
+    python enrichment/tests/test_employer_integration.py --llm-scan --llm-scan-limit 10 --min-description-chars 400
 
     # If scan finds no rows, try 0 (all jobs) or lower threshold — text may live in requirements, not description.
-    python agents/enrichment/tests/test_employer_integration.py --llm-scan --min-description-chars 0 --llm-scan-limit 20
+    python enrichment/tests/test_employer_integration.py --llm-scan --min-description-chars 0 --llm-scan-limit 20
 """
 
 from __future__ import annotations
@@ -45,16 +45,16 @@ from dotenv import load_dotenv
 from sqlalchemy import func, select
 
 # tests/ -> enrichment/ -> agents/ -> repo root
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(_REPO_ROOT / ".env", override=False)
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.data_store.database import get_engine, session_scope  # noqa: E402
-from agents.common.data_store.migrations import run_migrations  # noqa: E402
-from agents.common.data_store.models import Company, NormalizedJob  # noqa: E402
-from agents.common.types.job_profile import EmployerProfile  # noqa: E402
-from agents.enrichment.classifiers.employer_classifier import (  # noqa: E402
+from common.data_store.database import get_engine, session_scope  # noqa: E402
+from common.data_store.migrations import run_migrations  # noqa: E402
+from common.data_store.models import Company, NormalizedJob  # noqa: E402
+from common.types.job_profile import EmployerProfile  # noqa: E402
+from enrichment.classifiers.employer_classifier import (  # noqa: E402
     build_employer_profile,
     persist_employer_metadata,
     registry_has_exact_company_name,

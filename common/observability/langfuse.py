@@ -14,7 +14,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
-from agents.common.tracer_base import TracerBase
+from common.tracer_base import TracerBase
 
 try:
     from langfuse import Langfuse

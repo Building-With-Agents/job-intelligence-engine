@@ -7,9 +7,9 @@ job_postings) for 3 enriched raw jobs and resets their processing_status to
 
 Usage (repo root, venv activated):
 
-    python agents/scripts/reset_sample_jobs.py                  # default 3 jobs
-    python agents/scripts/reset_sample_jobs.py --count 5        # custom count
-    python agents/scripts/reset_sample_jobs.py --dry-run        # preview only, no writes
+    python scripts/reset_sample_jobs.py                  # default 3 jobs
+    python scripts/reset_sample_jobs.py --count 5        # custom count
+    python scripts/reset_sample_jobs.py --dry-run        # preview only, no writes
 
 Purpose:
     After seeding from fixtures the DB is fully processed (nothing pending).
@@ -23,12 +23,12 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import text  # noqa: E402
 
-from agents.common.data_store.database import get_engine  # noqa: E402
-from agents.common.env import load_repo_root_dotenv  # noqa: E402
+from common.data_store.database import get_engine  # noqa: E402
+from common.env import load_repo_root_dotenv  # noqa: E402
 
 load_repo_root_dotenv()
 
@@ -116,7 +116,7 @@ def reset_jobs(count: int, dry_run: bool) -> None:
         print(f"  raw_ingested_jobs reset        : {result.rowcount} -> 'pending'")
 
     print(f"\nDone. Run the pipeline to re-process these {len(rows)} job(s):")
-    print("  python agents/scripts/run_processing_loop.py --max-iterations 1 --batch-size 3")
+    print("  python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3")
 
 
 def main() -> None:

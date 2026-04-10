@@ -1,4 +1,4 @@
-"""Unit tests for async structured extraction calls in ``agents.common.llm_client``."""
+"""Unit tests for async structured extraction calls in ``common.llm_client``."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from pydantic import BaseModel
 
-from agents.common.llm_client import (
+from common.llm_client import (
     ainvoke_structured_extraction_llm,
     invoke_structured_extraction_llm,
 )
@@ -54,8 +54,8 @@ def test_ainvoke_structured_extraction_llm_matches_sync_success_metadata() -> No
     with (
         patch.dict(os.environ, _deployment_env(), clear=False),
         patch.dict(sys.modules, {"langchain_openai": _fake_langchain_module(azure_cls)}),
-        patch("agents.common.llm_client.compute_extraction_cost", return_value=0.123),
-        patch("agents.common.llm_client.log_extraction_event") as mock_log,
+        patch("common.llm_client.compute_extraction_cost", return_value=0.123),
+        patch("common.llm_client.log_extraction_event") as mock_log,
     ):
         parsed_async, async_meta = asyncio.run(
             ainvoke_structured_extraction_llm(
@@ -95,7 +95,7 @@ def test_ainvoke_structured_extraction_llm_timeout_returns_failed_metadata() -> 
     with (
         patch.dict(os.environ, _deployment_env(), clear=False),
         patch.dict(sys.modules, {"langchain_openai": _fake_langchain_module(azure_cls)}),
-        patch("agents.common.llm_client.log_extraction_event"),
+        patch("common.llm_client.log_extraction_event"),
     ):
         parsed, meta = asyncio.run(
             ainvoke_structured_extraction_llm(
@@ -128,7 +128,7 @@ def test_ainvoke_structured_extraction_llm_returns_rate_limit_metadata() -> None
     with (
         patch.dict(os.environ, _deployment_env(), clear=False),
         patch.dict(sys.modules, {"langchain_openai": _fake_langchain_module(azure_cls)}),
-        patch("agents.common.llm_client.log_extraction_event"),
+        patch("common.llm_client.log_extraction_event"),
     ):
         parsed, meta = asyncio.run(
             ainvoke_structured_extraction_llm(
@@ -166,8 +166,8 @@ def test_ainvoke_structured_extraction_llm_empty_response_returns_failed_metadat
     with (
         patch.dict(os.environ, _deployment_env(), clear=False),
         patch.dict(sys.modules, {"langchain_openai": _fake_langchain_module(azure_cls)}),
-        patch("agents.common.llm_client.compute_extraction_cost", return_value=0.321),
-        patch("agents.common.llm_client.log_extraction_event"),
+        patch("common.llm_client.compute_extraction_cost", return_value=0.321),
+        patch("common.llm_client.log_extraction_event"),
     ):
         parsed, meta = asyncio.run(
             ainvoke_structured_extraction_llm(

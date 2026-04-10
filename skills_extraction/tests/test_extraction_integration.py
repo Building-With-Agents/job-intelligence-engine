@@ -13,21 +13,21 @@ from unittest.mock import patch
 
 import pytest
 
-from agents.common.types import (
+from common.types import (
     ContextSignal,
     JobRecord,
     SkillRecord,
     TaxonomyResult,
     ToolRecord,
 )
-from agents.skills_extraction.extractors.context import extract_context
-from agents.skills_extraction.extractors.responsibilities import (
+from skills_extraction.extractors.context import extract_context
+from skills_extraction.extractors.responsibilities import (
     _ResponsibilitiesLLMRoot,
     extract_responsibilities,
 )
-from agents.skills_extraction.extractors.skills import _SkillsLLMRoot, extract_skills
-from agents.skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
-from agents.skills_extraction.extractors.tools import extract_tools
+from skills_extraction.extractors.skills import _SkillsLLMRoot, extract_skills
+from skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
+from skills_extraction.extractors.tools import extract_tools
 
 _EMPTY_SUCCESS_META = {
     "tokens_used": 0,
@@ -55,8 +55,8 @@ def sample_job() -> JobRecord:
     )
 
 
-@patch("agents.skills_extraction.extractors.skills.resolve_taxonomy_batch")
-@patch("agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.skills.resolve_taxonomy_batch")
+@patch("skills_extraction.extractors.skills.invoke_structured_extraction_llm")
 def test_extraction_tools_then_skills_output_shape(
     mock_invoke_client: object,
     mock_resolve_taxonomy: object,
@@ -185,7 +185,7 @@ def test_extract_context_returns_empty_list() -> None:
     assert meta.get("tokens_used") == 0
 
 
-@patch("agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.tasks.invoke_structured_extraction_llm")
 def test_extract_tasks_returns_empty_list(mock_invoke: object) -> None:
     """extract_tasks returns an empty list when the structured LLM result is empty."""
     job = JobRecord(
@@ -202,7 +202,7 @@ def test_extract_tasks_returns_empty_list(mock_invoke: object) -> None:
     assert isinstance(meta, dict)
 
 
-@patch("agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
+@patch("skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm")
 def test_extract_responsibilities_returns_empty_list(mock_invoke: object) -> None:
     """extract_responsibilities returns an empty list when the structured LLM result is empty."""
     job = JobRecord(
@@ -224,7 +224,7 @@ def test_extract_responsibilities_returns_empty_list(mock_invoke: object) -> Non
 
 def test_context_signal_schema_validates() -> None:
     """ContextSignal schema accepts valid data and rejects invalid."""
-    from agents.common.types import SpanRecord
+    from common.types import SpanRecord
 
     signal = ContextSignal(
         signal_type="remote_policy",

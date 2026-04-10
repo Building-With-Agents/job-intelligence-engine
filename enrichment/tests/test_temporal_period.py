@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from agents.enrichment.classifiers.temporal_period import classify_temporal_period
+from enrichment.classifiers.temporal_period import classify_temporal_period
 
 
 @pytest.mark.parametrize(

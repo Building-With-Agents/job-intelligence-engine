@@ -1,15 +1,15 @@
 # Orchestration (EXP-005 scheduling)
 
-To run scheduler tests: from repo root, `pytest agents/tests/ agents/orchestration/tests/ -v` (or `pytest agents/ -v` to run all agents tests).
+To run scheduler tests: from repo root, `pytest tests/ orchestration/tests/ -v` (or `pytest tests/ -v` to run all agents tests).
 
 ## Single pipeline run (ingestion trigger)
 
 Runs the full pipeline once and exits. Same entrypoint used by APScheduler.
 
-From repo root (watechcoalition):
+From repo root (job-intelligence-engine):
 
 ```bash
-python -m agents.orchestration.run_ingestion
+python -m orchestration.run_ingestion
 ```
 
 ## APScheduler (in-process, recurring)
@@ -19,7 +19,7 @@ Runs the pipeline on an interval. Process stays alive and fires every N minutes.
 From repo root (ensure the project venv is activated or use its Python so `apscheduler` and `structlog` are available):
 
 ```bash
-python -m agents.orchestration.scheduler
+python -m orchestration.scheduler
 ```
 
 Stop with Ctrl+C. The scheduler will shut down and exit.
@@ -43,7 +43,7 @@ Schedule is configurable without code changes: set the env var before starting t
 
 Each pipeline run (when invoked by APScheduler) writes `last_run_start` and `last_run_finish` (ISO timestamps) to a JSON file.
 
-Default path: `agents/data/scheduler_last_run.json`. Override with `SCHEDULER_STATE_PATH` (absolute path).
+Default path: `data/scheduler_last_run.json`. Override with `SCHEDULER_STATE_PATH` (absolute path).
 
 File shape (the `apscheduler` section is updated on each run; `task_scheduler` may appear in the file for backward compatibility but is not written in normal operation):
 
@@ -66,7 +66,7 @@ File shape (the `apscheduler` section is updated on each run; `task_scheduler` m
 To read last run state (from repo root):
 
 ```bash
-python -m agents.orchestration.last_run_state
+python -m orchestration.last_run_state
 ```
 
 ### 5-cycle drift table (for EXP-005 findings)
@@ -74,7 +74,7 @@ python -m agents.orchestration.last_run_state
 To print a markdown table (Cycle | Expected | Actual | Drift (s)) for pasting into `docs/EXP-005-findings.md`:
 
 ```bash
-python -m agents.orchestration.last_run_state --drift-table
+python -m orchestration.last_run_state --drift-table
 ```
 
 Use `--drift-table apscheduler` to show only APScheduler. Run at least 5 cycles so `last_5_runs` is full and the table has 5 rows.

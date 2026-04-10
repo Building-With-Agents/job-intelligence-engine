@@ -4,7 +4,7 @@
 - ``extract_tasks`` / ``extract_responsibilities``: LLM is mocked — validates prompt wiring, Pass 1 context injection,
   and that returned records have ``source_span`` anchored in the job (same pattern as production schema checks).
 
-Run: ``python -m pytest agents/tests/test_extraction_corpus.py -v`` from repo root.
+Run: ``python -m pytest tests/test_extraction_corpus.py -v`` from repo root.
 """
 
 from __future__ import annotations
@@ -16,21 +16,21 @@ from unittest.mock import patch
 import pytest
 from pydantic import TypeAdapter
 
-from agents.common.types import (
+from common.types import (
     ContextSignal,
     JobRecord,
     ResponsibilityRecord,
     SpanRecord,
     TaskRecord,
 )
-from agents.skills_extraction.extractors.context import extract_context
-from agents.skills_extraction.extractors.responsibilities import (
+from skills_extraction.extractors.context import extract_context
+from skills_extraction.extractors.responsibilities import (
     _ResponsibilitiesLLMRoot,
     extract_responsibilities,
 )
-from agents.skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
+from skills_extraction.extractors.tasks import _TasksLLMRoot, extract_tasks
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 _GROUND_TRUTH_PATH = _REPO_ROOT / "tools" / "ground-truth-labeler" / "ground_truth_labeled.json"
 
 # 18 synthetic normalized jobs — mix of regex hits and intentional sparse rows.
@@ -307,7 +307,7 @@ def test_extract_tasks_corpus_mocked_llm_spans() -> None:
     assert len(jobs) >= 10
     side_effect = _make_tasks_side_effect(jobs)
     with patch(
-        "agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
+        "skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
         side_effect=side_effect,
     ):
         for job in jobs:
@@ -358,7 +358,7 @@ def test_extract_responsibilities_corpus_mocked_llm_spans() -> None:
     assert len(jobs) >= 10
     side_effect = _make_resp_side_effect(jobs)
     with patch(
-        "agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
+        "skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
         side_effect=side_effect,
     ):
         for job in jobs:
@@ -377,11 +377,11 @@ def test_extraction_corpus_combined_pass1_and_mocked_pass2() -> None:
     resp_se = _make_resp_side_effect(jobs)
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
             side_effect=task_se,
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
             side_effect=resp_se,
         ),
     ):

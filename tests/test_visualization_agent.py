@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.visualization.agent import VisualizationAgent
+from common.event_envelope import EventEnvelope
+from visualization.agent import VisualizationAgent
 
 
 class TestVisualizationAgent:

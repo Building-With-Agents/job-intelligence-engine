@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.message_bus import HandlerExecutionError, RedisStreamsEventBus
-from agents.normalization.events import normalization_complete_payload
-from agents.tests.message_bus_stream_fixtures import generate_ingest_batches
+from common.event_envelope import EventEnvelope
+from common.message_bus import HandlerExecutionError, RedisStreamsEventBus
+from normalization.events import normalization_complete_payload
+from tests.message_bus_stream_fixtures import generate_ingest_batches
 
 
 class _FakeRedisStreamsClient:

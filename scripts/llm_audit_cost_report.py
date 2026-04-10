@@ -3,8 +3,8 @@
 
 Usage (repo root, venv activated):
 
-    python agents/scripts/llm_audit_cost_report.py
-    python agents/scripts/llm_audit_cost_report.py --project-jobs 1000
+    python scripts/llm_audit_cost_report.py
+    python scripts/llm_audit_cost_report.py --project-jobs 1000
 
 Reads PYTHON_DATABASE_URL from .env.
 
@@ -22,12 +22,12 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import text  # noqa: E402
 
-from agents.common.data_store.database import get_engine  # noqa: E402
-from agents.common.env import load_repo_root_dotenv  # noqa: E402
+from common.data_store.database import get_engine  # noqa: E402
+from common.env import load_repo_root_dotenv  # noqa: E402
 
 load_repo_root_dotenv()
 

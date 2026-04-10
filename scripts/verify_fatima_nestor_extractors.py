@@ -5,10 +5,10 @@ they produce structured output. Context uses regex only (no Azure).
 Tasks and Responsibilities call Azure OpenAI (GPT-4.1 Mini).
 
 Usage (from repo root, venv active):
-    python agents/scripts/verify_fatima_nestor_extractors.py
+    python scripts/verify_fatima_nestor_extractors.py
 
     # Skip LLM calls (test context only -- no Azure needed):
-    python agents/scripts/verify_fatima_nestor_extractors.py --context-only
+    python scripts/verify_fatima_nestor_extractors.py --context-only
 """
 # ruff: noqa: T201
 from __future__ import annotations
@@ -20,7 +20,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Path bootstrap
 # ---------------------------------------------------------------------------
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -67,7 +67,7 @@ def main() -> int:
     parser.add_argument("--context-only", action="store_true", help="Skip LLM calls, test context extraction only")
     args = parser.parse_args()
 
-    from agents.common.types import JobRecord
+    from common.types import JobRecord
 
     job = JobRecord(**SAMPLE_JOB)
     passed = 0
@@ -78,7 +78,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 1. extract_context() -- pattern matching ===")
     try:
-        from agents.skills_extraction.extractors.context import extract_context
+        from skills_extraction.extractors.context import extract_context
 
         signals, meta = extract_context(job)
         print(f"  Signals found: {len(signals)}")
@@ -109,7 +109,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 2. extract_tasks() -- GPT-4.1 Mini ===")
     try:
-        from agents.skills_extraction.extractors.tasks import extract_tasks
+        from skills_extraction.extractors.tasks import extract_tasks
 
         tasks, meta = extract_tasks(job)
         print(f"  Tasks found: {len(tasks)}")
@@ -131,7 +131,7 @@ def main() -> int:
     # ------------------------------------------------------------------
     print("\n=== 3. extract_responsibilities() -- GPT-4.1 Mini ===")
     try:
-        from agents.skills_extraction.extractors.responsibilities import extract_responsibilities
+        from skills_extraction.extractors.responsibilities import extract_responsibilities
 
         resps, meta = extract_responsibilities(job)
         print(f"  Responsibilities found: {len(resps)}")

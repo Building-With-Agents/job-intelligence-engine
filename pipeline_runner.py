@@ -2,17 +2,17 @@
 Pipeline Runner — Demo Run (Week 2 fixture data only).
 
 DEPRECATED for production use. Use the flywheel pipeline instead:
-  - Loop 1 (ingest):  python agents/scripts/batch_ingest.py
-  - Loop 2 (process): python agents/scripts/run_processing_loop.py
+  - Loop 1 (ingest):  python scripts/batch_ingest.py
+  - Loop 2 (process): python scripts/run_processing_loop.py
 
 This script runs all agents sequentially in a single pass with fixture data.
 Kept for Week 2 walking skeleton demos and test_pipeline_runner.py.
 
 Usage (from the repo root):
-    python agents/pipeline_runner.py
+    python pipeline_runner.py
 
 Redis is not used. For an optional Redis Streams prototype (Phase 2 bus exploration),
-see ``agents/scripts/run_full_pipeline_redis.py``.
+see ``scripts/run_full_pipeline_redis.py``.
 
 Design decisions:
 
@@ -64,27 +64,27 @@ import structlog  # noqa: E402
 
 load_dotenv(_REPO_ROOT / ".env")
 
-from agents.analytics.agent import AnalyticsAgent  # noqa: E402
-from agents.analytics.agent import register_alert_bus as register_analytics_alert_bus  # noqa: E402
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.common.llm_adapter import register_tracer  # noqa: E402
-from agents.common.message_bus import InProcessEventBus  # noqa: E402
-from agents.common.message_bus.contracts import ORCHESTRATOR_AGENT_ID  # noqa: E402
-from agents.common.observability import LangfuseTracer  # noqa: E402
-from agents.common.types import JobRecord  # noqa: E402
-from agents.demand_analysis.agent import DemandAnalysisAgent  # noqa: E402
-from agents.enrichment.agent import (  # noqa: E402
+from analytics.agent import AnalyticsAgent  # noqa: E402
+from analytics.agent import register_alert_bus as register_analytics_alert_bus  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from common.llm_adapter import register_tracer  # noqa: E402
+from common.message_bus import InProcessEventBus  # noqa: E402
+from common.message_bus.contracts import ORCHESTRATOR_AGENT_ID  # noqa: E402
+from common.observability import LangfuseTracer  # noqa: E402
+from common.types import JobRecord  # noqa: E402
+from demand_analysis.agent import DemandAnalysisAgent  # noqa: E402
+from enrichment.agent import (  # noqa: E402
     EnrichmentAgent,
     register_alert_bus as register_enrichment_alert_bus,
 )
-from agents.ingestion.agent import IngestionAgent  # noqa: E402
-from agents.normalization.agent import NormalizationAgent  # noqa: E402
-from agents.orchestration.agent import OrchestrationAgent  # noqa: E402
-from agents.skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
-from agents.skills_extraction.extractors.context import extract_context  # noqa: E402
-from agents.skills_extraction.extractors.responsibilities import extract_responsibilities  # noqa: E402
-from agents.skills_extraction.extractors.tasks import extract_tasks  # noqa: E402
-from agents.visualization.agent import VisualizationAgent  # noqa: E402
+from ingestion.agent import IngestionAgent  # noqa: E402
+from normalization.agent import NormalizationAgent  # noqa: E402
+from orchestration.agent import OrchestrationAgent  # noqa: E402
+from skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
+from skills_extraction.extractors.context import extract_context  # noqa: E402
+from skills_extraction.extractors.responsibilities import extract_responsibilities  # noqa: E402
+from skills_extraction.extractors.tasks import extract_tasks  # noqa: E402
+from visualization.agent import VisualizationAgent  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Paths

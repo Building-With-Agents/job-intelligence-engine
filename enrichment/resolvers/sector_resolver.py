@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from agents.common.data_store.models import IndustrySector
+from common.data_store.models import IndustrySector
 
 ROLE_TO_SECTOR: dict[str, str] = {
     "Software Engineering": "technology",

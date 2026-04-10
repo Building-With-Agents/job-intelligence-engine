@@ -12,10 +12,10 @@ Steps:
 
 Usage (repo root, agents venv active)::
 
-    python agents/enrichment/tests/test_naics_integration.py
-    python -m agents.enrichment.tests.test_naics_integration
-    python agents/enrichment/tests/test_naics_integration.py --job-id 42
-    python agents/enrichment/tests/test_naics_integration.py --dry-run
+    python enrichment/tests/test_naics_integration.py
+    python -m enrichment.tests.test_naics_integration
+    python enrichment/tests/test_naics_integration.py --job-id 42
+    python enrichment/tests/test_naics_integration.py --dry-run
 """
 
 from __future__ import annotations
@@ -29,15 +29,15 @@ from dotenv import load_dotenv
 from sqlalchemy import func, or_, select, update
 
 # tests/ -> enrichment/ -> agents/ -> repo root
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(_REPO_ROOT / ".env", override=False)
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.data_store.database import get_engine, session_scope  # noqa: E402
-from agents.common.data_store.migrations import run_migrations  # noqa: E402
-from agents.common.data_store.models import NAICS, NormalizedJob  # noqa: E402
-from agents.enrichment.classifiers.naics_classifier import classify_naics  # noqa: E402
+from common.data_store.database import get_engine, session_scope  # noqa: E402
+from common.data_store.migrations import run_migrations  # noqa: E402
+from common.data_store.models import NAICS, NormalizedJob  # noqa: E402
+from enrichment.classifiers.naics_classifier import classify_naics  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:

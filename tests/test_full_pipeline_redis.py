@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 EVAL_DIR = REPO_ROOT / "agents" / "eval"
 JSON_REPORT = EVAL_DIR / "full_pipeline_redis_metrics.json"
 HTML_REPORT = EVAL_DIR / "full_pipeline_redis_metrics.html"
@@ -33,7 +33,7 @@ def test_full_pipeline_redis_run_and_report() -> None:
     cmd = [
         sys.executable,
         "-m",
-        "agents.scripts.run_full_pipeline_redis",
+        "scripts.run_full_pipeline_redis",
         "--redis-url",
         _redis_url() or "",
     ]

@@ -7,7 +7,7 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
-from agents.common.event_envelope import EventEnvelope
+from common.event_envelope import EventEnvelope
 
 
 class TestEventEnvelope:

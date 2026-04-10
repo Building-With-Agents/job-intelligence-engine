@@ -1,18 +1,18 @@
 ---
 description: SOC/NAICS enrichment integration contract — DB columns, classifiers, employer storage, promotion to job_postings.
-globs: agents/enrichment/**/*.py
+globs: enrichment/**/*.py
 alwaysApply: false
 ---
 
 # SOC & NAICS enrichment — integration contract
 
-Canonical implementation lives under `agents/enrichment/`. Pair field names on enriched payloads: `soc_code`, `naics_code`, `employer_metadata` (see `agents/enrichment/schemas.py` and `.cursor/rules/integration-schema.mdc`).
+Canonical implementation lives under `enrichment/`. Pair field names on enriched payloads: `soc_code`, `naics_code`, `employer_metadata` (see `enrichment/schemas.py` and `.cursor/rules/integration-schema.mdc`).
 
 ## Table schemas (persistence)
 
 ### `dbo.job_postings` (promotion target)
 
-Added idempotently by `agents/common/data_store/migrations.py` (`_JOB_POSTINGS_ALTER_STATEMENTS`):
+Added idempotently by `common/data_store/migrations.py` (`_JOB_POSTINGS_ALTER_STATEMENTS`):
 
 | Column | Role |
 |--------|------|
@@ -24,7 +24,7 @@ ORM for `job_postings` may be absent in Python; treat migrations + `job_postings
 
 ### `dbo.normalized_jobs` (pipeline staging)
 
-SQLAlchemy: `agents/common/data_store/models.py` → `NormalizedJob`.
+SQLAlchemy: `common/data_store/models.py` → `NormalizedJob`.
 
 | Column | Role |
 |--------|------|
@@ -39,7 +39,7 @@ SQLAlchemy: `agents/common/data_store/models.py` → `NormalizedJob`.
 
 ## `classify_soc()` — two-tier: DB candidates + LLM picker
 
-**Module:** `agents/enrichment/classifiers/soc_classifier.py`
+**Module:** `enrichment/classifiers/soc_classifier.py`
 
 ```python
 async def classify_soc(
@@ -66,7 +66,7 @@ async def classify_soc(
 
 ## `classify_naics()` — DB candidates + structured LLM
 
-**Module:** `agents/enrichment/classifiers/naics_classifier.py`
+**Module:** `enrichment/classifiers/naics_classifier.py`
 
 ```python
 def classify_naics(job_title: str, job_description: str | None, session: Session) -> str:
@@ -122,11 +122,11 @@ def apply_enrichment_to_job_postings(
 
 | Concern | Location |
 |---------|----------|
-| SOC classifier | `agents/enrichment/classifiers/soc_classifier.py` |
-| NAICS classifier | `agents/enrichment/classifiers/naics_classifier.py` |
-| Employer build + persist hook | `agents/enrichment/classifiers/employer_classifier.py` |
-| Employer upsert SQL | `agents/enrichment/employer_profile_storage.py` |
-| Promotion SQL + params | `agents/enrichment/job_postings_promotion.py` |
-| Orchestration of classifiers + promotion | `agents/enrichment/agent.py` |
-| Optional `JobProfile` helpers | `agents/enrichment/classification.py` |
-| Migrations for columns | `agents/common/data_store/migrations.py` |
+| SOC classifier | `enrichment/classifiers/soc_classifier.py` |
+| NAICS classifier | `enrichment/classifiers/naics_classifier.py` |
+| Employer build + persist hook | `enrichment/classifiers/employer_classifier.py` |
+| Employer upsert SQL | `enrichment/employer_profile_storage.py` |
+| Promotion SQL + params | `enrichment/job_postings_promotion.py` |
+| Orchestration of classifiers + promotion | `enrichment/agent.py` |
+| Optional `JobProfile` helpers | `enrichment/classification.py` |
+| Migrations for columns | `common/data_store/migrations.py` |

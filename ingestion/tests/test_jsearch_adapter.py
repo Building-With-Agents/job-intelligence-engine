@@ -6,8 +6,8 @@ import asyncio
 import os
 from unittest.mock import patch
 
-from agents.common.types.region_config import RegionConfig
-from agents.ingestion.sources.jsearch_adapter import JSearchAdapter, _job_to_raw_record
+from common.types.region_config import RegionConfig
+from ingestion.sources.jsearch_adapter import JSearchAdapter, _job_to_raw_record
 
 _TEST_REGION = RegionConfig(
     region_id="test-region",

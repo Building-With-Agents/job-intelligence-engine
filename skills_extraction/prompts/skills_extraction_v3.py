@@ -1,6 +1,6 @@
 """Skills extraction prompt v3 — reduce over-extraction; precision-focused caps and filters.
 
-Document changes in agents/eval/prompt_iteration_log.md.
+Document changes in eval/prompt_iteration_log.md.
 """
 
 from __future__ import annotations

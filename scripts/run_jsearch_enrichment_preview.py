@@ -2,7 +2,7 @@
 End-to-end: ingest → normalize → skills extract → deterministic enrichment JSONL.
 
 Uses ``IngestionAgent`` with the same ``source`` contract as
-``python -m agents.ingestion.agent``:
+``python -m ingestion.agent``:
 
   - ``all`` (default) — ``jsearch`` + ``crawl4ai`` in one run
   - ``jsearch`` — RapidAPI JSearch only
@@ -22,12 +22,12 @@ Prerequisites (repo-root ``.env`` or environment):
 
 PowerShell (repo root)::
 
-    py agents/scripts/run_jsearch_enrichment_preview.py --limit 20
-    py agents/scripts/run_jsearch_enrichment_preview.py --source jsearch --limit 20
+    py scripts/run_jsearch_enrichment_preview.py --limit 20
+    py scripts/run_jsearch_enrichment_preview.py --source jsearch --limit 20
 
 Classify an existing run only::
 
-    py agents/scripts/run_jsearch_enrichment_preview.py --skip-ingest --ingestion-run-id <uuid>
+    py scripts/run_jsearch_enrichment_preview.py --skip-ingest --ingestion-run-id <uuid>
 """
 
 from __future__ import annotations
@@ -43,25 +43,25 @@ import structlog
 from dotenv import load_dotenv
 from sqlalchemy import text
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 load_dotenv(_REPO_ROOT / ".env")
 
-from agents.common.data_store.database import session_scope  # noqa: E402
-from agents.common.event_envelope import EventEnvelope  # noqa: E402
-from agents.enrichment.agent import EnrichmentAgent  # noqa: E402
-from agents.enrichment.comparison_report_html import (  # noqa: E402
+from common.data_store.database import session_scope  # noqa: E402
+from common.event_envelope import EventEnvelope  # noqa: E402
+from enrichment.agent import EnrichmentAgent  # noqa: E402
+from enrichment.comparison_report_html import (  # noqa: E402
     render_enrichment_comparison_html,
 )
-from agents.ingestion.agent import IngestionAgent  # noqa: E402
-from agents.normalization.agent import NormalizationAgent  # noqa: E402
-from agents.scripts.jsearch_enrichment_preview_lib import (  # noqa: E402
+from ingestion.agent import IngestionAgent  # noqa: E402
+from normalization.agent import NormalizationAgent  # noqa: E402
+from scripts.jsearch_enrichment_preview_lib import (  # noqa: E402
     NORMALIZED_RUN_SQL,
     build_enrichment_output_record,
 )
-from agents.skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
+from skills_extraction.agent import SkillsExtractionAgent  # noqa: E402
 
 structlog.configure(
     processors=[

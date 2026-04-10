@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agents.enrichment.comparison_report_html import render_enrichment_comparison_html
+from enrichment.comparison_report_html import render_enrichment_comparison_html
 
 
 def test_render_contains_posting_and_enrichment() -> None:

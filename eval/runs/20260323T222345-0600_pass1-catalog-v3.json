@@ -3,7 +3,7 @@
   "mt_timestamp_iso": "2026-03-23T22:23:45-06:00",
   "run_label": "pass1-catalog-v3",
   "git_short_hash": "70d7aad0",
-  "ground_truth_path": "/Users/bryanpmx/Documents/Projects/watechcoalition/agents/eval/extraction_ground_truth.json",
+  "ground_truth_path": "/Users/bryanpmx/Documents/Projects/watechcoalition/eval/extraction_ground_truth.json",
   "record_count": 30,
   "extractor_mode": "llm_skills_pattern_tools",
   "aggregates": {

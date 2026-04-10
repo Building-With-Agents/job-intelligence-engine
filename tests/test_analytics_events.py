@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from agents.analytics.insights.events import build_analytics_refreshed_event
-from agents.analytics.insights.freshness import PostingFreshnessResult
-from agents.analytics.insights.llm_summary import SummaryResult
-from agents.analytics.insights.trajectory import TrajectoryEntry, build_trajectory_map
+from analytics.insights.events import build_analytics_refreshed_event
+from analytics.insights.freshness import PostingFreshnessResult
+from analytics.insights.llm_summary import SummaryResult
+from analytics.insights.trajectory import TrajectoryEntry, build_trajectory_map
 
 
 def _summary(llm: bool) -> SummaryResult:

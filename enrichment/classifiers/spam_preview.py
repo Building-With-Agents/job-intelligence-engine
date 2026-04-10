@@ -1,6 +1,6 @@
-"""Spam scoring for Decision #8 (enrichment payload + :mod:`agents.enrichment.job_postings_promotion`).
+"""Spam scoring for Decision #8 (enrichment payload + :mod:`enrichment.job_postings_promotion`).
 
-Uses Azure OpenAI via :func:`agents.common.llm_client.invoke_skills_llm` (same deployment
+Uses Azure OpenAI via :func:`common.llm_client.invoke_skills_llm` (same deployment
 env as skills extraction). On LLM failure or missing config, returns **degraded** null
 scores unless ``SPAM_PREVIEW_ALLOW_HEURISTIC=1`` (offline-only noisy estimate).
 """
@@ -251,7 +251,7 @@ def score_spam_preview(
             used_heuristic=False,
         )
 
-    from agents.common.llm_client import invoke_skills_llm
+    from common.llm_client import invoke_skills_llm
 
     prompt = _build_prompt(
         job_title,

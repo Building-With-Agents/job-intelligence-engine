@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agents.enrichment.resolvers.location_resolver import (
+from enrichment.resolvers.location_resolver import (
     normalize_location_text,
     resolve_location,
 )

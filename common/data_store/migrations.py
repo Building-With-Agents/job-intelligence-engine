@@ -8,8 +8,8 @@ Optional legacy raw-SQL scripts (pre-consolidation paths) live under
 ``legacy_migrations/`` for reference only; use :func:`run_migrations` for the app.
 
 Usage:
-    from agents.common.data_store.migrations import run_migrations
-    from agents.common.data_store.database import get_engine
+    from common.data_store.migrations import run_migrations
+    from common.data_store.database import get_engine
     run_migrations(get_engine())
 """
 
@@ -19,7 +19,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from agents.common.data_store.models import Base
+from common.data_store.models import Base
 
 log = structlog.get_logger()
 

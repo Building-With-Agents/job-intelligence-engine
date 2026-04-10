@@ -7,20 +7,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import JobRecord
-from agents.skills_extraction.extractors.responsibilities import (
+from common.event_envelope import EventEnvelope
+from common.types import JobRecord
+from skills_extraction.extractors.responsibilities import (
     _ResponsibilitiesLLMRoot,
     extract_responsibilities,
     extract_responsibilities_async,
 )
-from agents.skills_extraction.extractors.skills import (
+from skills_extraction.extractors.skills import (
     _LLMSkill,
     _SkillsLLMRoot,
     extract_skills_no_taxonomy,
     extract_skills_no_taxonomy_async,
 )
-from agents.skills_extraction.extractors.tasks import (
+from skills_extraction.extractors.tasks import (
     _TasksLLMRoot,
     extract_tasks,
     extract_tasks_async,
@@ -72,11 +72,11 @@ def test_extract_tasks_async_matches_sync_contract(dummy_job: JobRecord) -> None
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.invoke_structured_extraction_llm",
             return_value=(root, call_meta),
         ),
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(root, call_meta)),
         ),
     ):
@@ -118,11 +118,11 @@ def test_extract_responsibilities_async_matches_sync_contract(dummy_job: JobReco
 
     with (
         patch(
-            "agents.skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.invoke_structured_extraction_llm",
             return_value=(root, call_meta),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(root, call_meta)),
         ),
     ):
@@ -163,11 +163,11 @@ def test_extract_skills_no_taxonomy_async_matches_sync_contract(dummy_job: JobRe
 
     with (
         patch(
-            "agents.skills_extraction.extractors.skills.invoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.invoke_structured_extraction_llm",
             return_value=(root, call_meta),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(root, call_meta)),
         ),
     ):
@@ -222,11 +222,11 @@ def test_extract_skills_no_taxonomy_async_retries_on_429_with_async_backoff(
 
     with (
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=[(None, rate_limit_meta), (success_root, success_meta)]),
         ),
-        patch("agents.skills_extraction.extractors.skills.asyncio.sleep", new=sleep_mock),
-        patch("agents.skills_extraction.extractors.skills.random.uniform", return_value=0.5),
+        patch("skills_extraction.extractors.skills.asyncio.sleep", new=sleep_mock),
+        patch("skills_extraction.extractors.skills.random.uniform", return_value=0.5),
     ):
         skills, meta = asyncio.run(extract_skills_no_taxonomy_async(dummy_job))
 
@@ -256,7 +256,7 @@ def test_extract_skills_no_taxonomy_async_returns_empty_on_failed_dimension(
     }
 
     with patch(
-        "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+        "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
         new=AsyncMock(return_value=(None, failed_meta)),
     ):
         skills, meta = asyncio.run(extract_skills_no_taxonomy_async(dummy_job))
@@ -313,11 +313,11 @@ def test_extract_tasks_async_retries_on_429_with_backoff(dummy_job: JobRecord) -
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=[(None, rate_limit_meta), (success_root, success_meta)]),
         ),
-        patch("agents.skills_extraction.extractors.tasks.asyncio.sleep", new=sleep_mock),
-        patch("agents.skills_extraction.extractors.tasks.random.uniform", return_value=0.5),
+        patch("skills_extraction.extractors.tasks.asyncio.sleep", new=sleep_mock),
+        patch("skills_extraction.extractors.tasks.random.uniform", return_value=0.5),
     ):
         tasks, meta = asyncio.run(extract_tasks_async(dummy_job))
 
@@ -345,7 +345,7 @@ def test_extract_tasks_async_returns_empty_on_persistent_failure(dummy_job: JobR
     }
 
     with patch(
-        "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+        "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
         new=AsyncMock(return_value=(None, failed_meta)),
     ):
         tasks, meta = asyncio.run(extract_tasks_async(dummy_job))
@@ -401,15 +401,15 @@ def test_extract_responsibilities_async_retries_on_429_with_backoff(dummy_job: J
 
     with (
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(side_effect=[(None, rate_limit_meta), (success_root, success_meta)]),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.asyncio.sleep",
+            "skills_extraction.extractors.responsibilities.asyncio.sleep",
             new=sleep_mock,
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.random.uniform",
+            "skills_extraction.extractors.responsibilities.random.uniform",
             return_value=0.5,
         ),
     ):
@@ -441,7 +441,7 @@ def test_extract_responsibilities_async_returns_empty_on_persistent_failure(
     }
 
     with patch(
-        "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+        "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
         new=AsyncMock(return_value=(None, failed_meta)),
     ):
         rows, meta = asyncio.run(extract_responsibilities_async(dummy_job))
@@ -464,7 +464,7 @@ def _make_normalization_event(batch_id: str = "b-async-1") -> EventEnvelope:
 
 def test_process_async_returns_skills_extracted_event(dummy_job: JobRecord) -> None:
     """process_async() should return a valid SkillsExtracted EventEnvelope."""
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     mock_work_item = MagicMock()
     mock_work_item.job_id = "job-async-1"
@@ -524,27 +524,27 @@ def test_process_async_returns_skills_extracted_event(dummy_job: JobRecord) -> N
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(tasks_root, dim_meta)),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(resp_root, dim_meta)),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(success_root, success_meta)),
         ),
         patch(
-            "agents.skills_extraction.extractors.taxonomy.resolve_taxonomy_batch",
+            "skills_extraction.extractors.taxonomy.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.resolve_taxonomy_batch",
+            "skills_extraction.extractors.skills.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
         patch(
-            "agents.skills_extraction.agent.resolve_taxonomy_batch",
+            "skills_extraction.agent.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
     ):
@@ -558,7 +558,7 @@ def test_process_async_returns_skills_extracted_event(dummy_job: JobRecord) -> N
 
 def test_process_async_uses_parallel_path_from_async_context(dummy_job: JobRecord) -> None:
     """process_async() must NOT fall back to serial even when an event loop is running."""
-    from agents.skills_extraction.agent import SkillsExtractionAgent
+    from skills_extraction.agent import SkillsExtractionAgent
 
     mock_work_item = MagicMock()
     mock_work_item.job_id = "job-loop-1"
@@ -602,19 +602,19 @@ def test_process_async_uses_parallel_path_from_async_context(dummy_job: JobRecor
 
     with (
         patch(
-            "agents.skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.tasks.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(tasks_root, dim_meta)),
         ),
         patch(
-            "agents.skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.responsibilities.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(resp_root, dim_meta)),
         ),
         patch(
-            "agents.skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
+            "skills_extraction.extractors.skills.ainvoke_structured_extraction_llm",
             new=AsyncMock(return_value=(_SkillsLLMRoot(skills=[]), dim_meta)),
         ),
         patch(
-            "agents.skills_extraction.agent.resolve_taxonomy_batch",
+            "skills_extraction.agent.resolve_taxonomy_batch",
             side_effect=lambda labels: [None] * len(labels),
         ),
     ):

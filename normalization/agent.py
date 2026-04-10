@@ -20,21 +20,21 @@ import structlog
 from langgraph.graph import END, StateGraph
 from pydantic import ValidationError
 
-from agents.common.base_agent import AgentBase
-from agents.common.data_store.database import check_db_connection, session_scope
-from agents.common.data_store.models import (
+from common.base_agent import AgentBase
+from common.data_store.database import check_db_connection, session_scope
+from common.data_store.models import (
     NormalizationQuarantine,
     NormalizedJob,
     RawIngestedJob,
 )
-from agents.common.event_envelope import EventEnvelope
-from agents.common.types import RawJobRecord
-from agents.normalization.events import (
+from common.event_envelope import EventEnvelope
+from common.types import RawJobRecord
+from normalization.events import (
     normalization_complete_payload,
     normalization_failed_payload,
 )
-from agents.normalization.mappers import get_mapper
-from agents.normalization.state import NormalizationState
+from normalization.mappers import get_mapper
+from normalization.state import NormalizationState
 
 log = structlog.get_logger()
 
@@ -368,7 +368,7 @@ class NormalizationAgent(AgentBase):
 
     def health_check(self) -> dict:
         """Check DB connectivity and mapper availability."""
-        from agents.normalization.mappers import MAPPER_REGISTRY
+        from normalization.mappers import MAPPER_REGISTRY
 
         db_ok = check_db_connection()
         return {
@@ -384,7 +384,7 @@ class NormalizationAgent(AgentBase):
         """Run the normalization graph and return the result event."""
         from contextlib import nullcontext
 
-        from agents.common.llm_adapter import get_tracer
+        from common.llm_adapter import get_tracer
 
         payload = event.payload
         batch_id = payload.get("batch_id", "")

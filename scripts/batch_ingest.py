@@ -1,7 +1,7 @@
 """
 Batch ingestion — budget-aware JSearch queries with API key rotation.
 
-Reads query configuration from agents/config/ingestion_queries.yaml.
+Reads query configuration from config/ingestion_queries.yaml.
 Rotates API keys when budget_per_key is reached or a 429 is received.
 Ingestion only — stages raw records for downstream processing.
 
@@ -10,9 +10,9 @@ Prerequisites:
   - PYTHON_DATABASE_URL for database staging
 
 Usage (from repo root):
-  python agents/scripts/batch_ingest.py                # run all queries
-  python agents/scripts/batch_ingest.py --dry-run      # show plan without API calls
-  python agents/scripts/batch_ingest.py --delay 10     # seconds between queries
+  python scripts/batch_ingest.py                # run all queries
+  python scripts/batch_ingest.py --dry-run      # show plan without API calls
+  python scripts/batch_ingest.py --delay 10     # seconds between queries
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from pathlib import Path
 import yaml
 
 # Path bootstrap
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -142,8 +142,8 @@ def main() -> None:
         return
 
     # Late imports
-    from agents.common.event_envelope import EventEnvelope
-    from agents.ingestion.agent import IngestionAgent
+    from common.event_envelope import EventEnvelope
+    from ingestion.agent import IngestionAgent
 
     agent = IngestionAgent()
     current_key_idx = 0
@@ -236,7 +236,7 @@ def main() -> None:
         keys_used=current_key_idx + 1,
     )
     print(f"\nDone. {total_staged} records staged. {total_requests_used} API requests used across {current_key_idx + 1} key(s).")
-    print("Run processing loop: python agents/scripts/run_processing_loop.py")
+    print("Run processing loop: python scripts/run_processing_loop.py")
 
 
 if __name__ == "__main__":

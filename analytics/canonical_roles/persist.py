@@ -13,8 +13,8 @@ import structlog
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from agents.analytics.clustering.types import ClusteringResult, RankedSkill, RankedTool
-from agents.common.data_store.models import CanonicalRole
+from analytics.clustering.types import ClusteringResult, RankedSkill, RankedTool
+from common.data_store.models import CanonicalRole
 
 log = structlog.get_logger()
 

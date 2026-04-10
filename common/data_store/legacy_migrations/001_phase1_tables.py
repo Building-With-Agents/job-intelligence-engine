@@ -5,10 +5,10 @@ from __future__ import annotations
 
 These numbered raw-SQL migrations were **removed** in commit
 ``65b81b2b315b97aefdde0c60aee97f1af45fa1ae`` in favor of ORM + consolidated
-``run_migrations`` in ``agents/common/data_store/migrations.py``. This file was
+``run_migrations`` in ``common/data_store/migrations.py``. This file was
 restored under ``legacy_migrations/`` so old runbooks keep a reference (the old
 ``migrations/001_*.py`` path conflicts with the ``migrations.py`` module).
-**Do** prefer ``from agents.common.data_store.migrations import run_migrations`` for new work.
+**Do** prefer ``from common.data_store.migrations import run_migrations`` for new work.
 
 ---
 
@@ -36,7 +36,7 @@ The migration is safe to run multiple times. It uses PostgreSQL syntax
 `postgresql+psycopg2://` URL).
 
 **Note:** The canonical pipeline schema today lives under ``dbo`` and is created
-via :func:`agents.common.data_store.migrations.run_migrations` (ORM +
+via :func:`common.data_store.migrations.run_migrations` (ORM +
 consolidated DDL). Keep this script for branch compatibility and legacy
 environments; greenfield setups should prefer ``run_migrations(get_engine())``.
 """

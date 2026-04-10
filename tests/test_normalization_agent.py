@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.event_envelope import EventEnvelope
-from agents.normalization.agent import NormalizationAgent
+from common.event_envelope import EventEnvelope
+from normalization.agent import NormalizationAgent
 
 
 class TestNormalizationAgent:

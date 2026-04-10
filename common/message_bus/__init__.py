@@ -1,7 +1,7 @@
 """Message bus abstractions and shared contracts."""
 
-from agents.common.message_bus.base import EventBusBase
-from agents.common.message_bus.candidate_factories import (
+from common.message_bus.base import EventBusBase
+from common.message_bus.candidate_factories import (
     FakeKafkaBroker,
     FakeKafkaConsumer,
     FakeKafkaProducer,
@@ -14,7 +14,7 @@ from agents.common.message_bus.candidate_factories import (
     build_live_redis_candidate,
     build_transport_candidates,
 )
-from agents.common.message_bus.comparison import (
+from common.message_bus.comparison import (
     ComparisonScenario,
     DrainStats,
     ProducerCrashResult,
@@ -32,7 +32,7 @@ from agents.common.message_bus.comparison import (
     run_transport_comparison,
     snapshot_counters,
 )
-from agents.common.message_bus.contracts import (
+from common.message_bus.contracts import (
     EVENT_TYPE_KEY,
     MAX_EVENT_TYPE_LENGTH,
     ORCHESTRATION_ONLY_CONTROL_EVENTS,
@@ -50,14 +50,14 @@ from agents.common.message_bus.contracts import (
     validate_handler,
     validate_subscriber_id,
 )
-from agents.common.message_bus.in_process import InProcessEventBus
-from agents.common.message_bus.kafka import (
+from common.message_bus.in_process import InProcessEventBus
+from common.message_bus.kafka import (
     KafkaDependencyError,
     KafkaEventBus,
     KafkaEventBusError,
     KafkaHandlerExecutionError,
 )
-from agents.common.message_bus.redis_streams import (
+from common.message_bus.redis_streams import (
     HandlerExecutionError,
     RedisDependencyError,
     RedisStreamsError,

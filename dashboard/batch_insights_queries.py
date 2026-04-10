@@ -12,8 +12,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from agents.dashboard.readonly_engine import get_dashboard_engine
-from agents.dashboard.relation_safe import is_undefined_relation_error, read_sql_relation_safe
+from dashboard.readonly_engine import get_dashboard_engine
+from dashboard.relation_safe import is_undefined_relation_error, read_sql_relation_safe
 
 
 def _norm_count(engine: Any) -> int:

@@ -1,7 +1,7 @@
 # ruff: noqa: T201
 """Seed dbo.normalized_jobs from JSON fixtures (no JSearch / LangSmith).
 
-Selects the 20 most recently modified ``*.json`` files under ``agents/data/fixtures/``,
+Selects the 20 most recently modified ``*.json`` files under ``data/fixtures/``,
 extracts job-shaped objects (``title`` + ``company``), maps them to ``NormalizedJob``,
 and inserts via ``PYTHON_DATABASE_URL``.
 
@@ -17,7 +17,7 @@ inserted and the success line matches the assignment.
 
 Usage (repo root, venv, ``PYTHON_DATABASE_URL`` set):
 
-    python agents/scripts/seed_from_fixtures.py
+    python scripts/seed_from_fixtures.py
 """
 
 from __future__ import annotations
@@ -30,14 +30,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-from agents.common.data_store.database import check_db_connection, session_scope  # noqa: E402
-from agents.common.data_store.models import NormalizedJob  # noqa: E402
+from common.data_store.database import check_db_connection, session_scope  # noqa: E402
+from common.data_store.models import NormalizedJob  # noqa: E402
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "data" / "fixtures"
 INGESTION_RUN_ID = "fixture-seed"
@@ -210,7 +210,7 @@ def main() -> int:
 
     print(f"Using {len(files)} most recent fixture file(s) by mtime:")
     for p in files:
-        print(f"  - {p.relative_to(Path(__file__).resolve().parents[2])}")
+        print(f"  - {p.relative_to(Path(__file__).resolve().parents[1])}")
 
     raw_records = _collect_job_records(files)
     records = _pad_to_count(raw_records, TARGET_COUNT)

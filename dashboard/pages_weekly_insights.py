@@ -15,8 +15,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from agents.dashboard.pages_observability import _staleness_banner
-from agents.dashboard.weekly_insights_queries import (
+from dashboard.pages_observability import _staleness_banner
+from dashboard.weekly_insights_queries import (
     fetch_insight_summary_placeholder,
     fetch_posting_freshness_placeholder,
     fetch_role_snapshot_weekly_placeholder,

@@ -1,7 +1,7 @@
 """
 Run the full pipeline with Redis Streams as the message bus and emit metrics + HTML report.
 
-**Phase 1 default:** use ``agents/pipeline_runner.py`` (sequential agents, no Redis).
+**Phase 1 default:** use ``pipeline_runner.py`` (sequential agents, no Redis).
 This script is an optional **Phase 2 / SA #14 prototype** for external-bus validation;
 it is not required for normal development or CI.
 
@@ -10,11 +10,11 @@ Runs with a limit of 10 jobs (ingestion + skills extraction) for faster runs. To
 - Set env SKILLS_EXTRACTION_MAX_JOBS (default 10) to cap skills extraction work items.
 
 Usage (from repo root, venv activated):
-  python agents/pipeline_runner.py
-  python -m agents.scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
-  python -m agents.scripts.run_full_pipeline_redis  # uses REDIS_URL from env
+  python pipeline_runner.py
+  python -m scripts.run_full_pipeline_redis --redis-url redis://localhost:6379/0
+  python -m scripts.run_full_pipeline_redis  # uses REDIS_URL from env
 
-Redis is only required for this script. Output: agents/eval/full_pipeline_redis_metrics.json and .html.
+Redis is only required for this script. Output: eval/full_pipeline_redis_metrics.json and .html.
 """
 # ruff: noqa: T201
 
@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -42,22 +42,22 @@ try:
 except ImportError:
     pass
 
-from agents.analytics.agent import AnalyticsAgent
-from agents.analytics.agent import register_alert_bus as register_analytics_alert_bus
-from agents.common.event_envelope import EventEnvelope
-from agents.common.llm_adapter import register_alert_bus as register_llm_alert_bus
-from agents.common.message_bus.redis_streams import (
+from analytics.agent import AnalyticsAgent
+from analytics.agent import register_alert_bus as register_analytics_alert_bus
+from common.event_envelope import EventEnvelope
+from common.llm_adapter import register_alert_bus as register_llm_alert_bus
+from common.message_bus.redis_streams import (
     RedisDependencyError,
     RedisStreamsError,
     RedisStreamsEventBus,
 )
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.agent import register_alert_bus as register_enrichment_alert_bus
-from agents.ingestion.agent import IngestionAgent
-from agents.normalization.agent import NormalizationAgent
-from agents.orchestration.agent import OrchestrationAgent
-from agents.skills_extraction.agent import SkillsExtractionAgent
-from agents.visualization.agent import VisualizationAgent
+from enrichment.agent import EnrichmentAgent
+from enrichment.agent import register_alert_bus as register_enrichment_alert_bus
+from ingestion.agent import IngestionAgent
+from normalization.agent import NormalizationAgent
+from orchestration.agent import OrchestrationAgent
+from skills_extraction.agent import SkillsExtractionAgent
+from visualization.agent import VisualizationAgent
 
 STREAM_PREFIX = "pipeline"
 STAGES = [

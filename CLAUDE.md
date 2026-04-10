@@ -10,7 +10,7 @@ Source of truth: `job_intelligence_engine_architecture.docx` — see `docs/plann
 
 **Job Intelligence Engine** — an eight-agent (Phase 1) / nine-agent (Phase 2) Python pipeline that ingests, normalizes, enriches, and analyzes external job postings for the WFD OS platform. **SQLAlchemy is the single database authority.** All database tables are agent-managed via SQLAlchemy.
 
-This repo was extracted from `watechcoalition/agents/` into a standalone repository. The Next.js frontend remains in the watechcoalition repo (legacy, being replaced by wfd-os). See also: `Building-With-Agents/wfd-os` (Phase 2 platform).
+This repo was extracted from `job-intelligence-engine/` into a standalone repository. The Next.js frontend remains in the watechcoalition repo (legacy, being replaced by wfd-os). See also: `Building-With-Agents/wfd-os` (Phase 2 platform).
 
 ## Related Repos
 

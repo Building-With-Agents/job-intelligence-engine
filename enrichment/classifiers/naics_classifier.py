@@ -1,10 +1,10 @@
 """NAICS 2022 industry classification using ``dbo.naics`` reference rows only.
 
-Mirrors the defensive pattern in :mod:`agents.enrichment.classifiers.soc_classifier`:
+Mirrors the defensive pattern in :mod:`enrichment.classifiers.soc_classifier`:
 narrow candidates from the database, prompt the LLM to pick exactly one code or
 ``unknown``, then re-validate against the candidate set.
 
-LLM calls use :func:`agents.common.llm_client.invoke_structured_extraction_llm` so
+LLM calls use :func:`common.llm_client.invoke_structured_extraction_llm` so
 token usage and cost are written to ``llm_audit_log`` via ``log_extraction_event``.
 """
 
@@ -17,9 +17,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from agents.common.data_store.models import NAICS
-from agents.common.llm_client import invoke_structured_extraction_llm
-from agents.enrichment.classification import tokenize
+from common.data_store.models import NAICS
+from common.llm_client import invoke_structured_extraction_llm
+from enrichment.classification import tokenize
 
 log = structlog.get_logger()
 

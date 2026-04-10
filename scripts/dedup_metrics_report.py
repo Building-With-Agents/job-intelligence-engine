@@ -3,7 +3,7 @@
 Usage (repo root, with ``PYTHON_DATABASE_URL`` in ``.env``)::
 
     py -3.11 -m agents.scripts.dedup_metrics_report
-    py -3.11 -m agents.scripts.dedup_metrics_report --output agents/data/reports/dedup_metrics.html --top-n 30 --open
+    py -3.11 -m agents.scripts.dedup_metrics_report --output data/reports/dedup_metrics.html --top-n 30 --open
 
 Loads ``.env`` from repo root like ``db_check.py``. No long-running server;
 open the generated HTML in a browser.
@@ -23,10 +23,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
 # Repo root on sys.path (parent of ``agents/``)
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 
-from agents.common.env import load_repo_root_dotenv  # noqa: E402
+from common.env import load_repo_root_dotenv  # noqa: E402
 
 load_repo_root_dotenv()
 

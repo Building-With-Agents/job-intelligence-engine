@@ -1,7 +1,7 @@
 """Company name normalization and resolution (#95).
 
 Phase 2 name-matching utilities; implementation lives here (not
-``agents/enrichment/resolution.py`` from the issue text).
+``enrichment/resolution.py`` from the issue text).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ try:
 except ImportError:  # pragma: no cover - exercised only in alternate envs
     from thefuzz import fuzz
 
-from agents.common.data_store.models import Company
+from common.data_store.models import Company
 
 FUZZY_THRESHOLD = 85
 

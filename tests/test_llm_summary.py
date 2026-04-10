@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from agents.analytics.insights.freshness import PostingFreshnessResult
-from agents.analytics.insights.llm_summary import (
+from analytics.insights.freshness import PostingFreshnessResult
+from analytics.insights.llm_summary import (
     FALLBACK_TEMPLATE,
     generate_summaries,
     generate_summary,
 )
-from agents.analytics.insights.trajectory import TrajectoryEntry
+from analytics.insights.trajectory import TrajectoryEntry
 
 
 def _sample_freshness() -> list[PostingFreshnessResult]:
@@ -34,7 +34,7 @@ def _sample_trajectory() -> TrajectoryEntry:
     return TrajectoryEntry(trend="rising", delta=12.0, confidence=0.91)
 
 
-@patch("agents.analytics.insights.llm_summary.complete")
+@patch("analytics.insights.llm_summary.complete")
 def test_llm_success_sets_flags_and_model(mock_complete):
     mock_complete.return_value = {
         "content": "Paragraph one.\n\nParagraph two.\n\nParagraph three.",
@@ -55,7 +55,7 @@ def test_llm_success_sets_flags_and_model(mock_complete):
     mock_complete.assert_called_once()
 
 
-@patch("agents.analytics.insights.llm_summary.complete")
+@patch("analytics.insights.llm_summary.complete")
 def test_llm_exception_uses_fallback(mock_complete):
     mock_complete.side_effect = RuntimeError("api down")
     traj = _sample_trajectory()
@@ -66,7 +66,7 @@ def test_llm_exception_uses_fallback(mock_complete):
     assert "Generated from template" in r["summary_text"]
 
 
-@patch("agents.analytics.insights.llm_summary.complete")
+@patch("analytics.insights.llm_summary.complete")
 def test_empty_content_uses_fallback(mock_complete):
     mock_complete.return_value = {
         "content": "   ",
@@ -84,7 +84,7 @@ def test_sector_key_sets_sector_label_only():
         "sector:healthcare": TrajectoryEntry(trend="stable", delta=0.0, confidence=0.8),
     }
     fresh = _sample_freshness()
-    with patch("agents.analytics.insights.llm_summary.complete") as mock_complete:
+    with patch("analytics.insights.llm_summary.complete") as mock_complete:
         mock_complete.return_value = {
             "content": "x",
             "success": True,
@@ -98,7 +98,7 @@ def test_sector_key_sets_sector_label_only():
 
 def test_skill_key_sets_skill_label_only():
     tm = {"Python": TrajectoryEntry(trend="rising", delta=1.0, confidence=0.9)}
-    with patch("agents.analytics.insights.llm_summary.complete") as mock_complete:
+    with patch("analytics.insights.llm_summary.complete") as mock_complete:
         mock_complete.return_value = {
             "content": "y",
             "success": True,
@@ -114,7 +114,7 @@ def test_generate_summaries_mixed_map_order_and_labels():
         "Python": TrajectoryEntry(trend="rising", delta=1.0, confidence=0.9),
         "sector:finance": TrajectoryEntry(trend="declining", delta=-2.0, confidence=0.7),
     }
-    with patch("agents.analytics.insights.llm_summary.complete") as mock_complete:
+    with patch("analytics.insights.llm_summary.complete") as mock_complete:
         mock_complete.return_value = {
             "content": "ok",
             "success": True,
@@ -126,7 +126,7 @@ def test_generate_summaries_mixed_map_order_and_labels():
     assert out[1]["sector_label"] == "finance" and out[1]["skill_label"] is None
 
 
-@patch("agents.analytics.insights.llm_summary.complete")
+@patch("analytics.insights.llm_summary.complete")
 def test_fallback_contains_numeric_trend_and_delta(mock_complete):
     mock_complete.side_effect = ValueError("no network")
     traj = TrajectoryEntry(trend="declining", delta=-7.0, confidence=0.55)
@@ -154,7 +154,7 @@ def test_fallback_contains_numeric_trend_and_delta(mock_complete):
 
 
 def test_generate_summary_never_raises():
-    with patch("agents.analytics.insights.llm_summary.complete") as mock_complete:
+    with patch("analytics.insights.llm_summary.complete") as mock_complete:
         mock_complete.side_effect = RuntimeError("anything")
         r = generate_summary("X", TrajectoryEntry(trend="stable", delta=0.0, confidence=1.0), [])
     assert r["summary_text"]

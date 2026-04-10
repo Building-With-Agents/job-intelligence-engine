@@ -2,7 +2,7 @@
 
 ``EnrichedJobProfile`` aggregates job context with optional BLS / O*NET / Census payloads.
 ``job_record`` is a ``dict`` for pipeline compatibility (same shape as a serialized
-:class:`~agents.common.types.job_record.JobRecord` plus extraction fields where present).
+:class:`~common.types.job_record.JobRecord` plus extraction fields where present).
 
 Cross-pair field names (``soc_code``, ``naics_code``, canonical ``employer`` vs
 ``employer_profile``): ``.cursor/rules/integration-schema.mdc`` § Nestor + Fatima.
@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from agents.enrichment.adapters.models import OccupationProfile, RegionalProfile, WageEstimate
+from enrichment.adapters.models import OccupationProfile, RegionalProfile, WageEstimate
 
 
 class EnrichedJobProfile(BaseModel):

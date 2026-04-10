@@ -15,10 +15,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agents.enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
-from agents.enrichment.dedup.text import build_dedup_text
-from agents.enrichment.dedup.vectors import cosine_similarity, parse_stored_embedding
-from agents.skills_extraction.extractors.taxonomy import _embed_texts_azure
+from enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
+from enrichment.dedup.text import build_dedup_text
+from enrichment.dedup.vectors import cosine_similarity, parse_stored_embedding
+from skills_extraction.extractors.taxonomy import _embed_texts_azure
 
 CalibrationDecision = Literal["tp", "tn", "fp", "fn"]
 EmbedTextsFn = Callable[[list[str]], list[list[float]] | None]

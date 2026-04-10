@@ -5,10 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from agents.analytics.insights.freshness import PostingFreshnessResult
-from agents.analytics.insights.llm_summary import SummaryResult
-from agents.analytics.insights.trajectory import TrajectoryEntry
-from agents.common.event_envelope import EventEnvelope
+from analytics.insights.freshness import PostingFreshnessResult
+from analytics.insights.llm_summary import SummaryResult
+from analytics.insights.trajectory import TrajectoryEntry
+from common.event_envelope import EventEnvelope
 
 _ANALYTICS_AGENT_ID = "analytics-agent"
 

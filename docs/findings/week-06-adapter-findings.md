@@ -2,7 +2,7 @@
 
 ## What I tested
 
-- SQLAlchemy `SOCC` model in `agents/common/data_store/models.py` (`dbo.socc`): `session.execute(select(SOCC).limit(5))` returns rows when the database is available and migrated. Pair B can `from agents.common.data_store.models import SOCC` and query with a scoped session.
+- SQLAlchemy `SOCC` model in `common/data_store/models.py` (`dbo.socc`): `session.execute(select(SOCC).limit(5))` returns rows when the database is available and migrated. Pair B can `from agents.common.data_store.models import SOCC` and query with a scoped session.
 - Phase 1 mocks: `MockBLSAdapter.get_wage_data(soc, region)`, `MockONETAdapter.get_occupation_details` / `get_soc_crosswalk`, `MockCensusAdapter.get_regional_demographics` — async contracts, Pydantic return types (`WageEstimate`, `OccupationProfile`, `RegionalProfile`, `SOCMatch`).
 - `ExternalEnrichmentFacade.fetch_for_posting` merges adapter outputs into enrichment dicts as JSON-serializable `model_dump()` payloads.
 

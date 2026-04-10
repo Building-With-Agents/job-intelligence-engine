@@ -46,7 +46,7 @@ The comparison harness runs a fixed scenario (synthetic `IngestBatch` → handle
 **CLI (text output)**
 
 ```bash
-python -m agents.common.message_bus.run_comparison [options]
+python -m common.message_bus.run_comparison [options]
 ```
 
 From repo root. Useful options: `--count 1000`, `--seed 42`, `--skip-replay` to disable crash/replay, `--format markdown|csv|json`, `--output <path>`, `--redis-url <url>`, `--kafka-bootstrap-servers <host:port,...>`.
@@ -56,7 +56,7 @@ From repo root. Useful options: `--count 1000`, `--seed 42`, `--skip-replay` to 
 Generates a single HTML file with bar charts (throughput, latency, replay) and a full results table. No server required; open the file in a browser.
 
 ```bash
-python -m agents.common.message_bus.generate_report [options]
+python -m common.message_bus.generate_report [options]
 ```
 
-From repo root. Options: `--count 1000`, `--seed 42`, `--crash-at 500`, `--skip-replay`, `--output <path>` (default `agents/docs/exp004_transport_report.html`), `--redis-url`, `--kafka-bootstrap-servers`.
+From repo root. Options: `--count 1000`, `--seed 42`, `--crash-at 500`, `--skip-replay`, `--output <path>` (default `docs/exp004_transport_report.html`), `--redis-url`, `--kafka-bootstrap-servers`.

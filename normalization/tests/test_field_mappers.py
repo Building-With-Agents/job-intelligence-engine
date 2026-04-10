@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from agents.common.types.raw_job_record import RawJobRecord
-from agents.normalization.field_mappers.jsearch_mapper import JSearchMapper
-from agents.normalization.field_mappers.scraper_mapper import ScraperMapper
+from common.types.raw_job_record import RawJobRecord
+from normalization.field_mappers.jsearch_mapper import JSearchMapper
+from normalization.field_mappers.scraper_mapper import ScraperMapper
 
 
 class TestJSearchMapper:

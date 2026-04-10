@@ -10,11 +10,11 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-from agents.common.event_envelope import EventEnvelope
-from agents.enrichment.agent import EnrichmentAgent
-from agents.enrichment.classifiers.spam_preview import SpamPreviewResult
-from agents.enrichment.dedup.types import FuzzyDedupResult
-from agents.tests.db_seed_enrichment_e2e import (
+from common.event_envelope import EventEnvelope
+from enrichment.agent import EnrichmentAgent
+from enrichment.classifiers.spam_preview import SpamPreviewResult
+from enrichment.dedup.types import FuzzyDedupResult
+from tests.db_seed_enrichment_e2e import (
     EnrichmentE2ESeed,
     seed_enrichment_e2e,
     teardown_enrichment_e2e,
@@ -137,8 +137,8 @@ def _run_agent_with_dedup_mock(
         used_heuristic=False,
     )
     with (
-        patch("agents.enrichment.agent.score_spam_preview", return_value=spam_ret),
-        patch("agents.enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_ret),
+        patch("enrichment.agent.score_spam_preview", return_value=spam_ret),
+        patch("enrichment.job_postings_promotion.run_fuzzy_dedup", return_value=dedup_ret),
     ):
         agent = EnrichmentAgent()
         ev = EventEnvelope(

@@ -92,31 +92,31 @@ This ensures consistent enrichment signals across downstream agents, analytics, 
 ## Data / Evidence
 
 - Implementation:
-  - `agents/enrichment/classifiers/temporal_period.py`
-  - `agents/enrichment/classifiers/borderplex_subregion.py`
-  - `agents/enrichment/job_postings_promotion.py`
-  - `agents/enrichment/agent.py`
-- Temporal classifier tests: `agents/enrichment/tests/test_temporal_period.py`
+  - `enrichment/classifiers/temporal_period.py`
+  - `enrichment/classifiers/borderplex_subregion.py`
+  - `enrichment/job_postings_promotion.py`
+  - `enrichment/agent.py`
+- Temporal classifier tests: `enrichment/tests/test_temporal_period.py`
   with **9 passed**, covering boundaries, mid-bucket behavior, `None`, and UTC
   calendar-date handling.
 - Borderplex classifier tests:
-  `agents/enrichment/tests/test_borderplex_subregion.py` with **20 passed**,
+  `enrichment/tests/test_borderplex_subregion.py` with **20 passed**,
   covering positive metro labels, remote/regional fallback, normalization,
   conflicting signals, and allowed-output invariants.
 - Runtime-path promotion tests:
-  `agents/enrichment/tests/test_job_postings_promotion.py` passed, including
+  `enrichment/tests/test_job_postings_promotion.py` passed, including
   derived temporal and subregion values bound into the promotion write path.
 - Enrichment agent runtime tests:
-  `agents/tests/test_enrichment_agent.py` passed, including emitted
+  `tests/test_enrichment_agent.py` passed, including emitted
   `RecordEnriched` payload coverage for `temporal_period`,
   `borderplex_subregion`, the combined runtime derivation path, and the
   active `EnrichedJobProfile` handoff for both fields.
 - Clean-tier E2E persistence:
-  `agents/tests/test_enrichment_job_postings_e2e.py` passed for the live
+  `tests/test_enrichment_job_postings_e2e.py` passed for the live
   persisted clean-tier scenario, verifying stored `temporal_period` and
   `borderplex_subregion` values on `dbo.job_postings`.
 - Cross-layer consistency validation:
-  `agents/tests/test_enrichment_job_postings_e2e.py` also passed for one
+  `tests/test_enrichment_job_postings_e2e.py` also passed for one
   seeded representative record, verifying equality across
   `derive_enrichment_output_fields(...)`, the `EnrichedJobProfile` handoff,
   the emitted `RecordEnriched` payload, and persisted `dbo.job_postings`

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.common.types import JobRecord
-from agents.skills_extraction.extractors.tools import extract_tools
+from common.types import JobRecord
+from skills_extraction.extractors.tools import extract_tools
 
 
 def _job_record(**overrides: object) -> JobRecord:

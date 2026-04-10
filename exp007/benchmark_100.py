@@ -3,7 +3,7 @@ EXP-007 Day 1c: Run 100 events through each candidate and measure latency.
 
 Uses fixture postings (repeats to reach 100). Reports total time, p50, p95 per run.
 
-Run from repo root: python agents/exp007/benchmark_100.py
+Run from repo root: python exp007/benchmark_100.py
 """
 
 from __future__ import annotations
@@ -14,14 +14,14 @@ import time
 from pathlib import Path
 
 # Path bootstrap
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 import structlog  # noqa: E402
 
-from agents.exp007.langgraph_runner import run_two_agent_langgraph  # noqa: E402
-from agents.exp007.pure_python_runner import run_two_agent_pure_python  # noqa: E402
+from exp007.langgraph_runner import run_two_agent_langgraph  # noqa: E402
+from exp007.pure_python_runner import run_two_agent_pure_python  # noqa: E402
 
 log = structlog.get_logger()
 N = 100

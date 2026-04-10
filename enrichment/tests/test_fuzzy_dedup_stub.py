@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from agents.enrichment.dedup import (
+from enrichment.dedup import (
     DEFAULT_DEDUP_COSINE_THRESHOLD,
     FuzzyDedupResult,
     dedup_cosine_threshold,

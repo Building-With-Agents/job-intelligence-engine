@@ -17,7 +17,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from agents.common.data_store.models import (
+from common.data_store.models import (
     Base,
     JobIngestionRun,
     NormalizedJob,

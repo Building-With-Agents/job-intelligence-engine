@@ -123,8 +123,8 @@ def persist_posting_freshness_rows(rows: list[dict[str, Any]]) -> None:
     if not os.getenv("PYTHON_DATABASE_URL"):
         return
 
-    from agents.common.data_store.database import check_db_connection, session_scope
-    from agents.common.data_store.models import PostingFreshness
+    from common.data_store.database import check_db_connection, session_scope
+    from common.data_store.models import PostingFreshness
 
     if not check_db_connection():
         log.info(

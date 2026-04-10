@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from agents.analytics.insights.freshness import detect_staleness
-from agents.common.data_store.models import (
+from analytics.insights.freshness import detect_staleness
+from common.data_store.models import (
     FRESH_THRESHOLD_DAYS,
     STALE_THRESHOLD_DAYS,
 )

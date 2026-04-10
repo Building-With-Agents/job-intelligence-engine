@@ -2,8 +2,8 @@
 description: "Streamlit dashboard patterns: pages, caching, read-only DB, exports, staleness handling"
 alwaysApply: false
 globs:
-  - "agents/dashboard/**"
-  - "agents/visualization/**/*.py"
+  - "dashboard/**"
+  - "visualization/**/*.py"
 ---
 
 # Streamlit Dashboard Patterns
@@ -95,5 +95,5 @@ st.download_button(
 ## Running the Dashboard
 
 ```bash
-streamlit run agents/dashboard/streamlit_app.py
+streamlit run dashboard/streamlit_app.py
 ```

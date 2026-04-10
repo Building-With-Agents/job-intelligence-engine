@@ -5,28 +5,28 @@
 No `agents.skills_extraction` import chain — safe for environments without full agent deps beyond JSON + core helpers:
 
 ```bash
-python -m agents.eval.extraction_eval
+python -m eval.extraction_eval
 ```
 
 Uses `extraction_ground_truth.json` next to this README.
 
 ## New CLI (stub or full pipeline)
 
-Writes **JSON snapshots** under `agents/eval/runs/` and **Markdown prompt backlog** under `agents/eval/prompt_backlog/` (Mountain Time, `America/Denver`). Does **not** modify `prompt_iteration_log.md`.
+Writes **JSON snapshots** under `eval/runs/` and **Markdown prompt backlog** under `eval/prompt_backlog/` (Mountain Time, `America/Denver`). Does **not** modify `prompt_iteration_log.md`.
 
 ```bash
-python -m agents.eval.run_extraction_eval --mode stub --label baseline
-python -m agents.eval.run_extraction_eval --mode pipeline --label llm-sample --limit 5
-python -m agents.eval.run_extraction_eval --mode stub --no-artifacts
+python -m eval.run_extraction_eval --mode stub --label baseline
+python -m eval.run_extraction_eval --mode pipeline --label llm-sample --limit 5
+python -m eval.run_extraction_eval --mode stub --no-artifacts
 ```
 
 - **stub** — keyword heuristic (parity with legacy metrics).
-- **pipeline** — Pass 1 tools (`extract_tools`) + Pass 2 LLM skills (`extract_skills`); requires Azure/OpenAI env vars (see `agents/common/llm_client.py` and `EXTRACTION_*`).
+- **pipeline** — Pass 1 tools (`extract_tools`) + Pass 2 LLM skills (`extract_skills`); requires Azure/OpenAI env vars (see `common/llm_client.py` and `EXTRACTION_*`).
 
 ## Streamlit comparison UI (separate from pipeline dashboard)
 
 ```bash
-streamlit run agents/eval/streamlit_eval_app.py
+streamlit run eval/streamlit_eval_app.py
 ```
 
 Compare ground truth (path field) against **one** or **two** runs. Each run can be **Run now** (stub/pipeline) or **Load snapshot** (saved JSON or upload). Two-run layout shows aggregate **deltas**.
