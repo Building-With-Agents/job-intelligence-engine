@@ -4,7 +4,7 @@
 # Region filtering happens at enrichment (borderplex_subregion classifier),
 # NOT at ingestion — ingest broadly, filter on consumer side.
 
-budget_per_key: 500
+budget_per_key: 200
 
 queries:
   # --- Tier 1: Direct agentic/LLM-consumer roles ---
