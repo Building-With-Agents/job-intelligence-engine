@@ -1,12 +1,18 @@
 """
-Seed a fresh PostgreSQL database with reference data from JSON fixtures.
+Idempotent database seeder — reference data + agent pipeline data.
 
-Junior-dev tool: run after Docker Compose brings up the postgres container.
+Safe to re-run at any time: uses INSERT ... ON CONFLICT DO NOTHING so
+existing records are never overwritten or deleted.  New fixture records
+are added automatically.
+
+On a fresh database (no dbo schema), runs schema.sql DDL first.
+
 Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_pg_database.py
 
-Reads:  scripts/pg-seed-data/schema.sql         (DDL)
-        scripts/pg-seed-data/fixtures/*.json     (data)
+Reads:  scripts/pg-seed-data/schema.sql             (DDL — fresh DB only)
+        scripts/pg-seed-data/fixtures/*.json         (reference data)
+        scripts/pg-seed-data/agent-fixtures/*.json   (pipeline data, via seed_agent_data)
 Writes: PostgreSQL database specified by PYTHON_DATABASE_URL
 """
 
@@ -131,13 +137,22 @@ def wait_for_postgres(max_retries: int = 30, delay: float = 2.0) -> psycopg2.ext
     sys.exit(1)
 
 
-def run_schema_ddl(conn: psycopg2.extensions.connection) -> None:
-    """Execute schema.sql to create all tables.
+def run_schema_ddl_if_needed(conn: psycopg2.extensions.connection) -> bool:
+    """Run schema.sql DDL only if the dbo schema has no tables (fresh DB).
 
-    Drops and recreates the dbo schema for a clean start.  This makes
-    the script truly idempotent — safe to run against a fresh database
-    or one that already has tables.
+    Returns True if DDL was executed, False if skipped.
     """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'dbo'
+    """)
+    table_count = cur.fetchone()[0]
+    cur.close()
+
+    if table_count > 0:
+        print(f"  Schema already exists ({table_count} tables) — skipping DDL")
+        return False
+
     if not SCHEMA_FILE.exists():
         print(f"ERROR: Schema file not found: {SCHEMA_FILE}")
         sys.exit(1)
@@ -145,21 +160,16 @@ def run_schema_ddl(conn: psycopg2.extensions.connection) -> None:
     ddl = SCHEMA_FILE.read_text(encoding="utf-8")
     cur = conn.cursor()
     try:
-        # Drop existing dbo schema (CASCADE drops all objects inside it)
-        cur.execute("DROP SCHEMA IF EXISTS dbo CASCADE")
-        conn.commit()
-        print("  Dropped existing dbo schema")
-
-        # Now run the full DDL (creates schema + tables + indexes + FKs)
         cur.execute(ddl)
         conn.commit()
-        print("  Schema DDL executed successfully")
+        print("  Schema DDL executed successfully (fresh database)")
     except Exception as exc:
         conn.rollback()
         print(f"ERROR executing schema DDL: {exc}")
         sys.exit(1)
     finally:
         cur.close()
+    return True
 
 
 def get_dbo_tables(cur: psycopg2.extensions.cursor) -> list[str]:
@@ -172,31 +182,23 @@ def get_dbo_tables(cur: psycopg2.extensions.cursor) -> list[str]:
     return [row[0] for row in cur.fetchall()]
 
 
-def disable_fk_triggers(conn: psycopg2.extensions.connection, tables: list[str]) -> None:
-    """Disable all triggers (FK enforcement) on dbo tables."""
-    cur = conn.cursor()
-    for table in tables:
-        cur.execute(f'ALTER TABLE "dbo"."{table}" DISABLE TRIGGER ALL')
-    conn.commit()
-    cur.close()
-
-
-def enable_fk_triggers(conn: psycopg2.extensions.connection, tables: list[str]) -> None:
-    """Re-enable all triggers (FK enforcement) on dbo tables."""
-    cur = conn.cursor()
-    for table in tables:
-        cur.execute(f'ALTER TABLE "dbo"."{table}" ENABLE TRIGGER ALL')
-    conn.commit()
-    cur.close()
-
-
-def truncate_tables(conn: psycopg2.extensions.connection, tables: list[str]) -> None:
-    """Truncate all dbo tables (with CASCADE for FK safety)."""
-    cur = conn.cursor()
-    for table in tables:
-        cur.execute(f'TRUNCATE TABLE "dbo"."{table}" CASCADE')
-    conn.commit()
-    cur.close()
+def get_primary_key(cur: psycopg2.extensions.cursor, table: str) -> list[str]:
+    """Get primary key column(s) for a dbo table."""
+    cur.execute(
+        """
+        SELECT a.attname
+        FROM pg_index i
+        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+        JOIN pg_class c ON c.oid = i.indrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE i.indisprimary
+          AND c.relname = %s
+          AND n.nspname = 'dbo'
+        ORDER BY array_position(i.indkey, a.attnum)
+    """,
+        (table,),
+    )
+    return [row[0] for row in cur.fetchall()]
 
 
 def get_column_types(
@@ -224,18 +226,19 @@ def load_fixture(table_name: str) -> list[dict]:
     return json.loads(text)
 
 
-def insert_records(
+def upsert_records(
     conn: psycopg2.extensions.connection,
     table_name: str,
     records: list[dict],
     col_types: dict[str, str],
-) -> int:
-    """Insert records into a dbo table using fast batch inserts.
+    pk_cols: list[str],
+) -> tuple[int, int]:
+    """Insert records with ON CONFLICT DO NOTHING using fast batch inserts.
 
-    Returns count inserted.
+    Returns (inserted, skipped).
     """
     if not records:
-        return 0
+        return 0, 0
 
     cur = conn.cursor()
 
@@ -248,7 +251,7 @@ def insert_records(
 
     if not columns:
         cur.close()
-        return 0
+        return 0, 0
 
     # Build INSERT template with appropriate casts
     col_list = ", ".join(f'"{c}"' for c in columns)
@@ -263,7 +266,11 @@ def insert_records(
             placeholder_parts.append("%s")
     values_template = "(" + ", ".join(placeholder_parts) + ")"
 
-    insert_sql = f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES %s'
+    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
+    insert_sql = (
+        f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES %s '
+        f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+    )
 
     # Build values list
     values_list = []
@@ -277,25 +284,32 @@ def insert_records(
             page_size=1000,
         )
         conn.commit()
-        inserted = len(values_list)
+        inserted = cur.rowcount if cur.rowcount >= 0 else len(values_list)
+        skipped = len(values_list) - inserted
     except Exception as exc:
         conn.rollback()
         print(f"    BATCH ERROR: {str(exc)[:300]}")
         # Fall back to row-by-row to identify problematic rows
         inserted = 0
         for i, vals in enumerate(values_list):
-            row_sql = f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES {values_template}'
+            row_sql = (
+                f'INSERT INTO "dbo"."{table_name}" ({col_list}) '
+                f"VALUES {values_template} "
+                f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+            )
             try:
                 cur.execute(row_sql, vals)
                 conn.commit()
-                inserted += 1
+                if cur.rowcount > 0:
+                    inserted += 1
             except Exception as row_exc:
                 conn.rollback()
-                if inserted < 3:  # Only log first few errors
+                if i < 3:
                     print(f"    Row {i + 1} error: {str(row_exc)[:200]}")
+        skipped = len(values_list) - inserted
 
     cur.close()
-    return inserted
+    return inserted, skipped
 
 
 def run_agent_migrations(conn: psycopg2.extensions.connection) -> None:
@@ -326,9 +340,9 @@ def run_agent_migrations(conn: psycopg2.extensions.connection) -> None:
 
 
 def seed_database() -> None:
-    """Seed PostgreSQL with reference data from JSON fixtures."""
+    """Seed PostgreSQL with reference + agent pipeline data (idempotent)."""
     print("=" * 60)
-    print("PostgreSQL Database Seeder")
+    print("PostgreSQL Database Seeder (idempotent)")
     print("=" * 60)
 
     # ── Load metadata ─────────────────────────────────────────────
@@ -340,31 +354,26 @@ def seed_database() -> None:
     metadata = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
     expected_counts: dict[str, int] = metadata["counts"]
     print(f"\nFixtures: {len(expected_counts)} tables, "
-          f"{sum(expected_counts.values()):,} total rows expected")
+          f"{sum(expected_counts.values()):,} total rows in fixtures")
 
     # ── Connect (with retry for Docker startup) ────────────────────
     print("\nConnecting to PostgreSQL...")
     conn = wait_for_postgres()
 
-    # ── Step 1: Run schema DDL ─────────────────────────────────────
-    print("\nStep 1: Creating schema and tables...")
-    run_schema_ddl(conn)
+    # ── Step 1: Run schema DDL if fresh DB ─────────────────────────
+    print("\nStep 1: Checking schema...")
+    run_schema_ddl_if_needed(conn)
 
-    # ── Step 2: Get table list and disable FK triggers ──────────────
-    print("\nStep 2: Preparing for data load...")
+    # ── Step 2: Run agent migrations ───────────────────────────────
+    print("\nStep 2: Running agent migrations...")
+    run_agent_migrations(conn)
+
+    # ── Step 3: Upsert reference fixtures in FK-safe order ─────────
+    print("\nStep 3: Loading reference fixtures (ON CONFLICT DO NOTHING)...")
+
     cur = conn.cursor()
     dbo_tables = get_dbo_tables(cur)
     print(f"  Found {len(dbo_tables)} tables in dbo schema")
-
-    disable_fk_triggers(conn, dbo_tables)
-    print("  FK triggers disabled")
-
-    # ── Step 3: Truncate all tables (idempotent re-run) ─────────────
-    truncate_tables(conn, dbo_tables)
-    print("  All tables truncated")
-
-    # ── Step 4: Load fixtures in FK-safe order ──────────────────────
-    print("\nStep 3: Loading fixture data...")
 
     # Build ordered table list: explicit tiers first, then remaining
     ordered_tables: list[str] = []
@@ -379,14 +388,11 @@ def seed_database() -> None:
     ordered_tables.extend(sorted(remaining))
 
     total_inserted = 0
-    table_results: dict[str, tuple[int, int]] = {}  # table -> (inserted, expected)
+    total_skipped = 0
 
     for table_name in ordered_tables:
-        expected = expected_counts.get(table_name, 0)
-
         records = load_fixture(table_name)
-        if not records and expected == 0:
-            table_results[table_name] = (0, 0)
+        if not records:
             continue
 
         # Get column types for proper casting
@@ -395,59 +401,23 @@ def seed_database() -> None:
             print(f"  {table_name}: SKIPPED (table not in schema)")
             continue
 
-        inserted = insert_records(conn, table_name, records, col_types)
-        total_inserted += inserted
-        table_results[table_name] = (inserted, expected)
-
-        status = "OK" if inserted == expected else "WARN"
-        if expected == 0 and inserted == 0:
-            continue  # Don't print empty tables
-        print(f"  {status} {table_name}: {inserted:,} / {expected:,} rows")
-
-    cur.close()
-
-    # ── Step 5: Re-enable FK triggers ───────────────────────────────
-    print("\nStep 4: Re-enabling FK triggers...")
-    enable_fk_triggers(conn, dbo_tables)
-    print("  FK triggers re-enabled")
-
-    # ── Step 6: Run agent migrations ─────────────────────────────
-    print("\nStep 5: Running agent migrations...")
-    run_agent_migrations(conn)
-
-    # ── Step 7: Verify counts ───────────────────────────────────────
-    print("\nStep 6: Verifying row counts...")
-    cur = conn.cursor()
-    mismatches: list[str] = []
-    for table_name, (inserted, expected) in table_results.items():
-        if expected == 0:
+        pk_cols = get_primary_key(cur, table_name)
+        if not pk_cols:
+            print(f"  {table_name}: SKIPPED (no primary key found)")
             continue
-        cur.execute(f'SELECT count(*) FROM "dbo"."{table_name}"')
-        actual = cur.fetchone()[0]
-        if actual != expected:
-            mismatches.append(
-                f"  {table_name}: expected {expected:,}, got {actual:,}"
-            )
+
+        inserted, skipped = upsert_records(conn, table_name, records, col_types, pk_cols)
+        total_inserted += inserted
+        total_skipped += skipped
+
+        if inserted > 0 or skipped > 0:
+            print(f"  {table_name}: {inserted:,} new, {skipped:,} existing "
+                  f"(of {len(records):,} in fixture)")
+
     cur.close()
-    conn.close()
 
-    # ── Summary ──────────────────────────────────────────────────────
-    total_expected = sum(expected_counts.values())
-    tables_with_data = sum(1 for _, (i, e) in table_results.items() if e > 0)
-
-    print(f"\n{'=' * 60}")
-    print(f"Seed complete: {total_inserted:,} / {total_expected:,} rows "
-          f"across {tables_with_data} tables")
-
-    if mismatches:
-        print(f"\nWARNING: {len(mismatches)} count mismatches:")
-        for m in mismatches:
-            print(m)
-    else:
-        print("All row counts verified")
-
-    # ── Step 7: Seed agent pipeline data ─────────────────────────────
-    print("\nStep 7: Seeding agent pipeline data (enriched jobs, companies, NAICS)...")
+    # ── Step 4: Seed agent pipeline data ───────────────────────────
+    print("\nStep 4: Seeding agent pipeline data (enriched jobs, companies, NAICS)...")
     _seed_dir = str(Path(__file__).parent)
     if _seed_dir not in sys.path:
         sys.path.insert(0, _seed_dir)
@@ -458,9 +428,13 @@ def seed_database() -> None:
         print(f"  Agent pipeline seed failed: {exc}")
         print("  Run separately: python scripts/pg-seed-data/seed_agent_data.py")
 
-    print("\nNext steps:")
-    print("  1. Activate venv:  agents\\.venv\\Scripts\\Activate.ps1")
-    print("  2. Run pipeline:   python pipeline_runner.py")
+    conn.close()
+
+    # ── Summary ──────────────────────────────────────────────────────
+    print(f"\n{'=' * 60}")
+    print(f"Seed complete: {total_inserted:,} new rows inserted, "
+          f"{total_skipped:,} existing rows skipped")
+    print("Safe to re-run — existing data is never overwritten or deleted.")
     print("=" * 60)
 
 

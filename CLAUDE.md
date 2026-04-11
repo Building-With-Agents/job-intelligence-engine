@@ -525,8 +525,8 @@ python scripts/batch_ingest.py --dry-run    # show plan without API calls
 python scripts/run_processing_loop.py --batch-size 50 --delay 2
 python scripts/run_processing_loop.py --dry-run        # show pending counts
 
-# Seed local DB with enriched data (dev setup)
-python scripts/pg-seed-data/seed_agent_data.py
+# Seed local DB with reference + enriched data (idempotent, safe to re-run)
+python scripts/pg-seed-data/seed_pg_database.py
 
 # Run the Streamlit dashboard
 streamlit run dashboard/streamlit_app.py

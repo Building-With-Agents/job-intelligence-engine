@@ -64,14 +64,15 @@ def _load_config() -> dict:
 
 
 def _load_api_keys() -> list[str]:
-    """Load API keys from env vars: JSEARCH_API_KEY, JSEARCH_API_KEY_2."""
+    """Load API keys from env vars: JSEARCH_API_KEY, JSEARCH_API_KEY_2, ..., JSEARCH_API_KEY_N."""
     keys = []
     primary = os.getenv("JSEARCH_API_KEY", "").strip()
     if primary:
         keys.append(primary)
-    secondary = os.getenv("JSEARCH_API_KEY_2", "").strip()
-    if secondary:
-        keys.append(secondary)
+    for i in range(2, 11):  # support up to 10 keys
+        key = os.getenv(f"JSEARCH_API_KEY_{i}", "").strip()
+        if key:
+            keys.append(key)
     return keys
 
 
