@@ -213,17 +213,18 @@ To load the **shared fixture set** into the Azure DB (or any target DB):
    ```
 
 3. The seed script will:
-   - Apply `scripts/pg-seed-data/schema.sql` (recreates `dbo` schema and tables).
-   - Truncate all fixture-loaded tables, then insert in **FK-safe order** (tiers 0–4) so referential integrity is preserved.
+   - Create schema if needed (fresh DB only — skips if tables exist).
    - Run agent migrations (agent-managed tables and Phase 1 columns on `job_postings`).
+   - UPSERT fixtures in **FK-safe order** (tiers 0–4) — existing records are skipped, new records are added.
+   - Seed agent pipeline data (`agent-fixtures/*.json`) automatically.
 
-**Important:** The seed run is **full load**: it replaces the contents of all tables that have fixture files. Use it when you want the Azure DB to match the shared fixtures (e.g. after pulling the latest fixtures from git).
+**Important:** The seed is **idempotent** — it never deletes or overwrites existing data. Safe to re-run after pulling updated fixtures from git.
 
 ### Loading into specific tables only
 
 The standard seed loads **all** tables that have fixture files and respects foreign-key order. To update only **specific** tables in Azure:
 
-- **Option 1 — Full seed:** Run `seed_pg_database.py` against Azure with the full fixture set. This is the recommended way to “bring workflows together” so everyone has the same reference data.
+- **Option 1 — Full seed:** Run `seed_pg_database.py` against Azure with the full fixture set. This is the recommended way to “bring workflows together” so everyone has the same reference data. Idempotent — only adds missing records.
 - **Option 2 — Manual / one-off:** For a single table, you can:
   - Export only that table (e.g. by modifying the export script to a single table, or by querying the DB and saving JSON), then
   - Truncate that table in Azure and insert the rows (e.g. with a small script that reads the JSON and uses `COPY` or `INSERT`), **or**

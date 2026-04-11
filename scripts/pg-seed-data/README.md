@@ -18,20 +18,15 @@ docker compose --env-file .env.docker up postgres -d
 # 3. Install dependencies (if not done yet)
 pip install -r requirements.txt
 
-# 4. Seed reference data (tables, taxonomies, companies, etc.)
+# 4. Seed all data (reference + agent pipeline) — idempotent, safe to re-run
 python scripts/pg-seed-data/seed_pg_database.py
 
-# 5. Seed agent pipeline data (staging tables + enriched dbo.job_postings for analytics / dashboard)
-python scripts/pg-seed-data/seed_agent_data.py
-
-# 6. Verify — run the flywheel pipeline
+# 5. Verify — run the flywheel pipeline
 python scripts/batch_ingest.py --dry-run
 python scripts/run_processing_loop.py --dry-run
 ```
 
-**`seed_pg_database.py`** is **idempotent** for a full refresh: it truncates (nearly) all tables, then reloads reference fixtures — safe to re-run; you always get a clean reference baseline.
-
-**`seed_agent_data.py`** is a **separate** command (step 5): it UPSERTs pipeline snapshot rows from `agent-fixtures/*.json` without truncating reference tables. Run it after step 4.
+**`seed_pg_database.py`** is **idempotent**: it uses `INSERT ... ON CONFLICT DO NOTHING` so existing records are never overwritten or deleted. New fixture records are added automatically. Seeds both reference data (`fixtures/*.json`) and agent pipeline data (`agent-fixtures/*.json`) in one command.
 
 ## What Gets Seeded
 
@@ -64,34 +59,31 @@ The seed script populates **40 reference tables** with ~56,000 rows:
 ### What is NOT seeded
 
 - **PII tables** (users, jobseekers, employers, auth) — excluded for privacy
-- **Agent pipeline rows** — `seed_pg_database.py` creates empty agent tables via `run_migrations()`; load sample pipeline + enriched `job_postings` with step 5 (`seed_agent_data.py`) using `agent-fixtures/*.json`
+- **Agent pipeline rows** — `seed_pg_database.py` creates agent tables via `run_migrations()` and loads pipeline data from `agent-fixtures/*.json` automatically
 - **Skill embeddings** — the `embedding` column is excluded from fixtures (107MB of pgvector data). Regenerate via the admin tool if needed.
 
 ## How It Works
 
-### `seed_pg_database.py` (step 4 — reference data only)
+### `seed_pg_database.py` (one command seeds everything)
 
-This script does **all reference seeding** in **one** command (it does **not** load `agent-fixtures/`; use step 5 for that):
+Idempotent — safe to re-run at any time. Never deletes or overwrites existing data.
 
-1. **Creates schema** — runs `schema.sql` (DDL for all `dbo.*` tables, extensions, indexes)
-2. **Disables FK triggers** — allows loading in any order without constraint violations
-3. **Truncates all tables** — ensures idempotent re-runs
-4. **Loads JSON fixtures** — inserts data from `fixtures/*.json` in FK-safe tier order (parents before children)
-5. **Re-enables FK triggers** — restores referential integrity enforcement
-6. **Runs agent migrations** — creates empty agent-managed tables + adds Phase 1 columns to `job_postings`
-7. **Verifies row counts** — compares actual counts against `fixtures/metadata.json`
+1. **Checks schema** — if dbo schema has no tables (fresh DB), runs `schema.sql` DDL; otherwise skips
+2. **Runs agent migrations** — creates agent-managed tables + adds Phase 1 columns to `job_postings`
+3. **Loads reference fixtures** — `INSERT ... ON CONFLICT DO NOTHING` from `fixtures/*.json` in FK-safe tier order
+4. **Loads agent pipeline data** — calls `seed_agent_data.py` internally (same UPSERT pattern from `agent-fixtures/*.json`)
 
-### `seed_agent_data.py` (step 5 — pipeline snapshot)
+### `seed_agent_data.py` (called automatically, can also run standalone)
 
-Run **after** step 4. Loads `agent-fixtures/*.json` into staging/enrichment tables (and additional `job_postings` rows) via `INSERT … ON CONFLICT DO NOTHING`. Row counts are documented in `agent-fixtures/metadata.json`.
+Loads `agent-fixtures/*.json` into staging/enrichment tables (and additional `job_postings` rows) via `INSERT … ON CONFLICT DO NOTHING`. Row counts are documented in `agent-fixtures/metadata.json`.
 
 ## File Structure
 
 ```
 scripts/pg-seed-data/
   README.md                     ← This file
-  seed_pg_database.py           ← Seed reference data (junior devs run this)
-  seed_agent_data.py            ← Seed agent pipeline data (junior devs run this)
+  seed_pg_database.py           ← Seed everything: reference + pipeline (junior devs run this)
+  seed_agent_data.py            ← Pipeline data only (called by seed_pg_database.py, or standalone)
   export_pg_fixtures.py         ← Export reference data (admin only)
   export_agent_data.py          ← Export agent pipeline data (admin only)
   clean_stale_postings.py       ← Purge old pipeline data (admin only)
