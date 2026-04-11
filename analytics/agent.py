@@ -948,6 +948,7 @@ class AnalyticsAgent(BaseAgent):
 
         week_start = ctx["week_start"]
         rows = compute_geo_demand_weekly(session, week_start)
+        session.add_all(rows)
         ctx["geo_demand_weekly_rows"] = len(rows)
         log.info(
             "analytics_pipeline_step_7_complete",
