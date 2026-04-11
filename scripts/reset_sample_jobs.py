@@ -58,7 +58,7 @@ def reset_jobs(count: int, dry_run: bool) -> None:
 
     if not rows:
         print("No fully-enriched records found — nothing to reset.")
-        print("Tip: make sure you ran seed_pg_database.py + seed_agent_data.py first.")
+        print("Tip: make sure you ran seed_pg_database.py first.")
         return
 
     raw_ids  = [r.raw_id  for r in rows]

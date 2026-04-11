@@ -7,7 +7,7 @@
 -- common/data_store/migrations.py:run_migrations().
 --
 -- Usage: psql -U postgres -d talent_finder -f schema.sql
---        (or executed by seed_pg_database.py)
+--        (or executed by seed_pg_database.py on fresh databases only)
 -- =================================================================
 
 -- Extensions

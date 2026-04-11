@@ -1,16 +1,14 @@
 """
-Seed a local PostgreSQL database with agent pipeline data from JSON fixtures.
+Seed agent pipeline data (enriched jobs, companies, NAICS) from JSON fixtures.
 
-Junior-dev tool: run after seed_pg_database.py to populate enriched job postings
-so analytics and visualization dashboards have data to work with.
+Called automatically by seed_pg_database.py. Can also be run standalone.
+Uses UPSERT (INSERT ... ON CONFLICT DO NOTHING) — safe to run multiple times.
 
 Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_agent_data.py
 
 Reads:  scripts/pg-seed-data/agent-fixtures/*.json  (data)
 Writes: PostgreSQL database specified by PYTHON_DATABASE_URL
-
-Uses UPSERT (INSERT ... ON CONFLICT DO NOTHING) — safe to run multiple times.
 """
 
 from __future__ import annotations

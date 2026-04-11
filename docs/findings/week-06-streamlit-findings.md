@@ -78,7 +78,7 @@
 ### Local Docker / Compose
 
 - **`docker-compose.yml`:** Dropped obsolete top-level **`version`**. **`POSTGRES_PASSWORD`** and **`MSSQL_SA_PASSWORD`** use **compose defaults** when unset so Postgres can start without an empty password; **root `.env` still overrides** (e.g. align **`POSTGRES_PASSWORD`** with **`PYTHON_DATABASE_URL`**).
-- **Fresh DB workflow (documented in RUNBOOK / team):** `docker compose down -v` → `up -d postgres` → **`scripts/pg-seed-data/seed_pg_database.py`** (drops/rebuilds `dbo` + fixtures) → **`scripts/db_check.py migrate`** (agent tables) — **order: seed then migrate** because seed **`DROP SCHEMA dbo CASCADE`** would remove migration-only tables if migrate ran first.
+- **Fresh DB workflow (documented in RUNBOOK / team):** `docker compose down -v` → `up -d postgres` → **`scripts/pg-seed-data/seed_pg_database.py`** (creates schema if needed, runs migrations, seeds all data idempotently).
 
 ### Commands (quick reference)
 

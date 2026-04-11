@@ -69,7 +69,7 @@ python scripts/db_check.py counts
 | job_postings | 500+ (enriched, promoted records) |
 | llm_audit_log | 1,000+ (cumulative LLM call records) |
 
-If all tables show 0, the database has not been seeded. Run `python scripts/pg-seed-data/seed_agent_data.py` or ask your instructor to seed it.
+If all tables show 0, the database has not been seeded. Run `python scripts/pg-seed-data/seed_pg_database.py` or ask your instructor to seed it.
 
 ### Step 2 — Verify Ingestion outputs
 
@@ -794,7 +794,7 @@ Aggregate analytics across the full dataset using SQL GROUP BY queries.
 
 ### Seeded data (no pipeline run needed)
 
-If you seeded the database using `python scripts/pg-seed-data/seed_agent_data.py`, the dashboard will display the seeded fixture data immediately. This is useful for:
+If you seeded the database using `python scripts/pg-seed-data/seed_pg_database.py`, the dashboard will display the seeded fixture data immediately. This is useful for:
 - Students who want to explore the dashboard without running the pipeline
 - Demo prep when API keys or LLM budget are unavailable
 - Verifying dashboard functionality after code changes

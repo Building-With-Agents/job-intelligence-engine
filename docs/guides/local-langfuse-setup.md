@@ -64,7 +64,7 @@ LLM_PROVIDER=azure_openai
 If your local PostgreSQL is empty, seed it:
 
 ```bash
-python scripts/pg-seed-data/seed_agent_data.py
+python scripts/pg-seed-data/seed_pg_database.py
 ```
 
 ## 6. Run the Pipeline with Mock Traces
