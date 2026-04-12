@@ -34,7 +34,10 @@ This repo was extracted from `job-intelligence-engine/` into a standalone reposi
 6. **SQLAlchemy is the single database authority.** All schema changes go through `common/data_store/models.py` and `migrations.py`.
 7. **No credentials in code or logs.** Environment variables only.
 8. **Do NOT implement Phase 2 items during Phase 1** unless explicitly instructed.
-9. **All agent pipeline tables are permanent — never delete or truncate any of them.** Every table (`raw_ingested_jobs`, `job_ingestion_runs`, `normalized_jobs`, `normalization_quarantine`, `extracted_intelligence`, `llm_audit_log`) is retained for record keeping and model evaluation. `raw_ingested_jobs` is also the dedup fingerprint store — clearing it causes duplicate re-ingestion. To reset, spin a fresh Docker container (`docker compose down -v`) rather than deleting rows. `clean_stale_postings.py` is deprecated. **Test fixtures must never TRUNCATE or DELETE these tables** — use a unique test-run ID to tag inserted rows and delete only those rows in teardown.
+9. **All agent pipeline tables are permanent — never delete or truncate any of them.** Every table (`raw_ingested_jobs`, `job_ingestion_runs`, `normalized_jobs`, `normalization_quarantine`, `extracted_intelligence`, `llm_audit_log`) is retained for record keeping and model evaluation. `raw_ingested_jobs` is also the dedup fingerprint store — clearing it causes duplicate re-ingestion. `clean_stale_postings.py` is deprecated (no-op).
+   - **Export before any destructive operation.** Before running `docker compose down -v`, dropping tables, or any command that destroys data, always export current fixtures first: `python scripts/pg-seed-data/export_fixtures.py --scope all`. This ensures the latest pipeline output is committed and recoverable.
+   - **`docker compose down -v` is for dev-local Docker environments only.** Never run it against the admin source-of-truth database (Gary's local or Azure). The admin database is the origin for all fixtures — wiping it loses unrecoverable pipeline data.
+   - **Test fixtures must never TRUNCATE or DELETE these tables** — use a unique test-run ID to tag inserted rows and delete only those rows in teardown.
 
 ---
 
