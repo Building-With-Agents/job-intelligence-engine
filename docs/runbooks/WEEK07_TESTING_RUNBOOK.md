@@ -302,16 +302,19 @@ python scripts/run_processing_loop.py --max-iterations 1 --batch-size 5
 
 ### Re-running the enrichment pipeline (classification iteration)
 
-To iterate on SOC/NAICS/quality classification without re-ingesting from JSearch, clear the processing output and reset raw records to pending:
+To iterate on SOC/NAICS/quality classification without re-ingesting from JSearch, spin a
+fresh local database and re-seed from fixtures. Do **not** truncate `normalized_jobs`,
+`extracted_intelligence`, or `raw_ingested_jobs` — these are permanent audit tables.
 
 ```bash
-# 1. Clear processing output (keeps raw_ingested_jobs intact)
-python scripts/db_check.py query "TRUNCATE TABLE dbo.normalized_jobs CASCADE"
-python scripts/db_check.py query "TRUNCATE TABLE dbo.extracted_intelligence CASCADE"
-python scripts/db_check.py query "TRUNCATE TABLE dbo.employer_profiles CASCADE"
+# 1. Fresh local DB — YOUR local Docker volume only.
+#    DO NOT run this against the admin source-of-truth database (Gary's local or Azure).
+#    The admin database is the export origin; wiping it loses unrecoverable pipeline data.
+docker compose down -v
+docker compose --env-file .env.docker up postgres -d
 
-# 2. Reset raw records to pending (all or a subset)
-python scripts/db_check.py query "UPDATE dbo.raw_ingested_jobs SET processing_status = 'pending'"
+# 2. Re-seed from committed fixtures
+python scripts/pg-seed-data/seed_pg_database.py
 
 # 3. Re-run processing (normalize → extract → enrich)
 python scripts/run_processing_loop.py --batch-size 25 --delay 10
