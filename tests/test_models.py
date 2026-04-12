@@ -9,8 +9,6 @@ tables: raw_ingested_jobs, normalized_jobs, and job_ingestion_runs.
 
 import os
 import uuid
-from collections.abc import Iterator
-
 import pytest
 from sqlalchemy import create_engine, delete, select, text
 from sqlalchemy.engine import Engine
@@ -39,20 +37,6 @@ def engine() -> Engine:
     Base.metadata.create_all(engine)
     return engine
 
-
-@pytest.fixture(scope="session", autouse=True)
-def truncate_agent_tables(engine: Engine) -> Iterator[None]:
-    """
-    No-op fixture kept for backwards compatibility.
-
-    IMPORTANT: Do NOT truncate raw_ingested_jobs, normalized_jobs,
-    job_ingestion_runs, extracted_intelligence, normalization_quarantine,
-    or llm_audit_log. These are permanent audit tables — wiping them
-    against the shared dev DB destroys provenance and dedup state.
-    Tests must insert rows tagged with a unique test run ID and delete
-    only those rows in teardown.
-    """
-    yield
 
 
 @pytest.fixture

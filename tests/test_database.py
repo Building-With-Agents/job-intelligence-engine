@@ -9,8 +9,6 @@ ensure that the `job_postings` table has all Phase 1 extension columns.
 """
 
 import os
-from collections.abc import Iterator
-
 import pytest
 from sqlalchemy import MetaData, Table, create_engine, inspect, text
 from sqlalchemy.engine import Engine
@@ -36,20 +34,6 @@ def engine() -> Engine:
         raise RuntimeError("PYTHON_DATABASE_URL is not set")
     return create_engine(database_url, future=True)
 
-
-@pytest.fixture(scope="session", autouse=True)
-def truncate_agent_tables(engine: Engine) -> Iterator[None]:
-    """
-    No-op fixture kept for backwards compatibility.
-
-    IMPORTANT: Do NOT truncate raw_ingested_jobs, normalized_jobs,
-    job_ingestion_runs, extracted_intelligence, normalization_quarantine,
-    or llm_audit_log. These are permanent audit tables — wiping them
-    against the shared dev DB destroys provenance and dedup state.
-    Tests must insert rows tagged with a unique test run ID and delete
-    only those rows in teardown.
-    """
-    yield
 
 
 @pytest.mark.skipif(not os.getenv("PYTHON_DATABASE_URL"), reason="requires database")
