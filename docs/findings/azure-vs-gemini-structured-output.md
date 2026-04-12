@@ -87,21 +87,33 @@ more output tokens to produce the same task, which offsets its lower per-token p
 | enrichment-naics-classifier | $0.000278 | $0.000330 | Azure 16% cheaper |
 | enrichment-employer-classifier | $0.000308 | $0.000272 | Gemini 12% cheaper |
 
-**Actual per-job cost (Azure) from `llm_audit_log`:**
+**Actual per-job cost — verified from Azure Cost Management (`resumejobmatch` resource, Apr 3–12):**
 
-Total Azure cost across all agents: **$44.84** for **644 fully processed jobs** = **$0.07/job**
+| Meter | Tokens | Actual cost |
+|-------|--------|-------------|
+| gpt-4.1-mini input (regional) | 11,981,818 | $5.27 |
+| gpt-4.1-mini output (regional) | 4,455,196 | $7.84 |
+| gpt-4.1-mini cached input | 2,895,744 | $0.32 |
+| text-embedding-3-small | 1,431,459 | $0.03 |
+| **Total** | | **$13.46** |
+
+$13.46 ÷ 644 fully processed jobs = **$0.021/job** (~2 cents)
 
 | Scale | Azure Cost |
 |-------|-----------|
-| Per job | **$0.07** |
-| Per 1,000 jobs | $70 |
-| Per 30,000 jobs/month | **$2,100/month** |
+| Per job | **$0.021** |
+| Per 1,000 jobs | $21 |
+| Per 30,000 jobs/month | **$630/month** |
 
-> **Note on the Langfuse cost analysis script (`scripts/langfuse_cost_analysis.py`):**
-> The script samples 3,000 of 13,561 total Langfuse generations (~22%) and estimates
-> ~$4.57/1,000 jobs. This is a **15x underestimate** because the sample is not
-> representative of the full call volume. Use `llm_audit_log` totals for accurate
-> per-job cost calculations.
+> **`llm_audit_log.cost_usd` was overcounting by ~8.6x** — Azure deployment names like
+> `chat-gpt41mini` weren't in `MODEL_TIER_MAP` so costs were calculated using Claude Sonnet
+> pricing ($3.00/$15.00 per 1M) instead of gpt-4.1-mini pricing ($0.40/$1.60 per 1M).
+> Fixed in `common/llm_adapter.py` — all providers and models now have correct pricing entries
+> and future `llm_audit_log` records will be accurate. Historical records are overcounted.
+>
+> **Langfuse full-paginated analysis** (`scripts/langfuse_cost_analysis.py`) estimated
+> $5.89/1,000 jobs — closer to reality but still underestimates because it mixes Azure and
+> Gemini token counts when computing per-job averages. Use Azure Cost Management for ground truth.
 
 **Gemini per-job cost: undefined.** The Gemini run completed 5,002 LLM calls but
 produced only 2 jobs with any structured output — both containing 0 skills, 0 tasks,
@@ -217,10 +229,10 @@ Source: OpenAI Structured Outputs documentation and release blog.
    coverage on complex nested schemas (JSONSchemaBench). The extraction pipeline uses deeply
    nested schemas with arrays, optional fields, and enums — exactly the hard case.
 
-4. **Actual Azure cost:** $0.07/job → $2,100/month at 30k jobs/month. No valid Gemini
-   per-job cost can be computed from this run — 5,002 Gemini calls produced 0 usable
-   structured outputs. A valid cost comparison requires a Gemini run that delivers
-   complete structured extraction.
+4. **Actual Azure cost (from Azure billing):** $0.021/job → $630/month at 30k jobs/month.
+   No valid Gemini per-job cost can be computed from this run — 5,002 Gemini calls
+   produced 0 usable structured outputs. A valid cost comparison requires a Gemini run
+   that delivers complete structured extraction.
 
 5. **Latency data excluded:** Free-tier Gemini was rate-limited; those numbers are not valid
    for comparison. Latency is not a factor in this decision.

@@ -55,24 +55,71 @@ def get_tracer() -> LangfuseTracer | None:
     return _tracer
 
 # ---------------------------------------------------------------------------
-# Pricing (per token) — configurable via env vars
+# Pricing (per token) — all providers/models, configurable via env vars
+#
+# Keys map 1:1 to MODEL_TIER_MAP values. Add new models here and add
+# their deployment/API names to MODEL_TIER_MAP below.
 # ---------------------------------------------------------------------------
 
-PRICING = {
+PRICING: dict[str, dict[str, float]] = {
+    # Anthropic
     "sonnet": {
-        "input": float(os.getenv("SONNET_INPUT_COST_PER_TOKEN", str(3.00 / 1_000_000))),
+        "input":  float(os.getenv("SONNET_INPUT_COST_PER_TOKEN",  str(3.00  / 1_000_000))),
         "output": float(os.getenv("SONNET_OUTPUT_COST_PER_TOKEN", str(15.00 / 1_000_000))),
     },
     "haiku": {
-        "input": float(os.getenv("HAIKU_INPUT_COST_PER_TOKEN", str(0.25 / 1_000_000))),
+        "input":  float(os.getenv("HAIKU_INPUT_COST_PER_TOKEN",  str(0.25 / 1_000_000))),
         "output": float(os.getenv("HAIKU_OUTPUT_COST_PER_TOKEN", str(1.25 / 1_000_000))),
+    },
+    # Azure OpenAI / OpenAI — use regional list prices; override via env if negotiated rates differ
+    "gpt-4.1-mini": {
+        "input":  float(os.getenv("GPT41MINI_INPUT_COST_PER_TOKEN",  str(0.40 / 1_000_000))),
+        "output": float(os.getenv("GPT41MINI_OUTPUT_COST_PER_TOKEN", str(1.60 / 1_000_000))),
+    },
+    "gpt-4.1": {
+        "input":  float(os.getenv("GPT41_INPUT_COST_PER_TOKEN",  str(2.00 / 1_000_000))),
+        "output": float(os.getenv("GPT41_OUTPUT_COST_PER_TOKEN", str(8.00 / 1_000_000))),
+    },
+    "gpt-4o": {
+        "input":  float(os.getenv("GPT4O_INPUT_COST_PER_TOKEN",  str(2.50 / 1_000_000))),
+        "output": float(os.getenv("GPT4O_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
+    },
+    "gpt-4o-mini": {
+        "input":  float(os.getenv("GPT4OMINI_INPUT_COST_PER_TOKEN",  str(0.15 / 1_000_000))),
+        "output": float(os.getenv("GPT4OMINI_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
+    },
+    # Gemini
+    "gemini-2.5-flash": {
+        "input":  float(os.getenv("GEMINI_FLASH_INPUT_COST_PER_TOKEN",  str(0.15 / 1_000_000))),
+        "output": float(os.getenv("GEMINI_FLASH_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
+    },
+    "gemini-2.5-pro": {
+        "input":  float(os.getenv("GEMINI_PRO_INPUT_COST_PER_TOKEN",  str(1.25 / 1_000_000))),
+        "output": float(os.getenv("GEMINI_PRO_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
     },
 }
 
-# Model name → tier mapping
-MODEL_TIER_MAP = {
+# Model/deployment name → PRICING key.
+# Covers: Anthropic model IDs, Azure API model names, Azure deployment names,
+# Gemini model names. Add new entries here when adding deployments.
+MODEL_TIER_MAP: dict[str, str] = {
+    # Anthropic
     "claude-sonnet-4-5": "sonnet",
-    "claude-haiku-4-5": "haiku",
+    "claude-sonnet-4-6": "sonnet",
+    "claude-haiku-4-5":  "haiku",
+    # Azure OpenAI — model names returned by the API
+    "gpt-4.1-mini-2025-04-14": "gpt-4.1-mini",
+    "gpt-4.1-2025-04-14":      "gpt-4.1",
+    "gpt-4o":                  "gpt-4o",
+    "gpt-4o-mini":             "gpt-4o-mini",
+    # Azure OpenAI — common deployment names (AZURE_OPENAI_DEPLOYMENT_NAME)
+    "chat-gpt41mini":  "gpt-4.1-mini",
+    "chat-gpt41":      "gpt-4.1",
+    "chat-gpt4o":      "gpt-4o",
+    "chat-gpt4o-mini": "gpt-4o-mini",
+    # Gemini
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-2.5-pro":   "gemini-2.5-pro",
 }
 
 # Back-off settings
@@ -85,11 +132,54 @@ _ALERT_AFTER_CYCLES = 3
 # ---------------------------------------------------------------------------
 
 
+def resolve_model_tier(model: str) -> str:
+    """Resolve a model or deployment name to a PRICING key.
+
+    Resolution order:
+    1. Exact match in MODEL_TIER_MAP
+    2. Substring match (e.g. "gpt-4.1-mini-2025-04-14" contains "gpt-4.1-mini")
+    3. AZURE_OPENAI_DEPLOYMENT_NAME env var → MODEL_TIER_MAP lookup
+    4. LLM_PROVIDER env var default (azure_openai → gpt-4.1-mini, gemini → gemini-2.5-flash)
+    5. "sonnet" fallback with a warning log
+    """
+    # 1. Exact
+    tier = MODEL_TIER_MAP.get(model)
+    if tier:
+        return tier
+    # 2. Substring — handles versioned names like "gpt-4.1-mini-2025-04-14"
+    # Check longer keys first to avoid "chat-gpt41mini" matching inside "gemini-2.5-flash (chat-gpt41mini)"
+    for known, mapped in sorted(MODEL_TIER_MAP.items(), key=lambda x: len(x[0]), reverse=True):
+        if known in model:
+            return mapped
+    # 3. Deployment name from env
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "")
+    if deployment:
+        tier = MODEL_TIER_MAP.get(deployment)
+        if tier:
+            return tier
+    # 4. Provider default
+    provider = os.getenv("LLM_PROVIDER", "azure_openai")
+    if provider == "azure_openai":
+        return "gpt-4.1-mini"
+    if provider == "gemini":
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        return MODEL_TIER_MAP.get(gemini_model, "gemini-2.5-flash")
+    # 5. Anthropic fallback
+    log.warning("unresolved_model_tier_fallback", model=model, provider=provider)
+    return "sonnet"
+
+
 def compute_extraction_cost(input_tokens: int, output_tokens: int, model_tier: str) -> float:
-    """Return cost in USD for a given token count and model tier."""
-    tier = PRICING.get(model_tier)
+    """Return cost in USD for a given token count and model tier.
+
+    ``model_tier`` can be either a PRICING key (e.g. ``"gpt-4.1-mini"``) or a
+    raw model/deployment name — :func:`resolve_model_tier` is applied automatically
+    when the value is not already a direct PRICING key.
+    """
+    tier_key = model_tier if model_tier in PRICING else resolve_model_tier(model_tier)
+    tier = PRICING.get(tier_key)
     if not tier:
-        log.warning("unknown_model_tier", model_tier=model_tier)
+        log.warning("unknown_model_tier", model_tier=model_tier, resolved=tier_key)
         return 0.0
     return (input_tokens * tier["input"]) + (output_tokens * tier["output"])
 
@@ -254,8 +344,7 @@ def complete(
                 usage = response.usage_metadata
                 input_tokens = getattr(usage, "prompt_token_count", 0) or 0
                 output_tokens = getattr(usage, "candidates_token_count", 0) or 0
-                # Gemini 2.5 Flash pricing: $0.15/1M input, $0.60/1M output
-                cost_usd = (input_tokens * 0.15 + output_tokens * 0.60) / 1_000_000
+                cost_usd = compute_extraction_cost(input_tokens, output_tokens, gemini_model)
 
                 log_extraction_event(
                     agent_name=agent_name, prompt=prompt, model=gemini_model,

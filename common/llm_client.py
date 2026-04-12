@@ -23,9 +23,11 @@ from pydantic import BaseModel
 from common.env import load_repo_root_dotenv
 from common.llm_adapter import (
     MODEL_TIER_MAP,
+    PRICING,
     compute_extraction_cost,
     get_tracer,
     log_extraction_event,
+    resolve_model_tier,
 )
 
 load_repo_root_dotenv()
@@ -95,16 +97,15 @@ def _structured_rate_limit_metadata(error: Exception) -> tuple[str, bool, int | 
 
 
 def _model_tier_for_skills_extraction(model_name: str) -> str:
-    """Map deployment/model name to pricing tier for :func:`compute_extraction_cost`.
+    """Resolve a model/deployment name to a PRICING key via :func:`resolve_model_tier`.
 
-    Uses the same ``MODEL_TIER_MAP`` as ``llm_adapter`` for Anthropic models.
-    Azure OpenAI deployments are not in that map; use ``EXTRACTION_MODEL_TIER``
-    (``sonnet`` | ``haiku``) or default ``sonnet`` for cost estimates.
+    EXTRACTION_MODEL_TIER env var is kept for explicit overrides but should
+    only be needed when deploying a model not yet in MODEL_TIER_MAP.
     """
     explicit = os.getenv("EXTRACTION_MODEL_TIER", "").strip().lower()
-    if explicit in ("sonnet", "haiku"):
+    if explicit and explicit in PRICING:
         return explicit
-    return MODEL_TIER_MAP.get(model_name, "sonnet")
+    return resolve_model_tier(model_name)
 
 
 def _build_gemini_llm() -> Any:
