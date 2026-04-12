@@ -48,7 +48,7 @@ This repo was extracted from `job-intelligence-engine/` into a standalone reposi
 | Category | Tables | Notes |
 |----------|--------|-------|
 | **Agent-created** | `raw_ingested_jobs`, `job_ingestion_runs`, `normalized_jobs`, `normalization_quarantine`, `extracted_intelligence`, `llm_audit_log`, `employer_profiles` | Created by `migrations.py` |
-| **Reference (seeded, agent-owned)** | `companies`, `industry_sectors`, `technology_areas`, `skills`, `socc`, `job_postings` | Seeded via pgloader from MSSQL; agents have full read+write |
+| **Reference (seeded, agent-owned)** | `companies`, `industry_sectors`, `technology_areas`, `skills`, `socc`, `job_postings` | Seeded via `seed_pg_database.py`; agents have full read+write |
 
 **Rules:**
 - New tables and columns go through `common/data_store/models.py` + `migrations.py`

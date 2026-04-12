@@ -2,9 +2,6 @@
 
 Seed a fresh PostgreSQL container with reference data for the watechcoalition platform.
 
-> **MSSQL is deprecated.** PostgreSQL is the primary database for all development.
-> You do **not** need MSSQL installed or running.
-
 ## Quick Start (Junior Devs)
 
 ```bash

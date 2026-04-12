@@ -63,7 +63,7 @@ class TestIngestionAgent:
 
 ## Key Rules
 
-- **Mock external services.** Never make real API calls in tests: mock JSearch, Crawl4AI, Azure OpenAI, and MSSQL.
+- **Mock external services.** Never make real API calls in tests: mock JSearch, Crawl4AI, Azure OpenAI, and PostgreSQL.
 - **Test event contracts.** Verify emitted events conform to `EventEnvelope` schema with correct `agent_id`, `schema_version`, and expected payload keys.
 - **Test error paths.** Every agent must handle: source failure, LLM timeout, schema violation, DB error.
 - **Write tests alongside code.** Every new agent method or feature gets a corresponding test.

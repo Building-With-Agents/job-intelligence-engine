@@ -1,9 +1,8 @@
 """SQLAlchemy ORM models for all database tables.
 
 SQLAlchemy is the single database authority. All tables live in the ``dbo``
-schema. Reference tables (companies, industry_sectors, etc.) were originally
-seeded via pgloader from MSSQL and are now agent-owned with full read+write.
-Prisma/MSSQL is being phased out.
+schema. Reference tables (companies, industry_sectors, etc.) are seeded via
+``seed_pg_database.py`` and are agent-owned with full read+write.
 
 Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     normalization_quarantine, extracted_intelligence, llm_audit_log,
@@ -133,7 +132,7 @@ class JobIngestionRun(Base):
         {"schema": "dbo"},
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     region_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     source: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -564,9 +563,8 @@ class SkillCoOccurrence(Base):
 
 
 # ===========================================================================
-# Reference tables — seeded via pgloader, now agent-owned (full read+write).
+# Reference tables — seeded via seed_pg_database.py, agent-owned (full read+write).
 #
-# These models match the existing pgloader-seeded table structures exactly.
 # create_all() with checkfirst=True will skip creation if tables exist.
 # ===========================================================================
 

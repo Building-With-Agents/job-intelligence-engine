@@ -1,25 +1,6 @@
 version: "3.8"
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2025-latest
-    container_name: mssql-server
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
-      - MSSQL_PID=Developer
-    ports:
-      - "${MSSQL_PORT:-1433}:1433"
-    volumes:
-      - mssql_data:/var/opt/mssql
-    healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    restart: unless-stopped
-
   postgres:
     image: pgvector/pgvector:pg16
     container_name: postgres-server
@@ -192,8 +173,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  mssql_data:
-    driver: local
   postgres_data:
     driver: local
   redis_data:
