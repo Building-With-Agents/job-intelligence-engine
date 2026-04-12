@@ -10,9 +10,11 @@ Prerequisites:
   - PYTHON_DATABASE_URL for database staging
 
 Usage (from repo root):
-  python scripts/batch_ingest.py                # run all queries
-  python scripts/batch_ingest.py --dry-run      # show plan without API calls
-  python scripts/batch_ingest.py --delay 10     # seconds between queries
+  python scripts/batch_ingest.py                        # run all queries
+  python scripts/batch_ingest.py --dry-run              # show plan without API calls
+  python scripts/batch_ingest.py --delay 10             # seconds between queries
+  python scripts/batch_ingest.py --start-query 24       # skip queries 1-23, start at 24
+  python scripts/batch_ingest.py --queries legal-tech,robotics-dev  # run specific queries only
 """
 
 from __future__ import annotations
@@ -100,11 +102,34 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Budget-aware batch ingestion via JSearch")
     parser.add_argument("--dry-run", action="store_true", help="Show plan without API calls")
     parser.add_argument("--delay", type=int, default=5, help="Seconds between queries (default: 5)")
+    parser.add_argument(
+        "--start-query", type=int, default=1, metavar="N",
+        help="Start at query N (1-indexed), skipping all prior queries. "
+             "Use to resume after a previous run exhausted keys.",
+    )
+    parser.add_argument(
+        "--queries", type=str, default="", metavar="name1,name2,...",
+        help="Run only the named queries (comma-separated). "
+             "Names must match the 'name' field in ingestion_queries.yaml.",
+    )
     args = parser.parse_args()
 
     config = _load_config()
     budget_per_key = config.get("budget_per_key", 500)
-    queries = config.get("queries", [])
+    all_queries = config.get("queries", [])
+
+    # Filter queries based on --start-query and --queries flags
+    if args.queries:
+        query_names = {n.strip() for n in args.queries.split(",")}
+        queries = [q for q in all_queries if q["name"] in query_names]
+        missing = query_names - {q["name"] for q in queries}
+        if missing:
+            log.warning("unknown_query_names", names=sorted(missing))
+    elif args.start_query > 1:
+        queries = all_queries[args.start_query - 1:]
+        log.info("skipping_queries", skipped=args.start_query - 1, remaining=len(queries))
+    else:
+        queries = all_queries
 
     if not queries:
         log.error("no_queries_configured")
@@ -127,18 +152,28 @@ def main() -> None:
         dry_run=args.dry_run,
     )
 
+    # Build a name→original-index map for reference (1-indexed as shown in dry-run)
+    _all_query_names = [q["name"] for q in all_queries]
+
     if args.dry_run:
         print(f"\n{'='*60}")
         print("Batch Ingestion Plan")
+        if args.start_query > 1:
+            print(f"  (starting at query {args.start_query}, skipping {args.start_query - 1})")
+        if args.queries:
+            print(f"  (filtered to: {args.queries})")
         print(f"{'='*60}")
-        for i, q in enumerate(queries, 1):
+        for q in queries:
+            orig_idx = _all_query_names.index(q["name"]) + 1 if q["name"] in _all_query_names else "?"
             pages = q.get("pages", 10)
-            print(f"\n  [{i}] {q['name']}")
+            print(f"\n  [{orig_idx}] {q['name']}")
             print(f"      Keywords: {q['keywords']}")
             print(f"      Pages: {pages} ({pages} API requests, ~{pages * 10} results)")
-        print(f"\n  Total: {total_requests} API requests")
+        print(f"\n  Total: {total_requests} API requests across {len(queries)} queries")
         print(f"  Keys available: {len(api_keys)} x {budget_per_key} = {len(api_keys) * budget_per_key} budget")
         print(f"  Delay: {args.delay}s between queries")
+        print(f"\n  Tip: --start-query N to skip first N-1 queries")
+        print(f"       --queries name1,name2 to run specific queries only")
         print(f"{'='*60}\n")
         return
 
