@@ -1320,12 +1320,17 @@ class EnrichmentAgent(BaseAgent):
         _peak_in_flight = 0
         _saturation_events = 0
 
+        _completed = 0
+        _total = len(rows)
+
         async def _enrich_one(idx: int, row: dict[str, Any]) -> dict[str, Any] | None:
-            nonlocal _in_flight, _peak_in_flight, _saturation_events
+            nonlocal _in_flight, _peak_in_flight, _saturation_events, _completed
             bucket = _spam_bucket(row)
             if bucket == "rejected":
+                _completed += 1
                 return {"__spam_bucket": "rejected"}
             if bucket == "flagged":
+                _completed += 1
                 return {"__spam_bucket": "flagged"}
 
             if semaphore.locked():
@@ -1333,6 +1338,7 @@ class EnrichmentAgent(BaseAgent):
             async with semaphore:
                 _in_flight += 1
                 _peak_in_flight = max(_peak_in_flight, _in_flight)
+                job_start = time.perf_counter()
                 posting = _posting_for_enrichment(row, payload)
                 try:
                     with session_scope() as job_session:
@@ -1371,10 +1377,20 @@ class EnrichmentAgent(BaseAgent):
                         enriched["__posting"] = posting
                         enriched["__row"] = row
                 except Exception as exc:
-                    log.warning("enrichment_parallel_job_failed", error=str(exc))
+                    log.warning("enrichment_parallel_job_failed", idx=idx, error=str(exc))
                     enriched = {"__error": True, "__posting": posting, "__row": row}
                 finally:
                     _in_flight -= 1
+                    _completed += 1
+                    job_ms = int((time.perf_counter() - job_start) * 1000)
+                    if _completed % 10 == 0 or _completed == _total:
+                        log.info(
+                            "enrichment_progress",
+                            completed=_completed,
+                            total=_total,
+                            in_flight=_in_flight,
+                            job_ms=job_ms,
+                        )
                 return enriched
 
         results = list(await asyncio.gather(
