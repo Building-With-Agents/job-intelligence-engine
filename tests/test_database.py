@@ -40,18 +40,15 @@ def engine() -> Engine:
 @pytest.fixture(scope="session", autouse=True)
 def truncate_agent_tables(engine: Engine) -> Iterator[None]:
     """
-    Truncate agent-managed tables before the test session starts.
+    No-op fixture kept for backwards compatibility.
 
-    Ensures tests begin with a clean baseline for raw_ingested_jobs,
-    normalized_jobs, and job_ingestion_runs.
+    IMPORTANT: Do NOT truncate raw_ingested_jobs, normalized_jobs,
+    job_ingestion_runs, extracted_intelligence, normalization_quarantine,
+    or llm_audit_log. These are permanent audit tables — wiping them
+    against the shared dev DB destroys provenance and dedup state.
+    Tests must insert rows tagged with a unique test run ID and delete
+    only those rows in teardown.
     """
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                "TRUNCATE TABLE dbo.raw_ingested_jobs, dbo.normalized_jobs, dbo.job_ingestion_runs "
-                "RESTART IDENTITY CASCADE;"
-            )
-        )
     yield
 
 
