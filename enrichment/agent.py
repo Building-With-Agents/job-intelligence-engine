@@ -47,9 +47,11 @@ python-dotenv, then requires ``PYTHON_DATABASE_URL``).
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import sys
+import time
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
@@ -64,7 +66,7 @@ from common.base_agent import BaseAgent
 from common.data_store.database import check_db_connection, session_scope
 from common.data_store.models import IndustrySector, NormalizedJob, TechnologyArea
 from common.event_envelope import EventEnvelope
-from common.llm_client import invoke_skills_llm
+from common.llm_client import ainvoke_skills_llm, invoke_skills_llm
 from common.types.job_profile import EmployerProfile
 from enrichment.adapters.facade import ExternalEnrichmentFacade
 from enrichment.async_bridge import run_coroutine
@@ -74,9 +76,10 @@ from enrichment.classification import (
 )
 from enrichment.classifiers.employer_classifier import (
     build_employer_profile,
+    build_employer_profile_async,
     persist_employer_metadata,
 )
-from enrichment.classifiers.naics_classifier import classify_naics
+from enrichment.classifiers.naics_classifier import classify_naics, classify_naics_async
 from enrichment.classifiers.quality import score_quality
 from enrichment.classifiers.soc_classifier import classify_soc
 from enrichment.classifiers.spam_preview import (
@@ -129,6 +132,33 @@ def _enrichment_soc_llm() -> Callable[[str], str]:
         return (text or "").strip()
 
     return llm
+
+
+def _enrichment_soc_llm_async() -> Callable:
+    """Async callable for :func:`classify_soc` ``async_llm`` parameter."""
+
+    async def async_llm(prompt: str) -> str:
+        try:
+            text, meta = await ainvoke_skills_llm(
+                prompt,
+                agent_name="enrichment-soc-classifier",
+            )
+        except TypeError as exc:
+            if "api_key" in str(exc).lower() or "auth" in str(exc).lower():
+                log.warning("soc_llm_auth_failed", error=str(exc))
+                return "unclassified"
+            raise
+        if not meta.get("success") or meta.get("extraction_failed"):
+            log.warning(
+                "enrichment_soc_llm_call_failed",
+                success=meta.get("success"),
+                extraction_failed=meta.get("extraction_failed"),
+                error_reason=meta.get("error_reason"),
+            )
+            return "unclassified"
+        return (text or "").strip()
+
+    return async_llm
 
 
 _alert_bus: Any = None
@@ -518,6 +548,97 @@ class EnrichmentAgent(BaseAgent):
                     "record_count": len(rows),
                 })
 
+        # --- Parallel fast path ---
+        if self._enrichment_parallel_enabled() and len(rows) > 0:
+            concurrency = self._enrichment_concurrency()
+            log.info(
+                "enrichment_batch_parallel_start",
+                batch_id=batch_id,
+                record_count=len(rows),
+                concurrency=concurrency,
+            )
+            batch_start = time.perf_counter()
+            parallel_results = self._enrich_batch_parallel_bridge(
+                rows, payload,
+                correlation_id=correlation_id,
+                concurrency=concurrency,
+            )
+            if parallel_results:  # non-empty means parallel path succeeded
+                enriched_count = 0
+                spam_rejected_count = 0
+                flagged_for_review_count = 0
+                temporal_period_distribution: dict[str, int] = defaultdict(int)
+                borderplex_subregion_distribution: dict[str, int] = defaultdict(int)
+                duplicate_count = 0
+                soc_classified_count = 0
+                naics_classified_count = 0
+                dedup_stub_count = 0
+                dedup_rows_with_duplicate_cluster_id = 0
+                dedup_rows_with_matched_job_posting_id = 0
+                freshness_records: list[dict[str, Any]] = []
+
+                for r in parallel_results:
+                    if r is None or r.get("__error"):
+                        continue
+                    if r.get("__spam_bucket") == "rejected":
+                        spam_rejected_count += 1
+                        continue
+                    if r.get("__spam_bucket") == "flagged":
+                        flagged_for_review_count += 1
+                        continue
+                    enriched_count += 1
+                    posting = r.get("__posting", {})
+                    row = r.get("__row", {})
+                    tp = _distribution_bucket(r.get("temporal_period", posting.get("temporal_period")))
+                    temporal_period_distribution[tp] += 1
+                    bp = _distribution_bucket(r.get("borderplex_subregion"))
+                    borderplex_subregion_distribution[bp] += 1
+                    if r.get("is_duplicate") is True:
+                        duplicate_count += 1
+                    soc_raw = r.get("soc_code") or posting.get("soc_code")
+                    if soc_raw is not None and str(soc_raw).strip():
+                        soc_classified_count += 1
+                    naics_raw = r.get("naics_code") or posting.get("naics_code")
+                    naics_st = str(naics_raw).strip() if naics_raw is not None else ""
+                    if naics_st and naics_st.lower() != "unknown":
+                        naics_classified_count += 1
+                    ds, dc, dm = _rollup_fuzzy_dedup_signals(r, posting)
+                    dedup_stub_count += ds
+                    dedup_rows_with_duplicate_cluster_id += dc
+                    dedup_rows_with_matched_job_posting_id += dm
+                    freshness_records.append(build_freshness_record_for_analytics(posting, r))
+
+                batch_duration_ms = int((time.perf_counter() - batch_start) * 1000)
+                log.info(
+                    "enrichment_batch_parallel_complete",
+                    batch_id=batch_id,
+                    enriched_count=enriched_count,
+                    spam_rejected_count=spam_rejected_count,
+                    flagged_for_review_count=flagged_for_review_count,
+                    duration_ms=batch_duration_ms,
+                    concurrency=concurrency,
+                    execution_mode="parallel",
+                )
+
+                return build_record_enriched_event(
+                    correlation_id=correlation_id,
+                    batch_id=batch_id,
+                    enriched_count=enriched_count,
+                    spam_rejected_count=spam_rejected_count,
+                    flagged_for_review_count=flagged_for_review_count,
+                    temporal_period_distribution=dict(temporal_period_distribution),
+                    borderplex_subregion_distribution=dict(borderplex_subregion_distribution),
+                    duplicate_count=duplicate_count,
+                    soc_classified_count=soc_classified_count,
+                    naics_classified_count=naics_classified_count,
+                    dedup_stub_count=dedup_stub_count,
+                    dedup_rows_with_duplicate_cluster_id=dedup_rows_with_duplicate_cluster_id,
+                    dedup_rows_with_matched_job_posting_id=dedup_rows_with_matched_job_posting_id,
+                    freshness_records=freshness_records,
+                )
+            # else: parallel bridge returned empty (loop already running), fall through to serial
+
+        # --- Serial fallback path (original) ---
         span_ctx = (
             tracer.start_span(
                 "enrichment",
@@ -1055,6 +1176,246 @@ class EnrichmentAgent(BaseAgent):
                 "overall_confidence": 0.0,
                 "enrichment_status": "degraded",
             }
+
+    async def enrich_record_async(
+        self,
+        posting: dict[str, Any],
+        session: Session | None,
+    ) -> dict[str, Any]:
+        """Async counterpart to :meth:`enrich_record` — runs SOC, NAICS, employer concurrently."""
+        try:
+            company_id, company_confidence = resolve_company(posting.get("company") or "", session)
+            location_id, location_confidence, raw_location_text, borderplex_subregion = resolve_location(
+                posting.get("location", ""), session
+            )
+            field_confidence = compute_field_confidence(
+                company_confidence,
+                location_confidence,
+                sector_id=None,
+                seniority_confidence=posting.get("seniority_confidence"),
+            )
+            overall_confidence = compute_overall_confidence(
+                field_confidence=field_confidence,
+                extraction_confidence=posting.get("extraction_confidence"),
+                quality_score=posting.get("quality_score"),
+                taxonomy_coverage=posting.get("taxonomy_coverage"),
+            )
+            merged: dict[str, Any] = {
+                **posting,
+                "company_id": company_id,
+                "location_id": location_id,
+                "raw_location_text": raw_location_text,
+                "borderplex_subregion": borderplex_subregion,
+                "field_confidence": field_confidence,
+                "overall_confidence": overall_confidence,
+            }
+            # External adapters (Census, BLS, O*NET) — run if available
+            try:
+                ext = await self._external_facade.fetch_for_posting(merged)
+                merged.update(ext)
+            except Exception as ext_exc:
+                log.warning("enrichment_external_adapters_failed", error=str(ext_exc))
+
+            if session is not None:
+                desc_raw = posting.get("description")
+                desc_str = desc_raw if isinstance(desc_raw, str) else None
+                title = posting.get("title") or ""
+                company = posting.get("company") or ""
+
+                # Run SOC, NAICS, employer LLM calls concurrently
+                naics_result, soc_result, employer_result = await asyncio.gather(
+                    classify_naics_async(title, desc_str, session),
+                    classify_soc(
+                        title, desc_str or "", session,
+                        _enrichment_soc_llm(),
+                        async_llm=_enrichment_soc_llm_async(),
+                    ),
+                    build_employer_profile_async(desc_str, company, session),
+                    return_exceptions=True,
+                )
+
+                # NAICS
+                if isinstance(naics_result, Exception):
+                    log.warning("enrich_record_async_naics_failed", error=str(naics_result))
+                    merged["naics_code"] = posting.get("naics_code")
+                else:
+                    merged["naics_code"] = (naics_result or "unknown").strip() or "unknown"
+
+                # SOC
+                if isinstance(soc_result, Exception):
+                    log.warning("enrich_record_async_soc_failed", error=str(soc_result))
+                    merged["soc_code"] = posting.get("soc_code")
+                else:
+                    merged["soc_code"] = None if soc_result == "unclassified" else soc_result
+                    nj_soc = _coerce_normalized_job_id(posting.get("normalized_job_id"))
+                    sc = merged.get("soc_code")
+                    if nj_soc is not None and isinstance(sc, str) and sc.strip():
+                        try:
+                            from sqlalchemy import update as sa_update
+                            session.execute(
+                                sa_update(NormalizedJob)
+                                .where(NormalizedJob.id == nj_soc)
+                                .values(occupation_code=sc.strip()[:20])
+                            )
+                        except Exception as oc_exc:
+                            log.warning("enrich_record_occupation_code_persist_failed", error=str(oc_exc))
+
+                # Employer
+                if isinstance(employer_result, Exception):
+                    log.warning("enrich_record_async_employer_failed", error=str(employer_result))
+                    merged["employer_metadata"] = EmployerProfile().model_dump(mode="json")
+                else:
+                    merged["employer_metadata"] = employer_result.model_dump(mode="json")
+                    cid_raw = merged.get("company_id")
+                    persist_company_id = str(cid_raw).strip() if cid_raw is not None and str(cid_raw).strip() else None
+                    try:
+                        persist_employer_metadata(
+                            session,
+                            employer_result,
+                            company_id=persist_company_id,
+                            normalized_job_id=_coerce_normalized_job_id(posting.get("normalized_job_id")),
+                            source=posting.get("source"),
+                            external_id=posting.get("external_id"),
+                        )
+                    except Exception as emp_exc:
+                        log.warning("enrich_record_employer_persist_failed", error=str(emp_exc))
+
+            return merged
+        except Exception:
+            log.warning("enrich_record_async_degraded", agent=self.agent_id, reason="resolver_exception")
+            return {
+                **posting,
+                "company_id": None,
+                "location_id": None,
+                "raw_location_text": None,
+                "borderplex_subregion": None,
+                "naics_code": posting.get("naics_code"),
+                "employer_metadata": EmployerProfile().model_dump(mode="json"),
+                "field_confidence": {"company_id": 0.0, "location_id": 0.0, "sector_id": 0.0, "seniority": 0.0},
+                "overall_confidence": 0.0,
+                "enrichment_status": "degraded",
+            }
+
+    # ------------------------------------------------------------------
+    # Parallel batch enrichment (mirrors skills_extraction pattern)
+    # ------------------------------------------------------------------
+
+    def _enrichment_parallel_enabled(self) -> bool:
+        return os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no")
+
+    def _enrichment_concurrency(self) -> int:
+        return max(1, int(os.getenv("ENRICHMENT_CONCURRENCY", "30")))
+
+    async def _enrich_batch_parallel(
+        self,
+        rows: list[dict[str, Any]],
+        payload: dict[str, Any],
+        *,
+        correlation_id: str,
+        concurrency: int,
+    ) -> list[dict[str, Any]]:
+        """Run enrichment across jobs concurrently with a semaphore cap."""
+        semaphore = asyncio.Semaphore(concurrency)
+        _in_flight = 0
+        _peak_in_flight = 0
+        _saturation_events = 0
+
+        async def _enrich_one(idx: int, row: dict[str, Any]) -> dict[str, Any] | None:
+            nonlocal _in_flight, _peak_in_flight, _saturation_events
+            bucket = _spam_bucket(row)
+            if bucket == "rejected":
+                return {"__spam_bucket": "rejected"}
+            if bucket == "flagged":
+                return {"__spam_bucket": "flagged"}
+
+            if semaphore.locked():
+                _saturation_events += 1
+            async with semaphore:
+                _in_flight += 1
+                _peak_in_flight = max(_peak_in_flight, _in_flight)
+                posting = _posting_for_enrichment(row, payload)
+                try:
+                    with session_scope() as job_session:
+                        enriched = await self.enrich_record_async(posting, job_session)
+                        sector_id = resolve_sector(posting.get("role_classification"), session=job_session)
+                        enriched["sector_id"] = sector_id
+
+                        # Quality score (deterministic — no LLM call)
+                        extraction = build_extraction_dict(
+                            row.get("skills"), row.get("tools"),
+                            row.get("tasks"), row.get("responsibilities"),
+                            row.get("context"),
+                        )
+                        q_res = score_quality(
+                            job_title=posting.get("title") or "",
+                            job_description=posting.get("description"),
+                            extraction=extraction,
+                            extraction_failed=bool(row.get("extraction_failed")),
+                        )
+                        enriched["quality_score"] = q_res.quality_score
+                        enriched["quality_components"] = q_res.components
+
+                        # Promotion
+                        nj_promo = _coerce_normalized_job_id(
+                            enriched.get("normalized_job_id") or posting.get("normalized_job_id")
+                        )
+                        if nj_promo is not None:
+                            try:
+                                apply_enrichment_to_job_postings(
+                                    job_session, nj_promo,
+                                    _job_postings_promotion_payload(enriched, posting),
+                                )
+                            except Exception as promo_exc:
+                                log.warning("enrichment_parallel_promotion_failed", error=str(promo_exc))
+
+                        enriched["__posting"] = posting
+                        enriched["__row"] = row
+                except Exception as exc:
+                    log.warning("enrichment_parallel_job_failed", error=str(exc))
+                    enriched = {"__error": True, "__posting": posting, "__row": row}
+                finally:
+                    _in_flight -= 1
+                return enriched
+
+        results = list(await asyncio.gather(
+            *[_enrich_one(i, row) for i, row in enumerate(rows)]
+        ))
+
+        if _saturation_events > 0:
+            log.info(
+                "enrichment_semaphore_saturation_summary",
+                concurrency=concurrency,
+                total_jobs=len(rows),
+                saturation_events=_saturation_events,
+                peak_in_flight=_peak_in_flight,
+            )
+        return results
+
+    def _enrich_batch_parallel_bridge(
+        self,
+        rows: list[dict[str, Any]],
+        payload: dict[str, Any],
+        *,
+        correlation_id: str,
+        concurrency: int,
+    ) -> list[dict[str, Any]]:
+        """Sync-to-async bridge for parallel enrichment (mirrors skills extraction pattern)."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(
+                self._enrich_batch_parallel(
+                    rows, payload,
+                    correlation_id=correlation_id,
+                    concurrency=concurrency,
+                )
+            )
+        log.warning(
+            "enrichment_parallel_fallback_serial",
+            reason="event_loop_running",
+            total_jobs=len(rows),
+        )
+        return []  # caller falls back to serial path
 
     def run_cli_preview(self, limit: int) -> None:
         """Load jobs from DB and print role + seniority (stdout)."""

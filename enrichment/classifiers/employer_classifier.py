@@ -16,7 +16,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from common.data_store.models import NormalizedJob
-from common.llm_client import invoke_structured_extraction_llm
+from common.llm_client import ainvoke_structured_extraction_llm, invoke_structured_extraction_llm
 from common.types.job_profile import EmployerProfile
 from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 from enrichment.resolvers.company_resolver import (
@@ -159,6 +159,49 @@ def build_employer_profile(
 
     try:
         parsed, meta = invoke_structured_extraction_llm(
+            _build_prompt(company, desc),
+            EmployerClassificationLLMOutput,
+            agent_name=AUDIT_AGENT_EMPLOYER,
+            deployment_env_keys=_EMPLOYER_DEPLOYMENT_KEYS,
+            model_tier_for_cost="haiku",
+        )
+    except Exception as exc:
+        log.warning("employer_llm_invoke_failed", error=str(exc))
+        return base
+
+    if meta.get("extraction_failed") or parsed is None:
+        log.info(
+            "employer_classification_degraded",
+            extraction_failed=meta.get("extraction_failed"),
+            error_reason=meta.get("error_reason"),
+        )
+        return base
+
+    merged = EmployerProfile.model_validate(
+        {
+            "company_size": parsed.company_size,
+            "ai_maturity_signal": parsed.ai_maturity_signal,
+            "sector": _canonical_sector(parsed.sector),
+            "is_known_employer": is_known,
+        }
+    )
+    return merged
+
+
+async def build_employer_profile_async(
+    job_description: str | None,
+    company_name: str,
+    session: Session,
+) -> EmployerProfile:
+    """Async counterpart to :func:`build_employer_profile` — uses ``ainvoke_structured_extraction_llm``."""
+    company = (company_name or "").strip()
+    desc = job_description if isinstance(job_description, str) else None
+    is_known = registry_has_exact_company_name(session, company)
+
+    base = EmployerProfile(is_known_employer=is_known)
+
+    try:
+        parsed, meta = await ainvoke_structured_extraction_llm(
             _build_prompt(company, desc),
             EmployerClassificationLLMOutput,
             agent_name=AUDIT_AGENT_EMPLOYER,
