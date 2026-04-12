@@ -1222,28 +1222,57 @@ class EnrichmentAgent(BaseAgent):
                 title = posting.get("title") or ""
                 company = posting.get("company") or ""
 
-                # Run SOC, NAICS, employer LLM calls concurrently
-                naics_result, soc_result, employer_result = await asyncio.gather(
-                    classify_naics_async(title, desc_str, session),
-                    classify_soc(
-                        title, desc_str or "", session,
-                        _enrichment_soc_llm(),
-                        async_llm=_enrichment_soc_llm_async(),
-                    ),
-                    build_employer_profile_async(desc_str, company, session),
-                    return_exceptions=True,
+                # Run SOC, NAICS, employer LLM calls concurrently with per-call timeout
+                _ENRICH_LLM_TIMEOUT = int(os.getenv("ENRICHMENT_LLM_TIMEOUT", "120"))
+                _nj_id = posting.get("normalized_job_id")
+                _gather_start = time.perf_counter()
+
+                try:
+                    naics_result, soc_result, employer_result = await asyncio.wait_for(
+                        asyncio.gather(
+                            classify_naics_async(title, desc_str, session),
+                            classify_soc(
+                                title, desc_str or "", session,
+                                _enrichment_soc_llm(),
+                                async_llm=_enrichment_soc_llm_async(),
+                            ),
+                            build_employer_profile_async(desc_str, company, session),
+                            return_exceptions=True,
+                        ),
+                        timeout=_ENRICH_LLM_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    _elapsed = int((time.perf_counter() - _gather_start) * 1000)
+                    log.error(
+                        "enrich_record_async_gather_timeout",
+                        normalized_job_id=_nj_id,
+                        timeout_s=_ENRICH_LLM_TIMEOUT,
+                        elapsed_ms=_elapsed,
+                    )
+                    naics_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
+                    soc_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
+                    employer_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
+
+                _gather_ms = int((time.perf_counter() - _gather_start) * 1000)
+                log.debug(
+                    "enrich_record_async_gather_complete",
+                    normalized_job_id=_nj_id,
+                    gather_ms=_gather_ms,
+                    naics_ok=not isinstance(naics_result, Exception),
+                    soc_ok=not isinstance(soc_result, Exception),
+                    employer_ok=not isinstance(employer_result, Exception),
                 )
 
                 # NAICS
                 if isinstance(naics_result, Exception):
-                    log.warning("enrich_record_async_naics_failed", error=str(naics_result))
+                    log.warning("enrich_record_async_naics_failed", normalized_job_id=_nj_id, error=str(naics_result))
                     merged["naics_code"] = posting.get("naics_code")
                 else:
                     merged["naics_code"] = (naics_result or "unknown").strip() or "unknown"
 
                 # SOC
                 if isinstance(soc_result, Exception):
-                    log.warning("enrich_record_async_soc_failed", error=str(soc_result))
+                    log.warning("enrich_record_async_soc_failed", normalized_job_id=_nj_id, error=str(soc_result))
                     merged["soc_code"] = posting.get("soc_code")
                 else:
                     merged["soc_code"] = None if soc_result == "unclassified" else soc_result
@@ -1383,6 +1412,15 @@ class EnrichmentAgent(BaseAgent):
                     _in_flight -= 1
                     _completed += 1
                     job_ms = int((time.perf_counter() - job_start) * 1000)
+                    if job_ms > 60_000:
+                        log.warning(
+                            "enrichment_slow_job",
+                            idx=idx,
+                            completed=_completed,
+                            total=_total,
+                            job_ms=job_ms,
+                            in_flight=_in_flight,
+                        )
                     if _completed % 10 == 0 or _completed == _total:
                         log.info(
                             "enrichment_progress",
