@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Processing Loop — Pipeline Flow Diagram</title>
+<style>
+  body {
+    margin: 0;
+    padding: 32px;
+    background: #F8FAFC;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0F172A;
+  }
+  h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px 0; letter-spacing: -0.3px; }
+  p.subtitle { font-size: 13px; color: #64748B; margin: 0 0 28px 0; }
+
+  /* Layout */
+  .diagram { display: flex; flex-direction: column; gap: 0; max-width: 1100px; margin: 0 auto; }
+
+  /* Phase headers */
+  .phase-header {
+    background: #1E293B; color: #F8FAFC; padding: 10px 18px; border-radius: 8px 8px 0 0;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .phase-header .file { font-weight: 400; font-size: 12px; color: #94A3B8; font-family: 'SF Mono', 'Consolas', monospace; }
+  .phase-header .cost { font-weight: 400; font-size: 12px; color: #FCD34D; }
+
+  /* Agent groups */
+  .agent-group {
+    border: 2px solid #CBD5E1; border-top: none; border-radius: 0 0 8px 8px;
+    background: #fff; padding: 20px; margin-bottom: 24px; position: relative;
+  }
+  .agent-group.norm { border-color: #6366F1; }
+  .agent-group.extract { border-color: #F59E0B; }
+  .agent-group.enrich { border-color: #10B981; }
+  .agent-group.ingest { border-color: #3B82F6; }
+
+  .phase-header.norm { background: #4338CA; }
+  .phase-header.extract { background: #B45309; }
+  .phase-header.enrich { background: #047857; }
+  .phase-header.ingest { background: #1D4ED8; }
+  .phase-header.loop { background: #7C3AED; }
+
+  /* Steps inside agents */
+  .steps { display: flex; flex-wrap: wrap; gap: 12px; }
+  .step {
+    flex: 1; min-width: 200px; background: #F1F5F9; border-radius: 6px; padding: 12px;
+    border-left: 4px solid #CBD5E1; font-size: 12px;
+  }
+  .step.db-read { border-left-color: #3B82F6; }
+  .step.db-write { border-left-color: #EF4444; }
+  .step.llm { border-left-color: #F59E0B; }
+  .step.event { border-left-color: #8B5CF6; }
+  .step.log { border-left-color: #6B7280; }
+
+  .step .label { font-weight: 700; font-size: 11px; text-transform: uppercase; color: #64748B; margin-bottom: 4px; }
+  .step .label.read { color: #2563EB; }
+  .step .label.write { color: #DC2626; }
+  .step .label.llm { color: #D97706; }
+  .step .label.event-label { color: #7C3AED; }
+  .step .label.log-label { color: #6B7280; }
+  .step .desc { font-size: 12px; line-height: 1.5; }
+  .step code { background: #E2E8F0; padding: 1px 4px; border-radius: 3px; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace; }
+
+  /* Arrows between groups */
+  .arrow {
+    text-align: center; padding: 8px 0; color: #64748B; font-size: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .arrow .event-name {
+    font-size: 11px; background: #EDE9FE; color: #6D28D9; padding: 3px 10px;
+    border-radius: 12px; font-family: 'SF Mono', 'Consolas', monospace; font-weight: 600;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+    padding: 12px 18px; background: #fff; border: 1px solid #E2E8F0; border-radius: 8px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-swatch { width: 16px; height: 4px; border-radius: 2px; }
+  .legend-swatch.read { background: #3B82F6; }
+  .legend-swatch.write { background: #EF4444; }
+  .legend-swatch.llm { background: #F59E0B; }
+  .legend-swatch.event { background: #8B5CF6; }
+  .legend-swatch.log { background: #6B7280; }
+
+  /* Reference table */
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 32px; }
+  .ref-table th { text-align: left; background: #F1F5F9; padding: 8px 12px; border: 1px solid #E2E8F0; font-weight: 700; }
+  .ref-table td { padding: 8px 12px; border: 1px solid #E2E8F0; vertical-align: top; }
+  .ref-table code { background: #F1F5F9; padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+  .ref-table tr:hover { background: #F8FAFC; }
+
+  /* Env vars */
+  .env-section { margin-top: 32px; }
+  .env-section h2 { font-size: 16px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<h1>Processing Loop — Pipeline Flow Diagram</h1>
+<p class="subtitle">Flywheel Loop 2: <code>run_processing_loop.py</code> &mdash; Normalize &rarr; Extract &rarr; Enrich &nbsp;|&nbsp; Loop 1: <code>batch_ingest.py</code> fills <code>raw_ingested_jobs</code></p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch read"></div> DB Read</div>
+  <div class="legend-item"><div class="legend-swatch write"></div> DB Write</div>
+  <div class="legend-item"><div class="legend-swatch llm"></div> LLM Call ($)</div>
+  <div class="legend-item"><div class="legend-swatch event"></div> EventEnvelope</div>
+  <div class="legend-item"><div class="legend-swatch log"></div> Logging / Audit</div>
+</div>
+
+<div class="diagram">
+
+  <!-- ═══════════ INGESTION (Loop 1) ═══════════ -->
+  <div class="phase-header ingest">
+    Loop 1 &mdash; Ingestion Agent
+    <span class="file">scripts/batch_ingest.py &rarr; ingestion/agent.py::process()</span>
+    <span class="cost">$0 (API only)</span>
+  </div>
+  <div class="agent-group ingest">
+    <div class="steps">
+      <div class="step db-read">
+        <div class="label read">DB Read</div>
+        <div class="desc">Fetch existing fingerprints from <code>raw_ingested_jobs</code> for cross-batch dedup</div>
+      </div>
+      <div class="step">
+        <div class="label">API Call</div>
+        <div class="desc">JSearch API via <code>httpx</code> &mdash; paginated keyword queries from <code>config/ingestion_queries.yaml</code></div>
+      </div>
+      <div class="step">
+        <div class="label">Dedup</div>
+        <div class="desc"><code>ingestion/deduplicator.py</code> &mdash; SHA256 fingerprint: <code>source + external_id + title + company + date_posted</code></div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write</div>
+        <div class="desc">Stage new records &rarr; <code>raw_ingested_jobs</code> (status = <code>pending</code>)<br>Log run &rarr; <code>job_ingestion_runs</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC; <span class="event-name">IngestBatch</span> (or pending raw records in DB)</div>
+
+  <!-- ═══════════ PROCESSING LOOP (Loop 2) ═══════════ -->
+  <div class="phase-header loop">
+    Loop 2 &mdash; Processing Loop (orchestrates stages below)
+    <span class="file">scripts/run_processing_loop.py::main()</span>
+  </div>
+  <div class="agent-group" style="border-color: #7C3AED; margin-bottom: 0; border-radius: 0 0 0 0; border-bottom: 1px dashed #CBD5E1;">
+    <div class="steps">
+      <div class="step db-read">
+        <div class="label read">Count Pending</div>
+        <div class="desc"><code>_count_pending()</code> &mdash; <code>raw_ingested_jobs WHERE processing_status='pending'</code><br>
+        <code>_count_unextracted()</code> &mdash; <code>normalized_jobs LEFT JOIN extracted_intelligence</code></div>
+      </div>
+      <div class="step log">
+        <div class="label log-label">Langfuse Trace</div>
+        <div class="desc"><code>_tracer.start_trace()</code> wraps each iteration &mdash; all agent spans nest under one parent trace</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ NORMALIZATION ═══════════ -->
+  <div class="phase-header norm" style="border-radius: 0;">
+    Stage 1 &mdash; Normalization Agent
+    <span class="file">normalization/agent.py::process()</span>
+    <span class="cost">$0 (no LLM)</span>
+  </div>
+  <div class="agent-group norm" style="border-radius: 0;">
+    <div class="steps">
+      <div class="step db-read">
+        <div class="label read">DB Read</div>
+        <div class="desc">Fetch pending <code>raw_ingested_jobs</code> (FIFO, batch size from <code>NORM_BATCH_SIZE</code>)</div>
+      </div>
+      <div class="step">
+        <div class="label">Field Mapping</div>
+        <div class="desc"><code>normalization/field_mappers/</code> &mdash; per-source mappers: dates &rarr; ISO 8601, salary &rarr; min/max/currency/period, locations, employment types</div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write (pass)</div>
+        <div class="desc">Insert &rarr; <code>normalized_jobs</code><br>Update <code>raw_ingested_jobs.processing_status</code> = <code>'processed'</code></div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write (fail)</div>
+        <div class="desc">Schema violations &rarr; <code>normalization_quarantine</code><br>Update status = <code>'quarantined'</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC; <span class="event-name">NormalizationComplete</span></div>
+
+  <!-- ═══════════ SKILLS EXTRACTION ═══════════ -->
+  <div class="phase-header extract" style="border-radius: 0;">
+    Stage 2 &mdash; Skills Extraction Agent (Work Intelligence)
+    <span class="file">skills_extraction/agent.py::process()</span>
+    <span class="cost">~$0.015/job (3 LLM calls)</span>
+  </div>
+  <div class="agent-group extract" style="border-radius: 0;">
+    <div class="steps">
+      <div class="step db-read">
+        <div class="label read">DB Read</div>
+        <div class="desc"><code>EventOrDatabaseWorkItemLoader</code> &mdash; finds unextracted <code>normalized_jobs</code> via LEFT JOIN on <code>extracted_intelligence</code></div>
+      </div>
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; Skills ($)</div>
+        <div class="desc"><code>common/llm_client.py::invoke_skills_llm()</code><br>Structured output: skill names, types, confidence, text spans</div>
+      </div>
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; Tasks ($)</div>
+        <div class="desc"><code>common/llm_client.py::invoke_structured_extraction_llm()</code><br>Job task descriptions with text spans</div>
+      </div>
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; Responsibilities ($)</div>
+        <div class="desc"><code>common/llm_client.py::invoke_structured_extraction_llm()</code><br>Role responsibilities with text spans</div>
+      </div>
+      <div class="step">
+        <div class="label">Taxonomy Resolution</div>
+        <div class="desc"><code>skills_extraction/taxonomy/</code> &mdash; 6-step linking: GenAI &rarr; ESCO exact &rarr; ESCO normalized &rarr; embedding cosine &ge; 0.92 &rarr; O*NET &rarr; raw</div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write</div>
+        <div class="desc"><code>SQLAlchemyExtractionStore.save()</code> &rarr; <code>extracted_intelligence</code> (skills, tools, tasks, responsibilities, context, confidence)</div>
+      </div>
+      <div class="step log">
+        <div class="label log-label">Audit Log</div>
+        <div class="desc">Every LLM call &rarr; <code>llm_audit_log</code> via <code>common/llm_adapter.py::log_extraction_event()</code><br>
+        Langfuse generation spans via registered tracer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC; <span class="event-name">SkillsExtracted</span></div>
+
+  <!-- ═══════════ ENRICHMENT ═══════════ -->
+  <div class="phase-header enrich" style="border-radius: 0;">
+    Stage 3 &mdash; Enrichment Agent
+    <span class="file">enrichment/agent.py::process()</span>
+    <span class="cost">~$0.006/job (3 LLM calls)</span>
+  </div>
+  <div class="agent-group enrich" style="border-radius: 0;">
+    <div class="steps">
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; SOC Classification ($)</div>
+        <div class="desc"><code>enrichment/classifiers/soc_classifier.py::classify_soc()</code><br>Maps job to Standard Occupational Classification code</div>
+      </div>
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; NAICS Classification ($)</div>
+        <div class="desc"><code>enrichment/classifiers/naics_classifier.py::classify_naics_async()</code><br>Maps employer to NAICS industry code (reads <code>dbo.naics</code>)</div>
+      </div>
+      <div class="step llm">
+        <div class="label llm">LLM &mdash; Employer Profile ($)</div>
+        <div class="desc"><code>enrichment/resolvers/employer_resolver.py::build_employer_profile_async()</code><br>Classifies employer size, sector, type</div>
+      </div>
+      <div class="step">
+        <div class="label">Quality Score</div>
+        <div class="desc"><code>enrichment/classifiers/quality_scorer.py::score_quality()</code><br>Deterministic [0&ndash;1]: completeness + clarity + AI density + structure (no LLM)</div>
+      </div>
+      <div class="step">
+        <div class="label">Spam Detection</div>
+        <div class="desc"><code>enrichment/classifiers/spam_classifier.py</code><br>&lt; 0.7 pass | 0.7&ndash;0.9 flag for review | &gt; 0.9 auto-reject (skip promotion)</div>
+      </div>
+      <div class="step">
+        <div class="label">Company Resolution</div>
+        <div class="desc"><code>enrichment/resolvers/company_resolver.py</code><br>Match or create placeholder in <code>dbo.companies</code></div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write &mdash; Promotion</div>
+        <div class="desc"><code>enrichment/job_postings_promotion.py::apply_enrichment_to_job_postings()</code><br>INSERT/UPDATE &rarr; <code>job_postings</code> with SOC, NAICS, quality, spam, company_id, sector_id</div>
+      </div>
+      <div class="step db-write">
+        <div class="label write">DB Write &mdash; Profiles</div>
+        <div class="desc">Insert/update &rarr; <code>employer_profiles</code>, <code>companies</code></div>
+      </div>
+      <div class="step log">
+        <div class="label log-label">Progress Log</div>
+        <div class="desc"><code>enrichment_progress</code> event every 10 jobs: completed/total/in_flight/job_ms<br>
+        All LLM calls &rarr; <code>llm_audit_log</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">&#x25BC; <span class="event-name">RecordEnriched</span></div>
+
+  <!-- ═══════════ OUTPUT ═══════════ -->
+  <div class="phase-header" style="background: #475569;">
+    Output &mdash; Pipeline Complete
+    <span class="file">job_postings table &rarr; Analytics Agent (Week 7) &rarr; Visualization Agent</span>
+  </div>
+  <div class="agent-group" style="border-color: #94A3B8;">
+    <div class="steps">
+      <div class="step db-read">
+        <div class="label read">Downstream Consumers</div>
+        <div class="desc"><code>analytics/agent.py::process()</code> reads <code>job_postings</code> &rarr; aggregates<br>
+        <code>dashboard/streamlit_app.py</code> reads all tables (read-only)<br>
+        <code>scripts/pg-seed-data/export_fixtures.py</code> exports snapshots to <code>fixtures/</code></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ REFERENCE TABLE ═══════════ -->
+<h2 style="margin-top: 40px; font-size: 16px;">Code Reference</h2>
+
+<table class="ref-table">
+<thead>
+  <tr>
+    <th>Stage</th>
+    <th>File</th>
+    <th>Method / Class</th>
+    <th>DB Tables Touched</th>
+    <th>LLM Calls</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><strong>Orchestration</strong></td>
+    <td><code>scripts/run_processing_loop.py</code></td>
+    <td><code>main()</code>, <code>_count_pending()</code>, <code>_count_unextracted()</code></td>
+    <td>Reads: <code>raw_ingested_jobs</code>, <code>normalized_jobs</code>, <code>extracted_intelligence</code>, <code>job_postings</code></td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td><strong>Ingestion</strong></td>
+    <td><code>scripts/batch_ingest.py</code><br><code>ingestion/agent.py</code></td>
+    <td><code>IngestionAgent.process()</code></td>
+    <td>Read: <code>raw_ingested_jobs</code> (dedup)<br>Write: <code>raw_ingested_jobs</code>, <code>job_ingestion_runs</code></td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td><strong>Normalization</strong></td>
+    <td><code>normalization/agent.py</code></td>
+    <td><code>NormalizationAgent.process()</code></td>
+    <td>Read: <code>raw_ingested_jobs</code><br>Write: <code>normalized_jobs</code>, <code>normalization_quarantine</code></td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td><strong>Skills Extraction</strong></td>
+    <td><code>skills_extraction/agent.py</code><br><code>common/llm_client.py</code></td>
+    <td><code>SkillsExtractionAgent.process()</code><br><code>invoke_skills_llm()</code><br><code>invoke_structured_extraction_llm()</code><br><code>SQLAlchemyExtractionStore.save()</code></td>
+    <td>Read: <code>normalized_jobs</code>, <code>extracted_intelligence</code>, <code>skills</code> (taxonomy)<br>Write: <code>extracted_intelligence</code>, <code>llm_audit_log</code></td>
+    <td>3/job: skills, tasks, responsibilities</td>
+  </tr>
+  <tr>
+    <td><strong>Enrichment</strong></td>
+    <td><code>enrichment/agent.py</code><br><code>enrichment/classifiers/</code><br><code>enrichment/resolvers/</code><br><code>enrichment/job_postings_promotion.py</code></td>
+    <td><code>EnrichmentAgent.process()</code><br><code>enrich_record_async()</code><br><code>classify_soc()</code><br><code>classify_naics_async()</code><br><code>build_employer_profile_async()</code><br><code>apply_enrichment_to_job_postings()</code></td>
+    <td>Read: <code>naics</code>, <code>socc</code>, <code>companies</code>, <code>industry_sectors</code><br>Write: <code>job_postings</code>, <code>employer_profiles</code>, <code>companies</code>, <code>llm_audit_log</code></td>
+    <td>3/job: SOC, NAICS, employer</td>
+  </tr>
+  <tr>
+    <td><strong>Audit / Tracing</strong></td>
+    <td><code>common/llm_adapter.py</code><br><code>common/observability/langfuse.py</code></td>
+    <td><code>log_extraction_event()</code><br><code>compute_extraction_cost()</code><br><code>resolve_model_tier()</code><br><code>LangfuseTracer.start_span()</code></td>
+    <td>Write: <code>llm_audit_log</code> (every LLM call)</td>
+    <td>0 (logs calls made by other stages)</td>
+  </tr>
+</tbody>
+</table>
+
+<!-- ═══════════ ENV VARS ═══════════ -->
+<div class="env-section">
+<h2>Key Environment Variables</h2>
+<table class="ref-table">
+<thead>
+  <tr><th>Variable</th><th>Used By</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+  <tr><td><code>PYTHON_DATABASE_URL</code></td><td>All stages</td><td>PostgreSQL connection string (SQLAlchemy)</td></tr>
+  <tr><td><code>LLM_PROVIDER</code></td><td>Extraction, Enrichment</td><td><code>azure_openai</code> | <code>gemini</code> | <code>anthropic</code> | <code>mock</code></td></tr>
+  <tr><td><code>AZURE_OPENAI_API_KEY</code></td><td>Extraction, Enrichment</td><td>Azure OpenAI authentication</td></tr>
+  <tr><td><code>AZURE_OPENAI_ENDPOINT</code></td><td>Extraction, Enrichment</td><td>Azure OpenAI endpoint URL</td></tr>
+  <tr><td><code>AZURE_OPENAI_DEPLOYMENT_NAME</code></td><td>Extraction, Enrichment</td><td>Model deployment name (e.g. <code>chat-gpt41mini</code>)</td></tr>
+  <tr><td><code>JSEARCH_API_KEY</code> ... <code>_7</code></td><td>Ingestion</td><td>JSearch API keys for rotation (200 req budget each)</td></tr>
+  <tr><td><code>SKILLS_EXTRACTION_PARALLEL</code></td><td>Extraction</td><td><code>1</code> = parallel (default), <code>0</code> = serial</td></tr>
+  <tr><td><code>SKILLS_EXTRACTION_CONCURRENCY</code></td><td>Extraction</td><td>Max concurrent jobs in extraction (default: 5)</td></tr>
+  <tr><td><code>ENRICHMENT_PARALLEL</code></td><td>Enrichment</td><td><code>1</code> = parallel (default), <code>0</code> = serial</td></tr>
+  <tr><td><code>ENRICHMENT_CONCURRENCY</code></td><td>Enrichment</td><td>Max concurrent jobs in enrichment (default: 30)</td></tr>
+  <tr><td><code>NORM_BATCH_SIZE</code></td><td>Normalization</td><td>Records per normalization batch (default: 50)</td></tr>
+  <tr><td><code>LANGFUSE_SECRET_KEY</code></td><td>All stages (optional)</td><td>Enables Langfuse tracing when set</td></tr>
+</tbody>
+</table>
+</div>
+
+<p style="margin-top: 32px; font-size: 11px; color: #94A3B8;">
+  Cost per job: ~$0.021 (verified against Azure Cost Management, <code>resumejobmatch</code> resource, April 2026).
+  At scale: 100 jobs &asymp; $2.10 &nbsp;|&nbsp; 500 jobs &asymp; $10.50 &nbsp;|&nbsp; 1,000 jobs &asymp; $21.00
+</p>
+</body>
+</html>

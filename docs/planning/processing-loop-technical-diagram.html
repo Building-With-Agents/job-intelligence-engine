@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Processing Loop — Technical Pipeline Diagram</title>
+<style>
+  body { margin: 0; padding: 32px; background: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  h1 { font-size: 20px; font-weight: 700; color: #0F172A; margin: 0 0 6px 0; letter-spacing: -0.3px; }
+  p.subtitle { font-size: 12px; color: #64748B; margin: 0 0 20px 0; }
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 24px; }
+  .ref-table th { text-align: left; background: #1E293B; color: #F8FAFC; padding: 6px 10px; }
+  .ref-table td { padding: 6px 10px; border: 1px solid #E2E8F0; vertical-align: top; }
+  .ref-table code { background: #F1F5F9; padding: 1px 3px; border-radius: 3px; font-size: 10px; font-family: 'SF Mono','Consolas',monospace; }
+  .ref-table tr:hover { background: #F8FAFC; }
+  .ref-table .gap { background: #FEF2F2; }
+</style>
+</head>
+<body>
+<h1>Processing Loop — Technical Pipeline Diagram</h1>
+<p class="subtitle">
+  Flywheel pattern: Loop 1 (<code>batch_ingest.py</code>) stages raw records &mdash;
+  Loop 2 (<code>run_processing_loop.py</code>) processes them through 3 agents.
+  Cost: ~$0.021/job (Azure gpt-4.1-mini, verified April 2026).
+</p>
+
+<svg width="1260" height="1080" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#374151"/></marker>
+  <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#059669"/></marker>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#DC2626"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2563EB"/></marker>
+  <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#D97706"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7C3AED"/></marker>
+  <marker id="agr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6B7280"/></marker>
+</defs>
+
+<!-- ══════════════════════════════════════════════════════════
+     BACKGROUND REGIONS
+══════════════════════════════════════════════════════════ -->
+
+<!-- Loop 1 region -->
+<rect x="20" y="10" width="440" height="200" rx="12" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5"/>
+<text x="35" y="30" font-size="11" fill="#1D4ED8" font-weight="700" letter-spacing="1">LOOP 1 — INGESTION (NO LLM · $0)</text>
+<text x="35" y="44" font-size="9" fill="#64748B">scripts/batch_ingest.py &rarr; ingestion/agent.py::process()</text>
+
+<!-- Loop 2 region -->
+<rect x="20" y="230" width="830" height="800" rx="12" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="1.5"/>
+<text x="35" y="250" font-size="11" fill="#6D28D9" font-weight="700" letter-spacing="1">LOOP 2 — PROCESSING (LLM CALLS · ~$0.021/JOB)</text>
+<text x="35" y="264" font-size="9" fill="#64748B">scripts/run_processing_loop.py::main() &mdash; iterates until pending=0 and unextracted=0</text>
+
+<!-- Database region -->
+<rect x="870" y="10" width="370" height="1020" rx="12" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5"/>
+<text x="1055" y="30" text-anchor="middle" font-size="10" fill="#059669" font-weight="700" letter-spacing="1.5">POSTGRESQL (dbo schema)</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOOP 1 — INGESTION AGENT
+══════════════════════════════════════════════════════════ -->
+
+<!-- Config -->
+<rect x="40" y="58" width="180" height="40" rx="6" fill="#DBEAFE" stroke="#93C5FD"/>
+<text x="130" y="74" text-anchor="middle" font-size="10" fill="#1E40AF" font-weight="600">config/ingestion_queries.yaml</text>
+<text x="130" y="88" text-anchor="middle" font-size="8" fill="#64748B">47 query groups, keywords, pages</text>
+
+<!-- JSearch API -->
+<rect x="240" y="58" width="100" height="40" rx="6" fill="#0D9488"/>
+<text x="290" y="74" text-anchor="middle" font-size="10" fill="white" font-weight="600">JSearch API</text>
+<text x="290" y="88" text-anchor="middle" font-size="8" fill="#CCFBF1">httpx · paginated</text>
+
+<!-- Arrow: config → JSearch -->
+<path d="M220 78 L238 78" stroke="#374151" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- Ingestion Agent box -->
+<rect x="40" y="112" width="200" height="44" rx="6" fill="#1D4ED8"/>
+<text x="140" y="130" text-anchor="middle" font-size="11" fill="white" font-weight="700">IngestionAgent.process()</text>
+<text x="140" y="145" text-anchor="middle" font-size="8" fill="#BFDBFE">SHA-256 dedup · source priority · provenance tags</text>
+
+<!-- Key rotation -->
+<rect x="260" y="112" width="180" height="44" rx="6" fill="#F1F5F9" stroke="#CBD5E1"/>
+<text x="350" y="128" text-anchor="middle" font-size="9" fill="#475569" font-weight="600">Key Rotation &amp; Resume</text>
+<text x="350" y="141" text-anchor="middle" font-size="8" fill="#64748B">--start-query N · --queries name1,name2</text>
+<text x="350" y="152" text-anchor="middle" font-size="8" fill="#64748B">--start-key K · 200 req budget/key</text>
+
+<!-- Arrow: JSearch → Ingestion Agent -->
+<path d="M290 98 L140 110" stroke="#374151" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- Arrow: Ingestion → DB (raw_ingested_jobs) -->
+<path d="M240 134 L870 60" stroke="#059669" stroke-width="2" marker-end="url(#ag)"/>
+<!-- Arrow: Ingestion → DB (job_ingestion_runs) -->
+<path d="M240 140 L870 108" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ag)"/>
+
+<!-- ══════════════════════════════════════════════════════════
+     GAP INDICATOR: Loop 1 → Loop 2
+══════════════════════════════════════════════════════════ -->
+<rect x="130" y="174" width="260" height="42" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-dasharray="6,3"/>
+<text x="260" y="191" text-anchor="middle" font-size="10" fill="#DC2626" font-weight="700">GAP — No EventEnvelope between loops</text>
+<text x="260" y="204" text-anchor="middle" font-size="8" fill="#991B1B">Loop 2 discovers pending records via DB query, not IngestBatch event</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOOP 2 — ORCHESTRATION HEADER
+══════════════════════════════════════════════════════════ -->
+
+<!-- Count queries -->
+<rect x="40" y="280" width="360" height="50" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+<text x="50" y="296" font-size="10" fill="#5B21B6" font-weight="700">Pre-iteration DB queries (per iteration)</text>
+<text x="50" y="310" font-size="9" fill="#64748B">_count_pending() &rarr; SELECT COUNT(*) FROM raw_ingested_jobs WHERE status='pending'</text>
+<text x="50" y="322" font-size="9" fill="#64748B">_count_unextracted() &rarr; normalized_jobs LEFT JOIN extracted_intelligence WHERE ei.id IS NULL</text>
+
+<!-- Langfuse trace -->
+<rect x="420" y="280" width="220" height="50" rx="6" fill="#FFF7ED" stroke="#FED7AA"/>
+<text x="530" y="296" text-anchor="middle" font-size="9" fill="#92400E" font-weight="700">Langfuse Parent Trace</text>
+<text x="530" y="310" text-anchor="middle" font-size="8" fill="#64748B">_tracer.start_trace(f"iter-{n}")</text>
+<text x="530" y="322" text-anchor="middle" font-size="8" fill="#64748B">All agent spans nest under this trace</text>
+
+<!-- Arrow: count queries read from DB -->
+<path d="M400 295 L870 60" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)"/>
+<path d="M400 310 L870 155" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)"/>
+
+<!-- ══════════════════════════════════════════════════════════
+     STAGE 1 — NORMALIZATION AGENT
+══════════════════════════════════════════════════════════ -->
+
+<rect x="40" y="350" width="600" height="130" rx="8" fill="#EEF2FF" stroke="#6366F1" stroke-width="2"/>
+<text x="55" y="370" font-size="11" fill="#4338CA" font-weight="700">STAGE 1 — NormalizationAgent.process(trigger)</text>
+<text x="330" y="370" font-size="9" fill="#64748B">normalization/agent.py:383 &nbsp;|&nbsp; $0 (no LLM) &nbsp;|&nbsp; batch_size from NORM_BATCH_SIZE env</text>
+
+<!-- Steps inside normalization -->
+<rect x="55" y="382" width="155" height="38" rx="4" fill="#DBEAFE"/>
+<text x="132" y="397" text-anchor="middle" font-size="9" fill="#1E40AF" font-weight="600">1. Fetch pending raw</text>
+<text x="132" y="410" text-anchor="middle" font-size="8" fill="#64748B">query(RawIngestedJob)</text>
+
+<rect x="220" y="382" width="155" height="38" rx="4" fill="#F1F5F9"/>
+<text x="297" y="397" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">2. Field mapping</text>
+<text x="297" y="410" text-anchor="middle" font-size="8" fill="#64748B">per-source mappers</text>
+
+<rect x="385" y="382" width="105" height="38" rx="4" fill="#DCFCE7"/>
+<text x="437" y="397" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">3a. Write pass</text>
+<text x="437" y="410" text-anchor="middle" font-size="8" fill="#64748B">normalized_jobs</text>
+
+<rect x="500" y="382" width="125" height="38" rx="4" fill="#FEE2E2"/>
+<text x="562" y="397" text-anchor="middle" font-size="9" fill="#991B1B" font-weight="600">3b. Write quarantine</text>
+<text x="562" y="410" text-anchor="middle" font-size="8" fill="#64748B">normalization_quarantine</text>
+
+<!-- Status update -->
+<rect x="55" y="430" width="255" height="30" rx="4" fill="#DCFCE7"/>
+<text x="182" y="449" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">4. Update raw_ingested_jobs.processing_status = 'processed' | 'quarantined'</text>
+
+<!-- DB arrows for normalization -->
+<path d="M210 395 L870 60" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)" opacity="0.7"/>
+<text x="650" y="218" font-size="8" fill="#2563EB" transform="rotate(-18,650,218)">READ raw_ingested_jobs</text>
+
+<path d="M490 415 L870 155" stroke="#059669" stroke-width="1.5" marker-end="url(#ag)"/>
+<text x="720" y="275" font-size="8" fill="#059669" transform="rotate(-16,720,275)">WRITE normalized_jobs</text>
+
+<path d="M625 415 L870 205" stroke="#DC2626" stroke-width="1.2" marker-end="url(#ar)"/>
+<text x="780" y="305" font-size="8" fill="#DC2626" transform="rotate(-18,780,305)">WRITE quarantine</text>
+
+<path d="M310 452 L870 72" stroke="#D97706" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ao)"/>
+<text x="590" y="248" font-size="8" fill="#D97706" transform="rotate(-18,590,248)">UPDATE status</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     EVENT: NormalizationComplete
+══════════════════════════════════════════════════════════ -->
+<rect x="200" y="490" width="210" height="24" rx="12" fill="#7C3AED"/>
+<text x="305" y="506" text-anchor="middle" font-size="10" fill="white" font-weight="700">EventEnvelope: NormalizationComplete</text>
+<path d="M305 480 L305 490" stroke="#7C3AED" stroke-width="2" marker-end="url(#ap)"/>
+<text x="415" y="506" font-size="8" fill="#6D28D9">payload: {normalized_count, quarantined_count, batch_id}</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     STAGE 2 — SKILLS EXTRACTION AGENT
+══════════════════════════════════════════════════════════ -->
+
+<rect x="40" y="528" width="810" height="180" rx="8" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2"/>
+<text x="55" y="548" font-size="11" fill="#92400E" font-weight="700">STAGE 2 — SkillsExtractionAgent.process(norm_out | trigger)</text>
+<text x="490" y="548" font-size="9" fill="#64748B">skills_extraction/agent.py:568 &nbsp;|&nbsp; ~$0.015/job (3 LLM calls) &nbsp;|&nbsp; SKILLS_EXTRACTION_CONCURRENCY=5</text>
+
+<!-- GAP callout: reads from DB not event -->
+<rect x="55" y="556" width="300" height="20" rx="4" fill="#FEF2F2" stroke="#FECACA"/>
+<text x="205" y="569" text-anchor="middle" font-size="8" fill="#DC2626" font-weight="600">NOTE: Loads work items from DB (LEFT JOIN), not from NormalizationComplete payload</text>
+
+<!-- Steps -->
+<rect x="55" y="582" width="175" height="38" rx="4" fill="#DBEAFE"/>
+<text x="142" y="597" text-anchor="middle" font-size="9" fill="#1E40AF" font-weight="600">1. Load unextracted jobs</text>
+<text x="142" y="610" text-anchor="middle" font-size="8" fill="#64748B">EventOrDatabaseWorkItemLoader</text>
+
+<rect x="240" y="582" width="130" height="38" rx="4" fill="#FEF3C7"/>
+<text x="305" y="597" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">2a. LLM: Skills ($)</text>
+<text x="305" y="610" text-anchor="middle" font-size="8" fill="#64748B">invoke_skills_llm()</text>
+
+<rect x="380" y="582" width="130" height="38" rx="4" fill="#FEF3C7"/>
+<text x="445" y="597" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">2b. LLM: Tasks ($)</text>
+<text x="445" y="610" text-anchor="middle" font-size="8" fill="#64748B">invoke_structured...()</text>
+
+<rect x="520" y="582" width="155" height="38" rx="4" fill="#FEF3C7"/>
+<text x="597" y="597" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">2c. LLM: Responsibilities ($)</text>
+<text x="597" y="610" text-anchor="middle" font-size="8" fill="#64748B">invoke_structured...()</text>
+
+<!-- Parallel callout -->
+<rect x="685" y="582" width="145" height="38" rx="4" fill="#F5F3FF" stroke="#C4B5FD"/>
+<text x="757" y="597" text-anchor="middle" font-size="9" fill="#6D28D9" font-weight="600">asyncio.gather()</text>
+<text x="757" y="610" text-anchor="middle" font-size="8" fill="#64748B">2a+2b+2c in parallel</text>
+
+<!-- Row 2: taxonomy + save -->
+<rect x="55" y="630" width="175" height="38" rx="4" fill="#F1F5F9"/>
+<text x="142" y="645" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">3. Taxonomy resolution</text>
+<text x="142" y="658" text-anchor="middle" font-size="8" fill="#64748B">6-step: GenAI/ESCO/embed/O*NET</text>
+
+<rect x="240" y="630" width="175" height="38" rx="4" fill="#DCFCE7"/>
+<text x="327" y="645" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">4. Save to DB</text>
+<text x="327" y="658" text-anchor="middle" font-size="8" fill="#64748B">SQLAlchemyExtractionStore.save()</text>
+
+<rect x="425" y="630" width="175" height="38" rx="4" fill="#FFF7ED" stroke="#FED7AA"/>
+<text x="512" y="645" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">5. Audit log (every call)</text>
+<text x="512" y="658" text-anchor="middle" font-size="8" fill="#64748B">log_extraction_event() &rarr; llm_audit_log</text>
+
+<rect x="610" y="630" width="145" height="38" rx="4" fill="#FFF7ED" stroke="#FED7AA"/>
+<text x="682" y="645" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">6. Langfuse spans</text>
+<text x="682" y="658" text-anchor="middle" font-size="8" fill="#64748B">generation per LLM call</text>
+
+<!-- DB arrows for extraction -->
+<path d="M230 595 L870 155" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)" opacity="0.7"/>
+<path d="M230 600 L870 260" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)" opacity="0.7"/>
+<path d="M415 648 L870 310" stroke="#059669" stroke-width="1.5" marker-end="url(#ag)"/>
+<path d="M600 658 L870 950" stroke="#D97706" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ao)"/>
+
+<!-- ══════════════════════════════════════════════════════════
+     EVENT: SkillsExtracted
+══════════════════════════════════════════════════════════ -->
+<rect x="200" y="718" width="190" height="24" rx="12" fill="#7C3AED"/>
+<text x="295" y="734" text-anchor="middle" font-size="10" fill="white" font-weight="700">EventEnvelope: SkillsExtracted</text>
+<path d="M295 708 L295 718" stroke="#7C3AED" stroke-width="2" marker-end="url(#ap)"/>
+<text x="395" y="734" font-size="8" fill="#6D28D9">payload: {records: [...], avg_per_job_ms, failed_jobs}</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     STAGE 3 — ENRICHMENT AGENT
+══════════════════════════════════════════════════════════ -->
+
+<rect x="40" y="756" width="810" height="200" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+<text x="55" y="776" font-size="11" fill="#047857" font-weight="700">STAGE 3 — EnrichmentAgent.process(extract_out | trigger)</text>
+<text x="450" y="776" font-size="9" fill="#64748B">enrichment/agent.py:828 &nbsp;|&nbsp; ~$0.006/job (3 LLM calls) &nbsp;|&nbsp; ENRICHMENT_CONCURRENCY=30</text>
+
+<!-- Spam gate -->
+<rect x="55" y="790" width="130" height="38" rx="4" fill="#FEE2E2"/>
+<text x="120" y="805" text-anchor="middle" font-size="9" fill="#991B1B" font-weight="600">0. Spam gate</text>
+<text x="120" y="818" text-anchor="middle" font-size="8" fill="#64748B">&gt;0.9 reject, 0.7-0.9 flag</text>
+
+<!-- LLM calls (asyncio.gather) -->
+<rect x="195" y="790" width="130" height="38" rx="4" fill="#FEF3C7"/>
+<text x="260" y="805" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">1a. LLM: SOC ($)</text>
+<text x="260" y="818" text-anchor="middle" font-size="8" fill="#64748B">classify_soc()</text>
+
+<rect x="335" y="790" width="130" height="38" rx="4" fill="#FEF3C7"/>
+<text x="400" y="805" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">1b. LLM: NAICS ($)</text>
+<text x="400" y="818" text-anchor="middle" font-size="8" fill="#64748B">classify_naics_async()</text>
+
+<rect x="475" y="790" width="155" height="38" rx="4" fill="#FEF3C7"/>
+<text x="552" y="805" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">1c. LLM: Employer ($)</text>
+<text x="552" y="818" text-anchor="middle" font-size="8" fill="#64748B">build_employer_profile_async()</text>
+
+<!-- Parallel callout -->
+<rect x="640" y="790" width="145" height="38" rx="4" fill="#F5F3FF" stroke="#C4B5FD"/>
+<text x="712" y="805" text-anchor="middle" font-size="9" fill="#6D28D9" font-weight="600">asyncio.gather()</text>
+<text x="712" y="818" text-anchor="middle" font-size="8" fill="#64748B">1a+1b+1c in parallel</text>
+
+<!-- Row 2 -->
+<rect x="55" y="838" width="130" height="38" rx="4" fill="#F1F5F9"/>
+<text x="120" y="853" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">2. Quality score</text>
+<text x="120" y="866" text-anchor="middle" font-size="8" fill="#64748B">score_quality() · no LLM</text>
+
+<rect x="195" y="838" width="155" height="38" rx="4" fill="#F1F5F9"/>
+<text x="272" y="853" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">3. Company resolution</text>
+<text x="272" y="866" text-anchor="middle" font-size="8" fill="#64748B">match or create placeholder</text>
+
+<rect x="360" y="838" width="200" height="38" rx="4" fill="#DCFCE7"/>
+<text x="460" y="853" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">4. Promotion &rarr; job_postings</text>
+<text x="460" y="866" text-anchor="middle" font-size="8" fill="#64748B">apply_enrichment_to_job_postings()</text>
+
+<rect x="570" y="838" width="130" height="38" rx="4" fill="#DCFCE7"/>
+<text x="635" y="853" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">5. Write profiles</text>
+<text x="635" y="866" text-anchor="middle" font-size="8" fill="#64748B">employer_profiles, companies</text>
+
+<rect x="710" y="838" width="120" height="38" rx="4" fill="#FFF7ED" stroke="#FED7AA"/>
+<text x="770" y="853" text-anchor="middle" font-size="9" fill="#92400E" font-weight="600">6. Progress log</text>
+<text x="770" y="866" text-anchor="middle" font-size="8" fill="#64748B">every 10 jobs</text>
+
+<!-- Row 3: enrichment gap -->
+<rect x="55" y="886" width="500" height="22" rx="4" fill="#FEF2F2" stroke="#FECACA"/>
+<text x="305" y="901" text-anchor="middle" font-size="8" fill="#DC2626" font-weight="600">GAP: Enrichment reads extraction output from SkillsExtracted event payload, NOT from extracted_intelligence table &mdash; but falls back to trigger if extract_count=0</text>
+
+<!-- DB arrows for enrichment -->
+<path d="M560 855 L870 385" stroke="#059669" stroke-width="2" marker-end="url(#ag)"/>
+<text x="750" y="610" font-size="8" fill="#059669" transform="rotate(-22,750,610)">WRITE/UPDATE job_postings</text>
+
+<path d="M700 860 L870 445" stroke="#059669" stroke-width="1.5" marker-end="url(#ag)"/>
+<path d="M350 862 L870 500" stroke="#059669" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ag)"/>
+
+<!-- Reads reference tables -->
+<path d="M400 825 L870 555" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)" opacity="0.7"/>
+<path d="M260 825 L870 620" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)" opacity="0.7"/>
+
+<!-- ══════════════════════════════════════════════════════════
+     EVENT: RecordEnriched
+══════════════════════════════════════════════════════════ -->
+<rect x="200" y="968" width="180" height="24" rx="12" fill="#7C3AED"/>
+<text x="290" y="984" text-anchor="middle" font-size="10" fill="white" font-weight="700">EventEnvelope: RecordEnriched</text>
+<path d="M290 956 L290 968" stroke="#7C3AED" stroke-width="2" marker-end="url(#ap)"/>
+<text x="385" y="984" font-size="8" fill="#6D28D9">payload: {enriched_count, spam_rejected_count} &rarr; Analytics Agent (Week 7)</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     ITERATION LOOP ARROW (left side)
+══════════════════════════════════════════════════════════ -->
+<path d="M290 1000 L10 1000 L10 290 L38 290" stroke="#6D28D9" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#ap)" fill="none"/>
+<text x="12" y="650" font-size="9" fill="#6D28D9" font-weight="600" transform="rotate(-90,12,650)">time.sleep(delay) &rarr; next iteration (or break if pending=0 &amp; unextracted=0)</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     DATABASE TABLES (right column)
+══════════════════════════════════════════════════════════ -->
+
+<!-- raw_ingested_jobs -->
+<rect x="885" y="45" width="340" height="50" rx="6" fill="#059669"/>
+<text x="1055" y="63" text-anchor="middle" font-size="12" fill="white" font-weight="700">raw_ingested_jobs</text>
+<text x="1055" y="78" text-anchor="middle" font-size="9" fill="#A7F3D0">staging | dedup fingerprints | processing_status</text>
+<text x="1055" y="90" text-anchor="middle" font-size="8" fill="#6EE7B7">PERMANENT AUDIT TABLE — never truncate</text>
+
+<!-- job_ingestion_runs -->
+<rect x="885" y="100" width="340" height="38" rx="6" fill="#047857"/>
+<text x="1055" y="118" text-anchor="middle" font-size="11" fill="white" font-weight="600">job_ingestion_runs</text>
+<text x="1055" y="132" text-anchor="middle" font-size="8" fill="#A7F3D0">batch run tracking (run_id, counts, timestamps)</text>
+
+<!-- normalized_jobs -->
+<rect x="885" y="145" width="340" height="50" rx="6" fill="#059669"/>
+<text x="1055" y="163" text-anchor="middle" font-size="12" fill="white" font-weight="700">normalized_jobs</text>
+<text x="1055" y="178" text-anchor="middle" font-size="9" fill="#A7F3D0">canonical JobRecord | ISO dates | salary min/max/currency</text>
+<text x="1055" y="190" text-anchor="middle" font-size="8" fill="#6EE7B7">PERMANENT AUDIT TABLE — never truncate</text>
+
+<!-- normalization_quarantine -->
+<rect x="885" y="200" width="340" height="38" rx="6" fill="#B91C1C"/>
+<text x="1055" y="218" text-anchor="middle" font-size="11" fill="white" font-weight="600">normalization_quarantine</text>
+<text x="1055" y="232" text-anchor="middle" font-size="8" fill="#FCA5A5">schema violations (permanent)</text>
+
+<!-- extracted_intelligence -->
+<rect x="885" y="250" width="340" height="55" rx="6" fill="#059669"/>
+<text x="1055" y="268" text-anchor="middle" font-size="12" fill="white" font-weight="700">extracted_intelligence</text>
+<text x="1055" y="283" text-anchor="middle" font-size="9" fill="#A7F3D0">JSONB: skills[], tools[], tasks[], responsibilities[], context</text>
+<text x="1055" y="298" text-anchor="middle" font-size="8" fill="#6EE7B7">overall_confidence | extraction_model | PERMANENT</text>
+
+<!-- skills (reference) -->
+<rect x="885" y="315" width="160" height="38" rx="6" fill="#047857"/>
+<text x="965" y="333" text-anchor="middle" font-size="10" fill="white" font-weight="600">skills (taxonomy)</text>
+<text x="965" y="347" text-anchor="middle" font-size="8" fill="#A7F3D0">ESCO + embeddings</text>
+
+<!-- socc (reference) -->
+<rect x="1060" y="315" width="165" height="38" rx="6" fill="#047857"/>
+<text x="1142" y="333" text-anchor="middle" font-size="10" fill="white" font-weight="600">socc</text>
+<text x="1142" y="347" text-anchor="middle" font-size="8" fill="#A7F3D0">SOC code reference</text>
+
+<!-- job_postings -->
+<rect x="885" y="365" width="340" height="60" rx="6" fill="#1D4ED8"/>
+<text x="1055" y="385" text-anchor="middle" font-size="13" fill="white" font-weight="700">job_postings (PRODUCTION)</text>
+<text x="1055" y="400" text-anchor="middle" font-size="9" fill="#BFDBFE">soc_code | naics_code | quality_score | spam_score | company_id | sector_id</text>
+<text x="1055" y="415" text-anchor="middle" font-size="8" fill="#93C5FD">Final destination for enriched jobs &rarr; Analytics + Dashboard</text>
+
+<!-- employer_profiles -->
+<rect x="885" y="435" width="340" height="38" rx="6" fill="#059669"/>
+<text x="1055" y="453" text-anchor="middle" font-size="11" fill="white" font-weight="600">employer_profiles</text>
+<text x="1055" y="467" text-anchor="middle" font-size="8" fill="#A7F3D0">size, sector, type from LLM classification</text>
+
+<!-- companies -->
+<rect x="885" y="480" width="160" height="38" rx="6" fill="#047857"/>
+<text x="965" y="498" text-anchor="middle" font-size="10" fill="white" font-weight="600">companies</text>
+<text x="965" y="512" text-anchor="middle" font-size="8" fill="#A7F3D0">match or placeholder</text>
+
+<!-- industry_sectors -->
+<rect x="1060" y="480" width="165" height="38" rx="6" fill="#047857"/>
+<text x="1142" y="498" text-anchor="middle" font-size="10" fill="white" font-weight="600">industry_sectors</text>
+<text x="1142" y="512" text-anchor="middle" font-size="8" fill="#A7F3D0">sector_id FK</text>
+
+<!-- naics -->
+<rect x="885" y="530" width="160" height="38" rx="6" fill="#047857"/>
+<text x="965" y="548" text-anchor="middle" font-size="10" fill="white" font-weight="600">naics</text>
+<text x="965" y="562" text-anchor="middle" font-size="8" fill="#A7F3D0">2,125 NAICS 2022 codes</text>
+
+<!-- technology_areas -->
+<rect x="1060" y="530" width="165" height="38" rx="6" fill="#047857"/>
+<text x="1142" y="548" text-anchor="middle" font-size="10" fill="white" font-weight="600">technology_areas</text>
+<text x="1142" y="562" text-anchor="middle" font-size="8" fill="#A7F3D0">reference classification</text>
+
+<!-- Separator -->
+<line x1="885" y1="590" x2="1225" y2="590" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="1055" y="610" text-anchor="middle" font-size="9" fill="#94A3B8" font-weight="600">REFERENCE TABLES (above) &mdash; AUDIT / OBSERVABILITY (below)</text>
+
+<!-- llm_audit_log -->
+<rect x="885" y="625" width="340" height="55" rx="6" fill="#78350F"/>
+<text x="1055" y="645" text-anchor="middle" font-size="12" fill="white" font-weight="700">llm_audit_log</text>
+<text x="1055" y="660" text-anchor="middle" font-size="9" fill="#FDE68A">agent_name | model | provider | latency_ms | tokens | cost_usd</text>
+<text x="1055" y="673" text-anchor="middle" font-size="8" fill="#FDE68A">PERMANENT — every LLM call logged via log_extraction_event()</text>
+
+<!-- Langfuse -->
+<rect x="885" y="695" width="340" height="45" rx="6" fill="#92400E" stroke="#FDE68A" stroke-width="1.2" stroke-dasharray="4,3"/>
+<text x="1055" y="715" text-anchor="middle" font-size="11" fill="white" font-weight="700">Langfuse (external)</text>
+<text x="1055" y="730" text-anchor="middle" font-size="8" fill="#FDE68A">http://localhost:3000 | traces + generation spans + cost</text>
+
+<!-- ══════════════════════════════════════════════════════════
+     LEGEND
+══════════════════════════════════════════════════════════ -->
+<rect x="885" y="760" width="340" height="170" rx="8" fill="#F1F5F9" stroke="#E2E8F0"/>
+<text x="900" y="782" font-size="10" fill="#374151" font-weight="700">LEGEND</text>
+
+<line x1="900" y1="800" x2="940" y2="800" stroke="#059669" stroke-width="2" marker-end="url(#ag)"/>
+<text x="948" y="804" font-size="9" fill="#374151">DB write (solid green)</text>
+
+<line x1="900" y1="820" x2="940" y2="820" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ab)"/>
+<text x="948" y="824" font-size="9" fill="#374151">DB read (dashed blue)</text>
+
+<line x1="900" y1="840" x2="940" y2="840" stroke="#D97706" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#ao)"/>
+<text x="948" y="844" font-size="9" fill="#374151">Audit write / status update (amber)</text>
+
+<rect x="900" y="854" width="40" height="14" rx="7" fill="#7C3AED"/>
+<text x="948" y="866" font-size="9" fill="#374151">EventEnvelope (purple pill)</text>
+
+<rect x="900" y="876" width="40" height="14" rx="4" fill="#FEF3C7"/>
+<text x="948" y="888" font-size="9" fill="#374151">LLM call (costs money)</text>
+
+<rect x="900" y="898" width="40" height="14" rx="4" fill="#FEF2F2" stroke="#FECACA"/>
+<text x="948" y="910" font-size="9" fill="#374151">Architecture gap (no event / DB-driven)</text>
+
+<line x1="900" y1="928" x2="940" y2="928" stroke="#6D28D9" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="948" y="932" font-size="9" fill="#374151">Iteration loop (back to top on completion)</text>
+
+</svg>
+
+<!-- ══════════════════════════════════════════════════════════
+     REFERENCE TABLE
+══════════════════════════════════════════════════════════ -->
+
+<h2 style="margin-top:32px; font-size:16px;">Code Reference — File &rarr; Method &rarr; DB &rarr; Events</h2>
+<table class="ref-table">
+<thead>
+  <tr><th>#</th><th>Stage</th><th>File</th><th>Entry Method</th><th>Internal Methods</th><th>DB Reads</th><th>DB Writes</th><th>LLM Calls</th><th>Event In</th><th>Event Out</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td>0</td><td><strong>Orchestration</strong></td>
+    <td><code>scripts/run_processing_loop.py</code></td>
+    <td><code>main()</code></td>
+    <td><code>_count_pending()</code><br><code>_count_unextracted()</code><br><code>_count_enriched()</code><br><code>_init_tracer()</code></td>
+    <td><code>raw_ingested_jobs</code><br><code>normalized_jobs</code><br><code>extracted_intelligence</code><br><code>job_postings</code></td>
+    <td>&mdash;</td>
+    <td>0</td>
+    <td>&mdash;</td>
+    <td>ProcessingTrigger (synthetic)</td>
+  </tr>
+  <tr>
+    <td>L1</td><td><strong>Ingestion</strong></td>
+    <td><code>scripts/batch_ingest.py</code><br><code>ingestion/agent.py</code></td>
+    <td><code>IngestionAgent.process()</code></td>
+    <td><code>ingestion/deduplicator.py</code><br><code>ingestion/sources/jsearch_source.py</code></td>
+    <td><code>raw_ingested_jobs</code> (dedup)</td>
+    <td><code>raw_ingested_jobs</code><br><code>job_ingestion_runs</code></td>
+    <td>0</td>
+    <td>&mdash;</td>
+    <td>IngestBatch</td>
+  </tr>
+  <tr class="gap">
+    <td>&mdash;</td><td colspan="9"><strong>GAP:</strong> No IngestBatch event passes between Loop 1 and Loop 2. The processing loop discovers pending records via <code>_count_pending()</code> DB query.</td>
+  </tr>
+  <tr>
+    <td>S1</td><td><strong>Normalization</strong></td>
+    <td><code>normalization/agent.py</code></td>
+    <td><code>NormalizationAgent.process(trigger)</code></td>
+    <td><code>normalization/field_mappers/*.py</code><br><code>normalization/schema/validator.py</code></td>
+    <td><code>raw_ingested_jobs</code></td>
+    <td><code>normalized_jobs</code><br><code>normalization_quarantine</code><br><code>raw_ingested_jobs</code> (status update)</td>
+    <td>0</td>
+    <td>ProcessingTrigger</td>
+    <td>NormalizationComplete</td>
+  </tr>
+  <tr class="gap">
+    <td>&mdash;</td><td colspan="9"><strong>GAP:</strong> Skills Extraction loads work items from DB (<code>normalized_jobs LEFT JOIN extracted_intelligence</code>), not from NormalizationComplete payload. The event is passed but payload is not used for record selection.</td>
+  </tr>
+  <tr>
+    <td>S2</td><td><strong>Skills Extraction</strong></td>
+    <td><code>skills_extraction/agent.py</code><br><code>common/llm_client.py</code></td>
+    <td><code>SkillsExtractionAgent.process(norm_out)</code></td>
+    <td><code>EventOrDatabaseWorkItemLoader</code><br><code>invoke_skills_llm()</code><br><code>invoke_structured_extraction_llm()</code><br><code>SQLAlchemyExtractionStore.save()</code><br><code>skills_extraction/taxonomy/*.py</code></td>
+    <td><code>normalized_jobs</code><br><code>extracted_intelligence</code> (LEFT JOIN)<br><code>skills</code> (taxonomy)</td>
+    <td><code>extracted_intelligence</code><br><code>llm_audit_log</code></td>
+    <td>3/job: skills + tasks + responsibilities</td>
+    <td>NormalizationComplete</td>
+    <td>SkillsExtracted</td>
+  </tr>
+  <tr>
+    <td>S3</td><td><strong>Enrichment</strong></td>
+    <td><code>enrichment/agent.py</code><br><code>enrichment/classifiers/*.py</code><br><code>enrichment/resolvers/*.py</code><br><code>enrichment/job_postings_promotion.py</code></td>
+    <td><code>EnrichmentAgent.process(extract_out)</code></td>
+    <td><code>enrich_record_async()</code><br><code>classify_soc()</code><br><code>classify_naics_async()</code><br><code>build_employer_profile_async()</code><br><code>score_quality()</code><br><code>apply_enrichment_to_job_postings()</code></td>
+    <td><code>naics</code><br><code>socc</code><br><code>companies</code><br><code>industry_sectors</code></td>
+    <td><code>job_postings</code> (INSERT/UPDATE)<br><code>employer_profiles</code><br><code>companies</code> (placeholder)<br><code>llm_audit_log</code></td>
+    <td>3/job: SOC + NAICS + employer</td>
+    <td>SkillsExtracted</td>
+    <td>RecordEnriched</td>
+  </tr>
+  <tr>
+    <td>&mdash;</td><td><strong>Audit</strong></td>
+    <td><code>common/llm_adapter.py</code><br><code>common/observability/langfuse.py</code></td>
+    <td><code>log_extraction_event()</code></td>
+    <td><code>compute_extraction_cost()</code><br><code>resolve_model_tier()</code><br><code>LangfuseTracer.start_span()</code></td>
+    <td>&mdash;</td>
+    <td><code>llm_audit_log</code></td>
+    <td>0 (logs calls from S2 + S3)</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+</tbody>
+</table>
+
+<p style="margin-top:24px; font-size:11px; color:#94A3B8;">
+  Cost: ~$0.021/job verified against Azure Cost Management (<code>resumejobmatch</code> resource, April 2026).
+  100 jobs &asymp; $2.10 &nbsp;|&nbsp; 500 jobs &asymp; $10.50 &nbsp;|&nbsp; 1,000 jobs &asymp; $21.00 &nbsp;|&nbsp; 30,000 jobs/month &asymp; $630/month.
+  Config: <code>config/ingestion_queries.yaml</code> (47 query groups) &nbsp;|&nbsp; <code>.env</code> (all env vars documented in diagram).
+</p>
+</body>
+</html>
