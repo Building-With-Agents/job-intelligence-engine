@@ -1,0 +1,78 @@
+---
+description: "Proven stable concurrency settings for the processing pipeline — enforced to prevent async hangs"
+alwaysApply: false
+globs:
+  - "scripts/run_processing_loop.py"
+  - "enrichment/agent.py"
+  - "enrichment/**"
+  - "skills_extraction/agent.py"
+  - "skills_extraction/**"
+  - ".env*"
+  - "docker-compose.yml"
+---
+
+# Pipeline Concurrency — Proven Stable Configuration
+
+## Critical: Do NOT increase enrichment concurrency above 5
+
+The enrichment agent uses `asyncio.gather` to run SOC, NAICS, and employer LLM
+classification concurrently. At `ENRICHMENT_CONCURRENCY > 5`, the SQLAlchemy
+connection pool is exhausted by concurrent DB queries inside the async gather
+(`get_soc_candidates()`, `classify_naics_async()`), causing **indefinite hangs**
+with no error, no timeout, and no log output.
+
+This was verified empirically (April 2026):
+
+| ENRICHMENT_CONCURRENCY | Result |
+|------------------------|--------|
+| 30 | Hung every time |
+| 10 | Hung 2/3 iterations |
+| **5** | **Stable — no hangs** |
+
+## Required `.env` settings for pipeline processing
+
+```bash
+# Skills Extraction
+SKILLS_EXTRACTION_PARALLEL=1              # async parallel extraction
+SKILLS_EXTRACTION_CONCURRENCY=5           # max concurrent extraction jobs
+
+# Enrichment — DO NOT increase CONCURRENCY above 5
+ENRICHMENT_PARALLEL=1                     # async parallel enrichment
+ENRICHMENT_CONCURRENCY=5                  # MUST be ≤ 5 (DB pool exhaustion at higher values)
+ENRICHMENT_LLM_TIMEOUT=120                # seconds — gather timeout per job (prevents infinite hangs)
+```
+
+## Running the processing loop
+
+```bash
+# Recommended (stable, tested)
+python scripts/run_processing_loop.py --batch-size 15 --delay 5
+
+# Also stable
+python scripts/run_processing_loop.py --batch-size 25 --delay 5
+
+# NOT RECOMMENDED — --fast sets ENRICHMENT_CONCURRENCY=30 which WILL hang
+# python scripts/run_processing_loop.py --fast
+```
+
+The `--fast` flag sets `ENRICHMENT_CONCURRENCY=30` which is known to hang.
+Until the DB pool issue is resolved (Phase 2, see issue #148), do not use `--fast`
+for enrichment-heavy runs. Use explicit `--batch-size` and `--delay` instead.
+
+## What NOT to do
+
+- Do NOT set `ENRICHMENT_CONCURRENCY` above 5
+- Do NOT use `--fast` flag for production pipeline runs
+- Do NOT remove the `asyncio.wait_for` timeout in `enrich_record_async()`
+- Do NOT increase `DB_POOL_SIZE` as a workaround — the root cause is sync DB
+  calls inside async coroutines, not pool size
+
+## Cost awareness
+
+Every processing loop iteration incurs Azure OpenAI charges:
+- Skills extraction: ~$0.015/job (3 LLM calls)
+- Enrichment: ~$0.006/job (3 LLM calls)
+- **Total: ~$0.021/job**
+- At scale: 100 jobs ≈ $2.10 | 500 jobs ≈ $10.50 | 1,000 jobs ≈ $21.00
+
+Always run `--dry-run` first to check pending count before committing to a full run.

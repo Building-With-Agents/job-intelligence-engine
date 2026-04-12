@@ -216,6 +216,11 @@ SKILLS_EXTRACTION_CHUNK_SIZE=5
 SKILLS_EXTRACTION_CHUNK_COOLDOWN=30
 SKILLS_EXTRACTION_DELAY=1.0
 BATCH_SIZE=100
+
+# Enrichment (proven stable config — do NOT increase concurrency above 5)
+ENRICHMENT_PARALLEL=1               # 1 = async parallel, 0 = serial fallback
+ENRICHMENT_CONCURRENCY=5            # MUST be ≤ 5 — higher values cause async hangs from DB pool exhaustion
+ENRICHMENT_LLM_TIMEOUT=120          # Seconds — gather timeout for SOC+NAICS+employer per job
 ```
 
 ---
