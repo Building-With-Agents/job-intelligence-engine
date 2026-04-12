@@ -60,16 +60,16 @@ python scripts/db_check.py counts
 
 | Table | Expected | Notes |
 |-------|----------|-------|
-| raw_ingested_jobs | 1,080 | Ingested JSearch records |
-| job_ingestion_runs | 67 | Batch run tracking |
-| normalized_jobs | 2 | Most consumed by processing loop |
-| normalization_quarantine | 12 | Schema-violation records |
-| extracted_intelligence | 2 | Skills/tasks extraction results |
-| employer_profiles | 25 | Enrichment-resolved employer metadata |
-| companies | 554 | 122 reference + 432 enrichment-resolved |
+| raw_ingested_jobs | 1,568+ | Ingested JSearch records |
+| job_ingestion_runs | 132+ | Batch run tracking |
+| normalized_jobs | 651+ | Post-normalization records |
+| normalization_quarantine | 16 | Schema-violation records |
+| extracted_intelligence | 651+ | Skills/tasks extraction results |
+| employer_profiles | 855+ | Enrichment-resolved employer metadata |
+| companies | 1,145+ | 122 reference + enrichment-resolved |
 | naics | 2,125 | NAICS 2022 industry classification |
-| job_postings | 596+ | 596 enriched + 172 reference |
-| llm_audit_log | 4,700+ | LLM call tracking |
+| job_postings | 1,736+ | Enriched + reference records |
+| llm_audit_log | 14,970+ | LLM call tracking |
 
 If all tables show 0, the database has not been seeded. Run the seed script (it handles both reference data and enriched pipeline data in one pass):
 
@@ -262,78 +262,37 @@ python scripts/db_check.py counts
 
 ---
 
-## 3. Clean Slate — Resetting Data
+## 3. Pipeline Workflow — Ingestion + Processing
 
-### Quick pipeline re-test — 3 jobs (preferred for Week 7 verification)
+The production pipeline uses two decoupled scripts:
 
-The seeded database is fully processed (`pending: 0`). Use this script to roll back exactly 3 jobs so `run_processing_loop.py` has real work to process and you can see live traces in Langfuse:
+1. **`batch_ingest.py`** — ingests raw job postings from JSearch API (no LLM calls, no cost)
+2. **`run_processing_loop.py`** — processes staged records: normalize → extract → enrich (LLM calls here)
 
-```bash
-# 1. Preview which jobs will be reset (no writes)
-python scripts/reset_sample_jobs.py --dry-run
+> **`pipeline_runner.py` is deprecated.** It was a Week 2 walking-skeleton demo script that
+> ran all agents in a single pass with fixture data. Use `batch_ingest.py` +
+> `run_processing_loop.py` for all real pipeline work.
 
-# 2. Roll back 3 fully-processed jobs to 'pending'
-#    (deletes extracted_intelligence, job_postings rows, normalized_jobs rows
-#     and resets raw_ingested_jobs.processing_status -> 'pending')
-python scripts/reset_sample_jobs.py
+### LLM cost warning
 
-# 3. Re-process those 3 jobs through the full pipeline
-python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
-```
+Processing loop stages that call the LLM incur real Azure OpenAI charges:
 
-After the loop finishes, verify output:
+| Stage | LLM calls per job | Cost per job (gpt-4.1-mini) |
+|-------|-------------------|----------------------------|
+| Skills extraction | 3 (skills + tasks + responsibilities) | ~$0.015 |
+| Enrichment | 3 (SOC + NAICS + employer) | ~$0.006 |
+| **Total** | **~6 calls** | **~$0.021/job** |
 
-```bash
-python scripts/db_check.py counts
-```
+**At scale:** 100 jobs ≈ $2.10 | 500 jobs ≈ $10.50 | 1,000 jobs ≈ $21.00
 
-Expected: `normalized_jobs` +3, `extracted_intelligence` +3, `job_postings` +3 vs before the reset.
-
-To reset more jobs:
-
-```bash
-python scripts/reset_sample_jobs.py --count 5
-python scripts/run_processing_loop.py --max-iterations 1 --batch-size 5
-```
-
-> **Tip:** After each `reset_sample_jobs.py` run you get fresh Langfuse traces for normalization → skills/tasks/responsibilities extraction → enrichment (SOC, NAICS, dedup). This is the fastest way to verify your Week 7 step produces real output without re-running batch_ingest.
+These are actual costs verified against Azure Cost Management (gpt-4.1-mini, `resumejobmatch`
+deployment, April 2026). Batch ingestion is free (JSearch API calls only — no LLM).
 
 ---
 
-### Re-running the enrichment pipeline (classification iteration)
+### Step 1 — Batch ingestion (`batch_ingest.py`)
 
-To iterate on SOC/NAICS/quality classification without re-ingesting from JSearch, spin a
-fresh local database and re-seed from fixtures. Do **not** truncate `normalized_jobs`,
-`extracted_intelligence`, or `raw_ingested_jobs` — these are permanent audit tables.
-
-```bash
-# 1. Fresh local DB — YOUR local Docker volume only.
-#    DO NOT run this against the admin source-of-truth database (Gary's local or Azure).
-#    The admin database is the export origin; wiping it loses unrecoverable pipeline data.
-docker compose down -v
-docker compose --env-file .env.docker up postgres -d
-
-# 2. Re-seed from committed fixtures
-python scripts/pg-seed-data/seed_pg_database.py
-
-# 3. Re-run processing (normalize → extract → enrich)
-python scripts/run_processing_loop.py --batch-size 25 --delay 10
-
-# 4. Evaluate — check classification quality
-python scripts/db_check.py query "SELECT count(*) as total, count(quality_score) as with_quality, count(soc_code) as with_soc, count(naics_code) as with_naics FROM dbo.job_postings"
-
-# 5. Re-export fixtures to capture improved output
-python scripts/pg-seed-data/export_fixtures.py --scope agent
-```
-
-**Never delete the fixture JSON files** in `scripts/pg-seed-data/fixtures/` — they are your checkpoint. To restore to the last known-good state at any time: `python scripts/pg-seed-data/seed_pg_database.py`
-
----
-
-### Batch ingestion — `batch_ingest.py`
-
-Ingestion-only script that stages raw records from JSearch. No LLM calls — run
-this first, then `run_processing_loop.py` to normalize → extract → enrich.
+Stages raw records from JSearch into `raw_ingested_jobs`. No LLM calls.
 
 **Config file:** `config/ingestion_queries.yaml` — all query groups, keywords, and
 page budgets. Add new queries here; each entry needs `name`, `keywords`, and `pages`.
@@ -350,7 +309,7 @@ page budgets. Add new queries here; each entry needs `name`, `keywords`, and `pa
 **Usage:**
 
 ```bash
-# Preview all queries and budget
+# Preview all queries and budget (no API calls)
 python scripts/batch_ingest.py --dry-run
 
 # Run all queries from the beginning
@@ -379,19 +338,108 @@ python scripts/batch_ingest.py --start-query 37 --start-key 5 --delay 3
 | `--start-key K` | Start with key slot K (e.g. `4` → `JSEARCH_API_KEY_4`). Also settable via `JSEARCH_START_KEY_INDEX` env var |
 | `--delay N` | Seconds between queries (default: 5) |
 
-**After ingestion, process the staged records:**
+### Step 2 — Processing loop (`run_processing_loop.py`)
+
+Picks up pending `raw_ingested_jobs` and processes them: normalize → extract → enrich.
+**This is where LLM costs are incurred** (see cost table above).
 
 ```bash
-# Check how many records are pending
+# Preview pending count and estimated time (no processing)
 python scripts/run_processing_loop.py --dry-run
 
-# Process all pending (parallel, high throughput)
+# Process all pending with high throughput (batch=200, delay=0, concurrency=30)
 python scripts/run_processing_loop.py --fast
 
-# Process with default pacing
+# Process with default pacing (gentler on API rate limits)
 python scripts/run_processing_loop.py --batch-size 50 --delay 10
 
-# Export updated fixtures
+# Process a single job to verify the pipeline works end-to-end
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 1 --delay 0
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Show pending count and estimated iterations — no processing |
+| `--fast` | High-throughput mode: batch-size=200, delay=0, concurrency=30 |
+| `--batch-size N` | Records per iteration (default: 50) |
+| `--delay N` | Seconds between iterations (default: 10) |
+| `--max-iterations N` | Stop after N iterations (0 = run until empty) |
+
+### Step 3 — Verify output
+
+```bash
+python scripts/db_check.py counts
+```
+
+### Step 4 — Export fixtures
+
+```bash
+# Export pipeline tables to fixtures/
+python scripts/pg-seed-data/export_fixtures.py --scope agent
+
+# Or export everything (reference + pipeline)
+python scripts/pg-seed-data/export_fixtures.py --scope all
+```
+
+**Never delete the fixture JSON files** in `scripts/pg-seed-data/fixtures/` — they are
+your checkpoint. To restore to the last known-good state at any time:
+`python scripts/pg-seed-data/seed_pg_database.py`
+
+---
+
+### Quick pipeline re-test — 3 jobs (for Week 7 verification)
+
+The seeded database is fully processed (`pending: 0`). Use this script to roll back exactly 3 jobs so `run_processing_loop.py` has real work to process and you can see live traces in Langfuse:
+
+```bash
+# 1. Preview which jobs will be reset (no writes)
+python scripts/reset_sample_jobs.py --dry-run
+
+# 2. Roll back 3 fully-processed jobs to 'pending'
+python scripts/reset_sample_jobs.py
+
+# 3. Re-process those 3 jobs (cost: ~$0.06 for 3 jobs)
+python scripts/run_processing_loop.py --max-iterations 1 --batch-size 3
+```
+
+After the loop finishes, verify output:
+
+```bash
+python scripts/db_check.py counts
+```
+
+Expected: `normalized_jobs` +3, `extracted_intelligence` +3, `job_postings` +3 vs before the reset.
+
+> **Tip:** `reset_sample_jobs.py --count N` lets you control how many jobs to re-test.
+
+---
+
+### Re-running the enrichment pipeline (classification iteration)
+
+To iterate on SOC/NAICS/quality classification without re-ingesting from JSearch, spin a
+fresh local database and re-seed from fixtures. Do **not** truncate `normalized_jobs`,
+`extracted_intelligence`, or `raw_ingested_jobs` — these are permanent audit tables.
+
+```bash
+# 1. Fresh local DB — YOUR local Docker volume only.
+#    DO NOT run this against the admin source-of-truth database (Gary's local or Azure).
+#    The admin database is the export origin; wiping it loses unrecoverable pipeline data.
+docker compose down -v
+docker compose --env-file .env.docker up postgres -d
+
+# 2. Re-seed from committed fixtures
+python scripts/pg-seed-data/seed_pg_database.py
+
+# 3. Re-run processing (cost: depends on pending count — check with --dry-run first)
+python scripts/run_processing_loop.py --dry-run
+python scripts/run_processing_loop.py --batch-size 25 --delay 10
+
+# 4. Evaluate — check classification quality
+python scripts/db_check.py query "SELECT count(*) as total, count(quality_score) as with_quality, count(soc_code) as with_soc, count(naics_code) as with_naics FROM dbo.job_postings"
+
+# 5. Re-export fixtures to capture improved output
 python scripts/pg-seed-data/export_fixtures.py --scope agent
 ```
 
@@ -453,9 +501,11 @@ python scripts/db_check.py counts
 | extracted_intelligence | 50+ | Skill/tool demand requires extraction results |
 | llm_audit_log | 100+ | LLM cost and performance analytics |
 
-If `job_postings` has fewer than 50 records, run the processing loop to populate it:
+If `job_postings` has fewer than 50 records, run the processing loop to populate it
+(cost: ~$0.021/job — see Section 3 cost table):
 
 ```bash
+python scripts/run_processing_loop.py --dry-run   # check pending count first
 python scripts/run_processing_loop.py --batch-size 50 --delay 2
 ```
 
@@ -472,7 +522,7 @@ python scripts/pg-seed-data/seed_pg_database.py
 python scripts/db_check.py query "SELECT COUNT(*) AS total, COUNT(temporal_period) AS has_temporal, COUNT(borderplex_subregion) AS has_borderplex, COUNT(quality_score) AS has_quality, COUNT(soc_code) AS has_soc, COUNT(naics_code) AS has_naics FROM dbo.job_postings"
 ```
 
-**Expected (seeded data):** Of the 596 enriched job_postings: `has_quality` = 596 (100%), `has_soc` ≈ 525 (88%), `has_naics` ≈ 292 non-"unknown" (49%). `has_temporal` and `has_borderplex` depend on the Pair A temporal/borderplex classifiers. The 172 reference job_postings do not have enrichment columns.
+**Expected (seeded data):** Most enriched job_postings have `has_quality` (100%), `has_soc` (~89%), `has_naics` (~99%). `has_temporal` and `has_borderplex` depend on the Pair A temporal/borderplex classifiers. Reference job_postings seeded from the original database do not have enrichment columns.
 
 ---
 
