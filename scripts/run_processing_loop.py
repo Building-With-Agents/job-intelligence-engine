@@ -229,7 +229,12 @@ def main() -> None:
         pending = _count_pending()
         unextracted = _count_unextracted()
 
-        if pending <= 0 and unextracted <= 0:
+        if pending == -1 or unextracted == -1:
+            log.warning("count_query_failed_retrying", pending=pending, unextracted=unextracted)
+            time.sleep(args.delay)
+            continue
+
+        if pending == 0 and unextracted == 0:
             log.info(
                 "all_records_processed",
                 total_normalized=total_normalized,
@@ -303,15 +308,16 @@ def main() -> None:
                     )
                     total_extracted += extract_count
 
-                # Stage 3: Enrich (processes extraction output records)
-                if extract_out is not None and extract_count > 0:
-                    enrich_start = time.perf_counter()
-                    enrich_out = enrich_agent.process(extract_out)
-                    enrich_duration_ms = int((time.perf_counter() - enrich_start) * 1000)
-                    enriched_count = 0
-                    enrichment_mode = "parallel" if os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no") else "serial"
-                    if enrich_out is not None:
-                        enriched_count = enrich_out.payload.get("enriched_count", 0)
+                # Stage 3: Enrich (processes extraction output or picks up un-enriched records)
+                enrich_event = extract_out if (extract_out is not None and extract_count > 0) else trigger
+                enrich_start = time.perf_counter()
+                enrich_out = enrich_agent.process(enrich_event)
+                enrich_duration_ms = int((time.perf_counter() - enrich_start) * 1000)
+                enriched_count = 0
+                enrichment_mode = "parallel" if os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no") else "serial"
+                if enrich_out is not None:
+                    enriched_count = enrich_out.payload.get("enriched_count", 0)
+                    if enriched_count > 0:
                         log.info(
                             "enriched",
                             count=enriched_count,
@@ -319,7 +325,7 @@ def main() -> None:
                             enrichment_duration_ms=enrich_duration_ms,
                             execution_mode=enrichment_mode,
                         )
-                        total_enriched_count += enriched_count
+                    total_enriched_count += enriched_count
 
                 enriched_total = _count_enriched()
                 remaining_raw = _count_pending()
