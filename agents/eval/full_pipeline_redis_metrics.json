@@ -1,20 +1,20 @@
 {
   "success": true,
-  "correlation_id": "redis-pipe-96eedefc",
+  "correlation_id": "redis-pipe-ba379477",
   "stages": [
     {
       "stage": "ingestion",
       "event_type_in": "PipelineTrigger",
       "event_type_out": "IngestBatch",
-      "event_id_out": "8e1c5750-4e0c-4ebf-9194-99591fadd33b",
-      "start_ts": "2026-04-12T11:49:26.981037+00:00",
-      "end_ts": "2026-04-12T11:49:27.507686+00:00",
-      "latency_ms": 526.65,
+      "event_id_out": "08cdab6d-357b-4496-a394-ec82f853b235",
+      "start_ts": "2026-04-12T13:11:06.190110+00:00",
+      "end_ts": "2026-04-12T13:11:15.237900+00:00",
+      "latency_ms": 9045.04,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "IngestBatch",
-        "batch_id": "38cab426-e821-43a1-912d-96d7b569dfd6",
+        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
         "job_ids": null
       }
     },
@@ -22,15 +22,15 @@
       "stage": "normalization",
       "event_type_in": "IngestBatch",
       "event_type_out": "NormalizationComplete",
-      "event_id_out": "3cb40852-7803-4da3-9a38-cd0e53afb2ee",
-      "start_ts": "2026-04-12T11:49:27.509718+00:00",
-      "end_ts": "2026-04-12T11:49:27.517890+00:00",
-      "latency_ms": 8.17,
+      "event_id_out": "8bbfd954-bd5f-4805-a560-d378d690a37d",
+      "start_ts": "2026-04-12T13:11:15.240459+00:00",
+      "end_ts": "2026-04-12T13:11:15.251452+00:00",
+      "latency_ms": 10.14,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "NormalizationComplete",
-        "batch_id": "38cab426-e821-43a1-912d-96d7b569dfd6",
+        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
         "job_ids": null
       }
     },
@@ -38,15 +38,15 @@
       "stage": "skills",
       "event_type_in": "NormalizationComplete",
       "event_type_out": "SkillsExtracted",
-      "event_id_out": "902c5122-8303-426c-8e9e-25dc83708141",
-      "start_ts": "2026-04-12T11:49:27.520783+00:00",
-      "end_ts": "2026-04-12T11:49:27.527311+00:00",
-      "latency_ms": 6.53,
+      "event_id_out": "ba51299d-1ee1-4a22-bf72-19e40db3b636",
+      "start_ts": "2026-04-12T13:11:15.252919+00:00",
+      "end_ts": "2026-04-12T13:11:15.259002+00:00",
+      "latency_ms": 7.28,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "SkillsExtracted",
-        "batch_id": "38cab426-e821-43a1-912d-96d7b569dfd6",
+        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
         "job_ids": []
       }
     },
@@ -54,10 +54,10 @@
       "stage": "enrichment",
       "event_type_in": "SkillsExtracted",
       "event_type_out": "RecordEnriched",
-      "event_id_out": "892a9aef-c181-491c-8c07-158e096c72af",
-      "start_ts": "2026-04-12T11:49:27.529055+00:00",
-      "end_ts": "2026-04-12T11:49:27.533157+00:00",
-      "latency_ms": 4.1,
+      "event_id_out": "5c8e7dfb-446e-42ca-b835-1e1dd4608dec",
+      "start_ts": "2026-04-12T13:11:15.263911+00:00",
+      "end_ts": "2026-04-12T13:11:15.265254+00:00",
+      "latency_ms": 4.51,
       "success": true,
       "error": null,
       "payload_summary": {
@@ -70,9 +70,9 @@
       "stage": "analytics",
       "event_type_in": "RecordEnriched",
       "event_type_out": "AnalyticsRefreshed",
-      "event_id_out": "18be5c69-3d0c-48eb-90bf-36107b8da9be",
-      "start_ts": "2026-04-12T11:49:27.535020+00:00",
-      "end_ts": "2026-04-12T11:49:27.535638+00:00",
+      "event_id_out": "d2678993-f7f0-49df-8fd9-3cc601ac013e",
+      "start_ts": "2026-04-12T13:11:15.270131+00:00",
+      "end_ts": "2026-04-12T13:11:15.271469+00:00",
       "latency_ms": 0.62,
       "success": true,
       "error": null,
@@ -86,10 +86,10 @@
       "stage": "visualization",
       "event_type_in": "AnalyticsRefreshed",
       "event_type_out": "RenderComplete",
-      "event_id_out": "4d6c2def-3955-4328-ba69-3d3ef09b6378",
-      "start_ts": "2026-04-12T11:49:27.537147+00:00",
-      "end_ts": "2026-04-12T11:49:27.537193+00:00",
-      "latency_ms": 0.05,
+      "event_id_out": "15f70bb4-9ebd-4e58-a3ef-32de0102e761",
+      "start_ts": "2026-04-12T13:11:15.271469+00:00",
+      "end_ts": "2026-04-12T13:11:15.271469+00:00",
+      "latency_ms": 0.04,
       "success": true,
       "error": null,
       "payload_summary": {
@@ -102,10 +102,10 @@
       "stage": "orchestration",
       "event_type_in": "RenderComplete",
       "event_type_out": "OrchestrationAck",
-      "event_id_out": "5c908300-4254-47bd-aaee-6d207ff864e4",
-      "start_ts": "2026-04-12T11:49:27.539689+00:00",
-      "end_ts": "2026-04-12T11:49:27.539721+00:00",
-      "latency_ms": 0.03,
+      "event_id_out": "6b7dafcf-4194-489e-b7b2-c28389c2b9ae",
+      "start_ts": "2026-04-12T13:11:15.274597+00:00",
+      "end_ts": "2026-04-12T13:11:15.274597+00:00",
+      "latency_ms": 0.04,
       "success": true,
       "error": null,
       "payload_summary": {
@@ -115,8 +115,8 @@
       }
     }
   ],
-  "e2e_latency_ms": 764.38,
-  "run_start_iso": "2026-04-12T11:49:27.540041+00:00",
+  "e2e_latency_ms": 9193.69,
+  "run_start_iso": "2026-04-12T13:11:15.275600+00:00",
   "redis_url_used": "(set)",
   "counters": {
     "pipeline:ingestion": {

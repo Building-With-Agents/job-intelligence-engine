@@ -13,6 +13,7 @@ Usage (from repo root):
   python scripts/batch_ingest.py                        # run all queries
   python scripts/batch_ingest.py --dry-run              # show plan without API calls
   python scripts/batch_ingest.py --delay 10             # seconds between queries
+  python scripts/batch_ingest.py --start-key 4          # skip exhausted keys 1-3
   python scripts/batch_ingest.py --start-query 24       # skip queries 1-23, start at 24
   python scripts/batch_ingest.py --queries legal-tech,robotics-dev  # run specific queries only
 """
@@ -65,17 +66,31 @@ def _load_config() -> dict:
         return yaml.safe_load(f)
 
 
-def _load_api_keys() -> list[str]:
-    """Load API keys from env vars: JSEARCH_API_KEY, JSEARCH_API_KEY_2, ..., JSEARCH_API_KEY_N."""
-    keys = []
+def _load_api_keys() -> list[tuple[int, str]]:
+    """Load keyed JSearch credentials as ``(slot, value)`` pairs."""
+    keys: list[tuple[int, str]] = []
     primary = os.getenv("JSEARCH_API_KEY", "").strip()
     if primary:
-        keys.append(primary)
+        keys.append((1, primary))
     for i in range(2, 11):  # support up to 10 keys
         key = os.getenv(f"JSEARCH_API_KEY_{i}", "").strip()
         if key:
-            keys.append(key)
+            keys.append((i, key))
     return keys
+
+
+def _resolve_start_key_slot(cli_value: int | None) -> int:
+    """Choose the first key slot to use, preferring CLI over env."""
+    raw = cli_value if cli_value is not None else os.getenv("JSEARCH_START_KEY_INDEX", "1")
+    try:
+        slot = int(raw)
+    except (TypeError, ValueError):
+        log.warning("invalid_start_key_slot", raw_value=raw, fallback=1)
+        return 1
+    if slot < 1:
+        log.warning("invalid_start_key_slot", raw_value=raw, fallback=1)
+        return 1
+    return slot
 
 
 def _build_region_config(query: dict) -> dict:
@@ -102,6 +117,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Budget-aware batch ingestion via JSearch")
     parser.add_argument("--dry-run", action="store_true", help="Show plan without API calls")
     parser.add_argument("--delay", type=int, default=5, help="Seconds between queries (default: 5)")
+    parser.add_argument(
+        "--start-key", type=int, default=None, metavar="K",
+        help="Start with JSearch key slot K (e.g. 4 uses JSEARCH_API_KEY_4). "
+             "Defaults to JSEARCH_START_KEY_INDEX or 1.",
+    )
     parser.add_argument(
         "--start-query", type=int, default=1, metavar="N",
         help="Start at query N (1-indexed), skipping all prior queries. "
@@ -140,15 +160,37 @@ def main() -> None:
         log.error("no_api_keys_found", hint="Set JSEARCH_API_KEY or JSEARCH_API_KEY_1 in .env")
         sys.exit(1)
 
+    start_key_slot = _resolve_start_key_slot(args.start_key)
+    start_key_idx = next((idx for idx, (slot, _) in enumerate(api_keys) if slot >= start_key_slot), None)
+    if start_key_idx is None and not args.dry_run:
+        log.error(
+            "start_key_not_available",
+            requested=start_key_slot,
+            available_slots=[slot for slot, _ in api_keys],
+        )
+        sys.exit(1)
+    if start_key_idx is None:
+        start_key_idx = 0
+    effective_start_slot = api_keys[start_key_idx][0] if api_keys else start_key_slot
+    if api_keys and effective_start_slot != start_key_slot:
+        log.warning(
+            "start_key_missing",
+            requested=start_key_slot,
+            using=effective_start_slot,
+            available_slots=[slot for slot, _ in api_keys],
+        )
+
     total_requests = sum(q.get("pages", 10) for q in queries)
 
     log.info(
         "batch_plan",
         queries=len(queries),
         total_requests=total_requests,
-        api_keys_available=len(api_keys),
+        api_keys_available=max(0, len(api_keys) - start_key_idx),
+        api_keys_total=len(api_keys),
         budget_per_key=budget_per_key,
-        total_budget=len(api_keys) * budget_per_key,
+        total_budget=max(0, len(api_keys) - start_key_idx) * budget_per_key,
+        start_key_slot=effective_start_slot,
         dry_run=args.dry_run,
     )
 
@@ -158,6 +200,8 @@ def main() -> None:
     if args.dry_run:
         print(f"\n{'='*60}")
         print("Batch Ingestion Plan")
+        if api_keys:
+            print(f"  (starting at key slot {effective_start_slot})")
         if args.start_query > 1:
             print(f"  (starting at query {args.start_query}, skipping {args.start_query - 1})")
         if args.queries:
@@ -170,9 +214,13 @@ def main() -> None:
             print(f"      Keywords: {q['keywords']}")
             print(f"      Pages: {pages} ({pages} API requests, ~{pages * 10} results)")
         print(f"\n  Total: {total_requests} API requests across {len(queries)} queries")
-        print(f"  Keys available: {len(api_keys)} x {budget_per_key} = {len(api_keys) * budget_per_key} budget")
+        print(
+            f"  Keys available: {max(0, len(api_keys) - start_key_idx)} x {budget_per_key} = "
+            f"{max(0, len(api_keys) - start_key_idx) * budget_per_key} budget"
+        )
         print(f"  Delay: {args.delay}s between queries")
         print(f"\n  Tip: --start-query N to skip first N-1 queries")
+        print(f"       --start-key K to skip exhausted keys")
         print(f"       --queries name1,name2 to run specific queries only")
         print(f"{'='*60}\n")
         return
@@ -182,85 +230,109 @@ def main() -> None:
     from ingestion.agent import IngestionAgent
 
     agent = IngestionAgent()
-    current_key_idx = 0
+    current_key_idx = start_key_idx
+    highest_key_idx_used = start_key_idx
     requests_used_on_key = 0
     total_staged = 0
     total_requests_used = 0
 
+    stop_batch = False
     for i, query in enumerate(queries, 1):
         pages = query.get("pages", 10)
 
-        # Check if current key has budget
-        if requests_used_on_key + pages > budget_per_key:
-            current_key_idx += 1
-            requests_used_on_key = 0
-            if current_key_idx >= len(api_keys):
-                log.warning("all_keys_exhausted", queries_remaining=len(queries) - i + 1)
+        attempt = 1
+        while True:
+            if requests_used_on_key + pages > budget_per_key:
+                current_key_idx += 1
+                requests_used_on_key = 0
+                if current_key_idx >= len(api_keys):
+                    log.warning("all_keys_exhausted", queries_remaining=len(queries) - i + 1)
+                    stop_batch = True
+                    break
+                highest_key_idx_used = max(highest_key_idx_used, current_key_idx)
+                log.info("key_rotation", new_key_slot=api_keys[current_key_idx][0])
+
+            active_key_slot, active_key = api_keys[current_key_idx]
+            highest_key_idx_used = max(highest_key_idx_used, current_key_idx)
+            os.environ["JSEARCH_API_KEY"] = active_key
+            os.environ["BATCH_SIZE"] = str(pages * 10)
+
+            region = _build_region_config(query)
+            correlation_id = f"batch-{query['name']}-{uuid.uuid4().hex[:8]}"
+
+            log.info(
+                "query_start",
+                num=f"{i}/{len(queries)}",
+                name=query["name"],
+                keywords=query["keywords"],
+                pages=pages,
+                key_slot=active_key_slot,
+                attempt=attempt,
+                key_budget_remaining=budget_per_key - requests_used_on_key,
+            )
+
+            event = EventEnvelope(
+                correlation_id=correlation_id,
+                agent_id="batch-ingest-script",
+                payload={"region_config": region, "source": "jsearch"},
+            )
+
+            try:
+                out = agent.process(event)
+                requests_used_on_key += pages
+                total_requests_used += pages
+
+                if out and out.payload.get("event_type") == "IngestBatch":
+                    staged = out.payload.get("staged_count", 0)
+                    dedup = out.payload.get("dedup_count", 0)
+                    total_staged += staged
+                    log.info(
+                        "query_complete",
+                        name=query["name"],
+                        staged=staged,
+                        dedup_skipped=dedup,
+                        running_total=total_staged,
+                        requests_used=total_requests_used,
+                    )
+                    break
+
+                if out and out.payload.get("event_type") == "SourceFailure":
+                    error = out.payload.get("error", "")
+                    if "429" in str(error) or "rate" in str(error).lower():
+                        log.warning("rate_limited", name=query["name"], rotating_key=True, key_slot=active_key_slot)
+                        current_key_idx += 1
+                        requests_used_on_key = 0
+                        if current_key_idx >= len(api_keys):
+                            log.warning("all_keys_exhausted_429")
+                            stop_batch = True
+                            break
+                        highest_key_idx_used = max(highest_key_idx_used, current_key_idx)
+                        log.info("key_rotation", new_key_slot=api_keys[current_key_idx][0])
+                        attempt += 1
+                        continue
+
+                    log.warning("source_failure", name=query["name"], error=error)
                 break
-            log.info("key_rotation", new_key_idx=current_key_idx + 1)
-
-        # Set the active key
-        os.environ["JSEARCH_API_KEY"] = api_keys[current_key_idx]
-        os.environ["BATCH_SIZE"] = str(pages * 10)
-
-        region = _build_region_config(query)
-        correlation_id = f"batch-{query['name']}-{uuid.uuid4().hex[:8]}"
-
-        log.info(
-            "query_start",
-            num=f"{i}/{len(queries)}",
-            name=query["name"],
-            keywords=query["keywords"],
-            pages=pages,
-            key_idx=current_key_idx + 1,
-            key_budget_remaining=budget_per_key - requests_used_on_key,
-        )
-
-        event = EventEnvelope(
-            correlation_id=correlation_id,
-            agent_id="batch-ingest-script",
-            payload={"region_config": region, "source": "jsearch"},
-        )
-
-        try:
-            out = agent.process(event)
-            requests_used_on_key += pages
-            total_requests_used += pages
-
-            if out and out.payload.get("event_type") == "IngestBatch":
-                staged = out.payload.get("staged_count", 0)
-                dedup = out.payload.get("dedup_count", 0)
-                total_staged += staged
-                log.info(
-                    "query_complete",
-                    name=query["name"],
-                    staged=staged,
-                    dedup_skipped=dedup,
-                    running_total=total_staged,
-                    requests_used=total_requests_used,
-                )
-            elif out and out.payload.get("event_type") == "SourceFailure":
-                error = out.payload.get("error", "")
-                if "429" in str(error) or "rate" in str(error).lower():
-                    log.warning("rate_limited", name=query["name"], rotating_key=True)
+            except Exception as exc:
+                error_str = str(exc)
+                if "429" in error_str:
+                    log.warning("rate_limited_exception", name=query["name"], rotating_key=True, key_slot=active_key_slot)
                     current_key_idx += 1
                     requests_used_on_key = 0
                     if current_key_idx >= len(api_keys):
                         log.warning("all_keys_exhausted_429")
+                        stop_batch = True
                         break
-                else:
-                    log.warning("source_failure", name=query["name"], error=error)
-        except Exception as exc:
-            error_str = str(exc)
-            if "429" in error_str:
-                log.warning("rate_limited_exception", name=query["name"], rotating_key=True)
-                current_key_idx += 1
-                requests_used_on_key = 0
-                if current_key_idx >= len(api_keys):
-                    log.warning("all_keys_exhausted_429")
-                    break
-            else:
+                    highest_key_idx_used = max(highest_key_idx_used, current_key_idx)
+                    log.info("key_rotation", new_key_slot=api_keys[current_key_idx][0])
+                    attempt += 1
+                    continue
+
                 log.error("query_failed", name=query["name"], error=error_str)
+                break
+
+        if stop_batch:
+            break
 
         if i < len(queries):
             time.sleep(args.delay)
@@ -269,9 +341,11 @@ def main() -> None:
         "batch_complete",
         total_staged=total_staged,
         total_requests=total_requests_used,
-        keys_used=current_key_idx + 1,
+        keys_used=(highest_key_idx_used - start_key_idx + 1) if api_keys else 0,
+        start_key_slot=effective_start_slot,
     )
-    print(f"\nDone. {total_staged} records staged. {total_requests_used} API requests used across {current_key_idx + 1} key(s).")
+    keys_used = (highest_key_idx_used - start_key_idx + 1) if api_keys else 0
+    print(f"\nDone. {total_staged} records staged. {total_requests_used} API requests used across {keys_used} key(s).")
     print("Run processing loop: python scripts/run_processing_loop.py")
 
 
