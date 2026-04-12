@@ -156,6 +156,9 @@ skills_extraction/taxonomy/cache/
 # Debug scratch scripts (local dev only)
 _debug_*.py
 
+# Claude Code local server config
+.claude/launch.json
+
 # --- Findings DOCX + generators (shared via Teams, not git) ---
 docs/findings/*.docx
 docs/findings/generate-*.cjs
