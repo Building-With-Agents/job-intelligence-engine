@@ -11,8 +11,7 @@ Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_pg_database.py
 
 Reads:  scripts/pg-seed-data/schema.sql             (DDL — fresh DB only)
-        scripts/pg-seed-data/fixtures/*.json         (reference data)
-        scripts/pg-seed-data/agent-fixtures/*.json   (pipeline data, via seed_agent_data)
+        scripts/pg-seed-data/fixtures/*.json         (all data — reference + pipeline)
 Writes: PostgreSQL database specified by PYTHON_DATABASE_URL
 """
 
@@ -348,7 +347,7 @@ def seed_database() -> None:
     # ── Load metadata ─────────────────────────────────────────────
     if not METADATA_FILE.exists():
         print(f"ERROR: Metadata file not found: {METADATA_FILE}")
-        print("Run the export script first: python scripts/pg-seed-data/export_pg_fixtures.py")
+        print("Run the export script first: python scripts/pg-seed-data/export_fixtures.py")
         sys.exit(1)
 
     metadata = json.loads(METADATA_FILE.read_text(encoding="utf-8"))

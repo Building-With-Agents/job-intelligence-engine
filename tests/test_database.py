@@ -9,8 +9,6 @@ ensure that the `job_postings` table has all Phase 1 extension columns.
 """
 
 import os
-from collections.abc import Iterator
-
 import pytest
 from sqlalchemy import MetaData, Table, create_engine, inspect, text
 from sqlalchemy.engine import Engine
@@ -36,23 +34,6 @@ def engine() -> Engine:
         raise RuntimeError("PYTHON_DATABASE_URL is not set")
     return create_engine(database_url, future=True)
 
-
-@pytest.fixture(scope="session", autouse=True)
-def truncate_agent_tables(engine: Engine) -> Iterator[None]:
-    """
-    Truncate agent-managed tables before the test session starts.
-
-    Ensures tests begin with a clean baseline for raw_ingested_jobs,
-    normalized_jobs, and job_ingestion_runs.
-    """
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                "TRUNCATE TABLE dbo.raw_ingested_jobs, dbo.normalized_jobs, dbo.job_ingestion_runs "
-                "RESTART IDENTITY CASCADE;"
-            )
-        )
-    yield
 
 
 @pytest.mark.skipif(not os.getenv("PYTHON_DATABASE_URL"), reason="requires database")

@@ -9,8 +9,6 @@ tables: raw_ingested_jobs, normalized_jobs, and job_ingestion_runs.
 
 import os
 import uuid
-from collections.abc import Iterator
-
 import pytest
 from sqlalchemy import create_engine, delete, select, text
 from sqlalchemy.engine import Engine
@@ -39,22 +37,6 @@ def engine() -> Engine:
     Base.metadata.create_all(engine)
     return engine
 
-
-@pytest.fixture(scope="session", autouse=True)
-def truncate_agent_tables(engine: Engine) -> Iterator[None]:
-    """
-    Truncate agent-managed tables before the test session starts.
-
-    Provides a clean baseline and avoids cross-test contamination.
-    """
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                "TRUNCATE TABLE dbo.raw_ingested_jobs, dbo.normalized_jobs, dbo.job_ingestion_runs "
-                "RESTART IDENTITY CASCADE;"
-            )
-        )
-    yield
 
 
 @pytest.fixture

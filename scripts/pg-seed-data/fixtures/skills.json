@@ -10989,6 +10989,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "CB37508D-16B0-4D27-81A6-82E0F45A7191",
+    "skill_subcategory_id": "19F41618-1E99-457A-AA99-E3CAD9EC819A",
+    "skill_name": "OpenSUSE",
+    "skill_info_url": "https://lightcast.io/open-skills/skills/KS1279V6D2TQXZBYBPF7",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "EA765BD0-0C91-4FEA-B494-FE0C127D8D5F",
     "skill_subcategory_id": "BE4DC3BC-2C6A-4007-A517-92DA16226444",
     "skill_name": "IBM Sametime",
@@ -11686,15 +11695,6 @@
     "skill_subcategory_id": "BA00EFF2-B9DB-472F-90E8-691CBBF7F1B6",
     "skill_name": "Enterprise Mission Assurance Support Service (eMASS)",
     "skill_info_url": "https://lightcast.io/open-skills/skills/ES56F01AEE277A93F9C2",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "CB37508D-16B0-4D27-81A6-82E0F45A7191",
-    "skill_subcategory_id": "19F41618-1E99-457A-AA99-E3CAD9EC819A",
-    "skill_name": "OpenSUSE",
-    "skill_info_url": "https://lightcast.io/open-skills/skills/KS1279V6D2TQXZBYBPF7",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -16614,6 +16614,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "3423DAB9-2FFB-4CAF-9D45-67911FCA0BC6",
+    "skill_subcategory_id": "C4637DB7-C720-45BD-8CFB-ACE2818D82A0",
+    "skill_name": "Web Pages",
+    "skill_info_url": "https://lightcast.io/open-skills/skills/KS4420D71YWJJ5Y4Q45N",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "AC897002-8130-45BE-8DD4-5353C5C45A22",
     "skill_subcategory_id": "4510C6A9-F63F-4B85-B581-F81E8498667D",
     "skill_name": "Orthogonal Frequency-Division Multiplexing",
@@ -17653,15 +17662,6 @@
     "skill_subcategory_id": "95647492-A3F3-412F-BA82-5B38C652A185",
     "skill_name": "Incident Management",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS125396806XPV2Z8XQ6",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "3423DAB9-2FFB-4CAF-9D45-67911FCA0BC6",
-    "skill_subcategory_id": "C4637DB7-C720-45BD-8CFB-ACE2818D82A0",
-    "skill_name": "Web Pages",
-    "skill_info_url": "https://lightcast.io/open-skills/skills/KS4420D71YWJJ5Y4Q45N",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -20439,6 +20439,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "C580B293-A8E2-4E8A-8025-4C7D8B0CC31E",
+    "skill_subcategory_id": "2EC61DC2-5EE2-4230-AF9C-B16E5CC63437",
+    "skill_name": "IBM 37xx",
+    "skill_info_url": "https://lightcast.io/open-skills/skills/KS1201B6LWPNDWCRNQGZ",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "510901EF-FF59-498B-8915-675BE2A503E3",
     "skill_subcategory_id": "EE805D26-C1AF-4F07-A8BF-08DD2736AEE9",
     "skill_name": "SAS/Base",
@@ -21487,15 +21496,6 @@
     "skill_subcategory_id": "81340FE0-040C-495C-B89A-0580E119ADCE",
     "skill_name": "Dropwizard",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS2155U09ZGU9FTC4GPM",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "C580B293-A8E2-4E8A-8025-4C7D8B0CC31E",
-    "skill_subcategory_id": "2EC61DC2-5EE2-4230-AF9C-B16E5CC63437",
-    "skill_name": "IBM 37xx",
-    "skill_info_url": "https://lightcast.io/open-skills/skills/KS1201B6LWPNDWCRNQGZ",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -23949,6 +23949,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "319B7DF5-727D-4C73-994C-1A90F736573F",
+    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
+    "skill_name": "confident",
+    "skill_info_url": "",
+    "skill_type": "Soft",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "7C7EBF60-52B6-4E32-AB4E-664DA9E63AEB",
     "skill_subcategory_id": "9ABBDFC2-B339-429E-945C-948B52E58C5A",
     "skill_name": "Embedded Databases",
@@ -24997,6 +25006,15 @@
     "skill_subcategory_id": "F51A2573-05F4-401D-97A6-CE2F7DB88A56",
     "skill_name": "Web Services Description Language",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS4420J658QX179JTYQY",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
+    "skill_id": "D7DF51BD-CE91-495B-952B-B4B71A502F6A",
+    "skill_subcategory_id": "BA00EFF2-B9DB-472F-90E8-691CBBF7F1B6",
+    "skill_name": "Compliant development",
+    "skill_info_url": "",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -26051,6 +26069,15 @@
     "skill_name": "Thymeleaf",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS441CZ71JXVHZJZM0XV",
     "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
+    "skill_id": "4CCC7055-5F43-44D0-B416-F52DBCCEAA19",
+    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
+    "skill_name": "Marketing",
+    "skill_info_url": "",
+    "skill_type": "Soft",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
@@ -27527,15 +27554,6 @@
     "skill_name": "Usart",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KSEFD11M46UZ7T60CY1E",
     "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "319B7DF5-727D-4C73-994C-1A90F736573F",
-    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
-    "skill_name": "confident",
-    "skill_info_url": "",
-    "skill_type": "Soft",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
@@ -32274,15 +32292,6 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
-    "skill_id": "D7DF51BD-CE91-495B-952B-B4B71A502F6A",
-    "skill_subcategory_id": "BA00EFF2-B9DB-472F-90E8-691CBBF7F1B6",
-    "skill_name": "Compliant development",
-    "skill_info_url": "",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
     "skill_id": "7A785300-B2A5-41D5-9515-45FA5FAA0FAD",
     "skill_subcategory_id": "A7ED60CC-D6C2-439D-ACBD-C1686D98E591",
     "skill_name": "Data Abstraction",
@@ -33003,6 +33012,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "3469BCD9-4707-4EF1-AB0D-BD6CCCCF4CDD",
+    "skill_subcategory_id": "70E86CE6-3348-47B1-8874-A23CEA484410",
+    "skill_name": "Systems requirement",
+    "skill_info_url": "",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "6493412E-F0F7-4D6A-B9EF-C1BF2C596B5B",
     "skill_subcategory_id": "FA8D0BBF-20D4-4608-9410-A3A19C03AA6A",
     "skill_name": "OpenSSH",
@@ -33368,15 +33386,6 @@
     "skill_name": "Data Domain",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS122NW5YB08NCH9P98B",
     "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "4CCC7055-5F43-44D0-B416-F52DBCCEAA19",
-    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
-    "skill_name": "Marketing",
-    "skill_info_url": "",
-    "skill_type": "Soft",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
@@ -34839,6 +34848,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "2A1DA42F-043F-4CC1-ABB2-D5F32C2BD558",
+    "skill_subcategory_id": "D1CDC6C6-A0D6-4CDB-AC50-907B0D3DCAE0",
+    "skill_name": "Scrum",
+    "skill_info_url": "",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "B38BF92B-12C3-467C-844B-6192D97BF5F0",
     "skill_subcategory_id": "A7ED60CC-D6C2-439D-ACBD-C1686D98E591",
     "skill_name": "Data Maintenance",
@@ -35572,6 +35590,15 @@
     "skill_subcategory_id": "344DEF26-88C4-430F-A7D2-0195A6EFF498",
     "skill_name": "Robotic Automation Software",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS440456K7KNPKP846FC",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
+    "skill_id": "A185D9E5-1295-4B26-B287-DED99EE05899",
+    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
+    "skill_name": "Copper Piping",
+    "skill_info_url": "",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -36693,9 +36720,9 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
-    "skill_id": "3469BCD9-4707-4EF1-AB0D-BD6CCCCF4CDD",
-    "skill_subcategory_id": "70E86CE6-3348-47B1-8874-A23CEA484410",
-    "skill_name": "Systems requirement",
+    "skill_id": "3F365002-B0AA-4951-8CE4-F2A681119160",
+    "skill_subcategory_id": "C4637DB7-C720-45BD-8CFB-ACE2818D82A0",
+    "skill_name": "HTML",
     "skill_info_url": "",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
@@ -37462,15 +37489,6 @@
     "skill_subcategory_id": "A1AAAC6A-F0F0-48FD-A9CE-17356D22AA3E",
     "skill_name": "Munin (Software)",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KS126T76JJTF2N7CGT20",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "2A1DA42F-043F-4CC1-ABB2-D5F32C2BD558",
-    "skill_subcategory_id": "D1CDC6C6-A0D6-4CDB-AC50-907B0D3DCAE0",
-    "skill_name": "Scrum",
-    "skill_info_url": "",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -39388,15 +39406,6 @@
     "skill_subcategory_id": "A7ED60CC-D6C2-439D-ACBD-C1686D98E591",
     "skill_name": "Format Conversion",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KSEMN7OBS45ME5HVBXHO",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "A185D9E5-1295-4B26-B287-DED99EE05899",
-    "skill_subcategory_id": "9CAD3203-05A4-4885-B2AC-0902910ABB6B",
-    "skill_name": "Copper Piping",
-    "skill_info_url": "",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
@@ -43065,6 +43074,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "FF6436F9-2DDD-4A9B-9903-B50C56A96BC1",
+    "skill_subcategory_id": "E2A7D30D-5768-49EB-843D-3B9DA71C91AF",
+    "skill_name": "Software project management",
+    "skill_info_url": "",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "F1D33B6D-2C68-40C2-9BE3-64DC11B356E0",
     "skill_subcategory_id": "D838ADA8-28E1-4DF5-ACE4-5D0D214006FC",
     "skill_name": "Microsoft Family Safety",
@@ -44523,15 +44541,6 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
-    "skill_id": "3F365002-B0AA-4951-8CE4-F2A681119160",
-    "skill_subcategory_id": "C4637DB7-C720-45BD-8CFB-ACE2818D82A0",
-    "skill_name": "HTML",
-    "skill_info_url": "",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
     "skill_id": "2F86E6D4-2AC9-4A77-A65D-F8DE3D165CAD",
     "skill_subcategory_id": "4510C6A9-F63F-4B85-B581-F81E8498667D",
     "skill_name": "5ESS Switching System",
@@ -45981,6 +45990,15 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
+    "skill_id": "CB53B438-3E72-4F00-939F-3B73F075824B",
+    "skill_subcategory_id": "E2A7D30D-5768-49EB-843D-3B9DA71C91AF",
+    "skill_name": "Lucidworks",
+    "skill_info_url": "https://lightcast.io/open-skills/skills/KSY2INPDZ4CACGT31NA7",
+    "skill_type": "Hard",
+    "createdat": "2025-06-25T19:21:59.190000+00:00",
+    "updatedat": "2025-06-25T19:21:59.190000+00:00"
+  },
+  {
     "skill_id": "EAC30226-763D-40FD-8BDB-F09D018CC814",
     "skill_subcategory_id": "19F41618-1E99-457A-AA99-E3CAD9EC819A",
     "skill_name": "Software Design Patterns",
@@ -47097,15 +47115,6 @@
     "updatedat": "2025-06-25T19:21:59.190000+00:00"
   },
   {
-    "skill_id": "FF6436F9-2DDD-4A9B-9903-B50C56A96BC1",
-    "skill_subcategory_id": "E2A7D30D-5768-49EB-843D-3B9DA71C91AF",
-    "skill_name": "Software project management",
-    "skill_info_url": "",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
     "skill_id": "465D989A-9384-4711-A1A2-DADD1B86F3FE",
     "skill_subcategory_id": "65029D28-ECA9-4BCF-ABC6-71EFADF55557",
     "skill_name": "Salesforce Object Search Language (SOSL)",
@@ -47452,15 +47461,6 @@
     "skill_subcategory_id": "65029D28-ECA9-4BCF-ABC6-71EFADF55557",
     "skill_name": "U-SQL",
     "skill_info_url": "https://lightcast.io/open-skills/skills/KSL85GN8CCV6PN3WJ7ZS",
-    "skill_type": "Hard",
-    "createdat": "2025-06-25T19:21:59.190000+00:00",
-    "updatedat": "2025-06-25T19:21:59.190000+00:00"
-  },
-  {
-    "skill_id": "CB53B438-3E72-4F00-939F-3B73F075824B",
-    "skill_subcategory_id": "E2A7D30D-5768-49EB-843D-3B9DA71C91AF",
-    "skill_name": "Lucidworks",
-    "skill_info_url": "https://lightcast.io/open-skills/skills/KSY2INPDZ4CACGT31NA7",
     "skill_type": "Hard",
     "createdat": "2025-06-25T19:21:59.190000+00:00",
     "updatedat": "2025-06-25T19:21:59.190000+00:00"

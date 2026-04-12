@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import re
 from collections.abc import Callable
+from typing import Any
 
 import structlog
 from sqlalchemy import and_, func, or_, select
@@ -301,6 +302,8 @@ async def classify_soc(
     description: str,
     session: Session,
     llm: Callable[[str], str],
+    *,
+    async_llm: Callable[..., Any] | None = None,
 ) -> str:
     candidates = await get_soc_candidates(title, description or None, session)
     if not candidates:
@@ -321,7 +324,10 @@ Instructions:
 - If none match, return 'unclassified'.
 - Reply with exactly one token: the chosen SOC code exactly as shown, or unclassified."""
 
-    raw = llm(prompt)
+    if async_llm is not None:
+        raw = await async_llm(prompt)
+    else:
+        raw = llm(prompt)
     raw_stripped = (raw or "").strip()
     picked, resolution_reason = _resolve_llm_pick_with_reason(raw, candidate_codes)
     log.info(

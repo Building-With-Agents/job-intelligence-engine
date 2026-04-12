@@ -178,3 +178,61 @@ queries:
   - name: enterprise-ai-deploy
     keywords: ["AI integration engineer", "enterprise AI developer", "AI solutions architect", "applied AI engineer"]
     pages: 15
+
+  # ============================================================
+  # GAP-FILL LAYER — Broad IT roles not covered by existing queries
+  # These use common job titles that return high volumes on JSearch
+  # with minimal overlap to existing queries above.
+  # ============================================================
+
+  # --- Infrastructure & Cloud ---
+  - name: devops-sre
+    keywords: ["DevOps engineer", "site reliability engineer", "platform engineer"]
+    pages: 10
+
+  - name: cloud-architect
+    keywords: ["cloud architect", "cloud solutions architect", "AWS architect", "Azure architect"]
+    pages: 10
+
+  # --- Security ---
+  - name: security-engineer
+    keywords: ["security engineer", "application security engineer", "cloud security engineer"]
+    pages: 10
+
+  # --- Database & Analytics ---
+  - name: database-admin
+    keywords: ["database administrator", "database engineer", "SQL developer"]
+    pages: 10
+
+  - name: bi-analytics
+    keywords: ["business intelligence developer", "BI analyst", "Tableau developer", "Power BI developer"]
+    pages: 10
+
+  # --- Frontend & Mobile ---
+  - name: frontend-react
+    keywords: ["React developer", "frontend engineer", "UI developer"]
+    pages: 10
+
+  - name: mobile-developer
+    keywords: ["iOS developer", "Android developer", "mobile engineer", "React Native developer"]
+    pages: 10
+
+  # --- QA & Testing ---
+  - name: qa-automation
+    keywords: ["QA automation engineer", "SDET", "test automation engineer"]
+    pages: 10
+
+  # --- Networking & Systems ---
+  - name: network-engineer
+    keywords: ["network engineer", "systems administrator", "infrastructure engineer"]
+    pages: 10
+
+  # --- Technical Writing & Support ---
+  - name: technical-writer
+    keywords: ["technical writer", "API documentation writer", "developer advocate"]
+    pages: 5
+
+  # --- Emerging Tech ---
+  - name: blockchain-web3
+    keywords: ["blockchain developer", "smart contract developer", "Web3 engineer"]
+    pages: 5

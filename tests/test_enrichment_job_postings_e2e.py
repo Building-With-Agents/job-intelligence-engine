@@ -2,7 +2,7 @@
 
 Requires ``PYTHON_DATABASE_URL`` and a full ``dbo`` schema (postal_geo_data, companies,
 company_addresses, job_postings, normalized_jobs, extracted_intelligence). Skips if
-seed fails (e.g. column naming differs from Prisma/pgloader expectations).
+seed fails (e.g. column naming differs from expected schema).
 
 Run ``python scripts/db_check.py migrate`` so ``job_postings`` has ``naics_code``,
 ``soc_code``, and ``employer_profile_id`` before the extended promotion test.
