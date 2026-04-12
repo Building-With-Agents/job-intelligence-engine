@@ -13023,15 +13023,6 @@
     "lng": -81.14723
   },
   {
-    "zip": "29044",
-    "city": "Eastover",
-    "county": "Richland",
-    "state_code": "SC",
-    "state": "South Carolina",
-    "lat": 33.93437,
-    "lng": -80.69446
-  },
-  {
     "zip": "29045",
     "city": "Elgin",
     "county": "Kershaw",
@@ -14803,15 +14794,6 @@
     "state": "South Carolina",
     "lat": 34.44323,
     "lng": -79.62414
-  },
-  {
-    "zip": "29518",
-    "city": "Cades",
-    "county": "Williamsburg",
-    "state_code": "SC",
-    "state": "South Carolina",
-    "lat": 33.7892,
-    "lng": -79.84851
   },
   {
     "zip": "29519",
@@ -82197,15 +82179,6 @@
     "lng": -87.22868
   },
   {
-    "zip": "47859",
-    "city": "Marshall",
-    "county": "Parke",
-    "state_code": "IN",
-    "state": "Indiana",
-    "lat": 39.88595,
-    "lng": -87.16999
-  },
-  {
     "zip": "47860",
     "city": "Mecca",
     "county": "Parke",
@@ -84796,15 +84769,6 @@
     "state": "Michigan",
     "lat": 42.46333,
     "lng": -83.34803
-  },
-  {
-    "zip": "48340",
-    "city": "Pontiac",
-    "county": "Oakland",
-    "state_code": "MI",
-    "state": "Michigan",
-    "lat": 42.67065,
-    "lng": -83.29019
   },
   {
     "zip": "48341",
@@ -111654,15 +111618,6 @@
     "lng": -84.50732
   },
   {
-    "zip": "40601",
-    "city": "Frankfort",
-    "county": "Franklin",
-    "state_code": "KY",
-    "state": "Kentucky",
-    "lat": 38.23294,
-    "lng": -84.88327
-  },
-  {
     "zip": "40701",
     "city": "Corbin",
     "county": "Whitley",
@@ -133245,15 +133200,6 @@
     "lng": -76.17009
   },
   {
-    "zip": "17527",
-    "city": "Gap",
-    "county": "Lancaster",
-    "state_code": "PA",
-    "state": "Pennsylvania",
-    "lat": 40.01495,
-    "lng": -75.99333
-  },
-  {
     "zip": "17529",
     "city": "Gordonville",
     "county": "Lancaster",
@@ -152980,15 +152926,6 @@
     "state": "Missouri",
     "lat": 40.13972,
     "lng": -92.0055
-  },
-  {
-    "zip": "63447",
-    "city": "La Belle",
-    "county": "Lewis",
-    "state_code": "MO",
-    "state": "Missouri",
-    "lat": 40.09251,
-    "lng": -91.90494
   },
   {
     "zip": "63448",
@@ -227844,15 +227781,6 @@
     "lng": -88.03416
   },
   {
-    "zip": "53105",
-    "city": "Burlington",
-    "county": "Racine",
-    "state_code": "WI",
-    "state": "Wisconsin",
-    "lat": 42.66412,
-    "lng": -88.28045
-  },
-  {
     "zip": "53108",
     "city": "Caledonia",
     "county": "Racine",
@@ -255715,15 +255643,6 @@
     "state": "Virginia",
     "lat": 37.11797,
     "lng": -81.80802
-  },
-  {
-    "zip": "24646",
-    "city": "Rowe",
-    "county": "Buchanan",
-    "state_code": "VA",
-    "state": "Virginia",
-    "lat": 37.13751,
-    "lng": -82.02976
   },
   {
     "zip": "24651",
