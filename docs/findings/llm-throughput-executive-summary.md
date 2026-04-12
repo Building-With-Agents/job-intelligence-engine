@@ -13,15 +13,15 @@ Every time our pipeline analyzes a job posting, it makes **6 API calls** to a la
 | Limit | What It Means | Why It Matters |
 |-------|---------------|----------------|
 | **RPM** (Requests Per Minute) | Maximum number of API calls allowed per minute | Directly caps how many jobs we can process per minute. At 6 calls/job, 190 RPM = max 31 jobs/min. |
-| **TPM** (Tokens Per Minute) | Maximum "words" (tokens) processed per minute | Each call sends ~1,560 tokens. 1,000 jobs need ~7.4M tokens in 5 min = 1.48M TPM. |
+| **TPM** (Tokens Per Minute) | Maximum "words" (tokens) processed per minute | Each call averages ~1,620 tokens. 1,000 jobs need ~9.7M tokens in 5 min = 1.94M TPM. |
 
-**Our SLA target is 1,000 job postings processed in under 5 minutes.** That requires at least **1,200 RPM** and **1.5M TPM** sustained for 5 minutes.
+**Our SLA target is 1,000 job postings processed in under 5 minutes.** That requires at least **1,200 RPM** and **~2M TPM** sustained for 5 minutes.
 
 ---
 
 ## Current State
 
-**Data source:** 12,940 LLM generations logged in Langfuse (self-hosted observability platform).
+**Data sources:** Azure Cost Management (billing ground truth) + 13,576 LLM generations in Langfuse (self-hosted observability, token-level detail).
 
 ### What Happens Per Job
 
@@ -31,7 +31,7 @@ Each job posting goes through two LLM-intensive stages:
 |-------|-----------|-----------------|-------------|---------|
 | **Skills Extraction** (3 calls) | Tasks, Responsibilities, Skills | ~1,970 tokens | 30-48s | Extract structured work intelligence from job descriptions |
 | **Enrichment** (3 calls) | SOC code, NAICS code, Employer profile | ~1,086 tokens | 5-9s | Classify industry codes and build employer metadata |
-| **Total per job** | **6 calls** | **7,394 tokens** | — | — |
+| **Total per job** | **6 calls** | **~9,710 tokens** | — | — |
 
 ### Current Azure OpenAI Deployment
 
@@ -56,25 +56,51 @@ Each job posting goes through two LLM-intensive stages:
 | Metric | Current | Needed for SLA | Gap |
 |--------|---------|----------------|-----|
 | RPM | 190 | 1,200 | **6.3x increase** |
-| TPM | 190,000 | 1,500,000 | **7.9x increase** |
+| TPM | 190,000 | 1,940,000 | **10.2x increase** |
 | Jobs/min | ~2 (code bottleneck) → 31 (after refactor) | 200 | **6.5x after refactor** |
 
 ---
 
-## Observed Cost Per Job (from Langfuse Data)
+## Observed Cost Per Job
 
-Based on 3,000 sampled LLM generations across 358 processed jobs:
+Two data sources provide cost estimates. **Azure Cost Management is the billing ground truth.**
+
+### Azure Cost Management (ground truth — Apr 3-12, 2026)
+
+Actual billed charges from the `resumeJobMatch` Azure OpenAI resource:
+
+| Meter | Tokens | Billed Cost |
+|-------|--------|-------------|
+| gpt-4.1-mini input (regional) | 11,981,818 | $5.27 |
+| gpt-4.1-mini output (regional) | 4,455,196 | $7.84 |
+| gpt-4.1-mini cached input | 2,895,744 | $0.32 |
+| text-embedding-3-small | 1,431,459 | $0.03 |
+| **Total** | | **$13.46** |
+
+$13.46 / 644 fully processed jobs = **$0.021/job** (2.1 cents)
+
+| Scale | Azure Billed Cost |
+|-------|-------------------|
+| Per job | **$0.021** |
+| Per 1,000 jobs | **$21** |
+| Per 30,000 jobs/month | **$630/month** |
+
+> Azure regional pricing is slightly above list ($0.44 vs $0.40/1M input, $1.76 vs $1.60/1M output). The total also includes embedding calls and cached input tokens not counted in the 6 LLM calls/job figure.
+
+### Langfuse Token Analysis (cross-check — 13,576 generations, 1,533 jobs)
+
+Token-based estimate using list pricing ($0.40/$1.60 per 1M tokens):
 
 | Metric | Value |
 |--------|-------|
-| Avg input tokens/job | 6,438 |
-| Avg output tokens/job | 956 |
-| Avg total tokens/job | **7,394** |
-| Azure cost/job (gpt-4.1-mini) | **$0.0041** |
+| Avg input tokens/job | 8,041 |
+| Avg output tokens/job | 1,669 |
+| Avg total tokens/job | **9,710** |
+| Estimated cost/job (list pricing) | **$0.0059** |
 
-At current Azure pricing ($0.40/1M input, $1.60/1M output for gpt-4.1-mini Standard):
-- **1,000 jobs = $4.11**
-- **30,000 jobs/month = $123.16/month**
+This underestimates actual cost because: (1) it uses list pricing, not regional; (2) it excludes embedding calls; (3) Langfuse token tracking underreports on some code paths.
+
+**For budgeting purposes, use Azure billing: $21 per 1,000 jobs.**
 
 ---
 
@@ -90,13 +116,13 @@ Each option pairs specific LLM providers with the pipeline to balance cost, spee
 | **Enrichment provider** | Azure OpenAI gpt-4.1-mini (shared quota) |
 | **Required Azure change** | Increase capacity from 190 → 1,500 units (portal slider, within Tier 1 limit of 6,000) |
 | **Projected speed** | ~1,000 jobs in **4-5 min** |
-| **Cost per 1,000 jobs** | **$4.11** |
-| **Monthly (30k jobs)** | **$123.16** |
+| **Cost per 1,000 jobs** | **$21** (Azure billing ground truth) |
+| **Monthly (30k jobs)** | **$630** |
 | **Quality** | Highest — single provider, proven structured output |
 | **Complexity** | Lowest — no multi-provider routing |
 | **Risk** | Quota increase may require approval (1-2 business days) |
 
-### Option B: Mid-Tier — Azure + Google Gemini
+### Option B: Mid-Tier — Azure Extraction + Gemini Enrichment
 
 | | Details |
 |---|---|
@@ -104,11 +130,11 @@ Each option pairs specific LLM providers with the pipeline to balance cost, spee
 | **Enrichment provider** | Google Gemini 2.5 Flash (Paid Tier 1 — 300 RPM) |
 | **Required changes** | Azure: 190 → 450 units. Google Cloud: add billing to unlock Tier 1. |
 | **Projected speed** | ~1,000 jobs in **5-6 min** |
-| **Cost per 1,000 jobs** | **$3.27** (Azure extraction $2.77 + Gemini enrichment $0.50) |
-| **Monthly (30k jobs)** | **$98.09** |
+| **Cost per 1,000 jobs** | **~$16** (Azure extraction ~$14 + Gemini enrichment ~$2) |
+| **Monthly (30k jobs)** | **~$480** |
 | **Quality** | High — Azure for complex extraction, Gemini for simpler classification |
 | **Complexity** | Medium — multi-provider routing in code |
-| **Risk** | Gemini structured output quality needs validation for SOC/NAICS |
+| **Risk** | Gemini has known structured output reliability issues (see azure-vs-gemini-structured-output.md). Enrichment classifiers use simpler schemas than extraction — may be viable, but needs validation. |
 
 ### Option C: Budget — DeepSeek + Groq
 
@@ -119,8 +145,8 @@ Each option pairs specific LLM providers with the pipeline to balance cost, spee
 | **Fallback** | Azure OpenAI at current 190 RPM (no change needed) |
 | **Required changes** | Create DeepSeek + Groq accounts. No Azure changes. |
 | **Projected speed** | ~750 jobs in 5 min, **1,000 jobs in ~7 min** |
-| **Cost per 1,000 jobs** | **$1.29** (DeepSeek extraction $1.29 + Groq free $0.00) |
-| **Monthly (30k jobs)** | **$38.74** |
+| **Cost per 1,000 jobs** | **~$6** (DeepSeek extraction ~$6 + Groq free $0.00) |
+| **Monthly (30k jobs)** | **~$180** |
 | **Quality** | Good — DeepSeek V3 comparable to gpt-4.1-mini for extraction; llama-3.3-70b strong for classification |
 | **Complexity** | Highest — three providers, fallback logic |
 | **Risk** | DeepSeek extraction quality needs validation. Groq free tier has daily limits (14,400 requests/day = max ~2,400 jobs/day for enrichment). |
@@ -132,8 +158,8 @@ Each option pairs specific LLM providers with the pipeline to balance cost, spee
 | | Premium | Mid-Tier | Budget |
 |---|---------|----------|--------|
 | **Est. time for 1,000 jobs** | 4-5 min | 5-6 min | 6-8 min |
-| **Cost / 1,000 jobs** | $4.11 | $3.27 | $1.29 |
-| **Cost / month (30k jobs)** | $123.16 | $98.09 | $38.74 |
+| **Cost / 1,000 jobs** | $21 | ~$16 | ~$6 |
+| **Cost / month (30k jobs)** | $630 | ~$480 | ~$180 |
 | **Azure quota change** | 190 → 1,500 | 190 → 450 | None |
 | **New accounts** | None | Google Cloud billing | DeepSeek + Groq |
 | **Extraction quality** | Highest | Highest | Good (needs eval) |
@@ -167,8 +193,8 @@ The refactoring alone — with no quota or provider changes — increases throug
 
 Then evaluate tier options based on:
 1. **If 31 jobs/min is sufficient** for current volumes → stay on current Azure quota (no cost increase)
-2. **If SLA of 1,000 in 5 min is required** → Option A (Premium) is simplest; Option B (Mid-Tier) saves ~20%
-3. **If budget is the primary constraint** → Option C (Budget) at $38.74/month, accepting 6-8 min processing time
+2. **If SLA of 1,000 in 5 min is required** → Option A (Premium) is simplest at $630/month; Option B (Mid-Tier) saves ~$150/month but adds Gemini structured output risk
+3. **If budget is the primary constraint** → Option C (Budget) at ~$180/month, accepting 6-8 min processing time
 
 ---
 
@@ -206,4 +232,4 @@ Then evaluate tier options based on:
 
 ---
 
-*Data sourced from Langfuse observability platform (12,940 LLM generations, 3,000 sampled) and Azure CLI deployment inspection. Pricing as of April 2026.*
+*Cost data from Azure Cost Management (billing ground truth, Apr 3-12 2026). Token-level analysis from Langfuse (13,576 generations, 1,533 jobs). Azure deployment limits from Azure CLI. External provider pricing as of April 2026.*

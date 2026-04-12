@@ -26,7 +26,7 @@ its lower per-token rate.
 | Dimension | Azure OpenAI | Gemini 2.5 Flash |
 |-----------|-------------|-----------------|
 | Model | gpt-4.1-mini-2025-04-14 | gemini-2.5-flash |
-| Deployment | chat-gpt41mini (Azure) | chat-gpt41mini (routed) |
+| Deployment | chat-gpt41mini (Azure) | gemini-2.5-flash (Google AI) |
 | Tier | Paid / production | **Free tier** (rate-limited) |
 | Run period | 2026-04-03 → 2026-04-12 | 2026-04-11 20:32 → 2026-04-12 |
 | Total LLM calls | 7,861 | 5,002 |
@@ -87,6 +87,10 @@ more output tokens to produce the same task, which offsets its lower per-token p
 | enrichment-naics-classifier | $0.000278 | $0.000330 | Azure 16% cheaper |
 | enrichment-employer-classifier | $0.000308 | $0.000272 | Gemini 12% cheaper |
 
+> **Note:** Absolute cost/call values above are from `llm_audit_log` which used incorrect
+> Sonnet pricing (~8.6x overcount — see caveat below). The **relative Δ** between Azure
+> and Gemini is still valid since both were miscalculated by the same factor.
+
 **Actual per-job cost — verified from Azure Cost Management (`resumejobmatch` resource, Apr 3–12):**
 
 | Meter | Tokens | Actual cost |
@@ -111,9 +115,10 @@ $13.46 ÷ 644 fully processed jobs = **$0.021/job** (~2 cents)
 > Fixed in `common/llm_adapter.py` — all providers and models now have correct pricing entries
 > and future `llm_audit_log` records will be accurate. Historical records are overcounted.
 >
-> **Langfuse full-paginated analysis** (`scripts/langfuse_cost_analysis.py`) estimated
-> $5.89/1,000 jobs — closer to reality but still underestimates because it mixes Azure and
-> Gemini token counts when computing per-job averages. Use Azure Cost Management for ground truth.
+> **Langfuse full-paginated analysis** (`scripts/langfuse_cost_analysis.py`, 13,576
+> generations, 1,533 jobs) estimated $5.89/1,000 jobs at list pricing — underestimates
+> actual cost because it uses list pricing (not regional) and excludes embedding/cached
+> token charges. **Use Azure Cost Management ($21/1,000 jobs) for ground truth.**
 
 **Gemini per-job cost: undefined.** The Gemini run completed 5,002 LLM calls but
 produced only 2 jobs with any structured output — both containing 0 skills, 0 tasks,
