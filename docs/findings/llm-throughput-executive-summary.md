@@ -61,6 +61,71 @@ Each job posting goes through two LLM-intensive stages:
 
 ---
 
+## Ingestion Cost: JSearch API
+
+The pipeline sources job postings from [JSearch on RapidAPI](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch). Ingestion is a separate cost from LLM processing.
+
+### Current Setup
+
+| Metric | Value |
+|--------|-------|
+| Query groups configured | 36 (13 core tech + 23 sector verticals) |
+| API requests per full run | **410** (1 request = 1 page ≈ 10 results) |
+| Est. results per full run | ~4,100 (before dedup) |
+| Observed dedup rate | 28.2% (repeat postings filtered out) |
+| Observed yield | **71.8%** → ~2,950 new unique jobs per full run |
+| API keys in rotation | 7 (free tier, 200 requests/month each) |
+| Free capacity | **1,400 requests/month** (7 x 200) |
+| Full runs covered (free) | **~3.4 runs/month** |
+
+A single full ingestion run consumes 410 API requests — nearly 30% of total free monthly capacity across all 7 keys. **At daily cadence (12,300 requests/month), free tier cannot sustain the pipeline.**
+
+### JSearch Pricing Tiers
+
+| Plan | Monthly Cost | Requests/Month | Rate Limit | Overage |
+|------|-------------|----------------|------------|---------|
+| **Free** | $0 | 200 | 1,000/hr | Hard limit |
+| **Pro** | $25 | 10,000 | 5 req/sec | $0.003/req |
+| **Ultra** | $75 | 50,000 | 10 req/sec | $0.002/req |
+| **Mega** | $150 | 200,000 | 20 req/sec | $0.001/req |
+| **Pay As You Go** | $0 base | Per-request | 5 req/sec | $0.005/req |
+
+### Ingestion Cost by Frequency
+
+| Cadence | Requests/Month | Free (7 keys) | Pro ($25) | Ultra ($75) | Mega ($150) |
+|---------|---------------|---------------|-----------|-------------|-------------|
+| Weekly (1x) | 1,640 | Covered | Covered | Covered | Covered |
+| 2x/week | 3,280 | **Over by 1,880** | Covered | Covered | Covered |
+| 3x/week | 4,920 | **Over** | Covered | Covered | Covered |
+| Daily | 12,300 | **Over** | Covered + $6.90 overage | Covered | Covered |
+| 2x/day | 24,600 | **Over** | **Over** — $68.80 overage | Covered | Covered |
+
+> Overage = (requests - plan included) x overage rate
+
+### Recommendation
+
+| Scenario | Best Plan | Monthly Cost |
+|----------|-----------|-------------|
+| **Current (manual/weekly runs)** | Free tier (7 keys) | $0 |
+| **Daily automated ingestion** | Pro | **$25** ($25 base + ~$7 overage = ~$32) |
+| **2x/day + growth headroom** | Ultra | **$75** |
+| **Scale to full SLA (multiple daily runs)** | Mega | **$150** |
+
+For the 1,000 jobs/5min SLA, daily ingestion on a **single Pro key ($25/month)** replaces all 7 free keys and eliminates key rotation complexity. If ingestion frequency increases beyond daily, upgrade to Ultra ($75).
+
+### Total Pipeline Cost (Ingestion + Processing)
+
+| Tier | LLM Processing (30k jobs/month) | JSearch Ingestion | **Total Monthly** |
+|------|--------------------------------|-------------------|--------------------|
+| **Premium** | $630 (Azure only) | $25-75 | **$655-705** |
+| **Mid-Tier** | ~$480 (Azure + Gemini) | $25-75 | **$505-555** |
+| **Budget** | ~$180 (DeepSeek + Groq) | $25-75 | **$205-255** |
+| **Current (free, manual)** | $630* | $0 | **$630** |
+
+*Current LLM cost is the same rate ($21/1k jobs) regardless of pipeline speed — only throughput time changes, not cost per job.
+
+---
+
 ## Observed Cost Per Job
 
 Two data sources provide cost estimates. **Azure Cost Management is the billing ground truth.**
