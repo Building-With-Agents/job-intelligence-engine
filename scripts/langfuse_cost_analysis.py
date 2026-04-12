@@ -12,20 +12,21 @@ base = os.getenv("LANGFUSE_BASE_URL", "http://localhost:3000")
 pk = os.getenv("LANGFUSE_PUBLIC_KEY")
 sk = os.getenv("LANGFUSE_SECRET_KEY")
 
-# Paginate generations (cap at 3000)
+# Paginate all generations
 all_gens = []
 page = 1
-while len(all_gens) < 3000:
+while True:
     resp = requests.get(f"{base}/api/public/observations?type=GENERATION&limit=100&page={page}", auth=(pk, sk))
     data = resp.json()
     batch = data.get("data", [])
     if not batch:
         break
     all_gens.extend(batch)
-    page += 1
     total = data.get("meta", {}).get("totalItems", 0)
+    print(f"  fetched {len(all_gens)}/{total}...", end="\r")
     if len(all_gens) >= total:
         break
+    page += 1
 
 print(f"Total generations in Langfuse: {data.get('meta', {}).get('totalItems', 0)}")
 print(f"Sampled: {len(all_gens)}")
