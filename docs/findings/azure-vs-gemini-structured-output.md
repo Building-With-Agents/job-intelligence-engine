@@ -87,17 +87,27 @@ more output tokens to produce the same task, which offsets its lower per-token p
 | enrichment-naics-classifier | $0.000278 | $0.000330 | Azure 16% cheaper |
 | enrichment-employer-classifier | $0.000308 | $0.000272 | Gemini 12% cheaper |
 
-**Estimated per-job total:**
+**Actual per-job cost (Azure) from `llm_audit_log`:**
 
-| Provider | Per-job cost | Per 1,000 jobs | Per 30,000 jobs/month |
-|----------|-------------|---------------|----------------------|
-| Azure gpt-4.1-mini | **$0.0365** | $36.50 | $1,095 |
-| Gemini 2.5 Flash | **$0.0310** | $31.00 | $930 |
-| Difference | +$0.0055 | +$5.50 | +$165/month |
+Total Azure cost across all agents: **$44.84** for **644 fully processed jobs** = **$0.07/job**
 
-**The real cost premium for Azure is $165/month at full production scale — not 2x.**
-Given that Gemini produced zero usable structured output in this run, the effective cost
-per *valid* enriched job with Gemini is undefined (no valid output produced).
+| Scale | Azure Cost |
+|-------|-----------|
+| Per job | **$0.07** |
+| Per 1,000 jobs | $70 |
+| Per 30,000 jobs/month | **$2,100/month** |
+
+> **Note on the Langfuse cost analysis script (`scripts/langfuse_cost_analysis.py`):**
+> The script samples 3,000 of 13,561 total Langfuse generations (~22%) and estimates
+> ~$4.57/1,000 jobs. This is a **15x underestimate** because the sample is not
+> representative of the full call volume. Use `llm_audit_log` totals for accurate
+> per-job cost calculations.
+
+**Gemini per-job cost: undefined.** The Gemini run completed 5,002 LLM calls but
+produced only 2 jobs with any structured output — both containing 0 skills, 0 tasks,
+and 0 responsibilities. There is no valid Gemini "cost per enriched job" because
+no valid enriched jobs were produced. The effective cost per *usable* output is
+undefined.
 
 ---
 
@@ -207,8 +217,10 @@ Source: OpenAI Structured Outputs documentation and release blog.
    coverage on complex nested schemas (JSONSchemaBench). The extraction pipeline uses deeply
    nested schemas with arrays, optional fields, and enums — exactly the hard case.
 
-4. **Cost delta is small:** $165/month at 30k jobs/month scale, not 2x. Gemini uses more output
-   tokens offsetting its lower per-token rate. The effective cost premium is marginal.
+4. **Actual Azure cost:** $0.07/job → $2,100/month at 30k jobs/month. No valid Gemini
+   per-job cost can be computed from this run — 5,002 Gemini calls produced 0 usable
+   structured outputs. A valid cost comparison requires a Gemini run that delivers
+   complete structured extraction.
 
 5. **Latency data excluded:** Free-tier Gemini was rate-limited; those numbers are not valid
    for comparison. Latency is not a factor in this decision.
