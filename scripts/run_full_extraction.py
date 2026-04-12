@@ -117,7 +117,7 @@ def _export_and_open_pr() -> None:
     # Export fixtures
     log.info("\nExporting fixtures...")
     subprocess.run(
-        [sys.executable, str(_REPO_ROOT / "scripts" / "pg-seed-data" / "export_agent_data.py")],
+        [sys.executable, str(_REPO_ROOT / "scripts" / "pg-seed-data" / "export_fixtures.py"), "--scope", "agent"],
         cwd=str(_REPO_ROOT),
         check=True,
     )

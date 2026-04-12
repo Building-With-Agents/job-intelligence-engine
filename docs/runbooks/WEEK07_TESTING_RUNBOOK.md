@@ -320,7 +320,7 @@ python scripts/run_processing_loop.py --batch-size 25 --delay 10
 python scripts/db_check.py query "SELECT count(*) as total, count(quality_score) as with_quality, count(soc_code) as with_soc, count(naics_code) as with_naics FROM dbo.job_postings"
 
 # 5. Re-export fixtures to capture improved output
-python scripts/pg-seed-data/export_agent_data.py
+python scripts/pg-seed-data/export_fixtures.py --scope agent
 ```
 
 **Never delete the fixture JSON files** in `scripts/pg-seed-data/agent-fixtures/` — they are your checkpoint. To restore to the last known-good state at any time: `python scripts/pg-seed-data/seed_pg_database.py`

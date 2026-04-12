@@ -84,9 +84,8 @@ scripts/pg-seed-data/
   README.md                     ← This file
   seed_pg_database.py           ← Seed everything: reference + pipeline (junior devs run this)
   seed_agent_data.py            ← Pipeline data only (called by seed_pg_database.py, or standalone)
-  export_pg_fixtures.py         ← Export reference data (admin only)
-  export_agent_data.py          ← Export agent pipeline data (admin only)
-  clean_stale_postings.py       ← Purge old pipeline data (admin only)
+  export_fixtures.py            ← Export fixtures (admin only) — --scope reference|agent|all
+  clean_stale_postings.py       ← DEPRECATED no-op (all data retained permanently)
   clean_schema.py               ← Schema cleaner (admin only)
   schema.sql                    ← Cleaned DDL (idempotent)
   schema_raw.sql                ← Raw pg_dump output (admin reference)
@@ -122,13 +121,15 @@ If the admin database changes, re-export fixtures:
 
 ```bash
 # 1. Ensure PYTHON_DATABASE_URL points to the admin PostgreSQL instance
-# 2. Export reference tables
-python scripts/pg-seed-data/export_pg_fixtures.py
+# 2. Export all fixtures (reference + agent pipeline) in one command
+python scripts/pg-seed-data/export_fixtures.py
 
-# 3. Export agent pipeline + job_postings (for seed_agent_data.py / committed agent-fixtures)
-python scripts/pg-seed-data/export_agent_data.py
+# Or export individual scopes:
+python scripts/pg-seed-data/export_fixtures.py --scope reference  # fixtures/ only
+python scripts/pg-seed-data/export_fixtures.py --scope agent      # agent-fixtures/ only
+python scripts/pg-seed-data/export_fixtures.py --limit 500        # cap rows per table
 
-# 4. Optionally regenerate schema.sql
+# 3. Optionally regenerate schema.sql
 docker exec postgres-server pg_dump -U postgres -d talent_finder \
   --schema-only --schema=dbo --no-owner --no-privileges \
   > scripts/pg-seed-data/schema_raw.sql

@@ -348,7 +348,7 @@ def seed_database() -> None:
     # ── Load metadata ─────────────────────────────────────────────
     if not METADATA_FILE.exists():
         print(f"ERROR: Metadata file not found: {METADATA_FILE}")
-        print("Run the export script first: python scripts/pg-seed-data/export_pg_fixtures.py")
+        print("Run the export script first: python scripts/pg-seed-data/export_fixtures.py")
         sys.exit(1)
 
     metadata = json.loads(METADATA_FILE.read_text(encoding="utf-8"))

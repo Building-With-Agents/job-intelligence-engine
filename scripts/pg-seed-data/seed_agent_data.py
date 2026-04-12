@@ -186,7 +186,7 @@ def seed_all() -> None:
 
     if not FIXTURES_DIR.exists():
         print(f"\nERROR: Fixtures directory not found: {FIXTURES_DIR}")
-        print("Run export_agent_data.py first to generate fixtures.")
+        print("Run export_fixtures.py first: python scripts/pg-seed-data/export_fixtures.py --scope agent")
         sys.exit(1)
 
     # Run migrations first
