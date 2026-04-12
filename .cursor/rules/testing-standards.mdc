@@ -69,6 +69,78 @@ class TestIngestionAgent:
 - **Write tests alongside code.** Every new agent method or feature gets a corresponding test.
 - **Use fixtures** for common setup: sample `EventEnvelope` objects, mock DB sessions, sample `JobRecord` data.
 
+## CRITICAL: Never Truncate Pipeline Audit Tables
+
+**Never use `TRUNCATE` or `DELETE FROM` against these tables in any test fixture or test function:**
+
+- `raw_ingested_jobs` — dedup fingerprint store; wiping it causes duplicate re-ingestion on the next pipeline run
+- `normalized_jobs` — normalization output used as regression baseline
+- `extracted_intelligence` — skills extraction output used for model evaluation
+- `normalization_quarantine` — schema violation log (training signal)
+- `job_ingestion_runs` — batch-level run history
+- `llm_audit_log` — cost and latency audit log
+
+These tables are **permanent records**. Tests that wipe them against `PYTHON_DATABASE_URL` destroy production pipeline data silently.
+
+### Correct pattern: tag-and-teardown
+
+Insert test rows with a unique `ingestion_run_id` and delete only those rows after the test:
+
+```python
+import uuid
+import pytest
+from sqlalchemy import text
+from common.data_store.database import session_scope
+
+@pytest.fixture
+def test_run_id():
+    """Unique ID to tag rows inserted by this test — cleaned up in teardown."""
+    run_id = f"test-{uuid.uuid4().hex[:8]}"
+    yield run_id
+    # Teardown: delete only rows this test inserted
+    with session_scope() as session:
+        session.execute(
+            text("DELETE FROM dbo.extracted_intelligence ei "
+                 "USING dbo.normalized_jobs nj "
+                 "WHERE ei.normalized_job_id = nj.id "
+                 "AND nj.ingestion_run_id = :run_id"),
+            {"run_id": run_id},
+        )
+        session.execute(
+            text("DELETE FROM dbo.normalized_jobs WHERE ingestion_run_id = :run_id"),
+            {"run_id": run_id},
+        )
+        session.execute(
+            text("DELETE FROM dbo.raw_ingested_jobs WHERE ingestion_run_id = :run_id"),
+            {"run_id": run_id},
+        )
+
+@pytest.fixture
+def sample_raw_job(test_run_id):
+    """Insert one raw job tagged to this test run."""
+    with session_scope() as session:
+        session.execute(
+            text("""
+                INSERT INTO dbo.raw_ingested_jobs
+                    (source, external_id, title, company, ingestion_run_id, processing_status, raw_payload)
+                VALUES
+                    ('jsearch', :ext_id, 'Test Engineer', 'Test Co', :run_id, 'pending', '{}')
+                RETURNING id
+            """),
+            {"ext_id": f"test-{test_run_id}", "run_id": test_run_id},
+        )
+```
+
+### What NOT to do
+
+```python
+# NEVER — destroys pipeline audit trail for everyone on shared dev DB
+@pytest.fixture(scope="session", autouse=True)
+def truncate_agent_tables(engine):
+    engine.execute("TRUNCATE TABLE dbo.raw_ingested_jobs, dbo.normalized_jobs ...")
+    yield
+```
+
 ## Evaluation Targets to Validate
 
 Tests should verify these metric targets where applicable:
