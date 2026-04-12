@@ -4,18 +4,21 @@ Export PostgreSQL fixture data for local dev seeding.
 Admin tool: run after database changes, commit updated fixtures to git so devs
 can seed their local databases without running the LLM pipeline.
 
+All output goes to scripts/pg-seed-data/fixtures/ — single source of truth.
+
 Scopes
 ------
-  reference  Export all non-PII dbo tables -> fixtures/
-             (reference data: skills, companies, job_postings, taxonomies, etc.)
-  agent      Export agent pipeline tables   -> agent-fixtures/
-             (raw_ingested_jobs, normalized_jobs, extracted_intelligence, etc.)
-  all        Both scopes (default)
+  reference  Export all non-PII dbo tables (reference data: skills, companies,
+             taxonomies, AND agent pipeline tables)
+  agent      Export agent pipeline tables only (raw_ingested_jobs, normalized_jobs,
+             extracted_intelligence, etc.) — subset of reference, useful when only
+             pipeline data has changed
+  all        Both scopes (default — same as reference since both write to fixtures/)
 
 Usage (from project root, with venv activated):
-    python scripts/pg-seed-data/export_fixtures.py                    # all scopes
-    python scripts/pg-seed-data/export_fixtures.py --scope reference  # reference only
-    python scripts/pg-seed-data/export_fixtures.py --scope agent      # agent only
+    python scripts/pg-seed-data/export_fixtures.py                    # all tables
+    python scripts/pg-seed-data/export_fixtures.py --scope reference  # all tables
+    python scripts/pg-seed-data/export_fixtures.py --scope agent      # pipeline tables only
     python scripts/pg-seed-data/export_fixtures.py --limit 500        # cap rows per table
 """
 
@@ -37,11 +40,10 @@ load_dotenv(_REPO_ROOT / ".env")
 
 import psycopg2  # noqa: E402
 
-# ── Output directories ────────────────────────────────────────────────
+# ── Output directory ──────────────────────────────────────────────────
 
 SCRIPT_DIR = Path(__file__).parent
-REFERENCE_DIR = SCRIPT_DIR / "fixtures"
-AGENT_DIR = SCRIPT_DIR / "agent-fixtures"
+FIXTURES_DIR = SCRIPT_DIR / "fixtures"  # single output directory for all scopes
 
 # ── Reference scope configuration ────────────────────────────────────
 
@@ -86,15 +88,7 @@ PII_TABLES: set[str] = {
     "_prisma_migrations",
 }
 
-# Agent-managed staging tables excluded from reference scope
-# (these are exported under the agent scope instead)
-AGENT_STAGING_TABLES: set[str] = {
-    "raw_ingested_jobs",
-    "normalized_jobs",
-    "job_ingestion_runs",
-}
-
-REFERENCE_EXCLUDED = PII_TABLES | AGENT_STAGING_TABLES
+REFERENCE_EXCLUDED = PII_TABLES
 
 # FK columns referencing PII tables — NULL these in reference exports
 PII_FK_COLUMNS: dict[str, list[str]] = {
@@ -235,7 +229,7 @@ def export_reference(cur: psycopg2.extensions.cursor, limit: int | None) -> dict
     print(f"{'='*60}")
 
     all_tables = get_dbo_tables(cur)
-    REFERENCE_DIR.mkdir(parents=True, exist_ok=True)
+    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
     metadata: dict = {
         "exportedAt": datetime.utcnow().isoformat() + "Z",
@@ -259,21 +253,21 @@ def export_reference(cur: psycopg2.extensions.cursor, limit: int | None) -> dict
             continue
 
         records = export_table(cur, table, columns, null_pii_fks=True, limit=limit)
-        write_json(REFERENCE_DIR / f"{table}.json", records)
+        write_json(FIXTURES_DIR / f"{table}.json", records)
         metadata["counts"][table] = len(records)
         print(f"  {table}: {len(records):,} rows -> fixtures/{table}.json")
 
-    write_json(REFERENCE_DIR / "metadata.json", metadata)
+    write_json(FIXTURES_DIR / "metadata.json", metadata)
     return metadata
 
 
 def export_agent(cur: psycopg2.extensions.cursor, limit: int | None) -> dict:
-    """Export agent pipeline tables to agent-fixtures/."""
+    """Export agent pipeline tables only to fixtures/."""
     print(f"\n{'='*60}")
-    print("Agent Scope -> agent-fixtures/")
+    print("Agent Scope -> fixtures/")
     print(f"{'='*60}")
 
-    AGENT_DIR.mkdir(parents=True, exist_ok=True)
+    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
     metadata: dict = {
         "exportedAt": datetime.utcnow().isoformat() + "Z",
@@ -297,11 +291,11 @@ def export_agent(cur: psycopg2.extensions.cursor, limit: int | None) -> dict:
             print(f"  {table}: SKIPPED (0 rows)")
             continue
 
-        write_json(AGENT_DIR / f"{table}.json", records)
+        write_json(FIXTURES_DIR / f"{table}.json", records)
         metadata["counts"][table] = len(records)
-        print(f"  {table}: {len(records):,} rows -> agent-fixtures/{table}.json")
+        print(f"  {table}: {len(records):,} rows -> fixtures/{table}.json")
 
-    write_json(AGENT_DIR / "metadata.json", metadata)
+    write_json(FIXTURES_DIR / "metadata.json", metadata)
     return metadata
 
 
@@ -348,7 +342,7 @@ def main() -> None:
         print(f"Reference: {ref_rows:,} rows across {len(ref_meta['counts'])} tables -> fixtures/")
     if agent_meta:
         agent_rows = sum(agent_meta["counts"].values())
-        print(f"Agent:     {agent_rows:,} rows across {len(agent_meta['counts'])} tables -> agent-fixtures/")
+        print(f"Agent:     {agent_rows:,} rows across {len(agent_meta['counts'])} tables -> fixtures/")
     print(f"{'='*60}")
 
 

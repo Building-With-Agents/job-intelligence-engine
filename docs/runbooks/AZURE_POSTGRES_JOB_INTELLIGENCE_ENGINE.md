@@ -199,8 +199,8 @@ Fixtures are JSON files under `scripts/pg-seed-data/fixtures/`. To **generate or
    python scripts/pg-seed-data/export_fixtures.py --limit 500        # cap rows per table
    ```
 
-3. The script writes one JSON file per table into `scripts/pg-seed-data/fixtures/` (reference) and `scripts/pg-seed-data/agent-fixtures/` (pipeline) and updates each `metadata.json` with row counts. PII tables are skipped; see the script for the full exclusion list.
-4. Commit and push the updated fixture directories (and optionally `schema.sql` if you changed schema) so others can use them.
+3. The script writes one JSON file per table into `scripts/pg-seed-data/fixtures/` and updates `metadata.json` with row counts. All scopes write to the same directory. PII tables are skipped; see the script for the full exclusion list.
+4. Commit and push the updated `fixtures/` directory (and optionally `schema.sql` if you changed schema) so others can use them.
 
 **Note:** The export excludes the `embedding` column in `skills` (large pgvector data). Regenerate embeddings via the admin tool if needed.
 
@@ -219,7 +219,7 @@ To load the **shared fixture set** into the Azure DB (or any target DB):
    - Create schema if needed (fresh DB only — skips if tables exist).
    - Run agent migrations (agent-managed tables and Phase 1 columns on `job_postings`).
    - UPSERT fixtures in **FK-safe order** (tiers 0–4) — existing records are skipped, new records are added.
-   - Seed agent pipeline data (`agent-fixtures/*.json`) automatically.
+   - Seed agent pipeline data (`fixtures/*.json`) automatically.
 
 **Important:** The seed is **idempotent** — it never deletes or overwrites existing data. Safe to re-run after pulling updated fixtures from git.
 

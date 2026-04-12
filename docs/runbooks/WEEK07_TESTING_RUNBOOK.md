@@ -326,7 +326,7 @@ python scripts/db_check.py query "SELECT count(*) as total, count(quality_score)
 python scripts/pg-seed-data/export_fixtures.py --scope agent
 ```
 
-**Never delete the fixture JSON files** in `scripts/pg-seed-data/agent-fixtures/` — they are your checkpoint. To restore to the last known-good state at any time: `python scripts/pg-seed-data/seed_pg_database.py`
+**Never delete the fixture JSON files** in `scripts/pg-seed-data/fixtures/` — they are your checkpoint. To restore to the last known-good state at any time: `python scripts/pg-seed-data/seed_pg_database.py`
 
 ### Reset analytics aggregate tables
 

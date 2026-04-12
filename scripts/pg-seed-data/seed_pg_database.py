@@ -11,8 +11,7 @@ Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_pg_database.py
 
 Reads:  scripts/pg-seed-data/schema.sql             (DDL — fresh DB only)
-        scripts/pg-seed-data/fixtures/*.json         (reference data)
-        scripts/pg-seed-data/agent-fixtures/*.json   (pipeline data, via seed_agent_data)
+        scripts/pg-seed-data/fixtures/*.json         (all data — reference + pipeline)
 Writes: PostgreSQL database specified by PYTHON_DATABASE_URL
 """
 
