@@ -155,9 +155,9 @@ def main() -> None:
             args.batch_size = 200
         if args.delay == 10:
             args.delay = 0
-        os.environ.setdefault("SKILLS_EXTRACTION_CONCURRENCY", "30")
+        os.environ.setdefault("SKILLS_EXTRACTION_CONCURRENCY", "10")
         os.environ.setdefault("ENRICHMENT_PARALLEL", "1")
-        os.environ.setdefault("ENRICHMENT_CONCURRENCY", "30")
+        os.environ.setdefault("ENRICHMENT_CONCURRENCY", "5")  # capped at 5 — see issue #149
         log.info(
             "fast_mode_enabled",
             batch_size=args.batch_size,
