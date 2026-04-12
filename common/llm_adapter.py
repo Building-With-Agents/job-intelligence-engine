@@ -164,9 +164,11 @@ def resolve_model_tier(model: str) -> str:
     if provider == "gemini":
         gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         return MODEL_TIER_MAP.get(gemini_model, "gemini-2.5-flash")
-    # 5. Anthropic fallback
-    log.warning("unresolved_model_tier_fallback", model=model, provider=provider)
-    return "sonnet"
+    if provider == "anthropic":
+        return "sonnet"
+    # 5. Unknown — caller gets $0.0 cost and a warning log; never silently wrong
+    log.warning("unresolved_model_tier", model=model, provider=provider)
+    return "unknown"
 
 
 def compute_extraction_cost(input_tokens: int, output_tokens: int, model_tier: str) -> float:
