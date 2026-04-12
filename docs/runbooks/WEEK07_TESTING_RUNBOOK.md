@@ -328,6 +328,73 @@ python scripts/pg-seed-data/export_fixtures.py --scope agent
 
 **Never delete the fixture JSON files** in `scripts/pg-seed-data/fixtures/` — they are your checkpoint. To restore to the last known-good state at any time: `python scripts/pg-seed-data/seed_pg_database.py`
 
+---
+
+### Batch ingestion — `batch_ingest.py`
+
+Ingestion-only script that stages raw records from JSearch. No LLM calls — run
+this first, then `run_processing_loop.py` to normalize → extract → enrich.
+
+**Config file:** `config/ingestion_queries.yaml` — all query groups, keywords, and
+page budgets. Add new queries here; each entry needs `name`, `keywords`, and `pages`.
+
+**Required `.env` variables:**
+
+| Variable | Purpose |
+|----------|---------|
+| `JSEARCH_API_KEY` | Primary JSearch API key (RapidAPI) |
+| `JSEARCH_API_KEY_2` ... `JSEARCH_API_KEY_7` | Additional keys for rotation (200 req budget each) |
+| `JSEARCH_START_KEY_INDEX` | Start from this key slot (default: 1). Set to skip exhausted keys |
+| `PYTHON_DATABASE_URL` | Database for staging `raw_ingested_jobs` |
+
+**Usage:**
+
+```bash
+# Preview all queries and budget
+python scripts/batch_ingest.py --dry-run
+
+# Run all queries from the beginning
+python scripts/batch_ingest.py
+
+# Resume from query 24 (skip 1-23 that already ran)
+python scripts/batch_ingest.py --start-query 24
+
+# Run only specific queries by name
+python scripts/batch_ingest.py --queries legal-tech,robotics-dev,devops-sre
+
+# Skip exhausted keys (start at key slot 4)
+python scripts/batch_ingest.py --start-key 4
+
+# Combine: start at query 37, using key 5, 3s delay between queries
+python scripts/batch_ingest.py --start-query 37 --start-key 5 --delay 3
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Show plan with query numbers, keywords, and budget — no API calls |
+| `--start-query N` | Skip queries 1 through N-1. Use to resume after key exhaustion |
+| `--queries name1,name2` | Run only the named queries (comma-separated) |
+| `--start-key K` | Start with key slot K (e.g. `4` → `JSEARCH_API_KEY_4`). Also settable via `JSEARCH_START_KEY_INDEX` env var |
+| `--delay N` | Seconds between queries (default: 5) |
+
+**After ingestion, process the staged records:**
+
+```bash
+# Check how many records are pending
+python scripts/run_processing_loop.py --dry-run
+
+# Process all pending (parallel, high throughput)
+python scripts/run_processing_loop.py --fast
+
+# Process with default pacing
+python scripts/run_processing_loop.py --batch-size 50 --delay 10
+
+# Export updated fixtures
+python scripts/pg-seed-data/export_fixtures.py --scope agent
+```
+
 ### Reset analytics aggregate tables
 
 If you need to clear analytics outputs and re-run the Analytics Agent, truncate the aggregate tables. These tables are created by the Analytics Agent during Week 7 — if they do not exist yet, these commands will produce errors (expected).
