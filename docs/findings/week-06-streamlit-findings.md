@@ -77,7 +77,7 @@
 
 ### Local Docker / Compose
 
-- **`docker-compose.yml`:** Dropped obsolete top-level **`version`**. **`POSTGRES_PASSWORD`** and **`MSSQL_SA_PASSWORD`** use **compose defaults** when unset so Postgres can start without an empty password; **root `.env` still overrides** (e.g. align **`POSTGRES_PASSWORD`** with **`PYTHON_DATABASE_URL`**).
+- **`docker-compose.yml`:** Dropped obsolete top-level **`version`**. **`POSTGRES_PASSWORD`** uses **compose defaults** when unset so Postgres can start without an empty password; **root `.env` still overrides** (e.g. align **`POSTGRES_PASSWORD`** with **`PYTHON_DATABASE_URL`**).
 - **Fresh DB workflow (documented in RUNBOOK / team):** `docker compose down -v` → `up -d postgres` → **`scripts/pg-seed-data/seed_pg_database.py`** (creates schema if needed, runs migrations, seeds all data idempotently).
 
 ### Commands (quick reference)

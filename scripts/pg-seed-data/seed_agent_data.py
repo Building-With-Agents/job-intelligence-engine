@@ -7,7 +7,7 @@ Uses UPSERT (INSERT ... ON CONFLICT DO NOTHING) — safe to run multiple times.
 Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_agent_data.py
 
-Reads:  scripts/pg-seed-data/agent-fixtures/*.json  (data)
+Reads:  scripts/pg-seed-data/fixtures/*.json  (data)
 Writes: PostgreSQL database specified by PYTHON_DATABASE_URL
 """
 
@@ -30,7 +30,7 @@ import psycopg2.extras  # noqa: E402
 
 # ── Paths ─────────────────────────────────────────────────────────────
 
-FIXTURES_DIR = Path(__file__).parent / "agent-fixtures"
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 # ── FK-safe insert order ──────────────────────────────────────────────
 # Tables ordered so that FK dependencies are satisfied:
@@ -186,7 +186,7 @@ def seed_all() -> None:
 
     if not FIXTURES_DIR.exists():
         print(f"\nERROR: Fixtures directory not found: {FIXTURES_DIR}")
-        print("Run export_agent_data.py first to generate fixtures.")
+        print("Run export_fixtures.py first: python scripts/pg-seed-data/export_fixtures.py --scope agent")
         sys.exit(1)
 
     # Run migrations first

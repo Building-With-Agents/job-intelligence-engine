@@ -13023,15 +13023,6 @@
     "lng": -81.14723
   },
   {
-    "zip": "29044",
-    "city": "Eastover",
-    "county": "Richland",
-    "state_code": "SC",
-    "state": "South Carolina",
-    "lat": 33.93437,
-    "lng": -80.69446
-  },
-  {
     "zip": "29045",
     "city": "Elgin",
     "county": "Kershaw",
@@ -14803,15 +14794,6 @@
     "state": "South Carolina",
     "lat": 34.44323,
     "lng": -79.62414
-  },
-  {
-    "zip": "29518",
-    "city": "Cades",
-    "county": "Williamsburg",
-    "state_code": "SC",
-    "state": "South Carolina",
-    "lat": 33.7892,
-    "lng": -79.84851
   },
   {
     "zip": "29519",
@@ -24597,15 +24579,6 @@
     "lng": -107.8657
   },
   {
-    "zip": "59540",
-    "city": "Rudyard",
-    "county": "Hill",
-    "state_code": "MT",
-    "state": "Montana",
-    "lat": 48.60665,
-    "lng": -110.56418
-  },
-  {
     "zip": "59542",
     "city": "Turner",
     "county": "Blaine",
@@ -29923,15 +29896,6 @@
     "state": "Illinois",
     "lat": 42.30472,
     "lng": -89.47454
-  },
-  {
-    "zip": "61068",
-    "city": "Rochelle",
-    "county": "Ogle",
-    "state_code": "IL",
-    "state": "Illinois",
-    "lat": 41.94928,
-    "lng": -89.0652
   },
   {
     "zip": "61070",
@@ -37456,15 +37420,6 @@
     "state": "California",
     "lat": 38.15046,
     "lng": -121.60271
-  },
-  {
-    "zip": "95642",
-    "city": "Jackson",
-    "county": "Amador",
-    "state_code": "CA",
-    "state": "California",
-    "lat": 38.3434,
-    "lng": -120.76398
   },
   {
     "zip": "95645",
@@ -48778,15 +48733,6 @@
     "state": "North Dakota",
     "lat": 48.66895,
     "lng": -100.64487
-  },
-  {
-    "zip": "58750",
-    "city": "Lansford",
-    "county": "Bottineau",
-    "state_code": "ND",
-    "state": "North Dakota",
-    "lat": 48.6166,
-    "lng": -101.39941
   },
   {
     "zip": "58752",
@@ -66501,15 +66447,6 @@
     "lng": -79.0907
   },
   {
-    "zip": "15562",
-    "city": "Springs",
-    "county": "Somerset",
-    "state_code": "PA",
-    "state": "Pennsylvania",
-    "lat": 39.74165,
-    "lng": -79.1219
-  },
-  {
     "zip": "15563",
     "city": "Stoystown",
     "county": "Somerset",
@@ -82242,15 +82179,6 @@
     "lng": -87.22868
   },
   {
-    "zip": "47859",
-    "city": "Marshall",
-    "county": "Parke",
-    "state_code": "IN",
-    "state": "Indiana",
-    "lat": 39.88595,
-    "lng": -87.16999
-  },
-  {
     "zip": "47860",
     "city": "Mecca",
     "county": "Parke",
@@ -84841,15 +84769,6 @@
     "state": "Michigan",
     "lat": 42.46333,
     "lng": -83.34803
-  },
-  {
-    "zip": "48340",
-    "city": "Pontiac",
-    "county": "Oakland",
-    "state_code": "MI",
-    "state": "Michigan",
-    "lat": 42.67065,
-    "lng": -83.29019
   },
   {
     "zip": "48341",
@@ -107118,15 +107037,6 @@
     "lng": -81.01781
   },
   {
-    "zip": "25865",
-    "city": "Lester",
-    "county": "Raleigh",
-    "state_code": "WV",
-    "state": "West Virginia",
-    "lat": 37.73076,
-    "lng": -81.35212
-  },
-  {
     "zip": "25866",
     "city": "Lochgelly",
     "county": "Fayette",
@@ -111708,15 +111618,6 @@
     "lng": -84.50732
   },
   {
-    "zip": "40601",
-    "city": "Frankfort",
-    "county": "Franklin",
-    "state_code": "KY",
-    "state": "Kentucky",
-    "lat": 38.23294,
-    "lng": -84.88327
-  },
-  {
     "zip": "40701",
     "city": "Corbin",
     "county": "Whitley",
@@ -115720,15 +115621,6 @@
     "state": "Kentucky",
     "lat": 37.23524,
     "lng": -86.17206
-  },
-  {
-    "zip": "42261",
-    "city": "Morgantown",
-    "county": "Butler",
-    "state_code": "KY",
-    "state": "Kentucky",
-    "lat": 37.22405,
-    "lng": -86.67015
   },
   {
     "zip": "42262",
@@ -133308,15 +133200,6 @@
     "lng": -76.17009
   },
   {
-    "zip": "17527",
-    "city": "Gap",
-    "county": "Lancaster",
-    "state_code": "PA",
-    "state": "Pennsylvania",
-    "lat": 40.01495,
-    "lng": -75.99333
-  },
-  {
     "zip": "17529",
     "city": "Gordonville",
     "county": "Lancaster",
@@ -133621,15 +133504,6 @@
     "state": "Pennsylvania",
     "lat": 40.0127,
     "lng": -76.35287
-  },
-  {
-    "zip": "17606",
-    "city": "Lancaster",
-    "county": "Lancaster",
-    "state_code": "PA",
-    "state": "Pennsylvania",
-    "lat": 40.11174,
-    "lng": -76.30401
   },
   {
     "zip": "17701",
@@ -149427,15 +149301,6 @@
     "lng": -87.02812
   },
   {
-    "zip": "49825",
-    "city": "Eben Junction",
-    "county": "Alger",
-    "state_code": "MI",
-    "state": "Michigan",
-    "lat": 46.36039,
-    "lng": -86.98462
-  },
-  {
     "zip": "49826",
     "city": "Rumely",
     "county": "Alger",
@@ -153061,15 +152926,6 @@
     "state": "Missouri",
     "lat": 40.13972,
     "lng": -92.0055
-  },
-  {
-    "zip": "63447",
-    "city": "La Belle",
-    "county": "Lewis",
-    "state_code": "MO",
-    "state": "Missouri",
-    "lat": 40.09251,
-    "lng": -91.90494
   },
   {
     "zip": "63448",
@@ -227925,15 +227781,6 @@
     "lng": -88.03416
   },
   {
-    "zip": "53105",
-    "city": "Burlington",
-    "county": "Racine",
-    "state_code": "WI",
-    "state": "Wisconsin",
-    "lat": 42.66412,
-    "lng": -88.28045
-  },
-  {
     "zip": "53108",
     "city": "Caledonia",
     "county": "Racine",
@@ -230841,15 +230688,6 @@
     "lng": -88.57241
   },
   {
-    "zip": "54171",
-    "city": "Sobieski",
-    "county": "Oconto",
-    "state_code": "WI",
-    "state": "Wisconsin",
-    "lat": 44.71957,
-    "lng": -88.12017
-  },
-  {
     "zip": "54173",
     "city": "Suamico",
     "county": "Brown",
@@ -233134,15 +232972,6 @@
     "state": "Kansas",
     "lat": 37.32006,
     "lng": -98.06493
-  },
-  {
-    "zip": "67059",
-    "city": "Haviland",
-    "county": "Kiowa",
-    "state_code": "KS",
-    "state": "Kansas",
-    "lat": 37.65102,
-    "lng": -99.10046
   },
   {
     "zip": "67060",
@@ -235861,15 +235690,6 @@
     "state": "Kansas",
     "lat": 37.0736,
     "lng": -100.01097
-  },
-  {
-    "zip": "67841",
-    "city": "Ensign",
-    "county": "Gray",
-    "state_code": "KS",
-    "state": "Kansas",
-    "lat": 37.62997,
-    "lng": -100.22878
   },
   {
     "zip": "67842",
@@ -253890,15 +253710,6 @@
     "lng": -79.86457
   },
   {
-    "zip": "24153",
-    "city": "Salem",
-    "county": "Roanoke",
-    "state_code": "VA",
-    "state": "Virginia",
-    "lat": 37.29674,
-    "lng": -80.11609
-  },
-  {
     "zip": "24161",
     "city": "Sandy Level",
     "county": "Pittsylvania",
@@ -255832,24 +255643,6 @@
     "state": "Virginia",
     "lat": 37.11797,
     "lng": -81.80802
-  },
-  {
-    "zip": "24646",
-    "city": "Rowe",
-    "county": "Buchanan",
-    "state_code": "VA",
-    "state": "Virginia",
-    "lat": 37.13751,
-    "lng": -82.02976
-  },
-  {
-    "zip": "24649",
-    "city": "Swords Creek",
-    "county": "Russell",
-    "state_code": "VA",
-    "state": "Virginia",
-    "lat": 37.08303,
-    "lng": -81.92198
   },
   {
     "zip": "24651",
@@ -304081,5 +303874,68 @@
     "state": "Alaska",
     "lat": 56.36089,
     "lng": -132.00635
+  },
+  {
+    "zip": "15562",
+    "city": "Springs",
+    "county": "Somerset",
+    "state_code": "PA",
+    "state": "Pennsylvania",
+    "lat": 39.74165,
+    "lng": -79.1219
+  },
+  {
+    "zip": "17606",
+    "city": "Lancaster",
+    "county": "Lancaster",
+    "state_code": "PA",
+    "state": "Pennsylvania",
+    "lat": 40.11174,
+    "lng": -76.30401
+  },
+  {
+    "zip": "49825",
+    "city": "Eben Junction",
+    "county": "Alger",
+    "state_code": "MI",
+    "state": "Michigan",
+    "lat": 46.36039,
+    "lng": -86.98462
+  },
+  {
+    "zip": "54171",
+    "city": "Sobieski",
+    "county": "Oconto",
+    "state_code": "WI",
+    "state": "Wisconsin",
+    "lat": 44.71957,
+    "lng": -88.12017
+  },
+  {
+    "zip": "67059",
+    "city": "Haviland",
+    "county": "Kiowa",
+    "state_code": "KS",
+    "state": "Kansas",
+    "lat": 37.65102,
+    "lng": -99.10046
+  },
+  {
+    "zip": "67841",
+    "city": "Ensign",
+    "county": "Gray",
+    "state_code": "KS",
+    "state": "Kansas",
+    "lat": 37.62997,
+    "lng": -100.22878
+  },
+  {
+    "zip": "24153",
+    "city": "Salem",
+    "county": "Roanoke",
+    "state_code": "VA",
+    "state": "Virginia",
+    "lat": 37.29674,
+    "lng": -80.11609
   }
 ]

@@ -18,7 +18,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from common.data_store.models import NAICS
-from common.llm_client import invoke_structured_extraction_llm
+from common.llm_client import ainvoke_structured_extraction_llm, invoke_structured_extraction_llm
 from enrichment.classification import tokenize
 
 log = structlog.get_logger()
@@ -157,6 +157,49 @@ def classify_naics(job_title: str, job_description: str | None, session: Session
 
     try:
         parsed, meta = invoke_structured_extraction_llm(
+            prompt,
+            NAICSClassificationOutput,
+            agent_name=AUDIT_AGENT_NAICS,
+            deployment_env_keys=_NAICS_DEPLOYMENT_KEYS,
+            model_tier_for_cost="haiku",
+        )
+    except Exception as exc:
+        log.warning("naics_llm_invoke_failed", error=str(exc))
+        return "unknown"
+
+    if meta.get("extraction_failed") or parsed is None:
+        log.info(
+            "naics_classification_degraded",
+            extraction_failed=meta.get("extraction_failed"),
+            error_reason=meta.get("error_reason"),
+        )
+        return "unknown"
+
+    picked = _resolve_llm_naics_pick(parsed.naics_code, candidate_codes)
+    if picked not in candidate_codes:
+        return "unknown"
+    return picked
+
+
+async def classify_naics_async(job_title: str, job_description: str | None, session: Session) -> str:
+    """Async counterpart to :func:`classify_naics` — uses ``ainvoke_structured_extraction_llm``."""
+    title = (job_title or "").strip()
+    desc = job_description if isinstance(job_description, str) else None
+
+    try:
+        candidates = get_naics_candidates(session, title, desc)
+    except Exception as exc:
+        log.warning("naics_candidate_query_failed", error=str(exc))
+        return "unknown"
+
+    if not candidates:
+        return "unknown"
+
+    candidate_codes = {c["code"] for c in candidates}
+    prompt = _build_prompt(title, desc, candidates)
+
+    try:
+        parsed, meta = await ainvoke_structured_extraction_llm(
             prompt,
             NAICSClassificationOutput,
             agent_name=AUDIT_AGENT_NAICS,

@@ -1,0 +1,22 @@
+[
+  {
+    "posting_id": "demo-1",
+    "first_seen": "2026-04-07T13:09:25.578495+00:00",
+    "last_seen": "2026-04-12T13:09:25.578495+00:00",
+    "duration_days": 5,
+    "is_repost": false,
+    "repost_count": 0,
+    "fill_proxy": false,
+    "computed_at": "2026-04-12T13:09:25.578495+00:00"
+  },
+  {
+    "posting_id": "demo-2",
+    "first_seen": "2026-02-26T13:09:25.578495+00:00",
+    "last_seen": "2026-04-12T13:09:25.578495+00:00",
+    "duration_days": 45,
+    "is_repost": true,
+    "repost_count": 2,
+    "fill_proxy": false,
+    "computed_at": "2026-04-12T13:09:25.578495+00:00"
+  }
+]

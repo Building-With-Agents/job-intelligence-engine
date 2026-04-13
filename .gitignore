@@ -108,17 +108,14 @@ docs/planning/*
 !docs/planning/ARCHITECTURE_HIGH_LEVEL.md
 !docs/planning/component-diagram.html
 !docs/planning/component-diagram-walking-skeleton.html
+!docs/planning/processing-loop-diagram.html
+!docs/planning/processing-loop-technical-diagram.html
+!docs/planning/processing-loop-technical-diagram-weeks7-8.html
 docs/planning/curriculum/
 docs/lesson-framework/
 
 # Admin-only (keep local copy; do not commit)
 docs/REFRESH_ANONYMIZED_FIXTURES.md
-
-# Deprecated MSSQL docs (kept locally for reference)
-docs/MIGRATION_MSSQL_TO_POSTGRES.md
-docs/MIGRATION_MSSQL_TO_POSTGRES.md.local
-docs/DOCKER_SQL_SERVER_SETUP.md
-docs/DOCKER_SQL_SERVER_SETUP.md.local
 
 
 
@@ -161,3 +158,10 @@ skills_extraction/taxonomy/cache/
 
 # Debug scratch scripts (local dev only)
 _debug_*.py
+
+# Claude Code local server config
+.claude/launch.json
+
+# --- Findings DOCX + generators (shared via Teams, not git) ---
+docs/findings/*.docx
+docs/findings/generate-*.cjs

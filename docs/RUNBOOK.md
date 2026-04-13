@@ -538,20 +538,27 @@ pytest tests/test_full_pipeline_redis.py -v
 docker compose down
 ```
 
-### Truncate agent tables (keep schema)
+### ⚠️ Pipeline audit tables are permanent — never truncate
 
-> Run via Docker psql or Azure psql — see Section 5 for connection details.
+`raw_ingested_jobs`, `normalized_jobs`, `job_ingestion_runs`, `normalization_quarantine`,
+`extracted_intelligence`, and `llm_audit_log` are **permanent records**. Truncating them
+destroys the dedup fingerprint store (causing duplicate re-ingestion), the normalization
+regression baseline, and cost/latency audit history. **There is no safe TRUNCATE operation
+on these tables.**
 
-```sql
-TRUNCATE dbo.normalization_quarantine CASCADE;
-TRUNCATE dbo.normalized_jobs CASCADE;
-TRUNCATE dbo.raw_ingested_jobs CASCADE;
-TRUNCATE dbo.job_ingestion_runs CASCADE;
-```
+If you need to re-run the pipeline against a clean dataset, use a **full volume reset**
+(dev environments only — see below). The admin source-of-truth database is never wiped;
+export new fixtures and share them via `export_fixtures.py`.
 
-### Full volume reset (destroys all data)
+### Full volume reset (dev local Docker only — destroys all local data)
+
+> **Only run this on your personal local Docker environment.** Never run against the
+> admin source-of-truth database. After a volume reset, re-seed from committed fixtures:
+> `python scripts/pg-seed-data/seed_pg_database.py`
 
 ```bash
 docker compose down -v
+docker compose --env-file .env.docker up postgres -d
+python scripts/pg-seed-data/seed_pg_database.py
 ```
 

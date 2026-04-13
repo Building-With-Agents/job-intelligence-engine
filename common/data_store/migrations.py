@@ -2,7 +2,7 @@
 
 SQLAlchemy is the single database authority. Creates agent tables, adds
 enrichment columns to job_postings, and ensures reference tables are
-accessible. Prisma/MSSQL is being phased out.
+accessible.
 
 Optional legacy raw-SQL scripts (pre-consolidation paths) live under
 ``legacy_migrations/`` for reference only; use :func:`run_migrations` for the app.
@@ -188,8 +188,7 @@ _EXTRACTED_INTELLIGENCE_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.extracted_intelligence ADD COLUMN IF NOT EXISTS extraction_metadata JSONB",
 ]
 
-# NAICS reference (PostgreSQL). Azure SQL / MSSQL: table is created via SQLAlchemy
-# create_all when running seed_naics.py or agent migrations against that dialect.
+# NAICS reference table (PostgreSQL).
 _NAICS_DDL = """
 CREATE TABLE IF NOT EXISTS dbo.naics (
     naics_code TEXT PRIMARY KEY,

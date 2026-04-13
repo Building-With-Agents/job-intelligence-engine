@@ -117,7 +117,7 @@ def _export_and_open_pr() -> None:
     # Export fixtures
     log.info("\nExporting fixtures...")
     subprocess.run(
-        [sys.executable, str(_REPO_ROOT / "scripts" / "pg-seed-data" / "export_agent_data.py")],
+        [sys.executable, str(_REPO_ROOT / "scripts" / "pg-seed-data" / "export_fixtures.py"), "--scope", "agent"],
         cwd=str(_REPO_ROOT),
         check=True,
     )
@@ -126,7 +126,7 @@ def _export_and_open_pr() -> None:
     branch = "update/re-export-fixtures-with-skills"
     log.info("\nCreating branch %s...", branch)
     subprocess.run(["git", "checkout", "-b", branch], cwd=str(_REPO_ROOT), check=False)
-    subprocess.run(["git", "add", "scripts/pg-seed-data/agent-fixtures/"], cwd=str(_REPO_ROOT), check=True)
+    subprocess.run(["git", "add", "scripts/pg-seed-data/fixtures/"], cwd=str(_REPO_ROOT), check=True)
 
     commit_msg = "update: re-export agent fixtures after full extraction run"
     result = subprocess.run(

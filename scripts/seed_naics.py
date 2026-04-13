@@ -11,15 +11,10 @@ Environment
 - ``--env azure`` reads ``AZURE_DATABASE_URL``.
 
 Both can be **PostgreSQL** (e.g. Docker and **Azure Database for PostgreSQL**): pass any
-SQLAlchemy URL ``create_engine`` accepts, such as ``postgresql+psycopg2://...``. The
-script does not assume Azure means SQL Server.
-
-For **Azure SQL** (SQL Server) instead, use a URL such as::
-
-    mssql+pyodbc://USER:PASS@HOST.database.windows.net:1433/DBNAME?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes
+SQLAlchemy URL ``create_engine`` accepts, such as ``postgresql+psycopg2://...``.
 
 Run from repository root with the agents virtualenv activated so ``agents`` and
-dependencies (pandas, openpyxl, sqlalchemy, pyodbc) are importable.
+dependencies (pandas, openpyxl, sqlalchemy) are importable.
 """
 
 from __future__ import annotations

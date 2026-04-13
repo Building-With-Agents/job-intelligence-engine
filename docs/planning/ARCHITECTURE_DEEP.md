@@ -849,7 +849,7 @@ Fuzzy dedup touchpoints: Pair Emilio registry (`duplicate_cluster_id`, `dedup_*`
 
 ## Database Schema Extensions
 
-> **SQLAlchemy is the single database authority.** All tables are agent-managed. Prisma is being phased out. Reference tables (companies, industry_sectors, technology_areas, skills, socc) are seeded via pgloader and agent-owned with full read+write. See `common/data_store/models.py` for ORM definitions.
+> **SQLAlchemy is the single database authority.** All tables are agent-managed. Reference tables (companies, industry_sectors, technology_areas, skills, socc) are seeded via `seed_pg_database.py` and agent-owned with full read+write. See `common/data_store/models.py` for ORM definitions.
 
 ```sql
 -- Enrichment columns on job_postings (SQLAlchemy migration — Prisma deprecated)
@@ -1012,7 +1012,6 @@ AZURE_OPENAI_EMBEDDING_API_VERSION="2024-02-01"
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME=
 
 # Architectural #19 — Database (PostgreSQL — fixed)
-# POSTGRES MIGRATION: change from sqlserver:// to postgresql://
 DATABASE_URL=                          # Prisma / Next.js connection string
 # PostgreSQL connection: postgresql+psycopg2://
 PYTHON_DATABASE_URL=                   # SQLAlchemy connection string (Python agents)

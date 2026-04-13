@@ -1,6 +1,6 @@
 """Seed minimal FK rows for enrichment ``job_postings`` promotion E2E tests.
 
-Requires a PostgreSQL database with Prisma/pgloader-shaped ``dbo`` tables:
+Requires a PostgreSQL database with ``dbo`` tables:
 ``postal_geo_data``, ``companies``, ``company_addresses``, ``job_postings``,
 ``normalized_jobs``, ``extracted_intelligence``. Raises ``RuntimeError`` if
 insert fails (caller should ``pytest.skip``).

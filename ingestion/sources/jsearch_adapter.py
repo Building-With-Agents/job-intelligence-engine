@@ -1,15 +1,17 @@
-"""JSearch source adapter — fetches job postings via RapidAPI JSearch (httpx).
+"""JSearch source adapter - fetches job postings via RapidAPI JSearch (httpx).
 
 API key from environment: JSEARCH_API_KEY. No hardcoded credentials.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import os
 from datetime import datetime
 
 import httpx
+import structlog
 
 from common.types.raw_job_record import RawJobRecord
 from common.types.region_config import RegionConfig
@@ -17,6 +19,7 @@ from ingestion.sources.base_adapter import SourceAdapter
 
 JSEARCH_BASE_URL = "https://jsearch.p.rapidapi.com/search"
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
+log = structlog.get_logger()
 
 
 def _fingerprint(source: str, external_id: str, title: str, company: str, date_posted: str) -> str:
@@ -40,6 +43,24 @@ def _parse_date(value: str | int | float | None) -> datetime | None:
         except ValueError:
             return None
     return None
+
+
+def _env_int(name: str, default: int) -> int:
+    """Parse a positive integer env var with a safe fallback."""
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _retry_delay_seconds(retry_after: str | None, attempt: int, base_delay: int, max_delay: int) -> int:
+    """Resolve retry delay from Retry-After or exponential backoff."""
+    if retry_after:
+        try:
+            return max(1, min(max_delay, int(float(retry_after))))
+        except (TypeError, ValueError):
+            pass
+    return min(max_delay, base_delay * (2 ** attempt))
 
 
 def _job_to_raw_record(job: dict, region_id: str) -> RawJobRecord:
@@ -160,24 +181,50 @@ class JSearchAdapter(SourceAdapter):
             num_pages = min(10, max(1, (batch_size + 9) // 10))
         except (TypeError, ValueError):
             num_pages = 1
+        max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
+        base_delay = max(1, _env_int("JSEARCH_RETRY_BASE_DELAY_SECONDS", 10))
+        max_delay = max(base_delay, _env_int("JSEARCH_RETRY_MAX_DELAY_SECONDS", 60))
 
         all_records: list[RawJobRecord] = []
         seen_hashes: set[str] = set()
         async with httpx.AsyncClient(timeout=30.0) as client:
             for page in range(1, num_pages + 1):
-                response = await client.get(
-                    JSEARCH_BASE_URL,
-                    params={
-                        "query": query,
-                        "page": str(page),
-                        "num_pages": "1",
-                    },
-                    headers={
-                        "X-RapidAPI-Key": api_key,
-                        "X-RapidAPI-Host": JSEARCH_HOST,
-                    },
-                )
-                response.raise_for_status()
+                attempt = 0
+                while True:
+                    response = await client.get(
+                        JSEARCH_BASE_URL,
+                        params={
+                            "query": query,
+                            "page": str(page),
+                            "num_pages": "1",
+                        },
+                        headers={
+                            "X-RapidAPI-Key": api_key,
+                            "X-RapidAPI-Host": JSEARCH_HOST,
+                        },
+                    )
+                    try:
+                        response.raise_for_status()
+                        break
+                    except httpx.HTTPStatusError as exc:
+                        if exc.response.status_code != 429 or attempt >= max_retries:
+                            raise
+                        delay_s = _retry_delay_seconds(
+                            exc.response.headers.get("Retry-After"),
+                            attempt,
+                            base_delay,
+                            max_delay,
+                        )
+                        log.warning(
+                            "jsearch_rate_limited",
+                            query=query,
+                            page=page,
+                            attempt=attempt + 1,
+                            max_retries=max_retries,
+                            delay_s=delay_s,
+                        )
+                        attempt += 1
+                        await asyncio.sleep(delay_s)
                 data = response.json()
                 jobs = data.get("data") if isinstance(data, dict) else []
                 if not jobs:

@@ -143,7 +143,28 @@ def main() -> None:
     parser.add_argument("--delay", type=int, default=10, help="Seconds between iterations (default: 10)")
     parser.add_argument("--max-iterations", type=int, default=0, help="Max iterations (0 = run until empty)")
     parser.add_argument("--dry-run", action="store_true", help="Show pending count without processing")
+    parser.add_argument(
+        "--fast", action="store_true",
+        help="High-throughput mode: batch-size=200, delay=0, concurrency=30",
+    )
     args = parser.parse_args()
+
+    # --fast mode overrides defaults for throughput
+    if args.fast:
+        if args.batch_size == 50:  # only override if user didn't set explicitly
+            args.batch_size = 200
+        if args.delay == 10:
+            args.delay = 0
+        os.environ.setdefault("SKILLS_EXTRACTION_CONCURRENCY", "10")
+        os.environ.setdefault("ENRICHMENT_PARALLEL", "1")
+        os.environ.setdefault("ENRICHMENT_CONCURRENCY", "5")  # capped at 5 — see issue #149
+        log.info(
+            "fast_mode_enabled",
+            batch_size=args.batch_size,
+            delay=args.delay,
+            skills_concurrency=os.getenv("SKILLS_EXTRACTION_CONCURRENCY"),
+            enrichment_concurrency=os.getenv("ENRICHMENT_CONCURRENCY"),
+        )
 
     # Set batch size for normalization agent
     os.environ["NORM_BATCH_SIZE"] = str(args.batch_size)
@@ -208,7 +229,12 @@ def main() -> None:
         pending = _count_pending()
         unextracted = _count_unextracted()
 
-        if pending <= 0 and unextracted <= 0:
+        if pending == -1 or unextracted == -1:
+            log.warning("count_query_failed_retrying", pending=pending, unextracted=unextracted)
+            time.sleep(args.delay)
+            continue
+
+        if pending == 0 and unextracted == 0:
             log.info(
                 "all_records_processed",
                 total_normalized=total_normalized,
@@ -282,14 +308,24 @@ def main() -> None:
                     )
                     total_extracted += extract_count
 
-                # Stage 3: Enrich (processes extraction output records)
-                if extract_out is not None and extract_count > 0:
-                    enrich_out = enrich_agent.process(extract_out)
-                    enriched_count = 0
-                    if enrich_out is not None:
-                        enriched_count = enrich_out.payload.get("enriched_count", 0)
-                        log.info("enriched", count=enriched_count, iteration=iteration)
-                        total_enriched_count += enriched_count
+                # Stage 3: Enrich (processes extraction output or picks up un-enriched records)
+                enrich_event = extract_out if (extract_out is not None and extract_count > 0) else trigger
+                enrich_start = time.perf_counter()
+                enrich_out = enrich_agent.process(enrich_event)
+                enrich_duration_ms = int((time.perf_counter() - enrich_start) * 1000)
+                enriched_count = 0
+                enrichment_mode = "parallel" if os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no") else "serial"
+                if enrich_out is not None:
+                    enriched_count = enrich_out.payload.get("enriched_count", 0)
+                    if enriched_count > 0:
+                        log.info(
+                            "enriched",
+                            count=enriched_count,
+                            iteration=iteration,
+                            enrichment_duration_ms=enrich_duration_ms,
+                            execution_mode=enrichment_mode,
+                        )
+                    total_enriched_count += enriched_count
 
                 enriched_total = _count_enriched()
                 remaining_raw = _count_pending()

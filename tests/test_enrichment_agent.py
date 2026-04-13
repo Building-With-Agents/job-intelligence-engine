@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -601,6 +602,11 @@ class TestEnrichmentAgent:
 
 class TestEnrichmentAgentBatchRecords:
     """Non-empty ``records`` on the payload → batch ``RecordEnriched`` aggregation."""
+
+    @pytest.fixture(autouse=True)
+    def _force_serial_enrichment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Tests in this class patch enrich_record (sync); force serial path."""
+        monkeypatch.setenv("ENRICHMENT_PARALLEL", "0")
 
     def test_process_emits_batch_record_enriched_shape(self, skills_event: EventEnvelope) -> None:
         agent = EnrichmentAgent()
