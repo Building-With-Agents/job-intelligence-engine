@@ -46,12 +46,6 @@ DEFAULT_SKILL_CONFIDENCE_THRESHOLD = 0.75
 
 AGENT_SKILLS = "skills-extraction-agent"
 
-_SKILLS_DEPLOYMENT_KEYS = (
-    "EXTRACTION_DEPLOYMENT_SKILLS",
-    "EXTRACTION_MODEL_SKILLS",
-    "AZURE_OPENAI_DEPLOYMENT_NAME",
-)
-
 
 # ---------------------------------------------------------------------------
 # Pydantic models for structured LLM output
@@ -230,7 +224,7 @@ def extract_skills(
             prompt,
             _SkillsLLMRoot,
             agent_name=AGENT_SKILLS,
-            deployment_env_keys=_SKILLS_DEPLOYMENT_KEYS,
+            role="extraction",
             model_tier_for_cost="sonnet",
         )
 
@@ -327,7 +321,7 @@ def extract_skills_no_taxonomy(
             prompt,
             _SkillsLLMRoot,
             agent_name=AGENT_SKILLS,
-            deployment_env_keys=_SKILLS_DEPLOYMENT_KEYS,
+            role="extraction",
             model_tier_for_cost="sonnet",
         )
 
@@ -394,7 +388,7 @@ async def extract_skills_no_taxonomy_async(
             prompt,
             _SkillsLLMRoot,
             agent_name=AGENT_SKILLS,
-            deployment_env_keys=_SKILLS_DEPLOYMENT_KEYS,
+            role="extraction",
             model_tier_for_cost="sonnet",
         )
 

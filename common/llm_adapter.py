@@ -122,6 +122,48 @@ MODEL_TIER_MAP: dict[str, str] = {
     "gemini-2.5-pro":   "gemini-2.5-pro",
 }
 
+
+def resolve_llm_route(role: str | None = None) -> tuple[str, str]:
+    """Resolve (provider, model_or_deployment) for a pipeline role.
+
+    Resolution (fail fast — no legacy fallbacks):
+    1. LLM_{ROLE} env var (e.g. LLM_SYNTHESIS for role="synthesis")
+       - If value contains ':', split as provider:model (e.g. "gemini:gemini-2.5-pro")
+       - Otherwise, use LLM_PROVIDER as the provider
+    2. LLM_DEFAULT env var (same colon-split logic)
+    3. Raise ValueError with clear message
+
+    Roles: synthesis, extraction, extraction_tasks, extraction_responsibilities,
+           extraction_naics, extraction_employer, classification, analytics
+    """
+    default_provider = os.getenv("LLM_PROVIDER", "azure_openai")
+
+    def _parse(value: str) -> tuple[str, str]:
+        if ":" in value:
+            provider, model = value.split(":", 1)
+            return provider.strip(), model.strip()
+        return default_provider, value.strip()
+
+    # 1. Role-specific: LLM_{ROLE}
+    if role:
+        role_var = f"LLM_{role.upper()}"
+        val = os.getenv(role_var)
+        if val:
+            return _parse(val)
+
+    # 2. Global default: LLM_DEFAULT
+    default = os.getenv("LLM_DEFAULT")
+    if default:
+        return _parse(default)
+
+    # 3. Fail fast
+    role_hint = f"LLM_{role.upper()}" if role else "LLM_DEFAULT"
+    raise ValueError(
+        f"No LLM deployment configured. Set {role_hint} or LLM_DEFAULT in your .env. "
+        f"Copy the LLM section from .env.example."
+    )
+
+
 # Back-off settings
 _BACKOFF_SEQUENCE = [1, 2, 4, 8]
 _ALERT_AFTER_CYCLES = 3
@@ -138,7 +180,7 @@ def resolve_model_tier(model: str) -> str:
     Resolution order:
     1. Exact match in MODEL_TIER_MAP
     2. Substring match (e.g. "gpt-4.1-mini-2025-04-14" contains "gpt-4.1-mini")
-    3. AZURE_OPENAI_DEPLOYMENT_NAME env var → MODEL_TIER_MAP lookup
+    3. LLM_DEFAULT env var → MODEL_TIER_MAP lookup
     4. LLM_PROVIDER env var default (azure_openai → gpt-4.1-mini, gemini → gemini-2.5-flash)
     5. "sonnet" fallback with a warning log
     """
@@ -152,7 +194,7 @@ def resolve_model_tier(model: str) -> str:
         if known in model:
             return mapped
     # 3. Deployment name from env
-    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "")
+    deployment = os.getenv("LLM_DEFAULT", "")
     if deployment:
         tier = MODEL_TIER_MAP.get(deployment)
         if tier:
@@ -268,6 +310,7 @@ def complete(
     system: str | None = None,
     max_tokens: int = 1000,
     correlation_id: str | None = None,
+    role: str | None = None,
 ) -> dict[str, Any]:
     """Make an LLM call, log it via log_extraction_event(), and return the result.
 
@@ -286,7 +329,12 @@ def complete(
         - success: bool
         - extraction_failed: bool (True after timeout retry or API error)
     """
-    provider = os.getenv("LLM_PROVIDER", "anthropic")
+    if role and not model:
+        resolved_provider, resolved_model = resolve_llm_route(role)
+        provider = resolved_provider
+        model = resolved_model
+    else:
+        provider = os.getenv("LLM_PROVIDER", "anthropic")
 
     # Mock provider: return ground truth data, no API calls
     if provider == "mock":
@@ -328,7 +376,7 @@ def complete(
             ) from exc
 
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         gmodel = genai.GenerativeModel(gemini_model, system_instruction=system or None)
 
         correlation_id = correlation_id or str(uuid.uuid4())
@@ -391,7 +439,7 @@ def complete(
             "If you are using Azure OpenAI, use agents.common.llm_client instead."
         ) from exc
 
-    model = model or os.getenv("EXTRACTION_MODEL_SKILLS", "claude-sonnet-4-5")
+    model = model or os.getenv("LLM_DEFAULT", "claude-sonnet-4-5")
     model_tier = MODEL_TIER_MAP.get(model, "sonnet")
     client = Anthropic()
 

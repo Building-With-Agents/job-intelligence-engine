@@ -28,14 +28,6 @@ log = structlog.get_logger()
 
 AUDIT_AGENT_EMPLOYER = "enrichment-employer-classifier"
 
-_EMPLOYER_DEPLOYMENT_KEYS: tuple[str, ...] = (
-    "EXTRACTION_DEPLOYMENT_EMPLOYER",
-    "EXTRACTION_DEPLOYMENT_NAICS",
-    "EXTRACTION_DEPLOYMENT_SKILLS",
-    "EXTRACTION_MODEL_SKILLS",
-    "AZURE_OPENAI_DEPLOYMENT_NAME",
-)
-
 _MAX_DESC_CHARS = 4000
 
 # Closed set for high-level sector; anything else maps to unknown after LLM response.
@@ -162,7 +154,7 @@ def build_employer_profile(
             _build_prompt(company, desc),
             EmployerClassificationLLMOutput,
             agent_name=AUDIT_AGENT_EMPLOYER,
-            deployment_env_keys=_EMPLOYER_DEPLOYMENT_KEYS,
+            role="extraction_employer",
             model_tier_for_cost="haiku",
         )
     except Exception as exc:
@@ -205,7 +197,7 @@ async def build_employer_profile_async(
             _build_prompt(company, desc),
             EmployerClassificationLLMOutput,
             agent_name=AUDIT_AGENT_EMPLOYER,
-            deployment_env_keys=_EMPLOYER_DEPLOYMENT_KEYS,
+            role="extraction_employer",
             model_tier_for_cost="haiku",
         )
     except Exception as exc:
