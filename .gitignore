@@ -108,6 +108,9 @@ docs/planning/*
 !docs/planning/ARCHITECTURE_HIGH_LEVEL.md
 !docs/planning/component-diagram.html
 !docs/planning/component-diagram-walking-skeleton.html
+!docs/planning/processing-loop-diagram.html
+!docs/planning/processing-loop-technical-diagram.html
+!docs/planning/processing-loop-technical-diagram-weeks7-8.html
 docs/planning/curriculum/
 docs/lesson-framework/
 
