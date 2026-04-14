@@ -30,7 +30,7 @@ def _fake_langchain_module(azure_cls: MagicMock) -> ModuleType:
 
 def _deployment_env() -> dict[str, str]:
     return {
-        "EXTRACTION_DEPLOYMENT_TASKS": "test-tasks-deployment",
+        "LLM_DEFAULT": "test-tasks-deployment",
     }
 
 
@@ -62,7 +62,7 @@ def test_ainvoke_structured_extraction_llm_matches_sync_success_metadata() -> No
                 prompt,
                 _ExampleSchema,
                 agent_name="async-agent",
-                deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+                role="extraction_tasks",
                 model_tier_for_cost="haiku",
             )
         )
@@ -70,7 +70,7 @@ def test_ainvoke_structured_extraction_llm_matches_sync_success_metadata() -> No
             prompt,
             _ExampleSchema,
             agent_name="sync-agent",
-            deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+            role="extraction_tasks",
             model_tier_for_cost="haiku",
         )
 
@@ -102,7 +102,7 @@ def test_ainvoke_structured_extraction_llm_timeout_returns_failed_metadata() -> 
                 "extract items",
                 _ExampleSchema,
                 agent_name="async-agent",
-                deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+                role="extraction_tasks",
                 model_tier_for_cost="haiku",
             )
         )
@@ -135,7 +135,7 @@ def test_ainvoke_structured_extraction_llm_returns_rate_limit_metadata() -> None
                 "extract items",
                 _ExampleSchema,
                 agent_name="async-agent",
-                deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+                role="extraction_tasks",
                 model_tier_for_cost="haiku",
             )
         )
@@ -174,7 +174,7 @@ def test_ainvoke_structured_extraction_llm_empty_response_returns_failed_metadat
                 prompt,
                 _ExampleSchema,
                 agent_name="async-agent",
-                deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+                role="extraction_tasks",
                 model_tier_for_cost="haiku",
             )
         )
@@ -199,7 +199,7 @@ def test_ainvoke_structured_extraction_llm_handles_import_error() -> None:
                 "extract items",
                 _ExampleSchema,
                 agent_name="async-agent",
-                deployment_env_keys=("EXTRACTION_DEPLOYMENT_TASKS",),
+                role="extraction_tasks",
                 model_tier_for_cost="haiku",
             )
         )

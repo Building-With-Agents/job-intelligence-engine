@@ -16,12 +16,14 @@ from common.llm_adapter import MODEL_TIER_MAP
 def _deployment_names() -> set[str]:
     names: set[str] = set()
     for key in (
-        "EXTRACTION_DEPLOYMENT_SKILLS",
-        "EXTRACTION_MODEL_SKILLS",
-        "AZURE_OPENAI_DEPLOYMENT_NAME",
+        "LLM_DEFAULT",
+        "LLM_EXTRACTION",
     ):
         v = os.getenv(key, "").strip()
         if v:
+            # Strip provider prefix if present (e.g. "gemini:gemini-2.5-pro" -> "gemini-2.5-pro")
+            if ":" in v:
+                v = v.split(":", 1)[1].strip()
             names.add(v)
     return names
 
