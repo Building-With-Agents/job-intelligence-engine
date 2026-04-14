@@ -90,24 +90,35 @@ Same delivery; split by layer to reduce coupling and review risk. Coordinate on 
 
 ## Deliverables (#117 + runbook)
 
-- [ ] `analytics/query_engine/synthesis.py` — production synthesis path (not only stubs).
-- [ ] `analytics/query_engine/evidence.py` — production **`build_evidence_bundle`**.
+- [x] `analytics/query_engine/synthesis.py` — production synthesis path (not only stubs).
+- [x] `analytics/query_engine/evidence.py` — production **`build_evidence_bundle`**.
 - [ ] Evidence citation: claims trace to **table / count / period** where applicable.
-- [ ] Confidence, volume, temporal, and refusal behavior per runbook.
-- [ ] 2–3 contextual follow-up questions (cheaper tier).
-- [ ] Per-query **total** LLM cost across legs.
-- [ ] Tests: unit (policy), integration (mock LLM), runbook spot cases.
-- [ ] Short findings note (tested / found / recommendation / tradeoffs / evidence) per team convention.
+- [x] Confidence, volume, temporal, and refusal behavior per runbook.
+- [x] 2–3 contextual follow-up questions (cheaper tier).
+- [x] Per-query **total** LLM cost across legs.
+- [x] Tests: unit (policy), integration (mock LLM), runbook spot cases.
+- [x] Short findings note (tested / found / recommendation / tradeoffs / evidence) per team convention.
+- [ ] Post-generation grounding hardening: reject or fall back when synthesized numeric claims are not supported by **`EvidenceBundle`**.
 
 ---
 
 ## Production-ready bar
 
-- [ ] No PII in logs; structured reason codes where helpful.
-- [ ] CI runs tests without live LLM and without mutating shared audit tables (see **`testing-standards.mdc`**).
+- [x] No PII in logs; structured reason codes where helpful.
+- [x] CI runs tests without live LLM and without mutating shared audit tables (see **`testing-standards.mdc`**).
 - [ ] Env and model-tier usage documented for operators.
-- [ ] Handoff note for routing owners: **`QueryResultPayload`** field expectations after guardrailed SQL.
+- [x] Handoff note for routing owners: **`QueryResultPayload`** field expectations after guardrailed SQL.
 - [ ] PR references **#117** and the **runbook** and/or **`.cursor/rules/analytics-qna-synthesis.mdc`**.
+
+### Routing handoff note
+
+For strong evidence quality, routing should reliably populate these **`QueryResultPayload`** fields after guardrailed SQL:
+
+- **Always required:** `request.query`, `intent_label`, `classification_confidence`, `columns`, `rows`, `row_count_returned`, `result_truncated`, `tables_referenced`.
+- **Strongly recommended for tracing/failures:** `router_error` when execution/validation fails, plus `correlation_id` when available.
+- **Strongly recommended inside returned rows:** an explicit posting-count field such as `posting_count`, plus explicit period fields such as `time_period`, `period`, `period_start`, or `period_end`.
+- **Intent-specific requirement:** if the intent is salary-oriented, the rows must include the requested salary metric columns (for example `median_salary`, `p25_salary`, `p75_salary`) rather than only counts.
+- **Quality note:** evidence quality degrades to caveats or refusal when posting-count or period fields are missing, because the truth layer cannot verify sample size or temporal coverage deterministically.
 
 ---
 
