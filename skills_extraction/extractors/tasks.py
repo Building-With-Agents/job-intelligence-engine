@@ -36,12 +36,6 @@ log = structlog.get_logger()
 
 AGENT_TASKS = "skills-extraction-tasks"
 
-_TASKS_DEPLOYMENT_KEYS = (
-    "EXTRACTION_DEPLOYMENT_TASKS",
-    "EXTRACTION_MODEL_TASKS",
-    "AZURE_OPENAI_DEPLOYMENT_NAME",
-)
-
 
 class _TasksLLMRoot(BaseModel):
     """Root schema for structured LLM output (list of TaskRecord)."""
@@ -151,7 +145,7 @@ def extract_tasks(
             prompt,
             _TasksLLMRoot,
             agent_name=AGENT_TASKS,
-            deployment_env_keys=_TASKS_DEPLOYMENT_KEYS,
+            role="extraction_tasks",
             model_tier_for_cost="haiku",
         )
         metadata.update(call_meta)
@@ -203,7 +197,7 @@ async def extract_tasks_async(
             prompt,
             _TasksLLMRoot,
             agent_name=AGENT_TASKS,
-            deployment_env_keys=_TASKS_DEPLOYMENT_KEYS,
+            role="extraction_tasks",
             model_tier_for_cost="haiku",
         )
 

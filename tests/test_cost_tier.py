@@ -10,9 +10,8 @@ from eval.cost_tier import resolve_llm_audit_model_tier
 @pytest.fixture
 def clear_deployment_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in (
-        "EXTRACTION_DEPLOYMENT_SKILLS",
-        "EXTRACTION_MODEL_SKILLS",
-        "AZURE_OPENAI_DEPLOYMENT_NAME",
+        "LLM_DEFAULT",
+        "LLM_EXTRACTION",
         "EXTRACTION_MODEL_TIER",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -27,7 +26,7 @@ def test_azure_deployment_uses_extraction_model_tier(
     monkeypatch: pytest.MonkeyPatch,
     clear_deployment_env: None,
 ) -> None:
-    monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-skills")
+    monkeypatch.setenv("LLM_DEFAULT", "gpt-4o-skills")
     monkeypatch.setenv("EXTRACTION_MODEL_TIER", "haiku")
     assert resolve_llm_audit_model_tier("gpt-4o-skills") == "haiku"
 
@@ -36,7 +35,7 @@ def test_azure_deployment_defaults_sonnet(
     monkeypatch: pytest.MonkeyPatch,
     clear_deployment_env: None,
 ) -> None:
-    monkeypatch.setenv("EXTRACTION_DEPLOYMENT_SKILLS", "my-deploy")
+    monkeypatch.setenv("LLM_DEFAULT", "my-deploy")
     monkeypatch.delenv("EXTRACTION_MODEL_TIER", raising=False)
     assert resolve_llm_audit_model_tier("my-deploy") == "sonnet"
 

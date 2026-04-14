@@ -115,6 +115,7 @@ def _enrichment_soc_llm() -> Callable[[str], str]:
             text, meta = invoke_skills_llm(
                 prompt,
                 agent_name="enrichment-soc-classifier",
+                role="classification",
             )
         except TypeError as exc:
             if "api_key" in str(exc).lower() or "auth" in str(exc).lower():
@@ -142,6 +143,7 @@ def _enrichment_soc_llm_async() -> Callable:
             text, meta = await ainvoke_skills_llm(
                 prompt,
                 agent_name="enrichment-soc-classifier",
+                role="classification",
             )
         except TypeError as exc:
             if "api_key" in str(exc).lower() or "auth" in str(exc).lower():
