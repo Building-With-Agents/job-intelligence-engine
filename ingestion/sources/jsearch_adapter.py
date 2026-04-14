@@ -174,13 +174,7 @@ class JSearchAdapter(SourceAdapter):
             query_parts.extend(region.role_categories[:2])
         query = " ".join(query_parts).strip() or "jobs"
 
-        num_pages = 1
-        try:
-            batch_size = int(os.getenv("BATCH_SIZE", "100"))
-            # Roughly 10 jobs per page on JSearch; cap pages to avoid rate limits
-            num_pages = min(20, max(1, (batch_size + 9) // 10))
-        except (TypeError, ValueError):
-            num_pages = 1
+        num_pages = max(1, min(50, _env_int("JSEARCH_MAX_PAGES", 50)))
         max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
         base_delay = max(1, _env_int("JSEARCH_RETRY_BASE_DELAY_SECONDS", 10))
         max_delay = max(base_delay, _env_int("JSEARCH_RETRY_MAX_DELAY_SECONDS", 60))
