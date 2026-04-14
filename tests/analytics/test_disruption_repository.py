@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from analytics.disruption.models import TEMPORAL_PERIOD_SEQUENCE
+from analytics.disruption.models import TEMPORAL_PERIOD_SEQUENCE, DisruptionFingerprintRecord
 from analytics.disruption.repository import (
     DisruptionFingerprintRepository,
     DisruptionRepositoryQueryError,
@@ -23,6 +23,52 @@ def _mapping_result(rows: list[dict]) -> MagicMock:
     out = MagicMock()
     out.mappings.return_value.all.return_value = rows
     return out
+
+
+def test_save_fingerprints_noop_without_session_or_empty() -> None:
+    repo = DisruptionFingerprintRepository()
+    session = MagicMock()
+    rec = DisruptionFingerprintRecord(canonical_role_id="r1", disruption_category=["Augmentation"])
+    repo.save_fingerprints([rec], None)
+    session.merge.assert_not_called()
+    repo.save_fingerprints([], session)
+    session.merge.assert_not_called()
+
+
+def test_save_fingerprints_wraps_sqlalchemy_error() -> None:
+    session = MagicMock()
+    session.merge.side_effect = SQLAlchemyError("merge failed")
+    with pytest.raises(DisruptionRepositoryQueryError, match="save_fingerprints"):
+        DisruptionFingerprintRepository().save_fingerprints(
+            [DisruptionFingerprintRecord(canonical_role_id="x")],
+            session,
+        )
+
+
+def test_save_fingerprints_calls_merge_per_record() -> None:
+    session = MagicMock()
+    rows = [
+        DisruptionFingerprintRecord(
+            canonical_role_id="role-a",
+            disruption_category=["Transformation"],
+            content_fingerprint="abc123",
+        ),
+        DisruptionFingerprintRecord(
+            canonical_role_id="role-b",
+            disruption_category=["Emergence"],
+            workflow_restructuring_score=0.42,
+        ),
+    ]
+    DisruptionFingerprintRepository().save_fingerprints(rows, session)
+    assert session.merge.call_count == 2
+    first = session.merge.call_args_list[0][0][0]
+    assert first.canonical_role_id == "role-a"
+    assert first.disruption_category == ["Transformation"]
+    assert first.content_fingerprint == "abc123"
+    assert first.workflow_restructuring_score == 0.0
+    second = session.merge.call_args_list[1][0][0]
+    assert second.canonical_role_id == "role-b"
+    assert second.workflow_restructuring_score == 0.42
 
 
 def test_fetch_canonical_roles_returns_empty_without_session() -> None:

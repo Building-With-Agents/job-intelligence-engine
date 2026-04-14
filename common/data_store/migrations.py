@@ -223,6 +223,26 @@ CREATE TABLE IF NOT EXISTS dbo.trajectory_map (
 );
 """
 
+_DISRUPTION_FINGERPRINTS_DDL = """
+CREATE TABLE IF NOT EXISTS dbo.disruption_fingerprints (
+    canonical_role_id TEXT PRIMARY KEY,
+    disruption_category JSONB NOT NULL DEFAULT '[]'::jsonb,
+    disruption_intensity DOUBLE PRECISION NOT NULL DEFAULT 0,
+    skill_velocity JSONB NOT NULL DEFAULT '[]'::jsonb,
+    tool_transition JSONB NOT NULL DEFAULT '[]'::jsonb,
+    task_shift JSONB NOT NULL DEFAULT '[]'::jsonb,
+    responsibility_expansion DOUBLE PRECISION NOT NULL DEFAULT 0,
+    ai_intensity_trend TEXT NOT NULL DEFAULT 'stable',
+    workflow_restructuring_score DOUBLE PRECISION NOT NULL DEFAULT 0,
+    trajectory TEXT NOT NULL DEFAULT 'stable',
+    period_comparison JSONB NOT NULL DEFAULT '[]'::jsonb,
+    content_fingerprint TEXT NOT NULL DEFAULT '',
+    computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_disruption_fingerprints_computed_at
+    ON dbo.disruption_fingerprints (computed_at);
+"""
+
 # sector_summary_weekly schema upgrades (Step 6 — employer_count, top_skills, computed_at)
 _SECTOR_SUMMARY_WEEKLY_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.sector_summary_weekly ADD COLUMN IF NOT EXISTS employer_count INTEGER NOT NULL DEFAULT 0",
@@ -449,6 +469,7 @@ def run_migrations(engine: Engine) -> None:
     with engine.begin() as conn:
         conn.execute(text(_POSTING_FRESHNESS_DDL))
         conn.execute(text(_TRAJECTORY_MAP_DDL))
+        conn.execute(text(_DISRUPTION_FINGERPRINTS_DDL))
     log.info("migrations_analytics_tables_created")
 
     # 4c. Week 7 analytics aggregate tables (PostgreSQL DDL; ORM also registers via create_all)

@@ -1,4 +1,4 @@
-"""Persistence and read paths for disruption fingerprints (reads: #108).
+"""Persistence and read paths for disruption fingerprints (#108 reads + writes).
 
 PostgreSQL **schema** for raw SQL is resolved in order:
 
@@ -25,6 +25,7 @@ import os
 import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import text
@@ -36,7 +37,7 @@ from analytics.disruption.models import (
     DisruptionFingerprintRecord,
     TemporalPeriodSnapshot,
 )
-from common.data_store.models import CanonicalRole
+from common.data_store.models import CanonicalRole, DisruptionFingerprint
 from enrichment.classifiers.spam_preview import get_spam_thresholds
 
 if TYPE_CHECKING:
@@ -488,9 +489,40 @@ class DisruptionFingerprintRepository:
         results: list[DisruptionFingerprintRecord],
         session: Session | None = None,
     ) -> None:
-        """Persist fingerprint results.
+        """Upsert fingerprint rows into ``disruption_fingerprints`` via ``session.merge``.
 
-        TODO(#108): upsert into ``dbo.disruption_fingerprints`` + optional event emission.
+        Primary key is ``canonical_role_id``; repeated refreshes overwrite metrics and
+        ``computed_at``. Mirrors the ``session.merge`` pattern in
+        ``analytics.insights.posting_freshness_store.persist_posting_freshness_rows``.
+
+        No-op when ``session`` is ``None`` or ``results`` is empty. Event emission is out of scope.
+
+        Raises:
+            DisruptionRepositoryQueryError: Database/driver errors during merge.
         """
-        _ = session
-        _ = results
+        if session is None or not results:
+            return
+        now = datetime.now(timezone.utc)
+        try:
+            for rec in results:
+                session.merge(
+                    DisruptionFingerprint(
+                        canonical_role_id=rec.canonical_role_id,
+                        disruption_category=list(rec.disruption_category),
+                        disruption_intensity=rec.disruption_intensity,
+                        skill_velocity=list(rec.skill_velocity),
+                        tool_transition=list(rec.tool_transition),
+                        task_shift=list(rec.task_shift),
+                        responsibility_expansion=rec.responsibility_expansion,
+                        ai_intensity_trend=rec.ai_intensity_trend,
+                        workflow_restructuring_score=rec.workflow_restructuring_score,
+                        trajectory=rec.trajectory,
+                        period_comparison=list(rec.period_comparison),
+                        content_fingerprint=rec.content_fingerprint,
+                        computed_at=now,
+                    )
+                )
+        except SQLAlchemyError as exc:
+            raise DisruptionRepositoryQueryError(
+                f"save_fingerprints failed (rows={len(results)}): {exc}"
+            ) from exc
