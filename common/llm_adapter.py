@@ -430,13 +430,151 @@ def complete(
                     "extraction_failed": True,
                 }
 
+    # Azure OpenAI provider: use langchain-openai (consistent with llm_client.py)
+    if provider == "azure_openai":
+        try:
+            from langchain_openai import AzureChatOpenAI
+        except ImportError as exc:
+            raise ImportError(
+                "The 'langchain-openai' package is required when LLM_PROVIDER=azure_openai. "
+                "Install with: pip install langchain-openai"
+            ) from exc
+
+        deployment = model or os.getenv("LLM_DEFAULT", "chat-gpt41mini")
+        model_tier = resolve_model_tier(deployment)
+        azure_llm = AzureChatOpenAI(
+            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-01-01-preview"),
+            azure_deployment=deployment,
+            temperature=0.1,
+            max_tokens=max_tokens,
+        )
+
+        correlation_id = correlation_id or str(uuid.uuid4())
+        span_metadata = {"agent_name": agent_name, "model": deployment, "model_tier": model_tier}
+        span_ctx = (
+            _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt, metadata=span_metadata)
+            if _tracer
+            else nullcontext()
+        )
+
+        lc_messages: list[Any] = []
+        if system:
+            from langchain_core.messages import SystemMessage, HumanMessage
+            lc_messages.append(SystemMessage(content=system))
+            lc_messages.append(HumanMessage(content=prompt))
+        else:
+            from langchain_core.messages import HumanMessage
+            lc_messages.append(HumanMessage(content=prompt))
+
+        backoff_cycles = 0
+
+        with span_ctx:
+            while True:
+                for attempt in range(2):
+                    start = time.monotonic()
+                    try:
+                        msg = azure_llm.invoke(lc_messages)
+                        latency_ms = int((time.monotonic() - start) * 1000)
+                        content = msg.content if hasattr(msg, "content") else str(msg)
+
+                        # Extract actual model name from response metadata
+                        response_model = deployment
+                        input_tokens = 0
+                        output_tokens = 0
+                        if hasattr(msg, "response_metadata") and isinstance(msg.response_metadata, dict):
+                            actual_model = msg.response_metadata.get("model_name") or msg.response_metadata.get("model")
+                            if actual_model:
+                                response_model = actual_model
+                            usage = msg.response_metadata.get("token_usage") or msg.response_metadata.get("usage")
+                            if isinstance(usage, dict):
+                                input_tokens = int(usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0))
+                                output_tokens = int(usage.get("completion_tokens", 0) or usage.get("output_tokens", 0))
+
+                        if not input_tokens:
+                            input_tokens = len(prompt) // 4
+                            output_tokens = len(content) // 4
+
+                        cost_usd = compute_extraction_cost(input_tokens, output_tokens, model_tier)
+
+                        log_extraction_event(
+                            agent_name=agent_name, prompt=prompt, model=response_model,
+                            provider="azure_openai", latency_ms=latency_ms,
+                            input_tokens=input_tokens, output_tokens=output_tokens,
+                            cost_usd=cost_usd, success=True,
+                        )
+
+                        log.info(
+                            "llm_call_success", agent=agent_name, model=response_model,
+                            input_tokens=input_tokens, output_tokens=output_tokens,
+                            cost_usd=round(cost_usd, 6), latency_ms=latency_ms,
+                        )
+
+                        if _tracer:
+                            with contextlib.suppress(Exception):
+                                _tracer.record_latency("llm_call", seconds=latency_ms / 1000.0)
+                                _tracer.log_event("llm_success", {
+                                    "input_tokens": input_tokens, "output_tokens": output_tokens,
+                                    "cost_usd": round(cost_usd, 6),
+                                    "output": _parse_output_for_trace(content),
+                                })
+
+                        return {
+                            "content": content,
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "cost_usd": cost_usd,
+                            "model": response_model,
+                            "model_tier": model_tier,
+                            "success": True,
+                            "extraction_failed": False,
+                        }
+
+                    except Exception as exc:
+                        latency_ms = int((time.monotonic() - start) * 1000)
+                        error_str = str(exc)
+                        is_timeout = "timeout" in error_str.lower()
+                        is_rate_limit = "429" in error_str or "rate limit" in error_str.lower()
+
+                        if is_timeout and attempt == 0:
+                            log.warning("llm_timeout", agent=agent_name, attempt=attempt + 1)
+                            continue
+
+                        if is_rate_limit:
+                            break  # outer while loop handles backoff
+
+                        log_extraction_event(
+                            agent_name=agent_name, prompt=prompt, model=deployment,
+                            provider="azure_openai", latency_ms=latency_ms,
+                            input_tokens=0, output_tokens=0, cost_usd=0.0,
+                            success=False, error_reason=error_str,
+                        )
+                        if _tracer:
+                            with contextlib.suppress(Exception):
+                                _tracer.record_error(exc, context={"agent_name": agent_name, "model": deployment})
+                        return handle_extraction_failure(
+                            agent_name=agent_name, model_tier=model_tier,
+                            error_reason=error_str, latency_ms=latency_ms,
+                        )
+                else:
+                    continue
+
+                # Rate limit back-off (reached via 429 break)
+                backoff_cycles += 1
+                wait = _BACKOFF_SEQUENCE[min(backoff_cycles - 1, len(_BACKOFF_SEQUENCE) - 1)]
+                log.warning("llm_rate_limit_backoff", agent=agent_name, cycle=backoff_cycles, wait_s=wait)
+                if backoff_cycles >= _ALERT_AFTER_CYCLES:
+                    _emit_skills_extraction_alert(agent_name, backoff_cycles)
+                time.sleep(wait)
+
+    # Anthropic provider (fallback for direct Anthropic API usage)
     try:
         from anthropic import Anthropic, APIStatusError, APITimeoutError
     except ImportError as exc:
         raise ImportError(
             "The 'anthropic' package is required when LLM_PROVIDER=anthropic. "
-            "Install with: pip install anthropic\n"
-            "If you are using Azure OpenAI, use agents.common.llm_client instead."
+            "Install with: pip install anthropic"
         ) from exc
 
     model = model or os.getenv("LLM_DEFAULT", "claude-sonnet-4-5")
@@ -513,6 +651,7 @@ def complete(
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "cost_usd": cost_usd,
+                        "model": getattr(response, "model", model),
                         "model_tier": model_tier,
                         "success": True,
                         "extraction_failed": False,

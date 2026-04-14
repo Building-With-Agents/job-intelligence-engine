@@ -35,13 +35,16 @@ def _sample_trajectory() -> TrajectoryEntry:
 
 
 @patch("analytics.insights.llm_summary.complete")
-def test_llm_success_sets_flags_and_model(mock_complete):
+def test_llm_success_sets_flags_and_model(mock_complete, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "azure_openai")
+    monkeypatch.setenv("LLM_DEFAULT", "chat-gpt41mini")
     mock_complete.return_value = {
         "content": "Paragraph one.\n\nParagraph two.\n\nParagraph three.",
         "input_tokens": 10,
         "output_tokens": 20,
         "cost_usd": 0.0,
-        "model_tier": "sonnet",
+        "model": "gpt-4.1-mini-2025-04-14",
+        "model_tier": "gpt-4.1-mini",
         "success": True,
         "extraction_failed": False,
     }
@@ -49,7 +52,7 @@ def test_llm_success_sets_flags_and_model(mock_complete):
     fresh = _sample_freshness()
     r = generate_summary("Python", traj, fresh)
     assert r["is_llm_generated"] is True
-    assert r["model_used"] == "sonnet"
+    assert r["model_used"] == "gpt-4.1-mini-2025-04-14"
     assert r["summary_text"].strip() != ""
     assert "Paragraph one" in r["summary_text"]
     mock_complete.assert_called_once()

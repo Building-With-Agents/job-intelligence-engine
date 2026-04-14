@@ -158,7 +158,7 @@ def _get_llm(role: str | None = None, deployment: str | None = None) -> Any:
     return AzureChatOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-01-01-preview"),
         azure_deployment=deployment,
         temperature=0.1,
     )
@@ -181,7 +181,7 @@ def _build_structured_llm(deployment: str, *, provider: str | None = None) -> An
     return AzureChatOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-01-01-preview"),
         azure_deployment=deployment,
         temperature=0.1,
     )
