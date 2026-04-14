@@ -91,12 +91,12 @@ _EXTRACTION_STORE_SAVE_LOCK = threading.Lock()
 
 def _llm_deployment_name() -> str:
     """Azure deployment used for Pass 2 (for dbo.extracted_intelligence.extraction_model)."""
-    return (
-        os.getenv("EXTRACTION_DEPLOYMENT_SKILLS")
-        or os.getenv("EXTRACTION_MODEL_SKILLS")
-        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-        or "azure-openai"
-    )
+    from common.llm_adapter import resolve_llm_route
+    try:
+        _, deployment = resolve_llm_route("extraction")
+        return deployment
+    except ValueError:
+        return "azure-openai"
 
 
 def _parallel_enabled() -> bool:

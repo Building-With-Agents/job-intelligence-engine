@@ -5,62 +5,63 @@
 # NOT at ingestion — ingest broadly, filter on consumer side.
 
 budget_per_key: 200
+max_pages: 50          # pages per query (10 results/page, JSearch max is 50)
 
 queries:
   # --- Tier 1: Direct agentic/LLM-consumer roles ---
   - name: agentic-ai
     keywords: ["AI agent developer", "autonomous systems engineer", "agentic AI"]
-    pages: 10
+
 
   - name: prompt-llm
     keywords: ["prompt engineer", "LLM", "generative AI"]
-    pages: 10
+
 
   - name: ai-safety
     keywords: ["AI safety engineer", "responsible AI", "AI ethics"]
-    pages: 5
+
 
   - name: ai-research
     keywords: ["AI researcher", "applied scientist", "research engineer"]
-    pages: 10
+
 
   # --- Tier 2: Strong AI-adjacent (LLM consumers, not model builders) ---
   - name: ai-engineering
     keywords: ["AI engineer", "machine learning engineer"]
-    pages: 10
+
 
   - name: software-engineering
     keywords: ["software engineer", "backend developer", "full stack"]
-    pages: 10
+
 
   - name: python-developer
     keywords: ["Python developer", "Python engineer"]
-    pages: 10
+
 
   - name: product-tech
     keywords: ["technical product manager", "AI product manager"]
-    pages: 10
+
 
   - name: data-engineering
     keywords: ["data engineer", "data pipeline", "ETL developer"]
-    pages: 10
+
 
   - name: data-science
     keywords: ["data scientist", "data analyst", "data engineer"]
-    pages: 10
+
 
   # --- Tier 3: ML/model-building roles (breadth) ---
   - name: ml-scientist
     keywords: ["machine learning scientist", "applied ML", "ML researcher"]
-    pages: 10
+
 
   - name: deep-learning
     keywords: ["deep learning engineer", "NLP engineer", "computer vision"]
-    pages: 10
+
 
   - name: ml-ops
     keywords: ["MLOps engineer", "ML infrastructure", "model deployment"]
-    pages: 5
+
 
   # ============================================================
   # SECTOR AI-IMPACT LAYER v2 — Real job titles + sector context
@@ -72,112 +73,112 @@ queries:
   # --- Healthcare & Life Sciences ---
   - name: healthcare-it
     keywords: ["health informatics specialist", "EHR analyst", "clinical systems analyst", "healthcare application developer"]
-    pages: 15
+
 
   - name: health-data
     keywords: ["health data analyst", "clinical data analyst", "population health analyst", "healthcare data engineer"]
-    pages: 15
+
 
   - name: life-sciences-dev
     keywords: ["bioinformatics analyst", "research software developer", "pharmaceutical software developer", "laboratory information systems developer"]
-    pages: 15
+
 
   # --- Financial Services & Fintech ---
   - name: fintech-dev
     keywords: ["fintech developer", "payments developer", "banking application developer", "financial systems developer"]
-    pages: 15
+
 
   - name: quant-trading
     keywords: ["quantitative analyst", "trading systems engineer", "algorithmic trading developer", "risk analyst technology"]
-    pages: 10
+
 
   - name: regtech
     keywords: ["compliance technology analyst", "regulatory technology developer", "AML analyst technology", "financial compliance developer"]
-    pages: 10
+
 
   # --- Retail & E-commerce ---
   - name: ecommerce-dev
     keywords: ["ecommerce developer", "digital commerce developer", "retail systems developer", "online marketplace developer"]
-    pages: 15
+
 
   # --- Manufacturing & Industrial ---
   - name: industrial-automation
     keywords: ["automation engineer", "PLC programmer", "SCADA engineer", "industrial automation developer"]
-    pages: 15
+
 
   - name: manufacturing-dev
     keywords: ["manufacturing software developer", "quality systems developer", "MES developer", "production systems analyst"]
-    pages: 10
+
 
   # --- Insurance ---
   - name: insurance-tech
     keywords: ["insurance technology analyst", "claims system developer", "actuarial analyst technology", "policy management developer"]
-    pages: 10
+
 
   # --- Legal Technology ---
   - name: legal-tech
     keywords: ["e-discovery analyst", "legal technology specialist", "litigation support analyst", "contract management developer"]
-    pages: 10
+
 
   # --- Government & Defense ---
   - name: government-tech
     keywords: ["government software developer", "federal software engineer", "defense software developer", "public sector data analyst"]
-    pages: 15
+
 
   # --- Media, Gaming & Entertainment ---
   - name: media-gaming-dev
     keywords: ["game developer", "media software engineer", "streaming platform developer", "content management developer"]
-    pages: 15
+
 
   # --- Education Technology ---
   - name: edtech-dev
     keywords: ["edtech developer", "learning management system developer", "education software developer", "instructional technology developer"]
-    pages: 10
+
 
   # --- Energy & Utilities ---
   - name: energy-utilities-dev
     keywords: ["energy software developer", "utilities technology developer", "smart grid engineer", "oil gas software developer"]
-    pages: 10
+
 
   # --- Transportation & Logistics ---
   - name: logistics-dev
     keywords: ["logistics software developer", "supply chain developer", "fleet management developer", "warehouse management developer"]
-    pages: 15
+
 
   # --- Real Estate & Construction Tech ---
   - name: real-estate-tech
     keywords: ["real estate technology developer", "property management software developer", "construction tech developer", "MLS systems developer"]
-    pages: 10
+
 
   # --- HR & Workforce Technology ---
   - name: hr-tech-dev
     keywords: ["HRIS developer", "HR technology developer", "talent management developer", "payroll systems developer"]
-    pages: 10
+
 
   # --- Robotics & Autonomous Systems ---
   - name: robotics-dev
     keywords: ["robotics engineer", "autonomous vehicle software engineer", "embedded systems developer", "drone software developer"]
-    pages: 15
+
 
   # --- Cybersecurity (distinct titles from earlier queries) ---
   - name: threat-intel
     keywords: ["threat intelligence analyst", "incident response engineer", "digital forensics analyst", "vulnerability researcher"]
-    pages: 10
+
 
   # --- Marketing & Ad Technology ---
   - name: martech-dev
     keywords: ["marketing technology developer", "ad tech developer", "marketing automation developer", "digital marketing engineer"]
-    pages: 10
+
 
   # --- RPA & Intelligent Automation ---
   - name: rpa-automation
     keywords: ["RPA developer", "UiPath developer", "Power Automate developer", "intelligent automation developer"]
-    pages: 15
+
 
   # --- Enterprise AI Deployment (cross-sector glue layer) ---
   - name: enterprise-ai-deploy
     keywords: ["AI integration engineer", "enterprise AI developer", "AI solutions architect", "applied AI engineer"]
-    pages: 15
+
 
   # ============================================================
   # GAP-FILL LAYER — Broad IT roles not covered by existing queries
@@ -188,51 +189,51 @@ queries:
   # --- Infrastructure & Cloud ---
   - name: devops-sre
     keywords: ["DevOps engineer", "site reliability engineer", "platform engineer"]
-    pages: 10
+
 
   - name: cloud-architect
     keywords: ["cloud architect", "cloud solutions architect", "AWS architect", "Azure architect"]
-    pages: 10
+
 
   # --- Security ---
   - name: security-engineer
     keywords: ["security engineer", "application security engineer", "cloud security engineer"]
-    pages: 10
+
 
   # --- Database & Analytics ---
   - name: database-admin
     keywords: ["database administrator", "database engineer", "SQL developer"]
-    pages: 10
+
 
   - name: bi-analytics
     keywords: ["business intelligence developer", "BI analyst", "Tableau developer", "Power BI developer"]
-    pages: 10
+
 
   # --- Frontend & Mobile ---
   - name: frontend-react
     keywords: ["React developer", "frontend engineer", "UI developer"]
-    pages: 10
+
 
   - name: mobile-developer
     keywords: ["iOS developer", "Android developer", "mobile engineer", "React Native developer"]
-    pages: 10
+
 
   # --- QA & Testing ---
   - name: qa-automation
     keywords: ["QA automation engineer", "SDET", "test automation engineer"]
-    pages: 10
+
 
   # --- Networking & Systems ---
   - name: network-engineer
     keywords: ["network engineer", "systems administrator", "infrastructure engineer"]
-    pages: 10
+
 
   # --- Technical Writing & Support ---
   - name: technical-writer
     keywords: ["technical writer", "API documentation writer", "developer advocate"]
-    pages: 5
+
 
   # --- Emerging Tech ---
   - name: blockchain-web3
     keywords: ["blockchain developer", "smart contract developer", "Web3 engineer"]
-    pages: 5
+

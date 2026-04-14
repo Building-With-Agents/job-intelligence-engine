@@ -32,11 +32,7 @@ def _azure_openai_configured() -> bool:
         return False
     if not os.getenv("AZURE_OPENAI_API_KEY", "").strip():
         return False
-    deployment = (
-        os.getenv("EXTRACTION_DEPLOYMENT_SKILLS")
-        or os.getenv("EXTRACTION_MODEL_SKILLS")
-        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-    )
+    deployment = os.getenv("LLM_DEFAULT") or os.getenv("LLM_EXTRACTION")
     return bool(deployment and deployment.strip())
 
 
@@ -56,7 +52,7 @@ def _ensure_llm_configured_or_exit() -> None:
             "Missing Azure OpenAI configuration. invoke_skills_llm() needs:\n"
             "  AZURE_OPENAI_ENDPOINT\n"
             "  AZURE_OPENAI_API_KEY\n"
-            "  AZURE_OPENAI_DEPLOYMENT_NAME (or EXTRACTION_DEPLOYMENT_SKILLS / EXTRACTION_MODEL_SKILLS)\n"
+            "  LLM_DEFAULT (or LLM_EXTRACTION)\n"
             "Add these to repo-root .env, or run with SOC_DEMO_SKIP_LLM=1.",
             file=sys.stderr,
         )

@@ -136,6 +136,7 @@ def main() -> None:
 
     config = _load_config()
     budget_per_key = config.get("budget_per_key", 500)
+    max_pages = config.get("max_pages", 50)
     all_queries = config.get("queries", [])
 
     # Filter queries based on --start-query and --queries flags
@@ -180,7 +181,7 @@ def main() -> None:
             available_slots=[slot for slot, _ in api_keys],
         )
 
-    total_requests = sum(q.get("pages", 10) for q in queries)
+    total_requests = len(queries) * max_pages
 
     log.info(
         "batch_plan",
@@ -209,10 +210,9 @@ def main() -> None:
         print(f"{'='*60}")
         for q in queries:
             orig_idx = _all_query_names.index(q["name"]) + 1 if q["name"] in _all_query_names else "?"
-            pages = q.get("pages", 10)
             print(f"\n  [{orig_idx}] {q['name']}")
             print(f"      Keywords: {q['keywords']}")
-            print(f"      Pages: {pages} ({pages} API requests, ~{pages * 10} results)")
+            print(f"      Pages: {max_pages} ({max_pages} API requests, ~{max_pages * 10} results)")
         print(f"\n  Total: {total_requests} API requests across {len(queries)} queries")
         print(
             f"  Keys available: {max(0, len(api_keys) - start_key_idx)} x {budget_per_key} = "
@@ -238,7 +238,7 @@ def main() -> None:
 
     stop_batch = False
     for i, query in enumerate(queries, 1):
-        pages = query.get("pages", 10)
+        pages = max_pages
 
         attempt = 1
         while True:
@@ -255,7 +255,7 @@ def main() -> None:
             active_key_slot, active_key = api_keys[current_key_idx]
             highest_key_idx_used = max(highest_key_idx_used, current_key_idx)
             os.environ["JSEARCH_API_KEY"] = active_key
-            os.environ["BATCH_SIZE"] = str(pages * 10)
+            os.environ["JSEARCH_MAX_PAGES"] = str(pages)
 
             region = _build_region_config(query)
             correlation_id = f"batch-{query['name']}-{uuid.uuid4().hex[:8]}"

@@ -25,13 +25,6 @@ log = structlog.get_logger()
 
 AUDIT_AGENT_NAICS = "enrichment-naics-classifier"
 
-_NAICS_DEPLOYMENT_KEYS: tuple[str, ...] = (
-    "EXTRACTION_DEPLOYMENT_NAICS",
-    "EXTRACTION_DEPLOYMENT_SKILLS",
-    "EXTRACTION_MODEL_SKILLS",
-    "AZURE_OPENAI_DEPLOYMENT_NAME",
-)
-
 # NAICS codes are numeric strings; allow LLM typos like trailing spaces.
 _CODE_IN_TEXT = re.compile(r"\b\d{2,6}\b")
 
@@ -160,7 +153,7 @@ def classify_naics(job_title: str, job_description: str | None, session: Session
             prompt,
             NAICSClassificationOutput,
             agent_name=AUDIT_AGENT_NAICS,
-            deployment_env_keys=_NAICS_DEPLOYMENT_KEYS,
+            role="extraction_naics",
             model_tier_for_cost="haiku",
         )
     except Exception as exc:
@@ -203,7 +196,7 @@ async def classify_naics_async(job_title: str, job_description: str | None, sess
             prompt,
             NAICSClassificationOutput,
             agent_name=AUDIT_AGENT_NAICS,
-            deployment_env_keys=_NAICS_DEPLOYMENT_KEYS,
+            role="extraction_naics",
             model_tier_for_cost="haiku",
         )
     except Exception as exc:
