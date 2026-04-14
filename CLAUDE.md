@@ -41,6 +41,29 @@ This repo was extracted from `job-intelligence-engine/` into a standalone reposi
 
 ---
 
+## LLM Model References — Azure OpenAI Is the Default Provider
+
+All LLM calls route through the provider-agnostic adapter
+(`common.llm_adapter.complete`) with role-based resolution. Do not hardcode
+Anthropic model IDs (`claude-haiku-4-5`, `claude-sonnet-4-6`,
+`claude-opus-4-6`, etc.) in agent code, `.cursor/rules/*.mdc` contracts,
+runbooks, or documentation.
+
+**Deployment map:**
+
+| Tier | Azure deployment | Env var |
+|---|---|---|
+| Haiku-class | `chat-gpt41mini` | `LLM_DEFAULT` |
+| Sonnet-class | `chat-gpt41` | `LLM_SYNTHESIS` |
+| Embeddings | `embeddings-te3small` | `AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME` |
+
+See `.cursor/rules/llm-provider.mdc` (repo-wide, `alwaysApply: true`) for the
+full rule and `.cursor/rules/llm-routing.mdc` for the role-based resolution
+spec. The `anthropic` provider is kept as a fallback in `common.llm_adapter`
+but is not the default for any agent.
+
+---
+
 ## Table Ownership
 
 **SQLAlchemy is the single database authority.** All tables live in the `dbo` schema on PostgreSQL.
