@@ -21,11 +21,18 @@ Usage:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Streamlit sets sys.path to ``dashboard/``; ``common`` lives at repo root.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 import json
 import os
 from collections import defaultdict
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -44,7 +51,7 @@ from dashboard.relation_safe import read_sql_relation_safe
 
 load_repo_root_dotenv()
 
-_HERE = Path(__file__).parent.parent  # agents/
+_HERE = _REPO_ROOT  # repo root (``common``, ``data/``, etc.)
 _RUN_LOG_PATH = _HERE / "data" / "output" / "pipeline_run.json"
 
 _AGENT_ORDER = [

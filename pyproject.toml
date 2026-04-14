@@ -51,6 +51,9 @@ ignore = [
 "scripts/upload_langfuse_dataset.py" = ["T201"]
 "agents/scripts/export_langfuse_dataset.py" = ["T201"]
 "scripts/export_langfuse_dataset.py" = ["T201"]
+"scripts/demo_qna_synthesis_metrics.py" = ["T201"]
+# Ruff N999 false positive: repo directory name contains a hyphen.
+"analytics/query_engine/__init__.py" = ["N999"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["agents"]

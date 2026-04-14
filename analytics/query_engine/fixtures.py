@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from analytics.query_engine.constants import (
+    CONFIDENCE_TRANSPARENCY_THRESHOLD,
+    VOLUME_WARNING_POSTING_THRESHOLD,
+)
 from analytics.query_engine.schemas import (
     DataSufficiency,
     EvidenceBundle,
@@ -47,6 +51,63 @@ def sample_evidence_bundle_adequate() -> EvidenceBundle:
         sufficiency=DataSufficiency.ADEQUATE,
         blended_confidence=0.82,
         confidence_explanation="High intent match and posting count above volume threshold.",
+        refuse_synthesis=False,
+        refusal_reason=None,
+    )
+
+
+def sample_evidence_bundle_refused() -> EvidenceBundle:
+    return EvidenceBundle(
+        facts=[],
+        period_coverage="period unknown",
+        volume_posting_count=0,
+        sufficiency=DataSufficiency.NO_DATA,
+        blended_confidence=0.0,
+        confidence_explanation="No rows matched the guardrailed query.",
+        refuse_synthesis=True,
+        refusal_reason="Query returned zero rows for the selected filters.",
+    )
+
+
+def sample_evidence_bundle_low_confidence() -> EvidenceBundle:
+    low = max(0.0, CONFIDENCE_TRANSPARENCY_THRESHOLD - 0.05)
+    return EvidenceBundle(
+        facts=[
+            EvidenceCitation(
+                citation_id="c_low",
+                summary="Estimated metric from 40 postings (intent match uncertain).",
+                source_table="job_postings",
+                supporting_count=40,
+                time_period="2025-Q1",
+            )
+        ],
+        period_coverage="2025-Q1",
+        volume_posting_count=40,
+        sufficiency=DataSufficiency.SPARSE,
+        blended_confidence=low,
+        confidence_explanation="Blended confidence is below the transparency threshold.",
+        refuse_synthesis=False,
+        refusal_reason=None,
+    )
+
+
+def sample_evidence_bundle_low_volume() -> EvidenceBundle:
+    n = max(0, VOLUME_WARNING_POSTING_THRESHOLD - 10)
+    return EvidenceBundle(
+        facts=[
+            EvidenceCitation(
+                citation_id="c_vol",
+                summary="Median salary USD 68,000 from postings in scope.",
+                source_table="job_postings",
+                supporting_count=n,
+                time_period="2025-Q1",
+            )
+        ],
+        period_coverage="2025-Q1",
+        volume_posting_count=n,
+        sufficiency=DataSufficiency.SPARSE,
+        blended_confidence=0.75,
+        confidence_explanation="Intent match acceptable; volume is limited.",
         refuse_synthesis=False,
         refusal_reason=None,
     )
