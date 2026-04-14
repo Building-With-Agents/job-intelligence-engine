@@ -142,3 +142,65 @@ def test_build_period_comparison_compares_skill_mix_across_ordered_periods() -> 
     assert second.skill_jaccard_similarity == 0.5
     assert second.skill_composition_change_ratio == 0.5
     assert second.posting_count_change_ratio == 0.2
+
+
+def test_refresh_computes_week8_disruption_signals_for_role() -> None:
+    class _SignalsRepo(DisruptionFingerprintRepository):
+        def save_fingerprints(self, results, session=None) -> None:
+            pass
+
+        def fetch_canonical_roles(self, session=None) -> list[str]:
+            return ["role-signals"]
+
+        def fetch_period_snapshots(self, role_id: str, session=None) -> list[TemporalPeriodSnapshot]:
+            assert role_id == "role-signals"
+            return [
+                TemporalPeriodSnapshot(
+                    temporal_period="pre_chatgpt",
+                    posting_count=10,
+                    skill_mix={"python": 0.5, "excel": 0.7},
+                    tool_mix={"excel": 1.0},
+                    task_mix={"reporting": 0.6, "manual_entry": 0.5},
+                    responsibility_density=0.40,
+                    ai_requirement_density=0.05,
+                ),
+                TemporalPeriodSnapshot(
+                    temporal_period="early_genai",
+                    posting_count=11,
+                    skill_mix={"python": 0.6, "excel": 0.6, "prompting": 0.2},
+                    tool_mix={"excel": 1.0, "chatgpt": 0.4},
+                    task_mix={"reporting": 0.7, "automation_review": 0.3},
+                    responsibility_density=0.45,
+                    ai_requirement_density=0.10,
+                ),
+                TemporalPeriodSnapshot(
+                    temporal_period="post_gpt4",
+                    posting_count=12,
+                    skill_mix={"python": 0.7, "prompting": 0.4, "sql": 0.4},
+                    tool_mix={"chatgpt": 0.8, "copilot": 0.3},
+                    task_mix={"reporting": 0.6, "automation_review": 0.5, "workflow_design": 0.2},
+                    responsibility_density=0.50,
+                    ai_requirement_density=0.20,
+                ),
+                TemporalPeriodSnapshot(
+                    temporal_period="agentic_era",
+                    posting_count=13,
+                    skill_mix={"python": 0.8, "prompting": 0.7, "sql": 0.5, "agent_orchestration": 0.3},
+                    tool_mix={"chatgpt": 0.9, "copilot": 0.5, "langgraph": 0.2},
+                    task_mix={"automation_review": 0.6, "workflow_design": 0.4, "agent_supervision": 0.3},
+                    responsibility_density=0.60,
+                    ai_requirement_density=0.35,
+                ),
+            ]
+
+    out = DisruptionFingerprintService(repository=_SignalsRepo()).refresh_disruption_fingerprints()
+    fp = out.fingerprints[0]
+    assert fp.canonical_role_id == "role-signals"
+    assert len(fp.skill_velocity) > 0
+    assert fp.skill_velocity[0]["skill_name"] in {"prompting", "python", "agent_orchestration", "excel", "sql"}
+    assert len(fp.tool_transition) > 0
+    assert any("chatgpt" in t["adopted_tools"] for t in fp.tool_transition)
+    assert len(fp.task_shift) == 3
+    assert fp.responsibility_expansion > 0
+    assert fp.ai_intensity_trend == "increasing"
+    assert 0.0 <= fp.workflow_restructuring_score <= 1.0

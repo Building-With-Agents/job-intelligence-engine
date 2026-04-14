@@ -27,6 +27,10 @@ class TemporalPeriodSnapshot(BaseModel):
     temporal_period: str
     posting_count: int = 0
     skill_mix: dict[str, float] = Field(default_factory=dict)
+    tool_mix: dict[str, float] = Field(default_factory=dict)
+    task_mix: dict[str, float] = Field(default_factory=dict)
+    responsibility_density: float = 0.0
+    ai_requirement_density: float = 0.0
     has_observed_data: bool = True
 
 
@@ -83,6 +87,10 @@ def normalize_temporal_snapshots(
                 temporal_period=period,
                 posting_count=0,
                 skill_mix={},
+                tool_mix={},
+                task_mix={},
+                responsibility_density=0.0,
+                ai_requirement_density=0.0,
                 has_observed_data=False,
             )
         )
@@ -143,6 +151,10 @@ def build_fingerprint_hash_material(
                 "temporal_period": s.temporal_period,
                 "posting_count": s.posting_count,
                 "skill_mix": {k: s.skill_mix[k] for k in sorted(s.skill_mix)},
+                "tool_mix": {k: s.tool_mix[k] for k in sorted(s.tool_mix)},
+                "task_mix": {k: s.task_mix[k] for k in sorted(s.task_mix)},
+                "responsibility_density": s.responsibility_density,
+                "ai_requirement_density": s.ai_requirement_density,
                 "has_observed_data": s.has_observed_data,
             }
             for s in ordered
