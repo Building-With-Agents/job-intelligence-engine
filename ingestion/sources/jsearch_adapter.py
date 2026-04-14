@@ -178,7 +178,7 @@ class JSearchAdapter(SourceAdapter):
         try:
             batch_size = int(os.getenv("BATCH_SIZE", "100"))
             # Roughly 10 jobs per page on JSearch; cap pages to avoid rate limits
-            num_pages = min(10, max(1, (batch_size + 9) // 10))
+            num_pages = min(20, max(1, (batch_size + 9) // 10))
         except (TypeError, ValueError):
             num_pages = 1
         max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
