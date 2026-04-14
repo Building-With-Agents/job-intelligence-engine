@@ -14,7 +14,9 @@ from analytics.disruption.models import (
     DisruptionRefreshResult,
     RoleDisruptionMetrics,
     TemporalPeriodSnapshot,
+    build_period_comparison,
     build_fingerprint_hash_material,
+    normalize_temporal_snapshots,
 )
 from analytics.disruption.repository import DisruptionFingerprintRepository
 
@@ -65,6 +67,7 @@ class DisruptionFingerprintService:
                 DisruptionFingerprintRecord(
                     canonical_role_id=role_id,
                     disruption_category=list(cat_list),
+                    period_comparison=[cmp.model_dump() for cmp in metrics.period_comparison],
                     content_fingerprint=content_fp,
                 )
             )
@@ -89,11 +92,11 @@ def _build_placeholder_metrics(
     role_id: str,
     snapshots: list[TemporalPeriodSnapshot],
 ) -> RoleDisruptionMetrics:
-    """Assemble metrics from repository snapshots (extend in #105)."""
-    if not snapshots:
-        # TODO(#104): default windows / empty-window semantics when snapshots missing.
-        return RoleDisruptionMetrics(canonical_role_id=role_id, snapshots=tuple())
+    """Assemble metrics from repository snapshots with period normalization."""
+    normalized_snapshots = normalize_temporal_snapshots(snapshots)
+    period_comparison = build_period_comparison(normalized_snapshots)
     return RoleDisruptionMetrics(
         canonical_role_id=role_id,
-        snapshots=tuple(snapshots),
+        snapshots=normalized_snapshots,
+        period_comparison=period_comparison,
     )
