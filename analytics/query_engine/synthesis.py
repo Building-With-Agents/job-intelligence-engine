@@ -19,6 +19,7 @@ from analytics.query_engine.constants import (
 )
 from analytics.query_engine.schemas import (
     CostLedger,
+    DataSufficiency,
     EvidenceBundle,
     EvidenceCitation,
     LLMCallCost,
@@ -41,7 +42,9 @@ _SAFE_FALLBACK_ANSWER = (
 def _transparency_flags(bundle: EvidenceBundle) -> dict[str, Any]:
     confidence_flagged_low = bundle.blended_confidence < CONFIDENCE_TRANSPARENCY_THRESHOLD
     volume_flagged_low = (
-        bundle.volume_posting_count is not None
+        bundle.sufficiency != DataSufficiency.NO_DATA
+        and bundle.volume_posting_count is not None
+        and bundle.volume_posting_count > 0
         and bundle.volume_posting_count < VOLUME_WARNING_POSTING_THRESHOLD
     )
     volume_warning: str | None = None

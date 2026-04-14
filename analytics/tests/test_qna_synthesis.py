@@ -35,8 +35,8 @@ def test_refusal_skips_llm_and_sets_message() -> None:
     assert r.answer_text == ""
     assert r.follow_up_questions == []
     assert r.confidence_flagged_low is True
-    assert r.volume_flagged_low is True
-    assert r.volume_warning is not None
+    assert r.volume_flagged_low is False
+    assert r.volume_warning is None
 
 
 def _ok_synthesis_result(content: str, cost: float = 0.01) -> dict:
@@ -181,7 +181,7 @@ def test_periods_and_citations_echo() -> None:
     assert r.citations[0].citation_id == "c1"
 
 
-def test_run_analytics_qna_optional_pipeline() -> None:
+def test_run_analytics_qna_pipeline() -> None:
     n = {"i": 0}
 
     def multi(prompt, agent_name, **_k):
@@ -191,11 +191,10 @@ def test_run_analytics_qna_optional_pipeline() -> None:
         return _ok_synthesis_result('["Q1?", "Q2?"]')
 
     with patch("analytics.query_engine.synthesis.complete", side_effect=multi) as m:
-        try:
-            out = run_analytics_qna(sample_query_result_payload_ok())
-        except NotImplementedError:
-            pytest.skip("Dev 1 evidence not merged yet")
-    if out.refused:
-        pytest.skip("Sample QueryResultPayload refused under real evidence policy")
+        out = run_analytics_qna(sample_query_result_payload_ok())
+
+    assert out.refused is False
     assert isinstance(out.answer_text, str)
+    assert out.periods_described == "2025-Q1"
+    assert out.citations[0].supporting_count == 84
     assert m.call_count >= 1
