@@ -1,0 +1,114 @@
+# Commit log — Week 8 QnA synthesis + Streamlit import fix
+
+**Branch:** `week-08/synthesis-citation`  
+**Commit:** `26a848f` — `feat(analytics): QnA synthesis voice layer (#117) + Streamlit sys.path`  
+**Tracking:** [GitHub #117](https://github.com/Building-With-Agents/job-intelligence-engine/issues/117), `.cursor/rules/analytics-qna-synthesis.mdc`
+
+---
+
+## Summary of changes
+
+| Area | Description |
+|------|-------------|
+| **Voice layer** | `analytics/query_engine/synthesis.py` — `synthesize_answer`: refusal when `bundle.refuse_synthesis`; transparency flags from `analytics/query_engine/constants.py` only; echo citations and `period_coverage`; two LLM calls (main answer + follow-ups); merge inbound `CostLedger` and append `synthesis` / `follow_up` legs; USD via `common.llm_adapter` (`complete`, `compute_extraction_cost`); Azure OpenAI via lazy `common.llm_client.invoke_skills_llm`; safe response if main LLM fails. |
+| **Orchestration** | `analytics/query_engine/qna.py` — `run_analytics_qna(query_result, *, cost_ledger=None)` runs `build_evidence_bundle` then `synthesize_answer` (ownership documented in docstring). |
+| **Exports** | `analytics/query_engine/__init__.py` — re-exports `synthesize_answer`, `run_analytics_qna`. |
+| **Fixtures** | `analytics/query_engine/fixtures.py` — `sample_evidence_bundle_refused`, `sample_evidence_bundle_low_confidence`, `sample_evidence_bundle_low_volume` for tests. |
+| **Tests** | `analytics/tests/test_qna_synthesis.py` — mocks `_invoke_qna_completion`; refusal, flags, ledger merge, LLM failure, citations/periods; optional `run_analytics_qna` test skips until `build_evidence_bundle` is implemented. |
+| **Demo CLI** | `scripts/demo_qna_synthesis_metrics.py` — JSON output (timings, `SynthesisResponse`, costs); `--full-pipeline`, `--live` (gated). |
+| **Lint** | `pyproject.toml` — `T201` for demo script stdout; `N999` for `analytics/query_engine/__init__.py` (Ruff / repo path false positive). |
+| **Streamlit** | `dashboard/streamlit_app.py` — insert repository root on `sys.path` before `from common...` so `streamlit run dashboard/streamlit_app.py` resolves `common`. |
+
+**Not in this commit:** implementation of `build_evidence_bundle` in `evidence.py` (Developer 1). Threshold values in `analytics/query_engine/constants.py` unchanged.
+
+---
+
+## Commands
+
+Run from repository root with Python 3.11 venv active unless noted.
+
+### Unit tests (QnA synthesis)
+
+```powershell
+cd "C:\Users\milob\OneDrive\Escritorio\WAI Code\job-intelligence-engine"
+py -3.11 -m pytest analytics/tests/test_qna_synthesis.py -v
+```
+
+Validates synthesis behavior with a mocked completion path (no live LLM required).
+
+### Ruff (touched paths)
+
+```powershell
+py -3.11 -m ruff check analytics/query_engine/ analytics/tests/test_qna_synthesis.py scripts/demo_qna_synthesis_metrics.py
+```
+
+### QnA synthesis metrics demo (default)
+
+```powershell
+py -3.11 scripts/demo_qna_synthesis_metrics.py
+```
+
+Uses a fixture `EvidenceBundle`, prints JSON (timings, full `SynthesisResponse`, `total_cost_usd`, `cost_breakdown_usd`). Default run forces `LLM_PROVIDER=mock` and uses a deterministic stub for `_invoke_qna_completion` so output is stable.
+
+### Demo with full evidence path
+
+```powershell
+py -3.11 scripts/demo_qna_synthesis_metrics.py --full-pipeline
+```
+
+Attempts `build_evidence_bundle(sample_query_result_payload_ok())`. If evidence is still a stub, prints a JSON error and a hint to use fixture mode.
+
+### Demo with live LLM (real API / cost)
+
+```powershell
+$env:ANALYTICS_QNA_LIVE = "1"
+py -3.11 scripts/demo_qna_synthesis_metrics.py --live
+```
+
+Exits with code 2 if `ANALYTICS_QNA_LIVE` is not set to `1`. Uses real synthesis (no completion stub). Ensure provider credentials and spend are intended.
+
+### Streamlit dashboard
+
+```powershell
+py -3.11 -m streamlit run dashboard/streamlit_app.py
+```
+
+---
+
+## Environment variables
+
+### Always relevant for DB-backed features
+
+| Variable | Purpose |
+|----------|---------|
+| `PYTHON_DATABASE_URL` | SQLAlchemy PostgreSQL URL (`postgresql+psycopg2://...`). Required for seeding, pipeline, and paths that persist to `llm_audit_log` via `log_extraction_event`. |
+
+### LLM and synthesis (`synthesize_answer` / live demo)
+
+| Variable | Purpose |
+|----------|---------|
+| `LLM_PROVIDER` | `mock` (forced for non-`--live` demo), `azure_openai`, `anthropic`, or `gemini`. Selects completion backend in `synthesis._invoke_qna_completion`. |
+| `ANALYTICS_QNA_LIVE` | Must be exactly `1` for `scripts/demo_qna_synthesis_metrics.py --live`. |
+| `ANALYTICS_QNA_SYNTHESIS_MODEL` | Optional; main synthesis model when using Anthropic path (fallback chain includes `EXTRACTION_MODEL_SKILLS`). |
+| `ANALYTICS_QNA_FOLLOWUP_MODEL` | Optional; follow-up call model for Anthropic (default `claude-haiku-4-5`). |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployment / tier resolution and cost metadata on Azure paths. |
+| **Azure OpenAI** | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, and related vars per `.env.example` when `LLM_PROVIDER=azure_openai`. |
+| **Anthropic** | Dependencies and env per `common/llm_adapter` when `LLM_PROVIDER=anthropic`. |
+| **Gemini** | `GEMINI_API_KEY`, `GEMINI_MODEL` (and install) when `LLM_PROVIDER=gemini`. |
+
+### PowerShell vs bash
+
+Prefix style `ANALYTICS_QNA_LIVE=1 command` is **bash**. In **PowerShell** use:
+
+```powershell
+$env:ANALYTICS_QNA_LIVE = "1"
+py -3.11 scripts/demo_qna_synthesis_metrics.py --live
+```
+
+---
+
+## Quick verification checklist
+
+1. `py -3.11 -m pytest analytics/tests/test_qna_synthesis.py -v` — all pass or one skip (evidence stub).  
+2. `py -3.11 scripts/demo_qna_synthesis_metrics.py` — JSON to stdout, no import errors.  
+3. `py -3.11 -m streamlit run dashboard/streamlit_app.py` — no `ModuleNotFoundError: common`.
