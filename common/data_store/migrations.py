@@ -263,6 +263,8 @@ _SERIAL_SEQUENCE_TARGETS = (
     ("extracted_intelligence", "id"),
     ("llm_audit_log", "id"),
     ("employer_profiles", "id"),
+    ("cohort_gap_cache", "id"),
+    ("orchestration_audit_log", "id"),
 )
 
 
