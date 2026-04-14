@@ -8,7 +8,6 @@ Grounded synthesis for Ask the Data (GitHub #117). See
 from __future__ import annotations
 
 import json
-import os
 import re
 from typing import Any
 
@@ -76,87 +75,8 @@ def _leg_cost_usd(result: dict[str, Any], model_for_tier: str) -> float:
     return float(compute_extraction_cost(inp, out_tok, model_for_tier))
 
 
-def _shape_from_invoke_skills(prompt: str, text: str, meta: dict[str, Any]) -> dict[str, Any]:
-    """Map ``invoke_skills_llm`` metadata to the dict shape used by ``complete()``."""
-    success = bool(meta.get("success")) and not bool(meta.get("extraction_failed"))
-    if not success:
-        return {
-            "content": "",
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cost_usd": float(meta.get("cost_usd") or 0.0),
-            "model_tier": "azure",
-            "success": False,
-            "extraction_failed": True,
-            "model": meta.get("model"),
-        }
-    input_tokens = max(1, len(prompt) // 4)
-    output_tokens = max(0, len(text) // 4)
-    tokens_used = int(meta.get("tokens_used") or 0)
-    if tokens_used > 0:
-        total_est = input_tokens + output_tokens
-        if total_est > tokens_used:
-            factor = tokens_used / total_est
-            input_tokens = max(1, int(input_tokens * factor))
-            output_tokens = max(0, tokens_used - input_tokens)
-        elif total_est < tokens_used:
-            output_tokens = max(0, tokens_used - input_tokens)
-    model_name = str(meta.get("model") or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME") or "")
-    cost_usd = float(meta.get("cost_usd") or 0.0)
-    if cost_usd <= 0 and (input_tokens or output_tokens):
-        cost_usd = float(compute_extraction_cost(input_tokens, output_tokens, model_name))
-    return {
-        "content": text,
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "cost_usd": cost_usd,
-        "model_tier": "azure",
-        "success": True,
-        "extraction_failed": False,
-        "model": model_name or None,
-    }
-
-
-def _invoke_qna_completion(
-    prompt: str,
-    *,
-    agent_name: str,
-    model: str | None = None,
-    max_tokens: int = 800,
-    correlation_id: str | None = None,
-) -> dict[str, Any]:
-    """Single completion: ``llm_adapter.complete`` except Azure OpenAI via ``llm_client``.
-
-    Lazy-imports ``llm_client`` for Azure to avoid import cycles.
-    """
-    provider = os.getenv("LLM_PROVIDER", "azure_openai").strip().lower()
-    if provider == "azure_openai":
-        from common.llm_client import invoke_skills_llm
-
-        text, meta = invoke_skills_llm(prompt, agent_name=agent_name)
-        return _shape_from_invoke_skills(prompt, text, meta)
-    return complete(
-        prompt,
-        agent_name=agent_name,
-        model=model,
-        max_tokens=max_tokens,
-        correlation_id=correlation_id,
-    )
-
-
-def _synthesis_model() -> str | None:
-    return os.getenv("ANALYTICS_QNA_SYNTHESIS_MODEL") or os.getenv(
-        "EXTRACTION_MODEL_SKILLS",
-        "claude-sonnet-4-5",
-    )
-
-
-def _followup_model() -> str | None:
-    return os.getenv("ANALYTICS_QNA_FOLLOWUP_MODEL", "claude-haiku-4-5")
-
-
 def _model_for_cost(result: dict[str, Any], fallback: str | None) -> str:
-    return str(result.get("model") or fallback or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME") or "")
+    return str(result.get("model") or fallback or "")
 
 
 def _facts_payload(bundle: EvidenceBundle) -> list[dict[str, Any]]:
@@ -264,9 +184,9 @@ def synthesize_answer(
 ) -> SynthesisResponse:
     """Produce grounded answer text, follow-ups, and cost rollups.
 
-    Uses Sonnet-class (or deployment default) for main text and Haiku-class for
-    follow-ups when ``LLM_PROVIDER=anthropic``; Azure uses the shared LangChain
-    path via ``invoke_skills_llm``. Only paraphrase facts on ``bundle``.
+    Sonnet-tier (``LLM_SYNTHESIS``) for main answer; Haiku-tier (``LLM_DEFAULT``
+    via ``role="classification"``) for follow-up questions. Routes via
+    ``common.llm_adapter.complete(role=...)``. Only paraphrases facts on ``bundle``.
 
     See GitHub #117 and ``.cursor/rules/analytics-qna-synthesis.mdc``.
     """
@@ -304,16 +224,13 @@ def synthesize_answer(
         )
 
     main_prompt = _build_main_prompt(user_query, intent_label, bundle)
-    provider = os.getenv("LLM_PROVIDER", "azure_openai").strip().lower()
-    syn_model = _synthesis_model() if provider == "anthropic" else None
-    main_result = _invoke_qna_completion(
+    main_result = complete(
         main_prompt,
         agent_name=AGENT_SYNTHESIS,
-        model=syn_model,
+        role="synthesis",
         max_tokens=800,
-        correlation_id=None,
     )
-    _append_leg(ledger, "synthesis", main_result, model_fallback=syn_model)
+    _append_leg(ledger, "synthesis", main_result, model_fallback=None)
 
     main_ok = bool(main_result.get("success")) and not bool(main_result.get("extraction_failed"))
     answer_text = (main_result.get("content") or "").strip()
@@ -340,15 +257,13 @@ def synthesize_answer(
         )
 
     follow_prompt = _build_followup_prompt(user_query, intent_label, bundle, answer_text)
-    fu_model = _followup_model() if provider == "anthropic" else None
-    fu_result = _invoke_qna_completion(
+    fu_result = complete(
         follow_prompt,
         agent_name=AGENT_FOLLOWUP,
-        model=fu_model,
+        role="classification",
         max_tokens=400,
-        correlation_id=None,
     )
-    _append_leg(ledger, "follow_up", fu_result, model_fallback=fu_model)
+    _append_leg(ledger, "follow_up", fu_result, model_fallback=None)
 
     fu_ok = bool(fu_result.get("success")) and not bool(fu_result.get("extraction_failed"))
     follow_ups = _parse_followup_json(str(fu_result.get("content") or "")) if fu_ok else []

@@ -23,7 +23,7 @@ from analytics.query_engine.synthesis import AGENT_FOLLOWUP, AGENT_SYNTHESIS, sy
 
 
 def test_refusal_skips_llm_and_sets_message() -> None:
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion") as m:
+    with patch("analytics.query_engine.synthesis.complete") as m:
         r = synthesize_answer(
             sample_evidence_bundle_refused(),
             user_query="What is the median?",
@@ -67,14 +67,14 @@ def test_flags_low_confidence_from_bundle() -> None:
     bundle = sample_evidence_bundle_low_confidence()
     assert bundle.blended_confidence < CONFIDENCE_TRANSPARENCY_THRESHOLD
 
-    def fake(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def fake(prompt: str, agent_name: str, **_kwargs):
         if agent_name == AGENT_SYNTHESIS:
             return _ok_synthesis_result("Answer based on limited evidence.")
         if agent_name == AGENT_FOLLOWUP:
             return _ok_synthesis_result('["Next filter?", "Other geography?"]', cost=0.002)
         raise AssertionError(agent_name)
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=fake):
+    with patch("analytics.query_engine.synthesis.complete", side_effect=fake):
         r = synthesize_answer(
             bundle,
             user_query="Trend?",
@@ -90,14 +90,14 @@ def test_flags_low_volume_uses_threshold_constant() -> None:
     assert bundle.volume_posting_count is not None
     assert bundle.volume_posting_count < VOLUME_WARNING_POSTING_THRESHOLD
 
-    def fake(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def fake(prompt: str, agent_name: str, **_kwargs):
         if agent_name == AGENT_SYNTHESIS:
             return _ok_synthesis_result("Directional view from small N.")
         if agent_name == AGENT_FOLLOWUP:
             return _ok_synthesis_result('["Drill into sector?", "Compare quarter?"]', cost=0.002)
         raise AssertionError(agent_name)
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=fake):
+    with patch("analytics.query_engine.synthesis.complete", side_effect=fake):
         r = synthesize_answer(
             bundle,
             user_query="Salaries?",
@@ -122,7 +122,7 @@ def test_cost_ledger_merge_and_breakdown() -> None:
         ]
     )
 
-    def fake(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def fake(prompt: str, agent_name: str, **_kwargs):
         if agent_name == AGENT_SYNTHESIS:
             return _ok_synthesis_result("Median paraphrased from facts.", cost=0.01)
         if agent_name == AGENT_FOLLOWUP:
@@ -132,7 +132,7 @@ def test_cost_ledger_merge_and_breakdown() -> None:
             )
         raise AssertionError(agent_name)
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=fake):
+    with patch("analytics.query_engine.synthesis.complete", side_effect=fake):
         r = synthesize_answer(
             sample_evidence_bundle_adequate(),
             user_query="Median salary?",
@@ -148,12 +148,12 @@ def test_cost_ledger_merge_and_breakdown() -> None:
 
 
 def test_llm_main_failure_safe_response() -> None:
-    def fake(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def fake(prompt: str, agent_name: str, **_kwargs):
         if agent_name == AGENT_SYNTHESIS:
             return _failed_result()
         raise AssertionError("follow-up should not run")
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=fake):
+    with patch("analytics.query_engine.synthesis.complete", side_effect=fake):
         r = synthesize_answer(
             sample_evidence_bundle_adequate(),
             user_query="x",
@@ -165,12 +165,12 @@ def test_llm_main_failure_safe_response() -> None:
 
 
 def test_periods_and_citations_echo() -> None:
-    def fake(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def fake(prompt: str, agent_name: str, **_kwargs):
         if agent_name == AGENT_SYNTHESIS:
             return _ok_synthesis_result("ok")
         return _ok_synthesis_result("[]", cost=0.0)
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=fake):
+    with patch("analytics.query_engine.synthesis.complete", side_effect=fake):
         r = synthesize_answer(
             sample_evidence_bundle_adequate(),
             user_query="q",
@@ -184,13 +184,13 @@ def test_periods_and_citations_echo() -> None:
 def test_run_analytics_qna_optional_pipeline() -> None:
     n = {"i": 0}
 
-    def multi(*_a, **_k):
+    def multi(prompt, agent_name, **_k):
         n["i"] += 1
         if n["i"] == 1:
             return _ok_synthesis_result("Answer.")
         return _ok_synthesis_result('["Q1?", "Q2?"]')
 
-    with patch("analytics.query_engine.synthesis._invoke_qna_completion", side_effect=multi) as m:
+    with patch("analytics.query_engine.synthesis.complete", side_effect=multi) as m:
         try:
             out = run_analytics_qna(sample_query_result_payload_ok())
         except NotImplementedError:
