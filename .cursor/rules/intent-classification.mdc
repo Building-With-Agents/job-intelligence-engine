@@ -1,0 +1,66 @@
+description: "Intent classification and knowledge base routing for Workforce Intelligence Q&A: 10 intent categories, output schema, table routing map, Haiku-class LLM"
+alwaysApply: false
+globs:
+  - "analytics/query_engine/intent.py"
+  - "analytics/query_engine/router.py"
+
+---
+
+# Intent classification & routing contract (Week 8 Exercise 8.2)
+
+## 1. Intent classifier (intent.py)
+
+- 10 intents:
+  trend, role_evolution, disruption, emergence, curriculum, employer, workflow, geographic, comparison, other
+
+- Output:
+  {
+    intent: str,
+    confidence: float,
+    extracted_entities: {
+      geographic_terms: list[str],
+      role_names: list[str],
+      skill_names: list[str],
+      time_references: list[str]
+    }
+  }
+
+- Failure → intent="other", confidence=0.0, empty entities
+- Must use Haiku-class model (claude-haiku-4-5)
+
+---
+
+## 2. Router contract (router.py)
+
+Intent → tables:
+
+- trend → skill_demand_weekly, tool_demand_weekly, skill_velocity
+- role_evolution → canonical_roles, disruption_fingerprints
+- disruption → disruption_fingerprints
+- emergence → disruption_fingerprints, canonical_roles
+- curriculum → skill_demand_weekly, canonical_roles
+- employer → employer_profiles
+- workflow → canonical_roles, skill_demand_weekly
+- geographic → geo_demand_weekly
+- comparison → cross-table joins
+- other → no SQL, clarification only
+
+---
+
+## 3. SQL rules
+
+- SELECT only
+- parameterized queries only
+- must pass sql-guardrails.mdc
+- LIMIT 100
+- confidence >= 0.55 required to query
+- zero rows → "No matching postings found in scope"
+
+---
+
+## 4. Geographic rule
+
+Use ONLY:
+borderplex_subregion
+
+NOT region
