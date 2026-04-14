@@ -49,7 +49,7 @@ def test_llm_success_sets_flags_and_model(mock_complete):
     fresh = _sample_freshness()
     r = generate_summary("Python", traj, fresh)
     assert r["is_llm_generated"] is True
-    assert r["model_used"] == "claude-sonnet-4-5"
+    assert r["model_used"] == "sonnet"
     assert r["summary_text"].strip() != ""
     assert "Paragraph one" in r["summary_text"]
     mock_complete.assert_called_once()
