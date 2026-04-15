@@ -341,7 +341,7 @@ def main() -> None:
         if args.location_tier:
             print(f"  (tier override: {args.location_tier})")
         if args.no_locations:
-            print(f"  (geo expansion disabled)")
+            print("  (geo expansion disabled)")
         print(f"{'='*60}")
 
         # Group expanded pairs by query for readable output
@@ -370,12 +370,12 @@ def main() -> None:
             if over_budget:
                 print(f"  ⚠ OVER BUDGET by {monthly_after - monthly_budget} requests — run will stop early")
             elif pct >= 80:
-                print(f"  ⚠ >80% of monthly budget — consider smaller run")
+                print("  ⚠ >80% of monthly budget — consider smaller run")
         print(f"  Delay: {args.delay}s between queries")
-        print(f"\n  Tip: --start-query N to skip first N-1 queries")
-        print(f"       --location-tier TIER to override every query's tier")
-        print(f"       --no-locations to disable geo expansion")
-        print(f"       --queries name1,name2 to run specific queries only")
+        print("\n  Tip: --start-query N to skip first N-1 queries")
+        print("       --location-tier TIER to override every query's tier")
+        print("       --no-locations to disable geo expansion")
+        print("       --queries name1,name2 to run specific queries only")
         print(f"{'='*60}\n")
         return
 
