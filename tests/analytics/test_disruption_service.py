@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 from analytics.disruption import (
     TEMPORAL_PERIOD_SEQUENCE,
     DisruptionFingerprintRecord,
     DisruptionFingerprintRepository,
     DisruptionFingerprintService,
     TemporalPeriodSnapshot,
-    build_period_comparison,
     build_fingerprint_hash_material,
+    build_period_comparison,
     normalize_temporal_snapshots,
 )
+from analytics.disruption.service import _fingerprints_to_category_counts
 
 
 class _FakeRepository(DisruptionFingerprintRepository):
@@ -204,3 +207,52 @@ def test_refresh_computes_week8_disruption_signals_for_role() -> None:
     assert fp.responsibility_expansion > 0
     assert fp.ai_intensity_trend == "increasing"
     assert 0.0 <= fp.workflow_restructuring_score <= 1.0
+
+
+def test_fingerprints_to_category_counts_multi_label() -> None:
+    fps = [
+        DisruptionFingerprintRecord(
+            canonical_role_id="r1",
+            disruption_category=["Displacement", "Augmentation"],
+        ),
+        DisruptionFingerprintRecord(
+            canonical_role_id="r2",
+            disruption_category=["Transformation"],
+        ),
+        DisruptionFingerprintRecord(
+            canonical_role_id="r3",
+            disruption_category=["Emergence", "Displacement"],
+        ),
+    ]
+    assert _fingerprints_to_category_counts(fps) == (3, 2, 1, 1, 1)
+
+
+def test_refresh_emits_disruption_refreshed_when_event_bus_configured() -> None:
+    bus = MagicMock()
+    repo = _FakeRepository()
+    svc = DisruptionFingerprintService(repository=repo, event_bus=bus)
+    svc.refresh_disruption_fingerprints(session=None, correlation_id="corr-test")
+    bus.publish.assert_called_once()
+    env = bus.publish.call_args[0][0]
+    assert env.correlation_id == "corr-test"
+    assert env.payload["event_type"] == "DisruptionRefreshed"
+    assert env.payload["role_count"] == 2
+    assert "refresh_duration_ms" in env.payload
+    assert env.payload["refresh_duration_ms"] >= 0
+
+
+def test_refresh_emits_zero_counts_when_no_roles_and_bus_configured() -> None:
+    bus = MagicMock()
+    repo = _EmptyRepository()
+    DisruptionFingerprintService(repository=repo, event_bus=bus).refresh_disruption_fingerprints(session=None)
+    env = bus.publish.call_args[0][0]
+    assert env.payload["role_count"] == 0
+    assert env.payload["displacement_count"] == 0
+
+
+def test_refresh_publish_failure_does_not_raise() -> None:
+    bus = MagicMock()
+    bus.publish.side_effect = RuntimeError("bus down")
+    repo = _FakeRepository()
+    DisruptionFingerprintService(repository=repo, event_bus=bus).refresh_disruption_fingerprints(session=None)
+    bus.publish.assert_called_once()

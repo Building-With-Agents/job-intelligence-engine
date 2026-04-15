@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+import uuid
 from collections import defaultdict
 from statistics import fmean
 from typing import TYPE_CHECKING, Any
@@ -17,16 +19,56 @@ from analytics.disruption.models import (
     RoleDisruptionMetrics,
     TemporalPeriodComparison,
     TemporalPeriodSnapshot,
-    build_period_comparison,
     build_fingerprint_hash_material,
+    build_period_comparison,
     normalize_temporal_snapshots,
 )
 from analytics.disruption.repository import DisruptionFingerprintRepository
+from common.events.disruption_refreshed import build_disruption_refreshed_envelope
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 log = structlog.get_logger()
+
+_DISRUPTION_CATEGORY_LABELS: tuple[str, str, str, str] = (
+    "Displacement",
+    "Augmentation",
+    "Transformation",
+    "Emergence",
+)
+
+_disruption_refreshed_bus: Any | None = None
+
+
+def register_disruption_refreshed_bus(bus: Any | None) -> None:
+    """Register the in-process bus so ``DisruptionRefreshed`` can be published after refresh."""
+    global _disruption_refreshed_bus
+    _disruption_refreshed_bus = bus
+
+
+def _fingerprints_to_category_counts(
+    fingerprints: list[DisruptionFingerprintRecord],
+) -> tuple[int, int, int, int, int]:
+    """Return ``(role_count, displacement, augmentation, transformation, emergence)``.
+
+    Each count is the number of fingerprint rows whose ``disruption_category`` includes
+    that label (a row with multiple labels increments multiple buckets).
+    """
+    role_count = len(fingerprints)
+    counts = {label: 0 for label in _DISRUPTION_CATEGORY_LABELS}
+    for fp in fingerprints:
+        cats = set(fp.disruption_category)
+        for label in _DISRUPTION_CATEGORY_LABELS:
+            if label in cats:
+                counts[label] += 1
+    return (
+        role_count,
+        counts["Displacement"],
+        counts["Augmentation"],
+        counts["Transformation"],
+        counts["Emergence"],
+    )
 _TREND_EPSILON = 0.05
 _TOP_SKILL_VELOCITY = 5
 
@@ -45,19 +87,27 @@ class DisruptionFingerprintService:
         self,
         repository: DisruptionFingerprintRepository | None = None,
         classifier: DisruptionClassifier | None = None,
+        event_bus: Any | None = None,
     ) -> None:
         self._repository = repository or DisruptionFingerprintRepository()
         self._classifier = classifier or DisruptionClassifier()
+        self._event_bus = event_bus
 
-    def refresh_disruption_fingerprints(self, session: Session | None = None) -> DisruptionRefreshResult:
-        """Fetch roles, snapshots per role, build metrics, classify, hash, persist (stub), return aggregate result.
+    def refresh_disruption_fingerprints(
+        self,
+        session: Session | None = None,
+        correlation_id: str | None = None,
+    ) -> DisruptionRefreshResult:
+        """Fetch roles, snapshots per role, build metrics, classify, hash, persist, return aggregate result.
 
         Args:
-            session: Optional SQLAlchemy session for future repository I/O (#108).
+            session: Optional SQLAlchemy session for repository I/O.
+            correlation_id: Optional pipeline correlation id for ``DisruptionRefreshed``; if unset, a UUID is used.
 
         Returns:
             :class:`DisruptionRefreshResult` with fingerprints and counts (safe on empty roles).
         """
+        t0 = time.perf_counter()
         role_ids = self._repository.fetch_canonical_roles(session)
         fingerprints: list[DisruptionFingerprintRecord] = []
 
@@ -95,18 +145,52 @@ class DisruptionFingerprintService:
 
         self._repository.save_fingerprints(fingerprints, session)
 
+        duration_ms = int(max(0.0, (time.perf_counter() - t0) * 1000.0))
+
         result = DisruptionRefreshResult(
             fingerprints=fingerprints,
             roles_considered=len(role_ids),
             computed_count=len(fingerprints),
         )
 
+        self._emit_disruption_refreshed(fingerprints, correlation_id, duration_ms)
+
         log.info(
             "disruption_fingerprints_refresh",
             roles_considered=result.roles_considered,
             computed_count=result.computed_count,
+            refresh_duration_ms=duration_ms,
         )
         return result
+
+    def _emit_disruption_refreshed(
+        self,
+        fingerprints: list[DisruptionFingerprintRecord],
+        correlation_id: str | None,
+        duration_ms: int,
+    ) -> None:
+        bus = self._event_bus if self._event_bus is not None else _disruption_refreshed_bus
+        if bus is None:
+            return
+        cid = (correlation_id or "").strip() or str(uuid.uuid4())
+        rc, d_ct, a_ct, t_ct, e_ct = _fingerprints_to_category_counts(fingerprints)
+        envelope = build_disruption_refreshed_envelope(
+            correlation_id=cid,
+            role_count=rc,
+            displacement_count=d_ct,
+            augmentation_count=a_ct,
+            transformation_count=t_ct,
+            emergence_count=e_ct,
+            refresh_duration_ms=max(0, duration_ms),
+        )
+        try:
+            bus.publish(envelope)
+        except Exception as exc:
+            log.warning(
+                "disruption_refreshed_publish_failed",
+                error=str(exc),
+                correlation_id=cid,
+            )
 
 
 def _build_placeholder_metrics(
