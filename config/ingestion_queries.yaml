@@ -39,7 +39,9 @@ throttle:
   requests_per_minute: 250     # derived: 5 rps × 60 s × ~83% duty cycle
 
 max_pages: 50                  # pages per query (10 results/page, JSearch max is 50)
-budget_per_key: 200            # legacy per-key budget; kept for back-compat with free-tier rotation
+budget_per_key: 10000          # Pro-plan per-key capacity; effectively disables rotation
+                               # off slot 1 unless JSearch actually 429s us.
+                               # (Legacy knob — free-tier used 200/mo per key.)
 
 queries:
   # --- Tier 1: Direct agentic/LLM-consumer roles ---

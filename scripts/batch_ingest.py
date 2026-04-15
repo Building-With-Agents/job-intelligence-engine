@@ -468,13 +468,16 @@ def main() -> None:
                 requests_used_on_key += pages
                 total_requests_used += pages
 
+                # Persist the page count for this run regardless of outcome — the
+                # API requests were already billed even if the batch failed.
+                run_id = out.payload.get("batch_id") if out else None
+                if run_id:
+                    _record_run_requests(run_id, pages)
+
                 if out and out.payload.get("event_type") == "IngestBatch":
                     staged = out.payload.get("staged_count", 0)
                     dedup = out.payload.get("dedup_count", 0)
                     total_staged += staged
-                    run_id = out.payload.get("batch_id")
-                    if run_id:
-                        _record_run_requests(run_id, pages)
                     log.info(
                         "query_complete",
                         name=query["name"],
