@@ -105,21 +105,40 @@ def _expand_queries(
     tier_override: str | None = None,
     disable_locations: bool = False,
 ) -> list[tuple[dict, str]]:
-    """Expand each query across its ``location_tier`` into ``(query, location)`` pairs.
+    """Expand each query into ``(single-keyword query dict, location)`` pairs.
+
+    Each entry in the returned list triggers **one** JSearch call (issue #165).
+    The expansion is 3D: every YAML query fans out across its keywords AND its
+    tier's locations so the adapter sees a single keyword + single location
+    per call (canonical JSearch ``"<role> in <location>"`` pattern).
 
     - ``tier_override``: if set, every query uses this tier (useful for ad-hoc runs).
-    - ``disable_locations``: force one call per query with no location context.
+    - ``disable_locations``: force one call per keyword with no location context.
     - A query with ``location_tier: null`` or an unknown tier emits one entry
-      with ``location=""`` (no geo expansion, national behavior).
+      per keyword with ``location=""`` (no geo expansion).
     """
     expanded: list[tuple[dict, str]] = []
+
+    def _emit_for_keywords(q: dict, locations: list[str]) -> None:
+        keywords = q.get("keywords") or []
+        if not keywords:
+            # Degenerate query with no keywords: fall back to a bare ``jobs``
+            # request at each location so callers still see a row.
+            for loc in locations:
+                expanded.append(({**q, "keywords": ["jobs"]}, loc))
+            return
+        for kw in keywords:
+            clone = {**q, "keywords": [kw]}
+            for loc in locations:
+                expanded.append((clone, loc))
+
     for q in queries:
         if disable_locations:
-            expanded.append((q, ""))
+            _emit_for_keywords(q, [""])
             continue
         tier_name = tier_override if tier_override is not None else q.get("location_tier")
         if not tier_name:
-            expanded.append((q, ""))
+            _emit_for_keywords(q, [""])
             continue
         tier_locs = location_tiers.get(tier_name)
         if not tier_locs:
@@ -129,19 +148,25 @@ def _expand_queries(
                 tier=tier_name,
                 available=sorted(location_tiers.keys()),
             )
-            expanded.append((q, ""))
+            _emit_for_keywords(q, [""])
             continue
-        for loc in tier_locs:
-            expanded.append((q, loc))
+        _emit_for_keywords(q, list(tier_locs))
     return expanded
 
 
 def _build_region_config(query: dict, location: str) -> dict:
-    """Build a RegionConfig dict from a YAML query entry + resolved location."""
+    """Build a RegionConfig dict from a YAML query entry + resolved location.
+
+    Expects ``query["keywords"]`` to already be trimmed to a single keyword
+    by ``_expand_queries``. The keyword is passed through unchanged so the
+    adapter can build ``"<keyword> in <location>"``.
+    """
+    keyword = (query.get("keywords") or ["jobs"])[0]
+    kw_slug = keyword.replace(" ", "-").replace("/", "-").lower()
     loc_slug = location.replace(",", "").replace(" ", "-").lower() or "national"
     return {
-        "region_id": f"batch-{query['name']}-{loc_slug}",
-        "display_name": f"{query['name']} [{location or 'national'}]",
+        "region_id": f"batch-{query['name']}-{kw_slug}-{loc_slug}"[:100],
+        "display_name": f"{query['name']} [{keyword} in {location or 'national'}]",
         "query_location": location,
         "radius_miles": query.get("radius_miles", 9999),
         "states": query.get("states", []),
@@ -344,21 +369,26 @@ def main() -> None:
             print("  (geo expansion disabled)")
         print(f"{'='*60}")
 
-        # Group expanded pairs by query for readable output
-        by_query: dict[str, list[str]] = {}
+        # Group expanded pairs by query name for readable output — each
+        # expansion row is a (single-keyword, location) call.
+        by_query: dict[str, list[tuple[str, str]]] = {}
         for q, loc in expanded:
-            by_query.setdefault(q["name"], []).append(loc or "national")
+            kw = (q.get("keywords") or [""])[0]
+            by_query.setdefault(q["name"], []).append((kw, loc or "national"))
         for q in queries:
             name = q["name"]
-            locs = by_query.get(name, [])
+            pairs = by_query.get(name, [])
             orig_idx = _all_query_names.index(name) + 1 if name in _all_query_names else "?"
             print(f"\n  [{orig_idx}] {name}")
             print(f"      Keywords: {q['keywords']}")
-            print(f"      Locations: {len(locs)} × {max_pages} pages = {len(locs) * max_pages} requests")
-            for loc in locs:
-                print(f"        - {loc}")
+            print(
+                f"      Calls: {len(pairs)} × {max_pages} pages "
+                f"= {len(pairs) * max_pages} requests max"
+            )
+            for kw, loc in pairs:
+                print(f"        - '{kw}' in {loc}")
 
-        print(f"\n  Total: {total_requests} API requests across {len(expanded)} query-location pairs")
+        print(f"\n  Total: {total_requests} API requests across {len(expanded)} keyword-location pairs")
         print(
             f"  Keys available: {max(0, len(api_keys) - start_key_idx)} x {budget_per_key} = "
             f"{max(0, len(api_keys) - start_key_idx) * budget_per_key} legacy budget"
@@ -465,14 +495,23 @@ def main() -> None:
 
             try:
                 out = agent.process(event)
-                requests_used_on_key += pages
-                total_requests_used += pages
 
-                # Persist the page count for this run regardless of outcome — the
-                # API requests were already billed even if the batch failed.
+                # Approximate actual pages consumed from total_fetched instead
+                # of writing the configured max_pages (issue #164 pragmatic
+                # fix). JSearch returns 10 jobs per full page, and the adapter
+                # early-breaks on empty/partial pages, so:
+                #   pages ≈ max(1, ceil(total_fetched / 10))
+                # This still over-counts 429 retries and cross-source dedup
+                # inside the adapter, but is 5–40× closer to RapidAPI's actual
+                # billing than the old max_pages approach.
+                # Follow-up: expose true pages_consumed from the adapter (#164).
                 run_id = out.payload.get("batch_id") if out else None
+                total_fetched = int(out.payload.get("total_fetched", 0)) if out else 0
+                actual_pages = max(1, (total_fetched + 9) // 10)
+                requests_used_on_key += actual_pages
+                total_requests_used += actual_pages
                 if run_id:
-                    _record_run_requests(run_id, pages)
+                    _record_run_requests(run_id, actual_pages)
 
                 if out and out.payload.get("event_type") == "IngestBatch":
                     staged = out.payload.get("staged_count", 0)

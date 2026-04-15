@@ -19,7 +19,8 @@ location_tiers:
   tier_1:
     - "El Paso, TX"
     - "Las Cruces, NM"
-    - "Ciudad Juarez, Chihuahua, Mexico"
+    # Ciudad Juarez removed — Borderplex workforce board places constituents in
+    # US jobs only. If that policy changes, re-add and set country=mx at runtime.
   # tier_2 template — uncomment post-demo to target secondary metros:
   # tier_2:
   #   - "Los Angeles, CA"
@@ -38,7 +39,12 @@ throttle:
   requests_per_second: 5       # Pro-plan limit; adapter enforces via semaphore + gap
   requests_per_minute: 250     # derived: 5 rps × 60 s × ~83% duty cycle
 
-max_pages: 50                  # pages per query (10 results/page, JSearch max is 50)
+max_pages: 20                  # pages per (keyword × location) call (10 results/page).
+                               # Lowered from 50 after issue #165 3D expansion —
+                               # 47 queries × ~3 kw × 2 cities × 20 pages = 5,640
+                               # worst-case, comfortably inside 9,500 monthly cap.
+                               # Real runs realize ~2-10% of worst-case due to
+                               # early-break on empty/partial pages.
 budget_per_key: 10000          # Pro-plan per-key capacity; effectively disables rotation
                                # off slot 1 unless JSearch actually 429s us.
                                # (Legacy knob — free-tier used 200/mo per key.)
