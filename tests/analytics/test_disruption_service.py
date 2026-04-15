@@ -1,27 +1,4 @@
-"""Tests for disruption fingerprint service (refresh, persist hook, DisruptionRefreshed).
-
-Issue #109: ``test_refresh_covers_all_four_disruption_patterns_across_roles`` proves each
-of Displacement / Augmentation / Transformation / Emergence appears on at least one role
-after a full ``DisruptionFingerprintService.refresh_disruption_fingerprints`` pass (real
-:class:`~analytics.disruption.classifier.DisruptionClassifier`, fake repository).
-
-**Live DB refresh** (after ``dbo.canonical_roles`` is populated, e.g. via
-``python scripts/run_clustering.py`` or ``AnalyticsAgent.process_clustering``):
-
-.. code-block:: bash
-
-   python -c "
-   from common.env import load_repo_root_dotenv
-   load_repo_root_dotenv()
-   from common.data_store.database import session_scope
-   from analytics.disruption import DisruptionFingerprintService
-   with session_scope() as s:
-       r = DisruptionFingerprintService().refresh_disruption_fingerprints(session=s)
-   print('roles_considered', r.roles_considered, 'computed_count', r.computed_count)
-   for fp in r.fingerprints:
-       print(fp.canonical_role_id, fp.disruption_category)
-   "
-"""
+"""Tests for disruption fingerprint service (refresh, persist hook, DisruptionRefreshed)."""
 
 from __future__ import annotations
 
