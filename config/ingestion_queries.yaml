@@ -1,66 +1,121 @@
 # Ingestion query configuration for batch_ingest.py
 #
 # Broad keyword queries targeting AI/agentic roles and adjacent tech.
-# Region filtering happens at enrichment (borderplex_subregion classifier),
-# NOT at ingestion — ingest broadly, filter on consumer side.
+# Geographic partitioning (issue #157): every query runs once per entry in
+# `locations` below. Enrichment still assigns `borderplex_subregion` from
+# normalized location fields — the `locations` array just pushes the JSearch
+# query toward those metros so the 500-result-per-query cap gives us rich
+# Borderplex coverage instead of mostly-national results.
 
-budget_per_key: 200
-max_pages: 50          # pages per query (10 results/page, JSearch max is 50)
+# --- Location tiers (issue #157, Option A) ---
+# Each tier is a named list of locations. Every query below declares an
+# explicit `location_tier: <name>` to expand across, or `location_tier: null`
+# to run once with no geo context.
+#
+# For the demo: tier_1 = Borderplex. After the demo, swap tier_1 contents to
+# the 10 top US tech metros (issue #157 recommendation) without touching the
+# 47 per-query tags below.
+location_tiers:
+  tier_1:
+    - "El Paso, TX"
+    - "Las Cruces, NM"
+    # Ciudad Juarez removed — Borderplex workforce board places constituents in
+    # US jobs only. If that policy changes, re-add and set country=mx at runtime.
+  # tier_2 template — uncomment post-demo to target secondary metros:
+  # tier_2:
+  #   - "Los Angeles, CA"
+  #   - "Denver, CO"
+  #   - "Chicago, IL"
+  #   - "Atlanta, GA"
+  #   - "Washington, DC"
+
+# --- Monthly budget guard (JSearch Pro: 10,000 req / $25) ---
+# Counter is persisted in dbo.job_ingestion_runs.api_requests_used (source='jsearch').
+# The budget lives in YAML (intent); state lives in the DB (single source of truth).
+monthly_request_budget: 9500   # leave 500-req headroom under the 10k Pro cap
+
+# --- Per-request throttle (paces at JSearch Pro-tier ceiling) ---
+throttle:
+  requests_per_second: 5       # Pro-plan limit; adapter enforces via semaphore + gap
+  requests_per_minute: 250     # derived: 5 rps × 60 s × ~83% duty cycle
+
+max_pages: 20                  # pages per (keyword × location) call (10 results/page).
+                               # Lowered from 50 after issue #165 3D expansion —
+                               # 47 queries × ~3 kw × 2 cities × 20 pages = 5,640
+                               # worst-case, comfortably inside 9,500 monthly cap.
+                               # Real runs realize ~2-10% of worst-case due to
+                               # early-break on empty/partial pages.
+budget_per_key: 10000          # Pro-plan per-key capacity; effectively disables rotation
+                               # off slot 1 unless JSearch actually 429s us.
+                               # (Legacy knob — free-tier used 200/mo per key.)
 
 queries:
   # --- Tier 1: Direct agentic/LLM-consumer roles ---
   - name: agentic-ai
     keywords: ["AI agent developer", "autonomous systems engineer", "agentic AI"]
+    location_tier: tier_1
 
 
   - name: prompt-llm
     keywords: ["prompt engineer", "LLM", "generative AI"]
+    location_tier: tier_1
 
 
   - name: ai-safety
     keywords: ["AI safety engineer", "responsible AI", "AI ethics"]
+    location_tier: tier_1
 
 
   - name: ai-research
     keywords: ["AI researcher", "applied scientist", "research engineer"]
+    location_tier: tier_1
 
 
   # --- Tier 2: Strong AI-adjacent (LLM consumers, not model builders) ---
   - name: ai-engineering
     keywords: ["AI engineer", "machine learning engineer"]
+    location_tier: tier_1
 
 
   - name: software-engineering
     keywords: ["software engineer", "backend developer", "full stack"]
+    location_tier: tier_1
 
 
   - name: python-developer
     keywords: ["Python developer", "Python engineer"]
+    location_tier: tier_1
 
 
   - name: product-tech
     keywords: ["technical product manager", "AI product manager"]
+    location_tier: tier_1
 
 
   - name: data-engineering
     keywords: ["data engineer", "data pipeline", "ETL developer"]
+    location_tier: tier_1
 
 
   - name: data-science
     keywords: ["data scientist", "data analyst", "data engineer"]
+    location_tier: tier_1
 
 
   # --- Tier 3: ML/model-building roles (breadth) ---
   - name: ml-scientist
     keywords: ["machine learning scientist", "applied ML", "ML researcher"]
+    location_tier: tier_1
 
 
   - name: deep-learning
     keywords: ["deep learning engineer", "NLP engineer", "computer vision"]
+    location_tier: tier_1
 
 
   - name: ml-ops
     keywords: ["MLOps engineer", "ML infrastructure", "model deployment"]
+    location_tier: tier_1
 
 
   # ============================================================
@@ -73,111 +128,134 @@ queries:
   # --- Healthcare & Life Sciences ---
   - name: healthcare-it
     keywords: ["health informatics specialist", "EHR analyst", "clinical systems analyst", "healthcare application developer"]
+    location_tier: tier_1
 
 
   - name: health-data
     keywords: ["health data analyst", "clinical data analyst", "population health analyst", "healthcare data engineer"]
+    location_tier: tier_1
 
 
   - name: life-sciences-dev
     keywords: ["bioinformatics analyst", "research software developer", "pharmaceutical software developer", "laboratory information systems developer"]
+    location_tier: tier_1
 
 
   # --- Financial Services & Fintech ---
   - name: fintech-dev
     keywords: ["fintech developer", "payments developer", "banking application developer", "financial systems developer"]
+    location_tier: tier_1
 
 
   - name: quant-trading
     keywords: ["quantitative analyst", "trading systems engineer", "algorithmic trading developer", "risk analyst technology"]
+    location_tier: tier_1
 
 
   - name: regtech
     keywords: ["compliance technology analyst", "regulatory technology developer", "AML analyst technology", "financial compliance developer"]
+    location_tier: tier_1
 
 
   # --- Retail & E-commerce ---
   - name: ecommerce-dev
     keywords: ["ecommerce developer", "digital commerce developer", "retail systems developer", "online marketplace developer"]
+    location_tier: tier_1
 
 
   # --- Manufacturing & Industrial ---
   - name: industrial-automation
     keywords: ["automation engineer", "PLC programmer", "SCADA engineer", "industrial automation developer"]
+    location_tier: tier_1
 
 
   - name: manufacturing-dev
     keywords: ["manufacturing software developer", "quality systems developer", "MES developer", "production systems analyst"]
+    location_tier: tier_1
 
 
   # --- Insurance ---
   - name: insurance-tech
     keywords: ["insurance technology analyst", "claims system developer", "actuarial analyst technology", "policy management developer"]
+    location_tier: tier_1
 
 
   # --- Legal Technology ---
   - name: legal-tech
     keywords: ["e-discovery analyst", "legal technology specialist", "litigation support analyst", "contract management developer"]
+    location_tier: tier_1
 
 
   # --- Government & Defense ---
   - name: government-tech
     keywords: ["government software developer", "federal software engineer", "defense software developer", "public sector data analyst"]
+    location_tier: tier_1
 
 
   # --- Media, Gaming & Entertainment ---
   - name: media-gaming-dev
     keywords: ["game developer", "media software engineer", "streaming platform developer", "content management developer"]
+    location_tier: tier_1
 
 
   # --- Education Technology ---
   - name: edtech-dev
     keywords: ["edtech developer", "learning management system developer", "education software developer", "instructional technology developer"]
+    location_tier: tier_1
 
 
   # --- Energy & Utilities ---
   - name: energy-utilities-dev
     keywords: ["energy software developer", "utilities technology developer", "smart grid engineer", "oil gas software developer"]
+    location_tier: tier_1
 
 
   # --- Transportation & Logistics ---
   - name: logistics-dev
     keywords: ["logistics software developer", "supply chain developer", "fleet management developer", "warehouse management developer"]
+    location_tier: tier_1
 
 
   # --- Real Estate & Construction Tech ---
   - name: real-estate-tech
     keywords: ["real estate technology developer", "property management software developer", "construction tech developer", "MLS systems developer"]
+    location_tier: tier_1
 
 
   # --- HR & Workforce Technology ---
   - name: hr-tech-dev
     keywords: ["HRIS developer", "HR technology developer", "talent management developer", "payroll systems developer"]
+    location_tier: tier_1
 
 
   # --- Robotics & Autonomous Systems ---
   - name: robotics-dev
     keywords: ["robotics engineer", "autonomous vehicle software engineer", "embedded systems developer", "drone software developer"]
+    location_tier: tier_1
 
 
   # --- Cybersecurity (distinct titles from earlier queries) ---
   - name: threat-intel
     keywords: ["threat intelligence analyst", "incident response engineer", "digital forensics analyst", "vulnerability researcher"]
+    location_tier: tier_1
 
 
   # --- Marketing & Ad Technology ---
   - name: martech-dev
     keywords: ["marketing technology developer", "ad tech developer", "marketing automation developer", "digital marketing engineer"]
+    location_tier: tier_1
 
 
   # --- RPA & Intelligent Automation ---
   - name: rpa-automation
     keywords: ["RPA developer", "UiPath developer", "Power Automate developer", "intelligent automation developer"]
+    location_tier: tier_1
 
 
   # --- Enterprise AI Deployment (cross-sector glue layer) ---
   - name: enterprise-ai-deploy
     keywords: ["AI integration engineer", "enterprise AI developer", "AI solutions architect", "applied AI engineer"]
+    location_tier: tier_1
 
 
   # ============================================================
@@ -189,51 +267,61 @@ queries:
   # --- Infrastructure & Cloud ---
   - name: devops-sre
     keywords: ["DevOps engineer", "site reliability engineer", "platform engineer"]
+    location_tier: tier_1
 
 
   - name: cloud-architect
     keywords: ["cloud architect", "cloud solutions architect", "AWS architect", "Azure architect"]
+    location_tier: tier_1
 
 
   # --- Security ---
   - name: security-engineer
     keywords: ["security engineer", "application security engineer", "cloud security engineer"]
+    location_tier: tier_1
 
 
   # --- Database & Analytics ---
   - name: database-admin
     keywords: ["database administrator", "database engineer", "SQL developer"]
+    location_tier: tier_1
 
 
   - name: bi-analytics
     keywords: ["business intelligence developer", "BI analyst", "Tableau developer", "Power BI developer"]
+    location_tier: tier_1
 
 
   # --- Frontend & Mobile ---
   - name: frontend-react
     keywords: ["React developer", "frontend engineer", "UI developer"]
+    location_tier: tier_1
 
 
   - name: mobile-developer
     keywords: ["iOS developer", "Android developer", "mobile engineer", "React Native developer"]
+    location_tier: tier_1
 
 
   # --- QA & Testing ---
   - name: qa-automation
     keywords: ["QA automation engineer", "SDET", "test automation engineer"]
+    location_tier: tier_1
 
 
   # --- Networking & Systems ---
   - name: network-engineer
     keywords: ["network engineer", "systems administrator", "infrastructure engineer"]
+    location_tier: tier_1
 
 
   # --- Technical Writing & Support ---
   - name: technical-writer
     keywords: ["technical writer", "API documentation writer", "developer advocate"]
+    location_tier: tier_1
 
 
   # --- Emerging Tech ---
   - name: blockchain-web3
     keywords: ["blockchain developer", "smart contract developer", "Web3 engineer"]
-
+    location_tier: tier_1

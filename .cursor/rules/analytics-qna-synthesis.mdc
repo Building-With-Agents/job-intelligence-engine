@@ -29,8 +29,8 @@ Change models **first**, then prompts, tests, and this rule when behavior shifts
 ## Architecture
 
 1. **Evidence before synthesis:** Build an **`EvidenceBundle`** (tables, counts, periods, citeable facts) from router output **before** the main synthesis LLM call.
-2. **Grounded generation:** Synthesis (Sonnet-tier — Azure OpenAI `chat-gpt41` via `LLM_SYNTHESIS`) may **only paraphrase** facts in the bundle — **no invented statistics**.
-3. **Follow-ups:** Use a cheaper tier (Haiku-tier — Azure OpenAI `chat-gpt41mini` via `LLM_DEFAULT`, routed as `role="classification"`) per runbook; questions must be **contextually relevant**, not generic.
+2. **Grounded generation:** Synthesis (**Sonnet-class**; Azure OpenAI `chat-gpt41` by default via `LLM_SYNTHESIS`) may **only paraphrase** facts in the bundle — **no invented statistics**.
+3. **Follow-ups:** Use a cheaper tier (**Haiku-class**; Azure OpenAI `chat-gpt41mini` by default via `LLM_DEFAULT`, routed as `role="classification"`) per runbook; questions must be **contextually relevant**, not generic.
 4. **No post-hoc citation:** Do not draft the answer first and attach sources afterward.
 
 ## Thresholds (runbook)
