@@ -376,6 +376,8 @@ def build_evidence_bundle(payload: QueryResultPayload) -> EvidenceBundle:
 
     if payload.router_error:
         refusal_reason = f"Query execution failed before evidence could be gathered: {payload.router_error}"
+        if payload.sql_execution_error_detail:
+            refusal_reason = f"{refusal_reason}. PostgreSQL: {payload.sql_execution_error_detail}"
         return EvidenceBundle(
             facts=[],
             period_coverage=period_coverage,
@@ -392,6 +394,7 @@ def build_evidence_bundle(payload: QueryResultPayload) -> EvidenceBundle:
             ),
             refuse_synthesis=True,
             refusal_reason=refusal_reason,
+            sql_execution_error_detail=payload.sql_execution_error_detail,
         )
 
     if not payload.rows:

@@ -82,6 +82,13 @@ class QueryResultPayload(BaseModel):
         default=None,
         description="Set when SQL was not executed or failed validation; synthesis should refuse or explain.",
     )
+    sql_execution_error_detail: str | None = Field(
+        default=None,
+        description=(
+            "When execution fails after guardrails, truncated DB/driver message (single line, "
+            "no user query text) for operators and UI; never log raw user input here."
+        ),
+    )
     correlation_id: str | None = Field(
         default=None,
         description="Optional pipeline id for tracing; do not log PII.",
@@ -144,6 +151,10 @@ class EvidenceBundle(BaseModel):
         default=None,
         description="Shown or logged when refusing; no PII.",
     )
+    sql_execution_error_detail: str | None = Field(
+        default=None,
+        description="Echo of payload.sql_execution_error_detail when SQL execution failed; for UI expanders.",
+    )
 
 
 class SynthesisResponse(BaseModel):
@@ -171,6 +182,10 @@ class SynthesisResponse(BaseModel):
 
     refused: bool = False
     refusal_message: str | None = None
+    sql_execution_error_detail: str | None = Field(
+        default=None,
+        description="PostgreSQL/driver error snippet when execute failed after guardrails; None otherwise.",
+    )
 
     follow_up_questions: list[str] = Field(
         default_factory=list,

@@ -122,3 +122,52 @@ def test_routing_executes_valid_sql_and_returns_synthesis() -> None:
     assert "42" in out.answer_text or "2025-Q1" in out.answer_text
     assert out.cost_breakdown_usd.get("intent_classification") is not None
     assert out.cost_breakdown_usd.get("sql_generation") is not None
+
+
+def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
+    session = MagicMock()
+    session.execute.side_effect = Exception(
+        '(psycopg2.errors.UndefinedColumn) column "bad_col" does not exist\nLINE 1: SELECT bad_col FROM dbo.job_postings'
+    )
+
+    def fake_complete(prompt: str, agent_name: str, **kwargs):
+        if agent_name == "analytics-qna-intent":
+            return {
+                "content": '{"intent_label": "posting_counts", "classification_confidence": 0.9}',
+                "success": True,
+                "extraction_failed": False,
+                "cost_usd": 0.001,
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "model": "m",
+            }
+        return {
+            "content": json.dumps(
+                {
+                    "sql": (
+                        "SELECT bad_col FROM dbo.job_postings "
+                        "WHERE 1=1 LIMIT 100"
+                    )
+                }
+            ),
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.002,
+            "input_tokens": 20,
+            "output_tokens": 10,
+            "model": "m",
+        }
+
+    with patch("analytics.query_engine.routing.complete", side_effect=fake_complete):
+        out = run_guardrailed_analytics_query(
+            QueryRequest(query="Broken column?"),
+            session=session,
+            correlation_id="cid-sql-err",
+        )
+
+    assert out.refused is True
+    assert out.sql_execution_error_detail
+    assert "bad_col" in out.sql_execution_error_detail
+    assert out.refusal_message
+    assert "PostgreSQL:" in out.refusal_message
+    assert "bad_col" in out.refusal_message

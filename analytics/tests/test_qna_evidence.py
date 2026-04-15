@@ -128,6 +128,21 @@ def test_build_evidence_bundle_refuses_router_errors() -> None:
     assert bundle.sufficiency == DataSufficiency.NO_DATA
     assert bundle.blended_confidence == 0.0
     assert "SQL validation failed for non-SELECT statement." in (bundle.refusal_reason or "")
+    assert bundle.sql_execution_error_detail is None
+
+
+def test_build_evidence_bundle_router_error_appends_postgres_detail() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="aggregate_salary",
+        classification_confidence=0.82,
+        router_error="sql_execution_failed:ProgrammingError",
+        sql_execution_error_detail='column "nope" does not exist',
+    )
+    bundle = build_evidence_bundle(payload)
+    assert bundle.sql_execution_error_detail == 'column "nope" does not exist'
+    assert "PostgreSQL:" in (bundle.refusal_reason or "")
+    assert 'column "nope" does not exist' in (bundle.refusal_reason or "")
 
 
 def test_distinct_posting_count_overrides_volume_heuristic() -> None:

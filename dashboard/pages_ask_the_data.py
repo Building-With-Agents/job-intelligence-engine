@@ -59,6 +59,9 @@ def render_ask_the_data() -> None:
 
         if resp.refused:
             st.warning(resp.refusal_message or "Refused")
+            if resp.sql_execution_error_detail:
+                with st.expander("Database error (debug)", expanded=False):
+                    st.code(resp.sql_execution_error_detail, language="text")
 
         if resp.citations:
             with st.expander("Citations", expanded=True):

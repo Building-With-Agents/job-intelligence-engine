@@ -211,6 +211,7 @@ def synthesize_answer(
             volume_warning=flags["volume_warning"],
             refused=True,
             refusal_message=bundle.refusal_reason or _DEFAULT_REFUSAL,
+            sql_execution_error_detail=bundle.sql_execution_error_detail,
             follow_up_questions=[],
             total_cost_usd=ledger.total_usd(),
             cost_breakdown_usd=_cost_breakdown_usd(ledger),

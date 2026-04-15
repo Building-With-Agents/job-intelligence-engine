@@ -28,8 +28,31 @@ from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
 
+_SQL_EXEC_ERR_DETAIL_MAX = 400
+
 AGENT_INTENT = "analytics-qna-intent"
 AGENT_SQL = "analytics-qna-sql"
+
+
+def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXEC_ERR_DETAIL_MAX) -> str:
+    """Single-line, length-capped message for logs and UI (no user query text)."""
+    parts: list[str] = []
+    root = str(exc).strip()
+    if root:
+        parts.append(root)
+    inner = getattr(exc, "__cause__", None)
+    if inner is not None:
+        s = str(inner).strip()
+        if s and s not in parts:
+            parts.append(s)
+    if not parts:
+        return ""
+    raw = " | ".join(parts)
+    raw = re.sub(r"\s+", " ", raw).strip()
+    if len(raw) > max_len:
+        return raw[: max_len - 3].rstrip() + "..."
+    return raw
+
 
 _SCHEMA_HINT = (
     "Allowed tables (PostgreSQL dbo schema only): job_postings, companies, company_addresses, "
@@ -198,10 +221,12 @@ def run_guardrailed_analytics_query(
             correlation_id=correlation_id,
         )
     except Exception as exc:
+        err_detail = _truncate_sql_execution_error(exc)
         log.warning(
             "analytics_qna_sql_execution_failed",
             query_fingerprint=fp,
             error_type=type(exc).__name__,
+            error_detail=err_detail or None,
         )
         payload = QueryResultPayload(
             request=request,
@@ -209,6 +234,7 @@ def run_guardrailed_analytics_query(
             classification_confidence=classification_confidence,
             executed_sql=normalized_sql[:500],
             router_error=f"sql_execution_failed:{type(exc).__name__}",
+            sql_execution_error_detail=err_detail or None,
             correlation_id=correlation_id,
         )
 
