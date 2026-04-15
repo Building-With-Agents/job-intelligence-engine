@@ -1,6 +1,11 @@
 """JSearch source adapter - fetches job postings via RapidAPI JSearch (httpx).
 
 API key from environment: JSEARCH_API_KEY. No hardcoded credentials.
+
+Rate limiting (Pro plan, issue #157): per-event-loop ``asyncio.Semaphore``
+plus a minimum inter-request gap. Reads ``JSEARCH_RPS`` / ``JSEARCH_RPM``
+env vars on first use (defaults 5 / 250) so batch_ingest.py can set them
+from YAML throttle config before the first fetch.
 """
 
 from __future__ import annotations
@@ -8,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import os
+import time as _time
 from datetime import datetime
 
 import httpx
@@ -20,6 +26,11 @@ from ingestion.sources.base_adapter import SourceAdapter
 JSEARCH_BASE_URL = "https://jsearch.p.rapidapi.com/search"
 JSEARCH_HOST = "jsearch.p.rapidapi.com"
 log = structlog.get_logger()
+
+# --- Rate-limit state (lazy per-event-loop init) ---
+_RPS_DEFAULT = 5
+_RPM_DEFAULT = 250
+_rps_state: dict[int, dict] = {}
 
 
 def _fingerprint(source: str, external_id: str, title: str, company: str, date_posted: str) -> str:
@@ -61,6 +72,51 @@ def _retry_delay_seconds(retry_after: str | None, attempt: int, base_delay: int,
         except (TypeError, ValueError):
             pass
     return min(max_delay, base_delay * (2 ** attempt))
+
+
+def _get_rps_state() -> dict:
+    """Return the per-event-loop throttle state, initializing on first call."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Not inside a running loop — return a one-shot dummy state so callers
+        # that invoke helpers outside a loop don't crash.
+        rps = max(1, _env_int("JSEARCH_RPS", _RPS_DEFAULT))
+        return {
+            "semaphore": asyncio.Semaphore(rps),
+            "lock": asyncio.Lock(),
+            "min_gap": 1.0 / rps,
+            "last_start": 0.0,
+        }
+    key = id(loop)
+    state = _rps_state.get(key)
+    if state is None:
+        rps = max(1, _env_int("JSEARCH_RPS", _RPS_DEFAULT))
+        state = {
+            "semaphore": asyncio.Semaphore(rps),
+            "lock": asyncio.Lock(),
+            "min_gap": 1.0 / rps,
+            "last_start": 0.0,
+        }
+        _rps_state[key] = state
+    return state
+
+
+async def _respect_rate_limit() -> None:
+    """Sleep if the previous request started less than ``min_gap`` seconds ago."""
+    state = _get_rps_state()
+    async with state["lock"]:
+        now = _time.monotonic()
+        elapsed = now - state["last_start"]
+        wait = state["min_gap"] - elapsed
+        if wait > 0:
+            await asyncio.sleep(wait)
+        state["last_start"] = _time.monotonic()
+
+
+def _reset_rate_limit_state_for_tests() -> None:
+    """Test helper — drop all cached per-loop throttle state."""
+    _rps_state.clear()
 
 
 def _job_to_raw_record(job: dict, region_id: str) -> RawJobRecord:
@@ -181,22 +237,25 @@ class JSearchAdapter(SourceAdapter):
 
         all_records: list[RawJobRecord] = []
         seen_hashes: set[str] = set()
+        rps_state = _get_rps_state()
         async with httpx.AsyncClient(timeout=30.0) as client:
             for page in range(1, num_pages + 1):
                 attempt = 0
                 while True:
-                    response = await client.get(
-                        JSEARCH_BASE_URL,
-                        params={
-                            "query": query,
-                            "page": str(page),
-                            "num_pages": "1",
-                        },
-                        headers={
-                            "X-RapidAPI-Key": api_key,
-                            "X-RapidAPI-Host": JSEARCH_HOST,
-                        },
-                    )
+                    async with rps_state["semaphore"]:
+                        await _respect_rate_limit()
+                        response = await client.get(
+                            JSEARCH_BASE_URL,
+                            params={
+                                "query": query,
+                                "page": str(page),
+                                "num_pages": "1",
+                            },
+                            headers={
+                                "X-RapidAPI-Key": api_key,
+                                "X-RapidAPI-Host": JSEARCH_HOST,
+                            },
+                        )
                     try:
                         response.raise_for_status()
                         break
