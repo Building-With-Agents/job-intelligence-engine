@@ -8,6 +8,8 @@ fixtures or ``ingestion_run_id`` teardown.
 from __future__ import annotations
 
 import json
+import os
+import time
 from unittest.mock import patch
 
 import pytest
@@ -72,6 +74,7 @@ def test_classify_covers_all_intent_categories(mock_complete, question, expected
     out = classify_workforce_question(question)
     assert out["intent"] == expected_intent
     assert out["confidence"] == pytest.approx(0.88)
+    assert out["needs_clarification"] is False
     assert set(out["extracted_entities"].keys()) == {
         "geographic_terms",
         "role_names",
@@ -106,6 +109,7 @@ def test_ambiguous_question_low_confidence(mock_complete):
     out = classify_workforce_question("Are nurses trending up or is it just seasonal hiring noise near the border?")
     assert out["intent"] == "trend"
     assert out["confidence"] == pytest.approx(0.52)
+    assert out["needs_clarification"] is True
     assert "Borderplex" in out["extracted_entities"]["geographic_terms"]
     assert len(out["extracted_entities"]["time_references"]) == 2
 
@@ -129,6 +133,7 @@ def test_multi_topic_question_primary_intent(mock_complete):
     )
     assert out["intent"] == "comparison"
     assert out["confidence"] < 0.6
+    assert out["needs_clarification"] is True
 
 
 @patch("analytics.query_engine.intent.complete")
@@ -137,6 +142,7 @@ def test_no_clear_intent_maps_to_other(mock_complete):
     out = classify_workforce_question("asdf qqq ???")
     assert out["intent"] == "other"
     assert out["confidence"] == pytest.approx(0.25)
+    assert out["needs_clarification"] is True
 
 
 @patch("analytics.query_engine.intent.complete")
@@ -166,6 +172,7 @@ def test_invalid_json_returns_other(mock_complete):
     out = classify_workforce_question("Any question")
     assert out["intent"] == "other"
     assert out["confidence"] == 0.0
+    assert out["needs_clarification"] is True
 
 
 @patch("analytics.query_engine.intent.complete")
@@ -178,12 +185,14 @@ def test_llm_failure_returns_other(mock_complete):
     out = classify_workforce_question("Trend for baristas?")
     assert out["intent"] == "other"
     assert out["confidence"] == 0.0
+    assert out["needs_clarification"] is True
 
 
 @patch("analytics.query_engine.intent.complete")
 def test_empty_question_no_llm_call(mock_complete):
     out = classify_workforce_question("   ")
     assert out["intent"] == "other"
+    assert out["needs_clarification"] is True
     mock_complete.assert_not_called()
 
 
@@ -206,6 +215,7 @@ def test_complete_raises_returns_other(mock_complete):
     out = classify_workforce_question("Any workforce question")
     assert out["intent"] == "other"
     assert out["confidence"] == 0.0
+    assert out["needs_clarification"] is True
 
 
 @patch("analytics.query_engine.intent.complete")
@@ -225,3 +235,41 @@ def test_entity_coercion_string_to_list(mock_complete):
     out = classify_workforce_question("Daily workflow for a mechanic?")
     assert out["extracted_entities"]["geographic_terms"] == ["Austin"]
     assert out["extracted_entities"]["skill_names"] == ["hydraulics"]
+
+
+@patch("analytics.query_engine.intent.complete")
+def test_confidence_threshold_boundary(mock_complete):
+    mock_complete.return_value = _ok_llm_response(
+        {
+            "intent": "trend",
+            "confidence": 0.55,
+            "extracted_entities": {
+                "geographic_terms": [],
+                "role_names": [],
+                "skill_names": ["python"],
+                "time_references": ["last year"],
+            },
+        }
+    )
+    out = classify_workforce_question("Is Python demand up this year?")
+    assert out["intent"] == "trend"
+    assert out["needs_clarification"] is False
+
+
+@pytest.mark.live_llm
+def test_live_intent_classification_mini_benchmark():
+    # Optional: run with --live and configured LLM credentials.
+    samples: list[tuple[str, str]] = _INTENT_SAMPLES
+    start = time.perf_counter()
+    correct = 0
+    for question, expected_intent in samples:
+        out = classify_workforce_question(question)
+        if out["intent"] == expected_intent:
+            correct += 1
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    accuracy = correct / len(samples)
+    per_call_ms = elapsed_ms / len(samples)
+
+    # Keep targets realistic for CI-adjacent local runs; strict enough for Week 8 signal.
+    assert accuracy >= float(os.getenv("WEEK8_INTENT_MIN_ACCURACY", "0.7"))
+    assert per_call_ms <= float(os.getenv("WEEK8_INTENT_MAX_LATENCY_MS", "5000"))
