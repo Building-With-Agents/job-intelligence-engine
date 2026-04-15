@@ -275,6 +275,11 @@ CREATE TABLE IF NOT EXISTS dbo.geo_demand_weekly (
 _SKILL_DEMAND_WEEKLY_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.skill_demand_weekly ADD COLUMN IF NOT EXISTS employer_count INTEGER NOT NULL DEFAULT 0",
 ]
+
+# Issue #157: JSearch Pro-plan monthly budget counter — one column on job_ingestion_runs
+_JOB_INGESTION_RUNS_ALTER_STATEMENTS = [
+    "ALTER TABLE dbo.job_ingestion_runs ADD COLUMN IF NOT EXISTS api_requests_used INTEGER NOT NULL DEFAULT 0",
+]
 _SERIAL_SEQUENCE_TARGETS = (
     ("raw_ingested_jobs", "id"),
     ("job_ingestion_runs", "id"),
@@ -569,6 +574,18 @@ def run_migrations(engine: Engine) -> None:
         except Exception as exc:
             log.warning(
                 "migration_skill_demand_weekly_alter_skipped",
+                statement=stmt,
+                error=str(exc),
+            )
+
+    # Issue #157: JSearch Pro-plan monthly API-request counter on job_ingestion_runs
+    for stmt in _JOB_INGESTION_RUNS_ALTER_STATEMENTS:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(stmt))
+        except Exception as exc:
+            log.warning(
+                "migration_job_ingestion_runs_alter_skipped",
                 statement=stmt,
                 error=str(exc),
             )

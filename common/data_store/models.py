@@ -143,6 +143,8 @@ class JobIngestionRun(Base):
     staged_count: Mapped[int] = mapped_column(Integer, default=0)
     dedup_count: Mapped[int] = mapped_column(Integer, default=0)
     error_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Upstream API requests consumed by this run (JSearch Pro budget tracker, issue #157).
+    api_requests_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
