@@ -1,4 +1,27 @@
-"""Tests for disruption fingerprint service (refresh, persist hook, DisruptionRefreshed)."""
+"""Tests for disruption fingerprint service (refresh, persist hook, DisruptionRefreshed).
+
+Issue #109: ``test_refresh_covers_all_four_disruption_patterns_across_roles`` proves each
+of Displacement / Augmentation / Transformation / Emergence appears on at least one role
+after a full ``DisruptionFingerprintService.refresh_disruption_fingerprints`` pass (real
+:class:`~analytics.disruption.classifier.DisruptionClassifier`, fake repository).
+
+**Live DB refresh** (after ``dbo.canonical_roles`` is populated, e.g. via
+``python scripts/run_clustering.py`` or ``AnalyticsAgent.process_clustering``):
+
+.. code-block:: bash
+
+   python -c "
+   from common.env import load_repo_root_dotenv
+   load_repo_root_dotenv()
+   from common.data_store.database import session_scope
+   from analytics.disruption import DisruptionFingerprintService
+   with session_scope() as s:
+       r = DisruptionFingerprintService().refresh_disruption_fingerprints(session=s)
+   print('roles_considered', r.roles_considered, 'computed_count', r.computed_count)
+   for fp in r.fingerprints:
+       print(fp.canonical_role_id, fp.disruption_category)
+   "
+"""
 
 from __future__ import annotations
 
@@ -16,6 +39,7 @@ from analytics.disruption import (
     build_period_comparison,
     normalize_temporal_snapshots,
 )
+from analytics.disruption.classifier import DisruptionClassifier
 from analytics.disruption.models import RoleDisruptionMetrics
 from analytics.disruption.service import (
     _fingerprints_to_category_counts,
@@ -39,6 +63,84 @@ class _FakeRepository(DisruptionFingerprintRepository):
         return [
             TemporalPeriodSnapshot(temporal_period="post_gpt4", posting_count=3 if role_id == "role-a" else 1),
         ]
+
+    def save_fingerprints(self, results: list[DisruptionFingerprintRecord], session=None) -> None:
+        self.saved = list(results)
+
+
+# Snapshots aligned with tests/analytics/test_disruption_classifier.py (one pattern each).
+_FOUR_PATTERN_ROLE_IDS: tuple[str, str, str, str] = (
+    "role-verify-transformation",
+    "role-verify-displacement",
+    "role-verify-augmentation",
+    "role-verify-emergence",
+)
+
+_FOUR_PATTERN_SNAPSHOTS: dict[str, list[TemporalPeriodSnapshot]] = {
+    "role-verify-transformation": [
+        TemporalPeriodSnapshot(
+            temporal_period="early_genai",
+            posting_count=100,
+            skill_mix={"excel": 1.0, "powerpoint": 0.8},
+        ),
+        TemporalPeriodSnapshot(
+            temporal_period="post_gpt4",
+            posting_count=100,
+            skill_mix={"python": 0.9, "sql": 0.7},
+        ),
+    ],
+    "role-verify-displacement": [
+        TemporalPeriodSnapshot(
+            temporal_period="pre_chatgpt",
+            posting_count=100,
+            tool_mix={"excel": 1.0},
+            responsibility_density=0.6,
+            ai_requirement_density=0.05,
+        ),
+        TemporalPeriodSnapshot(
+            temporal_period="agentic_era",
+            posting_count=70,
+            tool_mix={"excel": 0.8, "chatgpt": 0.7},
+            responsibility_density=0.45,
+            ai_requirement_density=0.2,
+        ),
+    ],
+    "role-verify-augmentation": [
+        TemporalPeriodSnapshot(
+            temporal_period="pre_chatgpt",
+            posting_count=100,
+            tool_mix={"excel": 1.0},
+            ai_requirement_density=0.05,
+        ),
+        TemporalPeriodSnapshot(
+            temporal_period="agentic_era",
+            posting_count=105,
+            tool_mix={"excel": 0.8, "copilot": 0.5},
+            ai_requirement_density=0.18,
+        ),
+    ],
+    "role-verify-emergence": [
+        TemporalPeriodSnapshot(
+            temporal_period="agentic_era",
+            posting_count=25,
+            tool_mix={"langgraph": 0.7, "gpt-4": 0.9},
+            ai_requirement_density=0.4,
+        ),
+    ],
+}
+
+
+class _FourPatternRepository(DisruptionFingerprintRepository):
+    """Yields four canonical role ids with classifier-proven snapshots (issue #109)."""
+
+    def __init__(self) -> None:
+        self.saved: list[DisruptionFingerprintRecord] | None = None
+
+    def fetch_canonical_roles(self, session=None) -> list[str]:
+        return list(_FOUR_PATTERN_ROLE_IDS)
+
+    def fetch_period_snapshots(self, role_id: str, session=None) -> list[TemporalPeriodSnapshot]:
+        return list(_FOUR_PATTERN_SNAPSHOTS.get(role_id, []))
 
     def save_fingerprints(self, results: list[DisruptionFingerprintRecord], session=None) -> None:
         self.saved = list(results)
@@ -105,6 +207,51 @@ def test_refresh_disruption_fingerprints_fake_repository_happy_path() -> None:
     assert all(len(r.period_comparison) == 3 for r in out.fingerprints)
     assert repo.saved is not None
     assert len(repo.saved) == 2
+
+
+def test_refresh_covers_all_four_disruption_patterns_across_roles() -> None:
+    """Issue #109: each pattern appears on ≥1 role; event counts match fingerprint rows."""
+    bus = MagicMock()
+    repo = _FourPatternRepository()
+    svc = DisruptionFingerprintService(
+        repository=repo,
+        event_bus=bus,
+        classifier=DisruptionClassifier(),
+    )
+    out = svc.refresh_disruption_fingerprints(session=None, correlation_id="corr-four-pattern")
+
+    assert out.roles_considered == 4
+    assert out.computed_count == 4
+    assert len(out.fingerprints) == 4
+
+    patterns = {"Displacement", "Augmentation", "Transformation", "Emergence"}
+    union: set[str] = set()
+    for fp in out.fingerprints:
+        union |= set(fp.disruption_category)
+        assert fp.canonical_role_id in _FOUR_PATTERN_SNAPSHOTS
+    assert patterns <= union, f"missing patterns: {patterns - union}"
+
+    role_to_cats = {fp.canonical_role_id: list(fp.disruption_category) for fp in out.fingerprints}
+    assert "Transformation" in role_to_cats["role-verify-transformation"]
+    assert "Displacement" in role_to_cats["role-verify-displacement"]
+    assert "Augmentation" in role_to_cats["role-verify-augmentation"]
+    assert "Emergence" in role_to_cats["role-verify-emergence"]
+
+    rc, d_ct, a_ct, t_ct, e_ct = _fingerprints_to_category_counts(out.fingerprints)
+    assert rc == 4
+    assert d_ct >= 1 and a_ct >= 1 and t_ct >= 1 and e_ct >= 1
+
+    bus.publish.assert_called_once()
+    env = bus.publish.call_args[0][0]
+    assert env.correlation_id == "corr-four-pattern"
+    assert env.payload["role_count"] == 4
+    assert env.payload["displacement_count"] == d_ct
+    assert env.payload["augmentation_count"] == a_ct
+    assert env.payload["transformation_count"] == t_ct
+    assert env.payload["emergence_count"] == e_ct
+
+    assert repo.saved is not None
+    assert len(repo.saved) == 4
 
 
 def test_hash_determinism_end_to_end_same_snapshots_same_fingerprint() -> None:
