@@ -1,0 +1,101 @@
+---
+description: "Pair A — disruption fingerprints per canonical role, persisted rows, DisruptionRefreshed (#108–#109)"
+alwaysApply: false
+globs:
+  - "analytics/disruption/**"
+  - "common/events/disruption_refreshed.py"
+  - "common/events/tests/test_disruption_refreshed.py"
+  - "common/data_store/models.py"
+  - "common/data_store/migrations.py"
+---
+
+# Disruption fingerprints (Pair A)
+
+Use this rule when changing **`analytics/disruption/`**, the **`DisruptionFingerprint`** persistence model / table, or **`DisruptionRefreshed`** payloads.
+
+**Related:** `.cursor/rules/event-contracts.mdc` (catalog), `.cursor/rules/canonical-role-clustering.mdc` (upstream `canonical_roles`).
+
+---
+
+## 1. Purpose / scope
+
+| Topic | Contract |
+|-------|----------|
+| **Owner** | `analytics/disruption` — one refresh pass per canonical role id returned from the `canonical_roles` read path (schema-qualified SQL in the repository). |
+| **Live refresh** | Fingerprint rows are only computed for roles that exist in `canonical_roles`. Those rows are populated by the **canonical-role clustering flow** (see `.cursor/rules/canonical-role-clustering.mdc`). If `canonical_roles` is **empty**, a live refresh completes successfully but produces **zero** fingerprints. |
+| **Patterns** | Four labels (string literals): **`Displacement`**, **`Augmentation`**, **`Transformation`**, **`Emergence`**. |
+| **Multi-label** | A single role may receive **multiple** categories in `disruption_category`; downstream counts count **rows that include** each label (a row with two labels increments two buckets). |
+| **Ordering** | Classifier returns labels in fixed order: Displacement → Augmentation → Transformation → Emergence (see `DisruptionClassifier`). |
+| **Lineage** | Disruption output is **downstream** of canonical-role population and posting/extraction signals; it is **not** a standalone source of truth for roles or hiring demand. |
+
+Do not fold this logic into unrelated agents; keep repository + service boundaries.
+
+---
+
+## 2. Key files
+
+| Path | Role |
+|------|------|
+| `analytics/disruption/models.py` | `TemporalPeriodSnapshot`, `RoleDisruptionMetrics`, `DisruptionFingerprintRecord`, hash material helpers. |
+| `analytics/disruption/repository.py` | Read `canonical_roles` + period aggregates; `save_fingerprints` → ORM merge. |
+| `analytics/disruption/service.py` | `DisruptionFingerprintService.refresh_disruption_fingerprints`; classifier, persist, optional bus publish. |
+| `analytics/disruption/classifier.py` | `DisruptionClassifier` — maps metrics to pattern list; env-tunable thresholds (`DISRUPTION_*`). |
+| `common/events/disruption_refreshed.py` | `DisruptionRefreshedPayload`, `build_disruption_refreshed_envelope` — **authoritative** event field names and types. |
+
+**ORM / DDL authority:** `DisruptionFingerprint` in `common/data_store/models.py`; idempotent table DDL in `common/data_store/migrations.py` (schema resolved at deploy time, consistent with repository `JIE_SQL_SCHEMA` / `information_schema` behavior).
+
+---
+
+## 3. Output schema contract (persisted `DisruptionFingerprint` rows)
+
+**Primary key:** `canonical_role_id` (TEXT) — one row per role per refresh (merge overwrites).
+
+| Column / field | Type (logical) | Notes |
+|----------------|----------------|--------|
+| `canonical_role_id` | str (PK) | Stable id from `canonical_roles.role_id` when using live repository. |
+| `disruption_category` | JSONB array of str | Multi-label list; values are the four pattern names above. |
+| `disruption_intensity` | float | Persisted scalar; default `0.0` if unset on record. |
+| `skill_velocity` | JSONB array | List of objects (e.g. skill change summaries). |
+| `tool_transition` | JSONB array | List of objects (period-pair tool deltas). |
+| `task_shift` | JSONB array | List of objects. |
+| `responsibility_expansion` | float | Scalar. |
+| `ai_intensity_trend` | text | e.g. trend label string from service heuristics. |
+| `workflow_restructuring_score` | float | Bounded heuristic in `[0, 1]` in normal operation. |
+| `trajectory` | text | Placeholder / summary label (e.g. `stable`). |
+| `period_comparison` | JSONB array | Serialized period-to-period comparisons (dict rows). |
+| `content_fingerprint` | text | SHA-256 hex over canonical hash material (role + snapshots + categories). |
+| `computed_at` | timestamptz | Batch timestamp on persist (UTC). |
+
+**Breaking changes:** require migration + coordinated bump of `DisruptionRefreshedPayload.schema_version` if consumers depend on removed fields.
+
+---
+
+## 4. Event contract — `DisruptionRefreshed`
+
+Producer: **analytics** path after fingerprint refresh. Payload is validated by **`DisruptionRefreshedPayload`** (`extra="forbid"`).
+
+**Per-pattern counts** (`displacement_count`, …, `emergence_count`) use the same **multi-label row semantics** as `_fingerprints_to_category_counts` in `analytics/disruption/service.py`: each count is the number of fingerprint rows whose `disruption_category` **includes** that label (multi-label rows increment multiple buckets).
+
+| Payload key | Type | Meaning |
+|-------------|------|---------|
+| `event_type` | str | Constant `"DisruptionRefreshed"`. |
+| `role_count` | int ≥ 0 | Number of fingerprint rows / roles in the refresh. |
+| `displacement_count` | int ≥ 0 | Rows whose `disruption_category` includes **Displacement**. |
+| `augmentation_count` | int ≥ 0 | Includes **Augmentation**. |
+| `transformation_count` | int ≥ 0 | Includes **Transformation**. |
+| `emergence_count` | int ≥ 0 | Includes **Emergence**. |
+| `refresh_duration_ms` | int ≥ 0 | Wall duration of the refresh pass. |
+| `schema_version` | str | Default **`"1.0"`**; increment only on breaking payload changes. |
+
+Envelope: `agent_id` **`analytics-agent`**, `correlation_id` propagated by caller (see `build_disruption_refreshed_envelope`).
+
+---
+
+## 5. Editing guidance
+
+1. **No silent renames** — JSON payload keys on `DisruptionRefreshed` and ORM column names on `DisruptionFingerprint` are part of the downstream contract; rename only with migrations + consumer updates + `schema_version` bump when breaking.
+2. **Sparse periods** — `normalize_temporal_snapshots` and classifier helpers must stay safe when early temporal buckets are missing; do not assume four fully observed periods.
+3. **Multi-label** — Do not collapse to a single label in persistence or events; counts and `disruption_category` must remain consistent with `_fingerprints_to_category_counts` in `analytics/disruption/service.py`.
+4. **Persistence / bus** — `save_fingerprints` uses `session.merge`; event emission uses `build_disruption_refreshed_envelope`; do not bypass for ad-hoc dict shapes.
+5. **Scope** — Do not hardcode unrelated table layouts here; for `RecordEnriched` / enrichment enums use `.cursor/rules/integration-schema.mdc`.
+6. **Tests** — `tests/analytics/test_disruption_service.py` verifies all four patterns in **controlled test data** (fake repository + real service/classifier). **Live** path coverage over repository SQL and persisted rows depends on **`canonical_roles` (and joinable postings) existing**; optional persist smoke: `tests/analytics/test_disruption_fingerprints_db.py` (needs `PYTHON_DATABASE_URL` + migrations). Classifier rules: `tests/analytics/test_disruption_classifier.py`.
