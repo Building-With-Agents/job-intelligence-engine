@@ -81,7 +81,7 @@ Same delivery; split by layer to reduce coupling and review risk. Coordinate on 
 
 | Partner | Alignment |
 |---------|-----------|
-| **Intent + SQL routing** | They own populating **`QueryResultPayload`**. If **`intent.py` / `router.py`** are not in the tree yet, keep using **`fixtures.py`** / stubs per the frozen agreement; the research doc assumes those modules exist when merged. |
+| **Intent + SQL routing** | Implemented as **`analytics/query_engine/routing.py`** (`run_guardrailed_analytics_query`) + **`sql_guardrails.py`**; Streamlit **Ask the Data** calls it with a read-only session. |
 | **Analytics agent / HTTP Q&A** | Response shape should expose citations, flags, follow-ups, and total cost when wired. |
 | **Streamlit “Ask the Data”** | Surface warnings, sample size, and periods. |
 | **Observability** | Preserve model/tokens/cost tracing via existing adapter and audit patterns. |
@@ -92,13 +92,13 @@ Same delivery; split by layer to reduce coupling and review risk. Coordinate on 
 
 - [x] `analytics/query_engine/synthesis.py` — production synthesis path (not only stubs).
 - [x] `analytics/query_engine/evidence.py` — production **`build_evidence_bundle`**.
-- [ ] Evidence citation: claims trace to **table / count / period** where applicable.
+- [x] Evidence citation: claims trace to **table / count / period** where applicable (`EvidenceCitation` + UI / Streamlit).
 - [x] Confidence, volume, temporal, and refusal behavior per runbook.
 - [x] 2–3 contextual follow-up questions (cheaper tier).
 - [x] Per-query **total** LLM cost across legs.
 - [x] Tests: unit (policy), integration (mock LLM), runbook spot cases.
 - [x] Short findings note (tested / found / recommendation / tradeoffs / evidence) per team convention.
-- [ ] Post-generation grounding hardening: reject or fall back when synthesized numeric claims are not supported by **`EvidenceBundle`**.
+- [x] Post-generation grounding hardening: reject or fall back when synthesized numeric claims are not supported by **`EvidenceBundle`** (`grounding.py` + synthesis retry + tests).
 
 ---
 
@@ -106,9 +106,9 @@ Same delivery; split by layer to reduce coupling and review risk. Coordinate on 
 
 - [x] No PII in logs; structured reason codes where helpful.
 - [x] CI runs tests without live LLM and without mutating shared audit tables (see **`testing-standards.mdc`**).
-- [ ] Env and model-tier usage documented for operators.
+- [x] Env and model-tier usage documented for operators (`.env.example` — `ANALYTICS_QNA_LIVE`, `LLM_*` for Q&A).
 - [x] Handoff note for routing owners: **`QueryResultPayload`** field expectations after guardrailed SQL.
-- [ ] PR references **#117** and the **runbook** and/or **`.cursor/rules/analytics-qna-synthesis.mdc`**.
+- [x] PR references **#117** and the **runbook** and/or **`.cursor/rules/analytics-qna-synthesis.mdc`** (see `docs/COMMIT_LOG-week08-qna-synthesis.md` + this file).
 
 ### Routing handoff note
 

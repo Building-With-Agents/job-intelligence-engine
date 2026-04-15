@@ -32,6 +32,9 @@ Change models **first**, then prompts, tests, and this rule when behavior shifts
 2. **Grounded generation:** Synthesis (**Sonnet-class**; Azure OpenAI `chat-gpt41` by default via `LLM_SYNTHESIS`) may **only paraphrase** facts in the bundle — **no invented statistics**.
 3. **Follow-ups:** Use a cheaper tier (**Haiku-class**; Azure OpenAI `chat-gpt41mini` by default via `LLM_DEFAULT`, routed as `role="classification"`) per runbook; questions must be **contextually relevant**, not generic.
 4. **No post-hoc citation:** Do not draft the answer first and attach sources afterward.
+5. **Post-generation grounding:** After the main synthesis call, `verify_answer_grounding` checks numeric tokens in `answer_text` against the evidence corpus; on failure, one constrained retry then a safe template (`grounding.py`).
+6. **Temporal line:** Final `answer_text` must include `period_coverage` (deterministic `Data period: …` prefix when missing).
+7. **NL→SQL security:** User text is never executed as SQL; only `validate_sql`-approved strings run on a read-only session (`routing.py`, `sql_guardrails.py`). Prompts use a fixed schema hint — no connection strings or secrets.
 
 ## Thresholds (runbook)
 
@@ -51,8 +54,9 @@ Distinguish **zero rows** from **small but non-zero sample**.
 
 ## Upstream integration
 
-- **Intent + SQL routing** (separate workstream) produces **`QueryResultPayload`** after guardrailed execution.
-- Share **`schemas.py`** with that code path. If routing is not merged, use **fixtures/stubs** matching `QueryResultPayload` so synthesis and evidence logic remain testable; document in PR **#117** and, if the public contract changes, `docs/planning/ARCHITECTURE_DEEP.md`.
+- **`run_guardrailed_analytics_query`** in `analytics/query_engine/routing.py` produces **`QueryResultPayload`** after guardrailed execution, then calls **`run_analytics_qna`**. Streamlit **Ask the Data** (`dashboard/pages_ask_the_data.py`) is the shipped entrypoint; REST `POST /analytics/query` is not in this repo yet.
+- Optional **`QueryResultPayload.distinct_posting_count`** when SQL returns a true distinct posting count; otherwise volume uses a conservative **max** of per-row count columns when multiple rows exist.
+- Share **`schemas.py`** with all callers; document in PR **#117** and, if the public contract changes, `docs/planning/ARCHITECTURE_DEEP.md`.
 
 ## Production bar
 

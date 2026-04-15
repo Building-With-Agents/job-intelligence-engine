@@ -438,22 +438,20 @@ def _page_record_journey_db() -> None:
             step=100,
             key="rj_raw_offset",
         )
-        st.caption(
-            "Use offset to page into older raw ingested jobs. Normalization status is looked up per row in SQL."
-        )
+        st.caption("Use offset to page into older raw ingested jobs. Normalization status is looked up per row in SQL.")
 
     raw_df, warn_raw = _load_raw_jobs(limit=int(rj_limit), offset=int(rj_offset))
     if warn_raw:
         st.warning(warn_raw)
     if raw_df.empty:
         if not warn_raw:
-            st.info(
-                "No ingested records in this window — try a smaller offset or verify the database."
-            )
+            st.info("No ingested records in this window — try a smaller offset or verify the database.")
         return
 
     lim_clamped, off_clamped = _clamp_list_window(int(rj_limit), int(rj_offset))
-    st.caption(f"Loaded raw rows **{off_clamped + 1}–{off_clamped + len(raw_df)}** (limit {lim_clamped}, offset {off_clamped}).")
+    st.caption(
+        f"Loaded raw rows **{off_clamped + 1}–{off_clamped + len(raw_df)}** (limit {lim_clamped}, offset {off_clamped})."
+    )
 
     # -- Record selector
     options = []
@@ -578,8 +576,7 @@ def _page_record_journey_db() -> None:
 def _page_batch_insights_db() -> None:
     st.title("Batch Insights")
     st.caption(
-        "Aggregate charts use **full-table SQL** (GROUP BY / percentiles). "
-        "Recent records are a 50-row sample only."
+        "Aggregate charts use **full-table SQL** (GROUP BY / percentiles). Recent records are a 50-row sample only."
     )
 
     try:
@@ -678,12 +675,7 @@ def _page_batch_insights_db() -> None:
     hist_df = bundle["salary_hist_df"]
     h_lo = bundle.get("salary_hist_lo")
     h_hi = bundle.get("salary_hist_hi")
-    if (
-        not hist_df.empty
-        and "cnt" in hist_df.columns
-        and h_lo is not None
-        and h_hi is not None
-    ):
+    if not hist_df.empty and "cnt" in hist_df.columns and h_lo is not None and h_hi is not None:
         st.markdown("**Minimum salary (10 equal-width buckets)** — axis shows USD range per bucket.")
         h = series_from_salary_histogram(hist_df, float(h_lo), float(h_hi))
         st.bar_chart(h)
@@ -722,9 +714,7 @@ def _page_run_summary_json(entries: list[dict]) -> None:
 
     if not entries:
         st.error(
-            f"No run log found at `{_RUN_LOG_PATH}`.  \n"
-            "Run the pipeline first:  \n"
-            "```\npython pipeline_runner.py\n```"
+            f"No run log found at `{_RUN_LOG_PATH}`.  \nRun the pipeline first:  \n```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -804,9 +794,7 @@ def _page_record_journey_json(entries: list[dict]) -> None:
 
     if not entries:
         st.error(
-            f"No run log found at `{_RUN_LOG_PATH}`.  \n"
-            "Run the pipeline first:  \n"
-            "```\npython pipeline_runner.py\n```"
+            f"No run log found at `{_RUN_LOG_PATH}`.  \nRun the pipeline first:  \n```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -896,9 +884,7 @@ def _page_batch_insights_json(entries: list[dict]) -> None:
 
     if not entries:
         st.error(
-            f"No run log found at `{_RUN_LOG_PATH}`.  \n"
-            "Run the pipeline first:  \n"
-            "```\npython pipeline_runner.py\n```"
+            f"No run log found at `{_RUN_LOG_PATH}`.  \nRun the pipeline first:  \n```\npython pipeline_runner.py\n```"
         )
         return
 
@@ -1021,6 +1007,7 @@ def main() -> None:
             "Record Journey",
             "Batch Insights",
             "Weekly Insights",
+            "Ask the Data",
         ],
     )
 
@@ -1043,6 +1030,10 @@ def main() -> None:
             from dashboard.pages_weekly_insights import render_weekly_insights
 
             render_weekly_insights()
+        elif page == "Ask the Data":
+            from dashboard.pages_ask_the_data import render_ask_the_data
+
+            render_ask_the_data()
     else:
         entries = _load_run_log()
         if page == "Weekly Insights":
@@ -1062,6 +1053,10 @@ def main() -> None:
             _page_record_journey_json(entries)
         elif page == "Batch Insights":
             _page_batch_insights_json(entries)
+        elif page == "Ask the Data":
+            from dashboard.pages_ask_the_data import render_ask_the_data
+
+            render_ask_the_data()
 
 
 if __name__ == "__main__":

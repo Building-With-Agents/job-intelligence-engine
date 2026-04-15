@@ -23,7 +23,7 @@
 
 ## Tradeoffs Acknowledged
 
-- Volume support is best-effort when grouped rows are returned; without a dedicated distinct-postings field, the builder sums explicit row-level posting counts.
+- Volume support is best-effort when grouped rows are returned; use **`QueryResultPayload.distinct_posting_count`** when SQL provides `COUNT(DISTINCT job_posting_id)`; otherwise multi-row payloads use the **max** per-row posting count (conservative vs summing overlapping buckets).
 - Period coverage is derived heuristically from returned columns because `QueryResultPayload` does not yet expose a canonical period field.
 - Structural refusal rules are intentionally conservative for salary intents; broader intent-specific validation can be added once routing labels are fully merged.
 

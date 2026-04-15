@@ -87,7 +87,8 @@ def test_build_evidence_bundle_adds_truncation_fact_and_partial_period_note() ->
     bundle = build_evidence_bundle(payload)
 
     assert bundle.refuse_synthesis is False
-    assert bundle.volume_posting_count == 35
+    # Multi-row: max per-row count (conservative; sum would double-count overlapping postings).
+    assert bundle.volume_posting_count == 20
     assert bundle.period_coverage == "2025-Q1 (partial period coverage)"
     assert "partial period coverage" in bundle.confidence_explanation
     assert "truncated the result set to 2 rows" in bundle.confidence_explanation
@@ -127,6 +128,24 @@ def test_build_evidence_bundle_refuses_router_errors() -> None:
     assert bundle.sufficiency == DataSufficiency.NO_DATA
     assert bundle.blended_confidence == 0.0
     assert "SQL validation failed for non-SELECT statement." in (bundle.refusal_reason or "")
+
+
+def test_distinct_posting_count_overrides_volume_heuristic() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="trend_compare",
+        classification_confidence=0.9,
+        columns=["posting_count", "time_period"],
+        rows=[
+            {"posting_count": 20, "time_period": "2025-Q1"},
+            {"posting_count": 20, "time_period": "2025-Q2"},
+        ],
+        row_count_returned=2,
+        tables_referenced=["job_postings"],
+        distinct_posting_count=25,
+    )
+    bundle = build_evidence_bundle(payload)
+    assert bundle.volume_posting_count == 25
 
 
 def test_build_evidence_bundle_builds_citation_for_sample_payload() -> None:

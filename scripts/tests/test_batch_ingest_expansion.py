@@ -25,10 +25,10 @@ batch_ingest = importlib.import_module("scripts.batch_ingest")
 
 def _queries_fixture() -> list[dict]:
     return [
-        {"name": "q-a", "keywords": ["a1", "a2"],        "location_tier": "tier_1"},
-        {"name": "q-b", "keywords": ["b1"],               "location_tier": "tier_2"},
-        {"name": "q-c", "keywords": ["c1", "c2", "c3"],   "location_tier": None},
-        {"name": "q-d", "keywords": ["d1"],               "location_tier": "does_not_exist"},
+        {"name": "q-a", "keywords": ["a1", "a2"], "location_tier": "tier_1"},
+        {"name": "q-b", "keywords": ["b1"], "location_tier": "tier_2"},
+        {"name": "q-c", "keywords": ["c1", "c2", "c3"], "location_tier": None},
+        {"name": "q-d", "keywords": ["d1"], "location_tier": "does_not_exist"},
         {"name": "q-e", "keywords": ["e1"]},  # no location_tier key
     ]
 
@@ -89,9 +89,7 @@ def test_expand_queries_no_tier_key_treated_as_null() -> None:
 def test_expand_queries_tier_override_applies_to_all() -> None:
     """--location-tier tier_2 forces every query onto tier_2 regardless of YAML tag."""
     queries = _queries_fixture()[:3]  # q-a(2), q-b(1), q-c(3) → 6 keywords total
-    out = batch_ingest._expand_queries(
-        queries, _tiers_fixture(), tier_override="tier_2"
-    )
+    out = batch_ingest._expand_queries(queries, _tiers_fixture(), tier_override="tier_2")
     # 2 locations in tier_2 × (2+1+3) keywords = 12
     assert len(out) == 2 * (2 + 1 + 3)
     assert all(loc in {"SF, CA", "Seattle, WA"} for _, loc in out)
@@ -100,9 +98,7 @@ def test_expand_queries_tier_override_applies_to_all() -> None:
 def test_expand_queries_disable_locations_flattens_to_one_per_keyword() -> None:
     """--no-locations drops geo but still iterates keywords (one call per kw)."""
     queries = _queries_fixture()
-    out = batch_ingest._expand_queries(
-        queries, _tiers_fixture(), disable_locations=True
-    )
+    out = batch_ingest._expand_queries(queries, _tiers_fixture(), disable_locations=True)
     total_keywords = sum(len(q["keywords"]) for q in queries)
     assert len(out) == total_keywords
     assert all(loc == "" for _, loc in out)

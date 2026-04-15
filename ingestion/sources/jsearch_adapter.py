@@ -71,7 +71,7 @@ def _retry_delay_seconds(retry_after: str | None, attempt: int, base_delay: int,
             return max(1, min(max_delay, int(float(retry_after))))
         except (TypeError, ValueError):
             pass
-    return min(max_delay, base_delay * (2 ** attempt))
+    return min(max_delay, base_delay * (2**attempt))
 
 
 def _get_rps_state() -> dict:

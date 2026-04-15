@@ -27,6 +27,10 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
+from common.env import load_repo_root_dotenv  # noqa: E402
+
+load_repo_root_dotenv()
+
 
 def _json_safe(obj: Any) -> Any:
     if hasattr(obj, "model_dump"):
@@ -129,13 +133,21 @@ def main() -> int:
         return 2
 
     assert bundle is not None
-    t_syn = time.perf_counter()
 
-    def _demo_llm(prompt: str, *, agent_name: str, model=None, max_tokens: int = 800, correlation_id=None):
+    def _demo_llm(
+        prompt: str,
+        *,
+        agent_name: str,
+        model=None,
+        max_tokens: int = 800,
+        correlation_id=None,
+        role: str | None = None,
+        system: str | None = None,
+    ):
         if agent_name == AGENT_SYNTHESIS:
             return {
                 "content": (
-                    "Across the cited window, the evidence points to a median salary of USD 72,000 "
+                    "Across 2025-Q1, the evidence points to a median salary of USD 72,000 "
                     "from 84 postings in scope; treat this as a snapshot for the stated period only."
                 ),
                 "input_tokens": 120,
@@ -171,7 +183,7 @@ def main() -> int:
             )
         else:
             with mock.patch(
-                "analytics.query_engine.synthesis._invoke_qna_completion",
+                "analytics.query_engine.synthesis.complete",
                 side_effect=_demo_llm,
             ):
                 result = synthesize_answer(

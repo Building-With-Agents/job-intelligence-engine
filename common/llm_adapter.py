@@ -54,6 +54,7 @@ def get_tracer() -> LangfuseTracer | None:
     """Return the currently registered tracer (None if not set)."""
     return _tracer
 
+
 # ---------------------------------------------------------------------------
 # Pricing (per token) — all providers/models, configurable via env vars
 #
@@ -64,37 +65,37 @@ def get_tracer() -> LangfuseTracer | None:
 PRICING: dict[str, dict[str, float]] = {
     # Anthropic
     "sonnet": {
-        "input":  float(os.getenv("SONNET_INPUT_COST_PER_TOKEN",  str(3.00  / 1_000_000))),
+        "input": float(os.getenv("SONNET_INPUT_COST_PER_TOKEN", str(3.00 / 1_000_000))),
         "output": float(os.getenv("SONNET_OUTPUT_COST_PER_TOKEN", str(15.00 / 1_000_000))),
     },
     "haiku": {
-        "input":  float(os.getenv("HAIKU_INPUT_COST_PER_TOKEN",  str(0.25 / 1_000_000))),
+        "input": float(os.getenv("HAIKU_INPUT_COST_PER_TOKEN", str(0.25 / 1_000_000))),
         "output": float(os.getenv("HAIKU_OUTPUT_COST_PER_TOKEN", str(1.25 / 1_000_000))),
     },
     # Azure OpenAI / OpenAI — use regional list prices; override via env if negotiated rates differ
     "gpt-4.1-mini": {
-        "input":  float(os.getenv("GPT41MINI_INPUT_COST_PER_TOKEN",  str(0.40 / 1_000_000))),
+        "input": float(os.getenv("GPT41MINI_INPUT_COST_PER_TOKEN", str(0.40 / 1_000_000))),
         "output": float(os.getenv("GPT41MINI_OUTPUT_COST_PER_TOKEN", str(1.60 / 1_000_000))),
     },
     "gpt-4.1": {
-        "input":  float(os.getenv("GPT41_INPUT_COST_PER_TOKEN",  str(2.00 / 1_000_000))),
+        "input": float(os.getenv("GPT41_INPUT_COST_PER_TOKEN", str(2.00 / 1_000_000))),
         "output": float(os.getenv("GPT41_OUTPUT_COST_PER_TOKEN", str(8.00 / 1_000_000))),
     },
     "gpt-4o": {
-        "input":  float(os.getenv("GPT4O_INPUT_COST_PER_TOKEN",  str(2.50 / 1_000_000))),
+        "input": float(os.getenv("GPT4O_INPUT_COST_PER_TOKEN", str(2.50 / 1_000_000))),
         "output": float(os.getenv("GPT4O_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
     },
     "gpt-4o-mini": {
-        "input":  float(os.getenv("GPT4OMINI_INPUT_COST_PER_TOKEN",  str(0.15 / 1_000_000))),
+        "input": float(os.getenv("GPT4OMINI_INPUT_COST_PER_TOKEN", str(0.15 / 1_000_000))),
         "output": float(os.getenv("GPT4OMINI_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
     },
     # Gemini
     "gemini-2.5-flash": {
-        "input":  float(os.getenv("GEMINI_FLASH_INPUT_COST_PER_TOKEN",  str(0.15 / 1_000_000))),
+        "input": float(os.getenv("GEMINI_FLASH_INPUT_COST_PER_TOKEN", str(0.15 / 1_000_000))),
         "output": float(os.getenv("GEMINI_FLASH_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
     },
     "gemini-2.5-pro": {
-        "input":  float(os.getenv("GEMINI_PRO_INPUT_COST_PER_TOKEN",  str(1.25 / 1_000_000))),
+        "input": float(os.getenv("GEMINI_PRO_INPUT_COST_PER_TOKEN", str(1.25 / 1_000_000))),
         "output": float(os.getenv("GEMINI_PRO_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
     },
 }
@@ -106,20 +107,20 @@ MODEL_TIER_MAP: dict[str, str] = {
     # Anthropic
     "claude-sonnet-4-5": "sonnet",
     "claude-sonnet-4-6": "sonnet",
-    "claude-haiku-4-5":  "haiku",
+    "claude-haiku-4-5": "haiku",
     # Azure OpenAI — model names returned by the API
     "gpt-4.1-mini-2025-04-14": "gpt-4.1-mini",
-    "gpt-4.1-2025-04-14":      "gpt-4.1",
-    "gpt-4o":                  "gpt-4o",
-    "gpt-4o-mini":             "gpt-4o-mini",
+    "gpt-4.1-2025-04-14": "gpt-4.1",
+    "gpt-4o": "gpt-4o",
+    "gpt-4o-mini": "gpt-4o-mini",
     # Azure OpenAI — common deployment names (AZURE_OPENAI_DEPLOYMENT_NAME)
-    "chat-gpt41mini":  "gpt-4.1-mini",
-    "chat-gpt41":      "gpt-4.1",
-    "chat-gpt4o":      "gpt-4o",
+    "chat-gpt41mini": "gpt-4.1-mini",
+    "chat-gpt41": "gpt-4.1",
+    "chat-gpt4o": "gpt-4o",
     "chat-gpt4o-mini": "gpt-4o-mini",
     # Gemini
     "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.5-pro":   "gemini-2.5-pro",
+    "gemini-2.5-pro": "gemini-2.5-pro",
 }
 
 
@@ -342,27 +343,39 @@ def complete(
 
         correlation_id = correlation_id or str(uuid.uuid4())
         span_ctx = (
-            _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt,
-                               metadata={"agent_name": agent_name, "model": "mock-sonnet-v1"})
+            _tracer.start_span(
+                agent_name,
+                correlation_id=correlation_id,
+                input=prompt,
+                metadata={"agent_name": agent_name, "model": "mock-sonnet-v1"},
+            )
             if _tracer
             else nullcontext()
         )
         with span_ctx:
             result = mock_complete(prompt, agent_name, model=model, system=system, max_tokens=max_tokens)
             log_extraction_event(
-                agent_name=agent_name, prompt=prompt, model="mock-sonnet-v1",
-                provider="mock", latency_ms=result.get("latency_ms", 0),
-                input_tokens=result["input_tokens"], output_tokens=result["output_tokens"],
-                cost_usd=result["cost_usd"], success=True,
+                agent_name=agent_name,
+                prompt=prompt,
+                model="mock-sonnet-v1",
+                provider="mock",
+                latency_ms=result.get("latency_ms", 0),
+                input_tokens=result["input_tokens"],
+                output_tokens=result["output_tokens"],
+                cost_usd=result["cost_usd"],
+                success=True,
             )
             if _tracer:
                 with contextlib.suppress(Exception):
-                    _tracer.log_event("llm_success", {
-                        "input_tokens": result["input_tokens"],
-                        "output_tokens": result["output_tokens"],
-                        "cost_usd": result["cost_usd"],
-                        "output": _parse_output_for_trace(result["content"]),
-                    })
+                    _tracer.log_event(
+                        "llm_success",
+                        {
+                            "input_tokens": result["input_tokens"],
+                            "output_tokens": result["output_tokens"],
+                            "cost_usd": result["cost_usd"],
+                            "output": _parse_output_for_trace(result["content"]),
+                        },
+                    )
             return result
 
     # Gemini provider: use google-generativeai SDK
@@ -381,9 +394,14 @@ def complete(
 
         correlation_id = correlation_id or str(uuid.uuid4())
         span_ctx = (
-            _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt,
-                               metadata={"agent_name": agent_name, "model": gemini_model})
-            if _tracer else nullcontext()
+            _tracer.start_span(
+                agent_name,
+                correlation_id=correlation_id,
+                input=prompt,
+                metadata={"agent_name": agent_name, "model": gemini_model},
+            )
+            if _tracer
+            else nullcontext()
         )
         with span_ctx:
             start = time.monotonic()
@@ -397,36 +415,61 @@ def complete(
                 cost_usd = compute_extraction_cost(input_tokens, output_tokens, gemini_model)
 
                 log_extraction_event(
-                    agent_name=agent_name, prompt=prompt, model=gemini_model,
-                    provider="gemini", latency_ms=latency_ms,
-                    input_tokens=input_tokens, output_tokens=output_tokens,
-                    cost_usd=cost_usd, success=True,
+                    agent_name=agent_name,
+                    prompt=prompt,
+                    model=gemini_model,
+                    provider="gemini",
+                    latency_ms=latency_ms,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_usd,
+                    success=True,
                 )
                 if _tracer:
                     with contextlib.suppress(Exception):
-                        _tracer.log_event("llm_success", {
-                            "input_tokens": input_tokens, "output_tokens": output_tokens,
-                            "cost_usd": cost_usd, "output": _parse_output_for_trace(content),
-                        })
+                        _tracer.log_event(
+                            "llm_success",
+                            {
+                                "input_tokens": input_tokens,
+                                "output_tokens": output_tokens,
+                                "cost_usd": cost_usd,
+                                "output": _parse_output_for_trace(content),
+                            },
+                        )
                 return {
-                    "content": content, "input_tokens": input_tokens,
-                    "output_tokens": output_tokens, "cost_usd": cost_usd,
-                    "latency_ms": latency_ms, "model": gemini_model,
-                    "model_tier": "gemini-flash", "success": True,
+                    "content": content,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost_usd": cost_usd,
+                    "latency_ms": latency_ms,
+                    "model": gemini_model,
+                    "model_tier": "gemini-flash",
+                    "success": True,
                     "extraction_failed": False,
                 }
             except Exception as exc:
                 latency_ms = int((time.monotonic() - start) * 1000)
                 log_extraction_event(
-                    agent_name=agent_name, prompt=prompt, model=gemini_model,
-                    provider="gemini", latency_ms=latency_ms,
-                    input_tokens=0, output_tokens=0, cost_usd=0.0,
-                    success=False, error_reason=str(exc),
+                    agent_name=agent_name,
+                    prompt=prompt,
+                    model=gemini_model,
+                    provider="gemini",
+                    latency_ms=latency_ms,
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_usd=0.0,
+                    success=False,
+                    error_reason=str(exc),
                 )
                 return {
-                    "content": "", "input_tokens": 0, "output_tokens": 0,
-                    "cost_usd": 0.0, "latency_ms": latency_ms, "model": gemini_model,
-                    "model_tier": "gemini-flash", "success": False,
+                    "content": "",
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cost_usd": 0.0,
+                    "latency_ms": latency_ms,
+                    "model": gemini_model,
+                    "model_tier": "gemini-flash",
+                    "success": False,
                     "extraction_failed": True,
                 }
 
@@ -461,11 +504,13 @@ def complete(
 
         lc_messages: list[Any] = []
         if system:
-            from langchain_core.messages import SystemMessage, HumanMessage
+            from langchain_core.messages import HumanMessage, SystemMessage
+
             lc_messages.append(SystemMessage(content=system))
             lc_messages.append(HumanMessage(content=prompt))
         else:
             from langchain_core.messages import HumanMessage
+
             lc_messages.append(HumanMessage(content=prompt))
 
         backoff_cycles = 0
@@ -499,26 +544,39 @@ def complete(
                         cost_usd = compute_extraction_cost(input_tokens, output_tokens, model_tier)
 
                         log_extraction_event(
-                            agent_name=agent_name, prompt=prompt, model=response_model,
-                            provider="azure_openai", latency_ms=latency_ms,
-                            input_tokens=input_tokens, output_tokens=output_tokens,
-                            cost_usd=cost_usd, success=True,
+                            agent_name=agent_name,
+                            prompt=prompt,
+                            model=response_model,
+                            provider="azure_openai",
+                            latency_ms=latency_ms,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            cost_usd=cost_usd,
+                            success=True,
                         )
 
                         log.info(
-                            "llm_call_success", agent=agent_name, model=response_model,
-                            input_tokens=input_tokens, output_tokens=output_tokens,
-                            cost_usd=round(cost_usd, 6), latency_ms=latency_ms,
+                            "llm_call_success",
+                            agent=agent_name,
+                            model=response_model,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            cost_usd=round(cost_usd, 6),
+                            latency_ms=latency_ms,
                         )
 
                         if _tracer:
                             with contextlib.suppress(Exception):
                                 _tracer.record_latency("llm_call", seconds=latency_ms / 1000.0)
-                                _tracer.log_event("llm_success", {
-                                    "input_tokens": input_tokens, "output_tokens": output_tokens,
-                                    "cost_usd": round(cost_usd, 6),
-                                    "output": _parse_output_for_trace(content),
-                                })
+                                _tracer.log_event(
+                                    "llm_success",
+                                    {
+                                        "input_tokens": input_tokens,
+                                        "output_tokens": output_tokens,
+                                        "cost_usd": round(cost_usd, 6),
+                                        "output": _parse_output_for_trace(content),
+                                    },
+                                )
 
                         return {
                             "content": content,
@@ -545,17 +603,25 @@ def complete(
                             break  # outer while loop handles backoff
 
                         log_extraction_event(
-                            agent_name=agent_name, prompt=prompt, model=deployment,
-                            provider="azure_openai", latency_ms=latency_ms,
-                            input_tokens=0, output_tokens=0, cost_usd=0.0,
-                            success=False, error_reason=error_str,
+                            agent_name=agent_name,
+                            prompt=prompt,
+                            model=deployment,
+                            provider="azure_openai",
+                            latency_ms=latency_ms,
+                            input_tokens=0,
+                            output_tokens=0,
+                            cost_usd=0.0,
+                            success=False,
+                            error_reason=error_str,
                         )
                         if _tracer:
                             with contextlib.suppress(Exception):
                                 _tracer.record_error(exc, context={"agent_name": agent_name, "model": deployment})
                         return handle_extraction_failure(
-                            agent_name=agent_name, model_tier=model_tier,
-                            error_reason=error_str, latency_ms=latency_ms,
+                            agent_name=agent_name,
+                            model_tier=model_tier,
+                            error_reason=error_str,
+                            latency_ms=latency_ms,
                         )
                 else:
                     continue
@@ -573,8 +639,7 @@ def complete(
         from anthropic import Anthropic, APIStatusError, APITimeoutError
     except ImportError as exc:
         raise ImportError(
-            "The 'anthropic' package is required when LLM_PROVIDER=anthropic. "
-            "Install with: pip install anthropic"
+            "The 'anthropic' package is required when LLM_PROVIDER=anthropic. Install with: pip install anthropic"
         ) from exc
 
     model = model or os.getenv("LLM_DEFAULT", "claude-sonnet-4-5")

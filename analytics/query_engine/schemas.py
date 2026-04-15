@@ -86,6 +86,14 @@ class QueryResultPayload(BaseModel):
         default=None,
         description="Optional pipeline id for tracing; do not log PII.",
     )
+    distinct_posting_count: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "When the router computes COUNT(DISTINCT job_posting_id) (or equivalent), set this "
+            "for volume policy; overrides row-sum heuristics in build_evidence_bundle."
+        ),
+    )
 
 
 class EvidenceCitation(BaseModel):

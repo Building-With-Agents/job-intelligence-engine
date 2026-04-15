@@ -109,12 +109,22 @@ def _extract_count_value(row: dict[str, Any]) -> int | None:
 
 
 def _volume_posting_count(payload: QueryResultPayload) -> int | None:
+    """Derive canonical posting volume for policy.
+
+    If ``distinct_posting_count`` is set by the router (e.g. COUNT(DISTINCT job_posting_id)),
+    use it. Otherwise, with a single row use that row's count; with multiple rows use **max**
+    (conservative lower bound when rows may overlap the same postings, e.g. multi-bucket rollups).
+    Summing per-row counts can double-count postings across buckets — avoid unless router sets
+    ``distinct_posting_count``.
+    """
+    if payload.distinct_posting_count is not None:
+        return payload.distinct_posting_count
     counts = [count for row in payload.rows if (count := _extract_count_value(row)) is not None]
     if not counts:
         return None
     if len(counts) == 1:
         return counts[0]
-    return sum(counts)
+    return max(counts)
 
 
 def _extract_row_period(row: dict[str, Any]) -> str | None:
@@ -295,11 +305,7 @@ def _blend_confidence(
     volume_posting_count: int | None,
     completeness_score: float,
 ) -> float:
-    blended = (
-        0.6 * classification_confidence
-        + 0.25 * _volume_score(volume_posting_count)
-        + 0.15 * completeness_score
-    )
+    blended = 0.6 * classification_confidence + 0.25 * _volume_score(volume_posting_count) + 0.15 * completeness_score
     if classification_confidence < CONFIDENCE_TRANSPARENCY_THRESHOLD:
         blended = min(blended, classification_confidence)
     return round(max(0.0, min(1.0, blended)), 3)
@@ -319,7 +325,9 @@ def _confidence_explanation(
     if payload.router_error:
         reasons.append("The routed SQL step failed, so no evidence bundle could be grounded.")
     elif volume_posting_count is None:
-        reasons.append("The returned rows did not expose an explicit posting count, so sample size could not be verified.")
+        reasons.append(
+            "The returned rows did not expose an explicit posting count, so sample size could not be verified."
+        )
     elif volume_posting_count == 0:
         reasons.append("No rows matched the current filters, so there is no in-scope data to synthesize.")
     elif volume_posting_count < VOLUME_WARNING_POSTING_THRESHOLD:
@@ -338,7 +346,9 @@ def _confidence_explanation(
     if period_coverage == "period unknown":
         reasons.append("The result did not include an explicit time period.")
     elif partial_period_coverage:
-        reasons.append("Some rows were missing period values, so the reported period coverage is partial period coverage.")
+        reasons.append(
+            "Some rows were missing period values, so the reported period coverage is partial period coverage."
+        )
 
     if structural_gaps:
         preview = ", ".join(structural_gaps[:3])

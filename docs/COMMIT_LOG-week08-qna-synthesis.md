@@ -6,6 +6,23 @@
 
 ---
 
+## Follow-up — grounding, guardrailed routing, Streamlit (#117)
+
+| Area | Description |
+|------|-------------|
+| **Grounding** | `analytics/query_engine/grounding.py` — deterministic numeric verification against `EvidenceBundle`; `synthesis.py` applies verifier + one synthesis retry, then safe fallback; `prefix_period_coverage` ensures period appears in user-visible prose. |
+| **Cost legs** | `analytics/query_engine/ledger_utils.py` — `append_leg_from_complete` shared by synthesis + routing. |
+| **SQL guardrails** | `analytics/query_engine/sql_guardrails.py` — `validate_sql`, `extract_tables_referenced`; tests in `analytics/tests/test_sql_guardrails.py`. |
+| **Routing** | `analytics/query_engine/routing.py` — `run_guardrailed_analytics_query` → intent (`classification`) + SQL (`analytics`) → validate → read-only execute → `run_analytics_qna`. |
+| **Schema** | `QueryResultPayload.distinct_posting_count` optional; `evidence.py` volume uses it or **max** per-row counts when multiple rows. |
+| **Streamlit** | `dashboard/pages_ask_the_data.py` + sidebar entry in `streamlit_app.py`. |
+| **Demo** | `scripts/demo_qna_synthesis_metrics.py` patches `analytics.query_engine.synthesis.complete` (not `_invoke_qna_completion`). |
+| **Tests** | `test_qna_grounding.py`, `test_qna_routing.py`; evidence test updates for max volume heuristic. |
+
+**PR:** Reference **#117**, Week 8 runbook (`docs/Week 8/WEEK-08-synthesis-evidence-citation-bryan-emilio-runbook.md`), and `.cursor/rules/analytics-qna-synthesis.mdc`.
+
+---
+
 ## Summary of changes
 
 | Area | Description |
@@ -14,7 +31,7 @@
 | **Orchestration** | `analytics/query_engine/qna.py` — `run_analytics_qna(query_result, *, cost_ledger=None)` runs `build_evidence_bundle` then `synthesize_answer` (ownership documented in docstring). |
 | **Exports** | `analytics/query_engine/__init__.py` — re-exports `synthesize_answer`, `run_analytics_qna`. |
 | **Fixtures** | `analytics/query_engine/fixtures.py` — `sample_evidence_bundle_refused`, `sample_evidence_bundle_low_confidence`, `sample_evidence_bundle_low_volume` for tests. |
-| **Tests** | `analytics/tests/test_qna_synthesis.py` — mocks `_invoke_qna_completion`; refusal, flags, ledger merge, LLM failure, citations/periods; optional `run_analytics_qna` test skips until `build_evidence_bundle` is implemented. |
+| **Tests** | `analytics/tests/test_qna_synthesis.py` — mocks `common.llm_adapter.complete` / `analytics.query_engine.synthesis.complete`; refusal, flags, ledger merge, LLM failure, citations/periods; `run_analytics_qna` pipeline test. |
 | **Demo CLI** | `scripts/demo_qna_synthesis_metrics.py` — JSON output (timings, `SynthesisResponse`, costs); `--full-pipeline`, `--live` (gated). |
 | **Lint** | `pyproject.toml` — `T201` for demo script stdout; `N999` for `analytics/query_engine/__init__.py` (Ruff / repo path false positive). |
 | **Streamlit** | `dashboard/streamlit_app.py` — insert repository root on `sys.path` before `from common...` so `streamlit run dashboard/streamlit_app.py` resolves `common`. |
