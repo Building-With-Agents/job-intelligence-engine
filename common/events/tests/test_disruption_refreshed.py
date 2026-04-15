@@ -12,6 +12,18 @@ from common.events.disruption_refreshed import (
 from common.events.typed_events import DisruptionRefreshedEvent
 
 
+def test_build_disruption_refreshed_payload_key_set_matches_model() -> None:
+    payload = build_disruption_refreshed_payload(
+        role_count=0,
+        displacement_count=0,
+        augmentation_count=0,
+        transformation_count=0,
+        emergence_count=0,
+        refresh_duration_ms=0,
+    )
+    assert frozenset(payload.keys()) == frozenset(DisruptionRefreshedPayload.model_fields.keys())
+
+
 def test_build_payload_and_envelope_shape() -> None:
     payload = build_disruption_refreshed_payload(
         role_count=3,

@@ -103,7 +103,7 @@ def build_period_comparison(
     """Build adjacent period comparisons across the 4 temporal buckets."""
     ordered = normalize_temporal_snapshots(snapshots)
     out: list[TemporalPeriodComparison] = []
-    for left, right in zip(ordered, ordered[1:]):
+    for left, right in zip(ordered, ordered[1:], strict=False):
         left_skills = set(left.skill_mix.keys())
         right_skills = set(right.skill_mix.keys())
         union = left_skills | right_skills

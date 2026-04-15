@@ -1,4 +1,4 @@
-"""Orchestrate disruption fingerprint refresh (scaffold)."""
+"""Orchestrate disruption fingerprint refresh (reads, persist, DisruptionRefreshed)."""
 
 from __future__ import annotations
 
@@ -69,6 +69,8 @@ def _fingerprints_to_category_counts(
         counts["Transformation"],
         counts["Emergence"],
     )
+
+
 _TREND_EPSILON = 0.05
 _TOP_SKILL_VELOCITY = 5
 
@@ -81,7 +83,7 @@ def _content_fingerprint_hex(role_id: str, snapshots: tuple[TemporalPeriodSnapsh
 
 
 class DisruptionFingerprintService:
-    """Run one in-memory disruption fingerprint pass over canonical roles."""
+    """Run one disruption fingerprint pass: load roles, classify, persist, emit summary event."""
 
     def __init__(
         self,
@@ -219,7 +221,7 @@ def _compute_skill_velocity(
     max_step_delta: dict[str, float] = defaultdict(float)
     changed_steps: dict[str, int] = defaultdict(int)
 
-    for left, right in zip(snapshots, snapshots[1:]):
+    for left, right in zip(snapshots, snapshots[1:], strict=False):
         keys = set(left.skill_mix) | set(right.skill_mix)
         for skill in keys:
             delta = right.skill_mix.get(skill, 0.0) - left.skill_mix.get(skill, 0.0)
@@ -278,7 +280,7 @@ def _tool_transition_for_pair(left: TemporalPeriodSnapshot, right: TemporalPerio
 def _compute_tool_transition(snapshots: tuple[TemporalPeriodSnapshot, ...]) -> list[dict[str, Any]]:
     if len(snapshots) < 2:
         return []
-    transitions = [_tool_transition_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:])]
+    transitions = [_tool_transition_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:], strict=False)]
     return [t for t in transitions if t["adopted_tools"] or t["abandoned_tools"]]
 
 
@@ -304,7 +306,7 @@ def _task_shift_for_pair(left: TemporalPeriodSnapshot, right: TemporalPeriodSnap
 def _compute_task_shift(snapshots: tuple[TemporalPeriodSnapshot, ...]) -> list[dict[str, Any]]:
     if len(snapshots) < 2:
         return []
-    return [_task_shift_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:])]
+    return [_task_shift_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:], strict=False)]
 
 
 def _observed_snapshots(snapshots: tuple[TemporalPeriodSnapshot, ...]) -> tuple[TemporalPeriodSnapshot, ...]:

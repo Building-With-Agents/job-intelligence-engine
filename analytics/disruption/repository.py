@@ -495,7 +495,8 @@ class DisruptionFingerprintRepository:
         ``computed_at``. Mirrors the ``session.merge`` pattern in
         ``analytics.insights.posting_freshness_store.persist_posting_freshness_rows``.
 
-        No-op when ``session`` is ``None`` or ``results`` is empty. Event emission is out of scope.
+        No-op when ``session`` is ``None`` or ``results`` is empty. All rows in one call share the
+        same ``computed_at`` (UTC batch timestamp). Event emission is handled by the service layer.
 
         Raises:
             DisruptionRepositoryQueryError: Database/driver errors during merge.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -47,16 +48,28 @@ def test_save_fingerprints_wraps_sqlalchemy_error() -> None:
 
 def test_save_fingerprints_calls_merge_per_record() -> None:
     session = MagicMock()
+    skill_v = [{"skill_name": "Python", "velocity": 0.1}]
+    tool_t = [{"from_tool": "X", "to_tool": "Y", "evidence": "e"}]
+    task_s = [{"from_task": "a", "to_task": "b", "evidence": "e2"}]
+    period_c = [{"metric": "postings", "current": 1, "previous": 2, "delta_pct": -0.5}]
     rows = [
         DisruptionFingerprintRecord(
             canonical_role_id="role-a",
             disruption_category=["Transformation"],
             content_fingerprint="abc123",
+            skill_velocity=skill_v,
+            tool_transition=tool_t,
+            task_shift=task_s,
+            period_comparison=period_c,
+            disruption_intensity=0.7,
+            trajectory="accelerating",
+            ai_intensity_trend="increasing",
         ),
         DisruptionFingerprintRecord(
             canonical_role_id="role-b",
             disruption_category=["Emergence"],
             workflow_restructuring_score=0.42,
+            responsibility_expansion=0.5,
         ),
     ]
     DisruptionFingerprintRepository().save_fingerprints(rows, session)
@@ -65,10 +78,24 @@ def test_save_fingerprints_calls_merge_per_record() -> None:
     assert first.canonical_role_id == "role-a"
     assert first.disruption_category == ["Transformation"]
     assert first.content_fingerprint == "abc123"
+    assert first.skill_velocity == skill_v
+    assert first.tool_transition == tool_t
+    assert first.task_shift == task_s
+    assert first.period_comparison == period_c
+    assert first.disruption_intensity == 0.7
+    assert first.trajectory == "accelerating"
+    assert first.ai_intensity_trend == "increasing"
     assert first.workflow_restructuring_score == 0.0
+    assert first.computed_at is not None
+    assert first.computed_at.tzinfo is not None
+    assert first.computed_at.utcoffset() is not None
     second = session.merge.call_args_list[1][0][0]
     assert second.canonical_role_id == "role-b"
     assert second.workflow_restructuring_score == 0.42
+    assert second.responsibility_expansion == 0.5
+    assert second.computed_at is not None
+    assert second.computed_at.tzinfo == timezone.utc
+    assert first.computed_at == second.computed_at
 
 
 def test_fetch_canonical_roles_returns_empty_without_session() -> None:

@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from analytics.disruption.classifier import DisruptionClassifier
-from analytics.disruption.models import RoleDisruptionMetrics, TemporalPeriodSnapshot, build_period_comparison, normalize_temporal_snapshots
+from analytics.disruption.models import (
+    RoleDisruptionMetrics,
+    TemporalPeriodSnapshot,
+    build_period_comparison,
+    normalize_temporal_snapshots,
+)
 
 
 def _metrics(snapshots: list[TemporalPeriodSnapshot]) -> RoleDisruptionMetrics:
