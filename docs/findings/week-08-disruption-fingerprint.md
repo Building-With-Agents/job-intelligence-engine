@@ -1,52 +1,61 @@
-# Week 08 — Disruption Fingerprint Findings (Issues #103–#107)
+# Week 08 — Disruption Fingerprint Findings (Issues #103–#109)
 
 ## What I Tested
 
-- Verified scaffold completeness for `analytics/disruption/` against issue #103 deliverables.
-- Implemented and validated temporal period normalization/comparison logic for #104:
-  - ordered period chain: `pre_chatgpt -> early_genai -> post_gpt4 -> agentic_era`
-  - missing-period-safe defaults.
-- Implemented and validated disruption signal computation for #105:
-  - `skill_velocity`, `tool_transition`, `task_shift`, `responsibility_expansion`,
-    `ai_intensity_trend`, `workflow_restructuring_score`.
-- Implemented and validated 4-pattern classification rules for #106:
-  - `Displacement`, `Augmentation`, `Transformation`, `Emergence`.
-- Hardened #107 requirements:
-  - explicit multi-pattern support,
-  - sparse early-period handling,
-  - configurable transformation threshold (30% default).
+- **#103–#107:** Scaffold and behavior for `analytics/disruption/`: temporal normalization (#104) on
+  `pre_chatgpt → early_genai → post_gpt4 → agentic_era` with missing-period-safe defaults; signal
+  computation (#105) (`skill_velocity`, `tool_transition`, `task_shift`, `responsibility_expansion`,
+  `ai_intensity_trend`, `workflow_restructuring_score`); four-pattern classification (#106:
+  Displacement, Augmentation, Transformation, Emergence); multi-label and sparse-series handling (#107);
+  configurable transformation threshold (30% default via env).
+- **#108:** Persistence of refresh output to `dbo.disruption_fingerprints` via repository merge path;
+  `DisruptionRefreshed` envelope emission after `DisruptionFingerprintService.refresh_disruption_fingerprints`
+  (contract in `common/events/disruption_refreshed.py`). Optional DB round-trip coverage in
+  `tests/analytics/test_disruption_fingerprints_db.py` when `PYTHON_DATABASE_URL` and migrations are present.
+- **#109:** Automated verification that all four patterns appear across **controlled test data** using the
+  real `DisruptionFingerprintService` and real `DisruptionClassifier` with a fake repository
+  (`test_refresh_covers_all_four_disruption_patterns_across_roles` in `tests/analytics/test_disruption_service.py`).
 
 ## What I Found
 
-- #103 scaffold was correctly completed as architecture-first foundation:
-  package, models, repository/service stubs, deterministic fingerprint hashing, and unit tests.
-- Temporal comparison logic now works as a stable and deterministic backbone for role-level diffs,
-  including sparse-series scenarios where early periods are missing.
-- Disruption signal outputs are now computed per role and attached to fingerprint records in service flow.
-- 4-pattern classification is operational and returns ordered multi-label outputs when overlapping signals exist.
-- Transformation threshold is configurable without code changes, while preserving a default 30% rule.
+- **#103–#107:** Package, models, repository/service flow, deterministic fingerprint hashing, and unit tests
+  form a solid baseline; classifier returns ordered multi-label outputs when signals overlap.
+- **#108:** Fingerprints can be upserted to `dbo.disruption_fingerprints`; refresh publishes a typed
+  `DisruptionRefreshed` summary (role and per-pattern counts, duration, schema version).
+- **#109:** In the dedicated fake-repository run, each of the four patterns appears on at least one synthetic
+  role id (`role-verify-transformation`, `role-verify-displacement`, `role-verify-augmentation`,
+  `role-verify-emergence`); `roles_considered` / `computed_count` are 4; `_fingerprints_to_category_counts`
+  and the emitted event payload each show every pattern count ≥ 1.
 
 ## Recommendation
 
-- Keep current #103–#107 implementation as the Week 8 baseline with possible implementation later:
-  - persist computed fingerprints to `dbo.disruption_fingerprints`,
-  - emit downstream refresh event once persistence is authoritative.
-- During #108/#109, keep classifier thresholds externally configurable and document env defaults in runbook notes.
-- Add one integration test layer (DB-backed fixture or seeded snapshot test) once repository queries are implemented,
-  to validate end-to-end parity from aggregates to persisted fingerprint rows.
+- Keep the Week 8 disruption stack as the baseline; keep classifier thresholds env-tunable and document
+  defaults in runbook notes where operators tune behavior.
+- When `dbo.canonical_roles` is populated (e.g. clustering / `scripts/run_clustering.py`), run a live
+  `refresh_disruption_fingerprints(session=…)` and capture SQL or logs if you need evidence beyond tests.
+- Optional follow-up: expand DB-backed tests (seeded snapshots through real repository SQL) if Pair A
+  needs stronger proof of parity from aggregates to persisted rows—without replacing the current
+  lightweight fake-repository contract tests.
 
 ## Tradeoffs Acknowledged
 
-- Current #105 signal computations are deterministic heuristics over available snapshot inputs; they do not yet include
-  full production-weighted calibration from live aggregate distributions.
-- AI-tool detection is keyword-based in this phase; this is pragmatic for Week 8 but may require taxonomy-backed matching later.
-- Emergence detection intentionally avoids assuming that missing historical data alone implies emergence; high AI-density criteria is required.
-- Classifier rules favor interpretability and tunability over model complexity at this stage.
+- **#105** signals remain deterministic heuristics over snapshot inputs; they are not calibrated to full
+  production aggregate distributions.
+- AI-tool detection is keyword-based in this phase; taxonomy-backed matching may come later.
+- Emergence still requires high AI-density (and related rules); missing pre-ChatGPT data alone does not
+  imply emergence.
+- **#109 limits:** Verification uses **in-memory test snapshots** aligned with classifier fixtures, not live
+  clustered role labels or SQL `fetch_period_snapshots` over production-shaped rows in this run. Locally,
+  **`canonical_roles` was empty**, so a full live “read roles from DB → classify → persist” verification
+  was **not** claimed here unless you repeat the exercise against a populated database.
 
 ## Data / Evidence
 
-- Unit and service test suites pass after #103–#107 changes:
-  - `tests/analytics/test_disruption_service.py`
-  - `tests/analytics/test_disruption_classifier.py`
-- Latest local verification run for disruption suites completed successfully (**15 passed**).
-- DB-populated evidence for persisted disruption fingerprints/events is pending #108+#109 implementation.
+- Disruption-related tests (representative): `tests/analytics/test_disruption_classifier.py`,
+  `tests/analytics/test_disruption_service.py`, `tests/analytics/test_disruption_repository.py`;
+  optional persist smoke: `tests/analytics/test_disruption_fingerprints_db.py` (skips without DB).
+- Latest local run: `tests/analytics/test_disruption_service.py` completed with **16 passed** (includes
+  `test_refresh_covers_all_four_disruption_patterns_across_roles`).
+- **#108/#109:** Persistence and `DisruptionRefreshed` are implemented in code paths exercised by service
+  tests; **#109** explicitly proves all four patterns in test data via the real service + classifier path
+  described above.
