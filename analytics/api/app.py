@@ -18,6 +18,8 @@ def create_app() -> FastAPI:
         title="Job Intelligence — Analytics API",
         version="0.1.0",
         description="Workforce Q&A (POST /analytics/query) and on-demand triggers with SQL guardrails.",
+        docs_url="/docs",
+        redoc_url="/redoc",
     )
 
     @app.exception_handler(StarletteHTTPException)

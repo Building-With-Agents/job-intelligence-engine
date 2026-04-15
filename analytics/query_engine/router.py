@@ -1,63 +1,100 @@
-"""Generate candidate read-only SQL from a natural-language question (LLM-backed)."""
+"""Route intent → candidate SQL (LLM optional, always validated downstream)."""
 
 from __future__ import annotations
 
 import json
+import os
 import re
-import uuid
-from typing import Any
 
 import structlog
 
+from analytics.query_engine.intent import QueryIntent, QueryIntentKind
 from common.llm_adapter import complete
 
 log = structlog.get_logger()
 
-_ROUTER_SYSTEM = """You are a Postgres analytics assistant. Schema is dbo.
-Return a single JSON object ONLY, no markdown, with key "sql" whose value is ONE read-only
-SELECT statement using only dbo tables. Use LIMIT 100 or less at the end.
-Allowed tables include: job_postings, companies, skills, skill_demand_weekly, tool_demand_weekly,
-geo_demand_weekly, sector_summary_weekly, role_snapshot_weekly, canonical_roles, extracted_intelligence.
-Do not use INSERT, UPDATE, DELETE, DDL, or multiple statements."""
+_AGENT = "analytics-query-router"
 
 
-def _extract_json_object(text: str) -> dict[str, Any] | None:
-    text = text.strip()
-    m = re.search(r"\{[\s\S]*\}\s*$", text)
+def _extract_json_sql(content: str) -> str | None:
+    text = (content or "").strip()
+    m = re.search(r"\{[\s\S]*\"sql\"[\s\S]*\}", text)
     if not m:
         return None
     try:
-        return json.loads(m.group(0))
+        obj = json.loads(m.group(0))
     except json.JSONDecodeError:
         return None
+    sql = obj.get("sql")
+    return str(sql).strip() if sql else None
 
 
-def generate_sql(question: str, correlation_id: str | None) -> tuple[str, float, str]:
-    """Return (sql, cost_usd_so_far, raw_model_content_or_error)."""
-    cid = correlation_id or str(uuid.uuid4())
-    prompt = (
-        "User question:\n"
-        f"{question}\n\n"
-        "Respond with JSON: {\"sql\": \"SELECT ...\"}"
+def _template_sql(intent: QueryIntent) -> str:
+    """Deterministic read-only queries over allowlisted aggregate tables."""
+    k = intent.kind
+    if k == QueryIntentKind.GEO_DEMAND:
+        return (
+            "SELECT week_start, borderplex_subregion, posting_count "
+            "FROM dbo.geo_demand_weekly ORDER BY week_start DESC, posting_count DESC LIMIT 100"
+        )
+    if k == QueryIntentKind.ROLE_SNAPSHOT:
+        return (
+            "SELECT week_start, canonical_role_id, posting_count, role_title "
+            "FROM dbo.role_snapshot_weekly ORDER BY week_start DESC LIMIT 100"
+        )
+    if k == QueryIntentKind.SECTOR:
+        return (
+            "SELECT week_start, sector, posting_count, employer_count, avg_salary "
+            "FROM dbo.sector_summary_weekly ORDER BY week_start DESC LIMIT 100"
+        )
+    if k == QueryIntentKind.VELOCITY:
+        return (
+            "SELECT skill_label, week, demand_count, week_over_week_change, four_week_trend "
+            "FROM dbo.skill_velocity ORDER BY week DESC LIMIT 100"
+        )
+    if k == QueryIntentKind.CO_OCCURRENCE:
+        return (
+            "SELECT skill_a, skill_b, co_occurrence_count, week_start "
+            "FROM dbo.skill_co_occurrence ORDER BY week_start DESC, co_occurrence_count DESC LIMIT 100"
+        )
+    return (
+        "SELECT week_start, skill_label, posting_count, employer_count "
+        "FROM dbo.skill_demand_weekly ORDER BY week_start DESC, posting_count DESC LIMIT 100"
     )
-    out = complete(
-        prompt,
-        agent_name="analytics_query_router",
-        system=_ROUTER_SYSTEM,
-        max_tokens=800,
-        correlation_id=cid,
-        role="analytics",
+
+
+def generate_sql(user_query: str, intent: QueryIntent) -> tuple[str, float]:
+    """Return ``(sql, llm_cost_usd)`` — LLM path optional via env."""
+    template = _template_sql(intent)
+    if os.getenv("ANALYTICS_QUERY_USE_LLM_SQL", "").strip().lower() not in ("1", "true", "yes"):
+        return template, 0.0
+
+    system = (
+        "You output a single JSON object only, no prose. Keys: \"sql\". "
+        "The value must be one PostgreSQL SELECT statement using ONLY these tables (dbo schema allowed): "
+        "skill_demand_weekly, tool_demand_weekly, role_snapshot_weekly, sector_summary_weekly, "
+        "geo_demand_weekly, skill_velocity, skill_co_occurrence, posting_freshness, trajectory_map, "
+        "analytics_pipeline_state, cohort_gap_cache, disruption_fingerprints, canonical_roles. "
+        "Must include LIMIT 100 or less. No INSERT/UPDATE/DELETE/DROP."
     )
+    prompt = f"User question:\n{user_query}\n\nReturn JSON: {{\"sql\": \"...\"}}"
+    try:
+        out = complete(
+            prompt=prompt,
+            agent_name=_AGENT,
+            system=system,
+            max_tokens=500,
+            role="analytics",
+        )
+    except Exception as exc:
+        log.warning("analytics_router_llm_failed", error=str(exc))
+        return template, 0.0
+
     cost = float(out.get("cost_usd") or 0.0)
-    if out.get("extraction_failed"):
-        log.warning("router_llm_failed", correlation_id=cid)
-        return "", cost, out.get("error_reason") or "router_failed"
+    if out.get("extraction_failed") or not out.get("content"):
+        return template, cost
 
-    content = (out.get("content") or "").strip()
-    data = _extract_json_object(content)
-    if not data or "sql" not in data:
-        log.warning("router_json_parse_failed", correlation_id=cid)
-        return "", cost, "invalid_router_json"
-
-    sql = str(data["sql"]).strip()
-    return sql, cost, content
+    extracted = _extract_json_sql(str(out.get("content", "")))
+    if extracted:
+        return extracted, cost
+    return template, cost

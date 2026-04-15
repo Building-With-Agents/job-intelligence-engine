@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class EvidenceItem(BaseModel):
@@ -16,7 +16,14 @@ class EvidenceItem(BaseModel):
 
 
 class AnalyticsQueryRequest(BaseModel):
-    question: str = Field(..., min_length=1, max_length=4000)
+    model_config = ConfigDict(populate_by_name=True)
+
+    question: str = Field(
+        ...,
+        min_length=1,
+        max_length=20_000,
+        validation_alias=AliasChoices("question", "query"),
+    )
     correlation_id: str | None = Field(default=None, max_length=128)
 
 

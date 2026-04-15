@@ -28,10 +28,11 @@ def run_analytics_query(
     cid = correlation_id or str(uuid.uuid4())
     endpoint = "POST /analytics/query"
     sql_generated = ""
-    payload_base: dict[str, Any] = {"intent": classify_intent(question)}
+    intent = classify_intent(question)
+    payload_base: dict[str, Any] = {"intent": intent.kind.value}
 
     try:
-        raw_sql, router_cost, _ = generate_sql(question, cid)
+        raw_sql, router_cost = generate_sql(question, intent)
         sql_generated = raw_sql
         if not raw_sql:
             audit.log_sql_validation_to_llm_audit(
