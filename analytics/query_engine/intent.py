@@ -23,6 +23,7 @@ from common.llm_adapter import complete
 log = structlog.get_logger()
 
 _AGENT_NAME = "analytics-intent-classification"
+_CLARIFICATION_THRESHOLD = 0.55
 
 INTENT_CATEGORIES: Final[tuple[str, ...]] = (
     "trend",
@@ -158,6 +159,7 @@ def _fallback_other(reason: str) -> dict[str, Any]:
     return {
         "intent": "other",
         "confidence": 0.0,
+        "needs_clarification": True,
         "extracted_entities": {
             "geographic_terms": [],
             "role_names": [],
@@ -176,7 +178,8 @@ def classify_workforce_question(
     """Classify a free-text workforce question and extract entities.
 
     Returns a plain dict: ``{"intent": str, "confidence": float,
-    "extracted_entities": dict}`` suitable for JSON APIs. On LLM failure or
+    "needs_clarification": bool, "extracted_entities": dict}`` suitable for
+    JSON APIs. On LLM failure or
     invalid JSON, returns ``intent="other"``, ``confidence=0.0``, and empty entity
     lists.
 
@@ -216,8 +219,10 @@ def classify_workforce_question(
         return _fallback_other("schema_validation")
 
     out_entities = validated.extracted_entities.model_dump()
+    needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
     return {
         "intent": validated.intent,
         "confidence": float(validated.confidence),
+        "needs_clarification": needs_clarification,
         "extracted_entities": out_entities,
     }
