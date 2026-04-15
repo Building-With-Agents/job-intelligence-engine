@@ -81,7 +81,7 @@ def test_classify_covers_all_intent_categories(mock_complete, question, expected
     mock_complete.assert_called_once()
     call_kw = mock_complete.call_args.kwargs
     assert call_kw["agent_name"] == "analytics-intent-classification"
-    assert "claude-haiku" in call_kw["model"]
+    assert call_kw["role"] == "classification"
 
 
 def test_all_categories_represented_in_samples():
