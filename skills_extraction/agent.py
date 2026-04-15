@@ -799,11 +799,17 @@ class SkillsExtractionAgent(BaseAgent):
         concurrency: int,
         correlation_id: str | None = None,
     ) -> list[PendingExtraction]:
-        """Run the async batch helper from the sync agent entrypoint."""
+        """Run the async batch helper from the sync agent entrypoint.
+
+        Issue #149 fix: reuse a single persistent event loop across batches.
+        See ``enrichment.async_bridge._get_persistent_event_loop`` for rationale.
+        """
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(
+            from enrichment.async_bridge import _get_persistent_event_loop
+            loop = _get_persistent_event_loop()
+            return loop.run_until_complete(
                 self._extract_batch_parallel(
                     work_items,
                     concurrency=concurrency,

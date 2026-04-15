@@ -69,7 +69,7 @@ from common.event_envelope import EventEnvelope
 from common.llm_client import ainvoke_skills_llm, invoke_skills_llm
 from common.types.job_profile import EmployerProfile
 from enrichment.adapters.facade import ExternalEnrichmentFacade
-from enrichment.async_bridge import run_coroutine
+from enrichment.async_bridge import _get_persistent_event_loop, run_coroutine
 from enrichment.classification import (
     FALLBACK_TECH_AREA_LABELS,
     classify_job,
@@ -1185,11 +1185,23 @@ class EnrichmentAgent(BaseAgent):
         session: Session | None,
     ) -> dict[str, Any]:
         """Async counterpart to :meth:`enrich_record` — runs SOC, NAICS, employer concurrently."""
+        # DEBUG #149: instrument every phase boundary so we can isolate which
+        # synchronous step (or which async await) starves the event loop
+        # when the batch hangs. Each log line includes normalized_job_id and
+        # the elapsed time since the previous phase.
+        _dbg_nj = posting.get("normalized_job_id")
+        _dbg_t0 = time.perf_counter()
+        def _dbg(phase: str, **extra: Any) -> None:
+            log.info("enrich_phase", phase=phase, normalized_job_id=_dbg_nj,
+                     elapsed_ms=int((time.perf_counter() - _dbg_t0) * 1000), **extra)
         try:
+            _dbg("resolve_company_start")
             company_id, company_confidence = resolve_company(posting.get("company") or "", session)
+            _dbg("resolve_company_done")
             location_id, location_confidence, raw_location_text, borderplex_subregion = resolve_location(
                 posting.get("location", ""), session
             )
+            _dbg("resolve_location_done")
             field_confidence = compute_field_confidence(
                 company_confidence,
                 location_confidence,
@@ -1212,11 +1224,13 @@ class EnrichmentAgent(BaseAgent):
                 "overall_confidence": overall_confidence,
             }
             # External adapters (Census, BLS, O*NET) — run if available
+            _dbg("external_facade_start")
             try:
                 ext = await self._external_facade.fetch_for_posting(merged)
                 merged.update(ext)
             except Exception as ext_exc:
                 log.warning("enrichment_external_adapters_failed", error=str(ext_exc))
+            _dbg("external_facade_done")
 
             if session is not None:
                 desc_raw = posting.get("description")
@@ -1228,6 +1242,7 @@ class EnrichmentAgent(BaseAgent):
                 _ENRICH_LLM_TIMEOUT = int(os.getenv("ENRICHMENT_LLM_TIMEOUT", "120"))
                 _nj_id = posting.get("normalized_job_id")
                 _gather_start = time.perf_counter()
+                _dbg("llm_gather_start", timeout_s=_ENRICH_LLM_TIMEOUT)
 
                 try:
                     naics_result, soc_result, employer_result = await asyncio.wait_for(
@@ -1256,7 +1271,8 @@ class EnrichmentAgent(BaseAgent):
                     employer_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
 
                 _gather_ms = int((time.perf_counter() - _gather_start) * 1000)
-                log.debug(
+                # DEBUG #149: bump from debug to info so we can see the gather actually completed
+                log.info(
                     "enrich_record_async_gather_complete",
                     normalized_job_id=_nj_id,
                     gather_ms=_gather_ms,
@@ -1273,6 +1289,7 @@ class EnrichmentAgent(BaseAgent):
                     merged["naics_code"] = (naics_result or "unknown").strip() or "unknown"
 
                 # SOC
+                _dbg("post_gather_soc_start")
                 if isinstance(soc_result, Exception):
                     log.warning("enrich_record_async_soc_failed", normalized_job_id=_nj_id, error=str(soc_result))
                     merged["soc_code"] = posting.get("soc_code")
@@ -1292,6 +1309,7 @@ class EnrichmentAgent(BaseAgent):
                             log.warning("enrich_record_occupation_code_persist_failed", error=str(oc_exc))
 
                 # Employer
+                _dbg("post_gather_employer_start")
                 if isinstance(employer_result, Exception):
                     log.warning("enrich_record_async_employer_failed", error=str(employer_result))
                     merged["employer_metadata"] = EmployerProfile().model_dump(mode="json")
@@ -1310,7 +1328,9 @@ class EnrichmentAgent(BaseAgent):
                         )
                     except Exception as emp_exc:
                         log.warning("enrich_record_employer_persist_failed", error=str(emp_exc))
+                _dbg("post_gather_done")
 
+            _dbg("enrich_record_async_return")
             return merged
         except Exception:
             log.warning("enrich_record_async_degraded", agent=self.agent_id, reason="resolver_exception")
@@ -1371,10 +1391,21 @@ class EnrichmentAgent(BaseAgent):
                 _peak_in_flight = max(_peak_in_flight, _in_flight)
                 job_start = time.perf_counter()
                 posting = _posting_for_enrichment(row, payload)
+                # DEBUG #149 instrumentation: trace each phase boundary so we can isolate
+                # which sync call (or which await) starves the event loop on hang.
+                _dbg_eo_nj = posting.get("normalized_job_id")
+                def _dbg_eo(phase: str, **extra: Any) -> None:
+                    log.info("enrich_one_phase", phase=phase, idx=idx,
+                             normalized_job_id=_dbg_eo_nj, in_flight=_in_flight,
+                             elapsed_ms=int((time.perf_counter() - job_start) * 1000), **extra)
                 try:
+                    _dbg_eo("session_scope_acquire_start")
                     with session_scope() as job_session:
+                        _dbg_eo("session_scope_acquired")
                         enriched = await self.enrich_record_async(posting, job_session)
+                        _dbg_eo("enrich_record_async_returned")
                         sector_id = resolve_sector(posting.get("role_classification"), session=job_session)
+                        _dbg_eo("resolve_sector_done")
                         enriched["sector_id"] = sector_id
 
                         # Quality score (deterministic — no LLM call)
@@ -1391,6 +1422,7 @@ class EnrichmentAgent(BaseAgent):
                         )
                         enriched["quality_score"] = q_res.quality_score
                         enriched["quality_components"] = q_res.components
+                        _dbg_eo("quality_score_done")
 
                         # Promotion
                         nj_promo = _coerce_normalized_job_id(
@@ -1398,15 +1430,18 @@ class EnrichmentAgent(BaseAgent):
                         )
                         if nj_promo is not None:
                             try:
+                                _dbg_eo("apply_promotion_start")
                                 apply_enrichment_to_job_postings(
                                     job_session, nj_promo,
                                     _job_postings_promotion_payload(enriched, posting),
                                 )
+                                _dbg_eo("apply_promotion_done")
                             except Exception as promo_exc:
                                 log.warning("enrichment_parallel_promotion_failed", error=str(promo_exc))
 
                         enriched["__posting"] = posting
                         enriched["__row"] = row
+                    _dbg_eo("session_scope_released")
                 except Exception as exc:
                     log.warning("enrichment_parallel_job_failed", idx=idx, error=str(exc))
                     enriched = {"__error": True, "__posting": posting, "__row": row}
@@ -1455,11 +1490,19 @@ class EnrichmentAgent(BaseAgent):
         correlation_id: str,
         concurrency: int,
     ) -> list[dict[str, Any]]:
-        """Sync-to-async bridge for parallel enrichment (mirrors skills extraction pattern)."""
+        """Sync-to-async bridge for parallel enrichment (mirrors skills extraction pattern).
+
+        Issue #149 fix: reuse a single persistent event loop across batches
+        instead of calling ``asyncio.run()`` per batch. Repeated ``asyncio.run``
+        calls leave orphaned ``httpx.AsyncClient.aclose()`` tasks and corrupt
+        scheduler internals, which manifests as second-batch hang where mock
+        ``await asyncio.sleep(0)`` calls never resume.
+        """
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(
+            loop = _get_persistent_event_loop()
+            return loop.run_until_complete(
                 self._enrich_batch_parallel(
                     rows, payload,
                     correlation_id=correlation_id,
