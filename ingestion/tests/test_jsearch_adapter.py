@@ -76,3 +76,95 @@ class TestJSearchAdapter:
             adapter = JSearchAdapter()
             result = asyncio.run(adapter.health_check())
             assert result["reachable"] is False
+
+
+class TestJSearchQueryConstruction:
+    """Issue #165 — `"<kw> in <loc>"` format + country/language params."""
+
+    def _mock_response(self):
+        from unittest.mock import AsyncMock, MagicMock
+
+        mock = MagicMock()
+        mock.raise_for_status = MagicMock()
+        mock.json = MagicMock(return_value={"data": []})
+        mock.status_code = 200
+        return AsyncMock(return_value=mock)
+
+    def test_query_uses_role_in_location_format(self) -> None:
+        """region.keywords[0] + location → '<kw> in <loc>', with country/language params."""
+        from unittest.mock import patch
+
+        from ingestion.sources.jsearch_adapter import _reset_rate_limit_state_for_tests
+
+        _reset_rate_limit_state_for_tests()
+        region = RegionConfig(
+            region_id="test",
+            display_name="t",
+            query_location="El Paso, TX",
+            radius_miles=50,
+            states=[],
+            countries=["US"],
+            sources=["jsearch"],
+            role_categories=[],
+            keywords=["AI engineer"],
+        )
+        captured_params: list[dict] = []
+
+        async def fake_get(self, url, *, params=None, headers=None, **kwargs):
+            captured_params.append(params or {})
+            resp = type("R", (), {})()
+            resp.raise_for_status = lambda: None
+            resp.json = lambda: {"data": []}
+            resp.status_code = 200
+            return resp
+
+        with patch.dict(
+            os.environ,
+            {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
+            clear=False,
+        ), patch("httpx.AsyncClient.get", new=fake_get):
+            asyncio.run(JSearchAdapter().fetch(region=region))
+
+        assert captured_params, "adapter never called client.get"
+        p = captured_params[0]
+        assert p["query"] == "AI engineer in El Paso, TX"
+        assert p["country"] == "us"
+        assert p["language"] == "en"
+        assert p["date_posted"] == "all"
+
+    def test_query_without_location_omits_in_keyword(self) -> None:
+        """Empty location → query is just the keyword, not '<kw> in '."""
+        from unittest.mock import patch
+
+        from ingestion.sources.jsearch_adapter import _reset_rate_limit_state_for_tests
+
+        _reset_rate_limit_state_for_tests()
+        region = RegionConfig(
+            region_id="test",
+            display_name="t",
+            query_location="",
+            radius_miles=50,
+            states=[],
+            countries=["US"],
+            sources=["jsearch"],
+            role_categories=[],
+            keywords=["data scientist"],
+        )
+        captured: list[dict] = []
+
+        async def fake_get(self, url, *, params=None, headers=None, **kwargs):
+            captured.append(params or {})
+            resp = type("R", (), {})()
+            resp.raise_for_status = lambda: None
+            resp.json = lambda: {"data": []}
+            resp.status_code = 200
+            return resp
+
+        with patch.dict(
+            os.environ,
+            {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
+            clear=False,
+        ), patch("httpx.AsyncClient.get", new=fake_get):
+            asyncio.run(JSearchAdapter().fetch(region=region))
+
+        assert captured[0]["query"] == "data scientist"

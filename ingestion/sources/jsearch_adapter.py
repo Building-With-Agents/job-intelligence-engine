@@ -222,13 +222,22 @@ class JSearchAdapter(SourceAdapter):
         if not api_key:
             raise ValueError("JSEARCH_API_KEY is not set")
 
-        # Build query from region: location + keywords/role_categories
-        query_parts = [region.query_location] if region.query_location else []
-        if region.keywords:
-            query_parts.extend(region.keywords[:3])
-        if region.role_categories:
-            query_parts.extend(region.role_categories[:2])
-        query = " ".join(query_parts).strip() or "jobs"
+        # Build query in JSearch's canonical "<role> in <location>" format
+        # (issue #165). Location is the single authoritative geo signal via the
+        # `in` keyword; `country`/`language` params anchor results. role_categories
+        # is deprecated for JSearch and ignored here.
+        #
+        # One JSearch call = one keyword. If region.keywords has multiple entries,
+        # only the first is used — batch_ingest.py is expected to expand the
+        # caller's query into (query × keyword × location) triples upstream so
+        # each call is single-keyword for best relevance ranking.
+        keyword = (region.keywords[0].strip() if region.keywords else "") or "jobs"
+        location = (region.query_location or "").strip()
+        query = f"{keyword} in {location}" if location else keyword
+
+        country = (os.getenv("JSEARCH_COUNTRY", "us") or "us").strip().lower()
+        language = (os.getenv("JSEARCH_LANGUAGE", "en") or "en").strip().lower()
+        date_posted = (os.getenv("JSEARCH_DATE_POSTED", "all") or "all").strip().lower()
 
         num_pages = max(1, min(50, _env_int("JSEARCH_MAX_PAGES", 50)))
         max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
@@ -250,6 +259,9 @@ class JSearchAdapter(SourceAdapter):
                                 "query": query,
                                 "page": str(page),
                                 "num_pages": "1",
+                                "country": country,
+                                "language": language,
+                                "date_posted": date_posted,
                             },
                             headers={
                                 "X-RapidAPI-Key": api_key,
