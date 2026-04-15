@@ -35,12 +35,6 @@ log = structlog.get_logger()
 
 AGENT_RESPONSIBILITIES = "skills-extraction-responsibilities"
 
-_RESP_DEPLOYMENT_KEYS = (
-    "EXTRACTION_DEPLOYMENT_RESPONSIBILITIES",
-    "EXTRACTION_MODEL_RESPONSIBILITIES",
-    "AZURE_OPENAI_DEPLOYMENT_NAME",
-)
-
 
 class _ResponsibilitiesLLMRoot(BaseModel):
     """Root schema for structured LLM output (list of ResponsibilityRecord)."""
@@ -158,7 +152,7 @@ def extract_responsibilities(
             prompt,
             _ResponsibilitiesLLMRoot,
             agent_name=AGENT_RESPONSIBILITIES,
-            deployment_env_keys=_RESP_DEPLOYMENT_KEYS,
+            role="extraction_responsibilities",
             model_tier_for_cost="sonnet",
         )
         metadata.update(call_meta)
@@ -213,7 +207,7 @@ async def extract_responsibilities_async(
             prompt,
             _ResponsibilitiesLLMRoot,
             agent_name=AGENT_RESPONSIBILITIES,
-            deployment_env_keys=_RESP_DEPLOYMENT_KEYS,
+            role="extraction_responsibilities",
             model_tier_for_cost="sonnet",
         )
 

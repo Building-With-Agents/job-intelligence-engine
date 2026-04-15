@@ -1,0 +1,53 @@
+---
+description: LLM provider policy — Azure OpenAI is the default. No hardcoded Anthropic model IDs in agent code, rules, docs, or curriculum material.
+alwaysApply: true
+---
+
+# LLM Provider Policy
+
+## Azure OpenAI is the default provider
+
+All LLM calls in agent code route through the provider-agnostic adapter
+(`common.llm_adapter.complete` — see `llm-routing.mdc` for the `role`-based
+resolution chain). Do not hardcode Anthropic model IDs in agent code,
+`.cursor/rules/*.mdc` contracts, runbooks, documentation, slide decks,
+or speaker notes.
+
+## Capability tier → Azure deployment
+
+| Tier | Azure deployment | Env var | Use for |
+|---|---|---|---|
+| Haiku-class | `chat-gpt41mini` | `LLM_DEFAULT` | Intent classification, labelling, routing decisions |
+| Sonnet-class | `chat-gpt41` | `LLM_SYNTHESIS` | Q&A answer generation, multi-step reasoning, evidence citation |
+| Embeddings | `embeddings-te3small` | `AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME` | pgvector / semantic search |
+
+Environment defaults: `LLM_PROVIDER=azure_openai`,
+`LLM_DEFAULT=chat-gpt41mini`, `LLM_SYNTHESIS=chat-gpt41`.
+
+## Forbidden in agent code, rules, and docs
+
+- `model = "claude-haiku-4-5"`
+- `model = "claude-sonnet-4-6"`, `"claude-opus-4-6"`, `"claude-3-5-sonnet-*"`, `"claude-3-*"`
+- Rule or runbook text: "use Haiku" / "use Sonnet" without clarifying these are capability **tiers**, mapped to Azure deployments above
+- `.mdc` contracts that require a specific Anthropic model
+
+## Correct patterns
+
+- Agent code: `complete(prompt=..., agent_name=..., role="classification")` — go through the adapter
+- If a literal default is unavoidable: `os.getenv("LLM_DEFAULT", "chat-gpt41mini")`
+- Docs / curriculum: "Haiku-tier (Azure OpenAI `chat-gpt41mini` via `LLM_DEFAULT`)"
+
+## Relationship to other rules
+
+- `llm-routing.mdc` — the canonical routing spec (role-based resolution, env var contract, cost tracking). This rule (`llm-provider.mdc`) enforces the provider policy at a higher level and applies repo-wide via `alwaysApply: true`.
+- Violations in `llm-routing.mdc` scope (hardcoded deployment names) are already forbidden there. This rule adds: no Anthropic model IDs anywhere.
+
+## Exceptions (narrow)
+
+- ADRs and changelogs documenting the Anthropic → Azure migration
+- Test files exercising the `anthropic` provider fallback path in the adapter
+- Claude Code tooling itself — orthogonal to the pipeline
+
+## Rationale
+
+Negotiated Azure OpenAI contract, data residency in the same Azure subscription as the JIE Postgres database, and consistency with the wfd-os production deployment.

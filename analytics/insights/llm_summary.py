@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from typing import TypedDict
 
@@ -15,7 +14,6 @@ from common.llm_adapter import complete
 log = structlog.get_logger()
 
 _AGENT_NAME = "analytics-agent"
-_DEFAULT_MODEL = os.getenv("EXTRACTION_MODEL_SKILLS", "claude-sonnet-4-5")
 
 
 class SummaryResult(TypedDict):
@@ -98,11 +96,10 @@ def generate_summary(
     generated_at = _utc_now_iso()
     try:
         prompt = _build_prompt(label, trajectory, freshness_records)
-        model = _DEFAULT_MODEL
         result = complete(
             prompt=prompt,
             agent_name=_AGENT_NAME,
-            model=model,
+            role="synthesis",
             system=(
                 "You are an analytics writer for labor-market intelligence. "
                 "Use only the facts in the user message. Output 3–5 paragraphs with no markdown headings."
@@ -121,7 +118,7 @@ def generate_summary(
                 "sector_label": None,
                 "summary_text": content,
                 "is_llm_generated": True,
-                "model_used": model,
+                "model_used": result.get("model") or result.get("model_tier"),
                 "generated_at": generated_at,
             }
         log.info(

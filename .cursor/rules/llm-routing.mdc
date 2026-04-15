@@ -1,0 +1,65 @@
+---
+description: LLM routing — per-call model selection via resolve_llm_route(role)
+globs:
+  - common/llm_adapter.py
+  - common/llm_client.py
+  - analytics/**
+  - skills_extraction/**
+  - enrichment/**
+---
+
+# LLM Routing
+
+## Env Var Convention
+
+All LLM deployment routing uses `LLM_*` env vars. Never use the old `EXTRACTION_DEPLOYMENT_*` or `AZURE_OPENAI_DEPLOYMENT_NAME` vars — they are dead.
+
+```
+LLM_PROVIDER=azure_openai         # Default provider (fallback)
+LLM_DEFAULT=chat-gpt41mini        # Haiku-class — default for all calls
+LLM_SYNTHESIS=chat-gpt41           # Sonnet-class — Q&A answer generation
+```
+
+## resolve_llm_route(role)
+
+All LLM calls resolve their deployment via `resolve_llm_route(role)` from `common/llm_adapter.py`.
+
+Resolution chain (fail fast — no legacy fallbacks):
+1. `LLM_{ROLE}` env var (e.g. `LLM_SYNTHESIS` for role `"synthesis"`)
+2. `LLM_DEFAULT` env var
+3. `ValueError` with clear message
+
+Provider override syntax: `LLM_SYNTHESIS=gemini:gemini-2.5-pro` → `("gemini", "gemini-2.5-pro")`
+
+## Roles
+
+| Role | Env Var | Default Use |
+|------|---------|-------------|
+| `synthesis` | `LLM_SYNTHESIS` | Q&A answer generation, complex reasoning (Sonnet-class) |
+| `extraction` | `LLM_EXTRACTION` | Skills extraction (default tier) |
+| `extraction_tasks` | `LLM_EXTRACTION_TASKS` | Tasks extraction (Haiku-class) |
+| `extraction_responsibilities` | `LLM_EXTRACTION_RESPONSIBILITIES` | Responsibilities extraction |
+| `extraction_naics` | `LLM_EXTRACTION_NAICS` | NAICS classification |
+| `extraction_employer` | `LLM_EXTRACTION_EMPLOYER` | Employer classification |
+| `classification` | `LLM_CLASSIFICATION` | Intent classification (Haiku-class) |
+| `analytics` | `LLM_ANALYTICS` | Analytics summaries |
+
+## Usage
+
+```python
+# In complete() calls:
+result = complete(prompt=..., agent_name=..., role="synthesis")
+
+# In structured extraction:
+parsed, meta = invoke_structured_extraction_llm(prompt, Schema, agent_name=..., role="extraction_tasks", model_tier_for_cost="haiku")
+
+# In invoke_skills_llm:
+text, meta = invoke_skills_llm(prompt, agent_name=..., role="extraction")
+```
+
+## Rules
+
+- **Never hardcode deployment names** — always use `role=` parameter
+- **Never reference old env vars** (`EXTRACTION_DEPLOYMENT_*`, `AZURE_OPENAI_DEPLOYMENT_NAME`) — they are dead
+- **Cost tracking** uses `model_tier_for_cost` (separate from routing) — keep it
+- **PRICING dict and MODEL_TIER_MAP** in `llm_adapter.py` handle cost computation — don't duplicate

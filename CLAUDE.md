@@ -41,6 +41,29 @@ This repo was extracted from `job-intelligence-engine/` into a standalone reposi
 
 ---
 
+## LLM Model References — Azure OpenAI Is the Default Provider
+
+All LLM calls route through the provider-agnostic adapter
+(`common.llm_adapter.complete`) with role-based resolution. Do not hardcode
+Anthropic model IDs (`claude-haiku-4-5`, `claude-sonnet-4-6`,
+`claude-opus-4-6`, etc.) in agent code, `.cursor/rules/*.mdc` contracts,
+runbooks, or documentation.
+
+**Deployment map:**
+
+| Tier | Azure deployment | Env var |
+|---|---|---|
+| Haiku-class | `chat-gpt41mini` | `LLM_DEFAULT` |
+| Sonnet-class | `chat-gpt41` | `LLM_SYNTHESIS` |
+| Embeddings | `embeddings-te3small` | `AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME` |
+
+See `.cursor/rules/llm-provider.mdc` (repo-wide, `alwaysApply: true`) for the
+full rule and `.cursor/rules/llm-routing.mdc` for the role-based resolution
+spec. The `anthropic` provider is kept as a fallback in `common.llm_adapter`
+but is not the default for any agent.
+
+---
+
 ## Table Ownership
 
 **SQLAlchemy is the single database authority.** All tables live in the `dbo` schema on PostgreSQL.
@@ -186,11 +209,12 @@ SA-classified decisions use the **reference implementation** shown above. If you
 All credentials in `.env` — never hardcode any of these.
 
 ```bash
-# LLM
+# LLM Routing (see .env.example for full list)
+LLM_PROVIDER=azure_openai          # azure_openai | gemini | anthropic | mock
+LLM_DEFAULT=chat-gpt41mini         # Haiku-class — default for all calls
+LLM_SYNTHESIS=chat-gpt41           # Sonnet-class — Q&A synthesis, complex reasoning
 AZURE_OPENAI_API_KEY=
 AZURE_OPENAI_ENDPOINT=
-AZURE_OPENAI_DEPLOYMENT_NAME=
-LLM_PROVIDER=azure_openai          # azure_openai | openai | anthropic
 
 # Database
 PYTHON_DATABASE_URL=                # SQLAlchemy psycopg2 URL:
@@ -245,14 +269,27 @@ class EventEnvelope(BaseModel):
     payload: dict[str, Any]
 ```
 
-### LLM adapter usage
+### LLM routing — per-call model selection
+
+All LLM calls use `resolve_llm_route(role)` to determine which provider and deployment to use. Configuration is via `LLM_*` env vars.
 
 ```python
-from common.llm_adapter import get_adapter
+from common.llm_adapter import complete, resolve_llm_route
 
-adapter = get_adapter(provider=os.getenv("LLM_PROVIDER", "azure_openai"))
-result = adapter.complete(prompt=prompt, schema=OutputSchema)
+# Role-based (preferred — resolves via LLM_SYNTHESIS env var):
+result = complete(prompt=prompt, agent_name="analytics-agent", role="synthesis")
+
+# Direct resolution:
+provider, deployment = resolve_llm_route("synthesis")  # ("azure_openai", "chat-gpt41")
 ```
+
+**Env var resolution:** `LLM_{ROLE}` → `LLM_DEFAULT` → `ValueError`. No legacy fallbacks.
+
+**Provider override:** `LLM_SYNTHESIS=gemini:gemini-2.5-pro` routes synthesis through Gemini.
+
+**Roles:** `synthesis`, `extraction`, `extraction_tasks`, `extraction_responsibilities`, `extraction_naics`, `extraction_employer`, `classification`, `analytics`
+
+**Never hardcode deployment names.** Always use `role=` parameter or `resolve_llm_route()`.
 
 Fallback: 2 retries → log to `llm_audit_log` → set `extraction_status = "failed"` → continue batch. Never block a batch on LLM failure.
 

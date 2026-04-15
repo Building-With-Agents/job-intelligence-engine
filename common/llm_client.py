@@ -27,6 +27,7 @@ from common.llm_adapter import (
     compute_extraction_cost,
     get_tracer,
     log_extraction_event,
+    resolve_llm_route,
     resolve_model_tier,
 )
 
@@ -108,7 +109,7 @@ def _model_tier_for_skills_extraction(model_name: str) -> str:
     return resolve_model_tier(model_name)
 
 
-def _build_gemini_llm() -> Any:
+def _build_gemini_llm(model: str | None = None) -> Any:
     """Build Google Gemini chat model via LangChain. Drop-in replacement for AzureChatOpenAI."""
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI
@@ -119,15 +120,27 @@ def _build_gemini_llm() -> Any:
         ) from e
 
     return ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         google_api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.1,
     )
 
 
-def _get_llm() -> Any:
-    """Build chat model for skills extraction. Provider selected via LLM_PROVIDER env var."""
-    provider = os.getenv("LLM_PROVIDER", "azure_openai")
+def _get_llm(role: str | None = None, deployment: str | None = None) -> Any:
+    """Build chat model for skills extraction. Provider selected via LLM_PROVIDER env var.
+
+    When *role* is provided, resolves the deployment via :func:`resolve_llm_route`.
+    An explicit *deployment* overrides role-based resolution (backward compat).
+    """
+    if role and not deployment:
+        resolved_provider, resolved_deployment = resolve_llm_route(role)
+        if resolved_provider == "gemini":
+            return _build_gemini_llm(model=resolved_deployment)
+        deployment = resolved_deployment
+        provider = resolved_provider
+    else:
+        provider = os.getenv("LLM_PROVIDER", "azure_openai")
+
     if provider == "gemini":
         return _build_gemini_llm()
 
@@ -139,31 +152,23 @@ def _get_llm() -> Any:
             "langchain-openai is required for Pass 2 skills extraction. Install with: pip install langchain-openai"
         ) from e
 
-    deployment = (
-        os.getenv("EXTRACTION_DEPLOYMENT_SKILLS")
-        or os.getenv("EXTRACTION_MODEL_SKILLS")
-        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-    )
     if not deployment:
-        raise ValueError(
-            "One of EXTRACTION_DEPLOYMENT_SKILLS, EXTRACTION_MODEL_SKILLS, "
-            "or AZURE_OPENAI_DEPLOYMENT_NAME must be set for skills extraction."
-        )
+        _, deployment = resolve_llm_route(role or "extraction")
 
     return AzureChatOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-01-01-preview"),
         azure_deployment=deployment,
         temperature=0.1,
     )
 
 
-def _build_structured_llm(deployment: str) -> Any:
+def _build_structured_llm(deployment: str, *, provider: str | None = None) -> Any:
     """Build chat model for structured extraction calls. Provider selected via LLM_PROVIDER env var."""
-    provider = os.getenv("LLM_PROVIDER", "azure_openai")
+    provider = provider or os.getenv("LLM_PROVIDER", "azure_openai")
     if provider == "gemini":
-        return _build_gemini_llm()
+        return _build_gemini_llm(model=deployment)
 
     # Default: Azure OpenAI
     try:
@@ -176,7 +181,7 @@ def _build_structured_llm(deployment: str) -> Any:
     return AzureChatOpenAI(
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
         api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-01-01-preview"),
         azure_deployment=deployment,
         temperature=0.1,
     )
@@ -263,6 +268,7 @@ def invoke_skills_llm(
     prompt: str,
     *,
     agent_name: str | None = None,
+    role: str = "extraction",
 ) -> tuple[str, dict[str, Any]]:
     """Invoke the skills-extraction LLM once. No retry or back-off.
 
@@ -273,6 +279,8 @@ def invoke_skills_llm(
     agent_name
         If set, used for ``llm_audit_log.agent_name`` instead of the default
         skills-extraction agent (e.g. spam preview diagnostics).
+    role
+        Pipeline role for LLM routing (default: "extraction").
 
     Returns
     -------
@@ -315,16 +323,17 @@ def invoke_skills_llm(
                     })
             return text, meta
 
-    llm = _get_llm()
+    llm = _get_llm(role=role)
     audit_agent = agent_name or AGENT_NAME
+    try:
+        _resolved_provider, _resolved_deployment = resolve_llm_route(role)
+    except ValueError:
+        _resolved_deployment = "azure-openai"
     deployment_name = (
         getattr(llm, "azure_deployment", None)
         or getattr(llm, "deployment_name", None)
         or getattr(llm, "model_name", None)
-        or os.getenv("EXTRACTION_DEPLOYMENT_SKILLS")
-        or os.getenv("EXTRACTION_MODEL_SKILLS")
-        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-        or "azure-openai"
+        or _resolved_deployment
     )
     model_name = deployment_name  # overwritten below if response has actual model
     provider = "azure-openai"
@@ -460,6 +469,7 @@ async def ainvoke_skills_llm(
     prompt: str,
     *,
     agent_name: str | None = None,
+    role: str = "extraction",
 ) -> tuple[str, dict[str, Any]]:
     """Async counterpart to ``invoke_skills_llm`` using ``llm.ainvoke``.
 
@@ -493,16 +503,17 @@ async def ainvoke_skills_llm(
             )
             return text, meta
 
-    llm = _get_llm()
+    llm = _get_llm(role=role)
     audit_agent = agent_name or AGENT_NAME
+    try:
+        _resolved_provider, _resolved_deployment = resolve_llm_route(role)
+    except ValueError:
+        _resolved_deployment = "azure-openai"
     deployment_name = (
         getattr(llm, "azure_deployment", None)
         or getattr(llm, "deployment_name", None)
         or getattr(llm, "model_name", None)
-        or os.getenv("EXTRACTION_DEPLOYMENT_SKILLS")
-        or os.getenv("EXTRACTION_MODEL_SKILLS")
-        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-        or "azure-openai"
+        or _resolved_deployment
     )
     model_name = deployment_name
     provider = "azure-openai"
@@ -631,23 +642,13 @@ async def ainvoke_skills_llm(
             }
 
 
-def _resolve_azure_deployment(*env_keys: str) -> str:
-    """Return first non-empty deployment name from env keys (Haiku/Sonnet slots)."""
-    for key in env_keys:
-        val = os.getenv(key)
-        if val and val.strip():
-            return val.strip()
-    raise ValueError(
-        "Azure OpenAI deployment not configured. Set one of: " + ", ".join(env_keys)
-    )
-
-
 def invoke_structured_extraction_llm(
     prompt: str,
     output_schema: type[TSchema],
     *,
     agent_name: str,
-    deployment_env_keys: tuple[str, ...],
+    role: str = "extraction",
+    deployment_env_keys: tuple[str, ...] | None = None,
     model_tier_for_cost: str,
 ) -> tuple[TSchema | None, dict[str, Any]]:
     """Invoke Azure OpenAI with LangChain ``with_structured_output`` once.
@@ -664,8 +665,10 @@ def invoke_structured_extraction_llm(
         Pydantic model class for the structured response root object.
     agent_name
         Name written to llm_audit_log.
+    role
+        Pipeline role for LLM routing (e.g. "extraction", "extraction_tasks").
     deployment_env_keys
-        Ordered env var names for ``azure_deployment`` (first wins).
+        Deprecated — kept for backward compat. Ignored when role is provided.
     model_tier_for_cost
         ``haiku`` or ``sonnet`` for ``compute_extraction_cost``.
     """
@@ -706,7 +709,7 @@ def invoke_structured_extraction_llm(
             return parsed, meta
 
     try:
-        deployment = _resolve_azure_deployment(*deployment_env_keys)
+        resolved_provider, deployment = resolve_llm_route(role)
     except ValueError as e:
         log.warning("structured_llm_missing_deployment", error=str(e))
         return None, _structured_metadata_failure(
@@ -718,7 +721,7 @@ def invoke_structured_extraction_llm(
 
     deployment_name = deployment
     model_name = deployment_name  # overwritten below if response has actual model
-    provider = "azure-openai"
+    provider = resolved_provider if resolved_provider != "azure_openai" else "azure-openai"
     tracer = get_tracer()
     span_ctx = (
         tracer.start_span(
@@ -734,7 +737,7 @@ def invoke_structured_extraction_llm(
 
     with span_ctx:
         try:
-            llm = _build_structured_llm(deployment)
+            llm = _build_structured_llm(deployment, provider=resolved_provider)
         except ImportError as e:
             log.error("structured_llm_import_failed", error=str(e))
             if tracer:
@@ -848,7 +851,8 @@ async def ainvoke_structured_extraction_llm(
     output_schema: type[TSchema],
     *,
     agent_name: str,
-    deployment_env_keys: tuple[str, ...],
+    role: str = "extraction",
+    deployment_env_keys: tuple[str, ...] | None = None,
     model_tier_for_cost: str,
 ) -> tuple[TSchema | None, dict[str, Any]]:
     """Async counterpart to ``invoke_structured_extraction_llm`` using ``chain.ainvoke``."""
@@ -880,7 +884,7 @@ async def ainvoke_structured_extraction_llm(
             return parsed, meta
 
     try:
-        deployment = _resolve_azure_deployment(*deployment_env_keys)
+        resolved_provider, deployment = resolve_llm_route(role)
     except ValueError as e:
         log.warning("structured_llm_missing_deployment", error=str(e))
         return None, _structured_metadata_failure(
@@ -892,7 +896,7 @@ async def ainvoke_structured_extraction_llm(
 
     deployment_name = deployment
     model_name = deployment_name
-    provider = "azure-openai"
+    provider = resolved_provider if resolved_provider != "azure_openai" else "azure-openai"
 
     tracer = get_tracer()
     span_ctx = (
@@ -909,7 +913,7 @@ async def ainvoke_structured_extraction_llm(
 
     with span_ctx:
         try:
-            llm = _build_structured_llm(deployment)
+            llm = _build_structured_llm(deployment, provider=resolved_provider)
         except ImportError as e:
             log.error("structured_llm_import_failed", error=str(e))
             if tracer:
