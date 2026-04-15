@@ -3,15 +3,15 @@
 Classifies natural-language questions into ARCHITECTURE_DEEP.md intent buckets
 and extracts lightweight entities for routing and SQL generation.
 
-Uses :func:`common.llm_adapter.complete` with a Haiku-tier model by default for
-latency and cost. Provider selection follows ``LLM_PROVIDER`` (anthropic, mock,
-gemini).
+Uses :func:`common.llm_adapter.complete` with ``role="classification"`` so the
+call routes through the provider-agnostic adapter (Azure OpenAI ``chat-gpt41mini``
+via ``LLM_DEFAULT`` by default — see ``.cursor/rules/llm-routing.mdc``).
 """
 
 from __future__ import annotations
 
 import json
-import os
+
 import re
 from typing import Any, Final
 
@@ -23,9 +23,6 @@ from common.llm_adapter import complete
 log = structlog.get_logger()
 
 _AGENT_NAME = "analytics-intent-classification"
-
-# Default: Haiku-class (see common.llm_adapter.MODEL_TIER_MAP).
-_DEFAULT_INTENT_MODEL = "claude-haiku-4-5"
 
 INTENT_CATEGORIES: Final[tuple[str, ...]] = (
     "trend",
@@ -137,10 +134,6 @@ class IntentClassification(BaseModel):
         return aliases.get(s, "other")
 
 
-def _intent_model() -> str:
-    return os.getenv("INTENT_CLASSIFICATION_MODEL", _DEFAULT_INTENT_MODEL)
-
-
 def _strip_json_fence(text: str) -> str:
     t = text.strip()
     if t.startswith("```"):
@@ -187,21 +180,20 @@ def classify_workforce_question(
     invalid JSON, returns ``intent="other"``, ``confidence=0.0``, and empty entity
     lists.
 
-    Uses :func:`common.llm_adapter.complete` with the model from
-    ``INTENT_CLASSIFICATION_MODEL`` (default Haiku-class).
+    Routes through :func:`common.llm_adapter.complete` with ``role="classification"``
+    (Haiku-tier; resolves to Azure OpenAI ``chat-gpt41mini`` via ``LLM_DEFAULT``).
     """
     q = (question or "").strip()
     if not q:
         return _fallback_other("empty_question")
 
     prompt = f"User question:\n{q}\n"
-    model = _intent_model()
 
     try:
         result = complete(
             prompt=prompt,
             agent_name=_AGENT_NAME,
-            model=model,
+            role="classification",
             system=_SYSTEM_PROMPT,
             max_tokens=max_tokens,
             correlation_id=correlation_id,

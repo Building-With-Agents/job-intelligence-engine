@@ -26,7 +26,7 @@ globs:
   }
 
 - Failure → intent="other", confidence=0.0, empty entities
-- Must use Haiku-class model (claude-haiku-4-5)
+- Must use Haiku-tier (Azure OpenAI `chat-gpt41mini` via `LLM_DEFAULT`)
 
 ---
 
