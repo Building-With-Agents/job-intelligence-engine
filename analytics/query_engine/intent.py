@@ -11,14 +11,16 @@ via ``LLM_DEFAULT`` by default — see ``.cursor/rules/llm-routing.mdc``).
 from __future__ import annotations
 
 import json
-
 import re
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import structlog
 from pydantic import BaseModel, Field, field_validator
 
 from common.llm_adapter import complete
+
+if TYPE_CHECKING:
+    from analytics.query_engine.schemas import CostLedger
 
 log = structlog.get_logger()
 
@@ -174,6 +176,7 @@ def classify_workforce_question(
     *,
     correlation_id: str | None = None,
     max_tokens: int = 500,
+    cost_ledger: CostLedger | None = None,
 ) -> dict[str, Any]:
     """Classify a free-text workforce question and extract entities.
 
@@ -201,6 +204,10 @@ def classify_workforce_question(
             max_tokens=max_tokens,
             correlation_id=correlation_id,
         )
+        if cost_ledger is not None:
+            from analytics.query_engine.ledger_utils import append_leg_from_complete
+
+            append_leg_from_complete(cost_ledger, "intent_classification", result, model_fallback=None)
     except Exception as exc:
         log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
         return _fallback_other("llm_exception")

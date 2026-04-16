@@ -193,6 +193,12 @@ def run_guardrailed_analytics_query(
         return qna.run_analytics_qna(payload, cost_ledger=ledger)
 
     ok, reason, normalized_sql = validate_ask_the_data_sql(raw_sql)
+    audit_sql = normalized_sql if ok and normalized_sql else raw_sql.strip()
+    audit_log.log_sql_validation_to_llm_audit(
+        sql_text=audit_sql,
+        is_valid=bool(ok and normalized_sql),
+        reason=None if ok and normalized_sql else reason,
+    )
     if not ok or not normalized_sql:
         log.warning("analytics_qna_sql_rejected", query_fingerprint=fp, reason=reason)
         payload = QueryResultPayload(
@@ -286,6 +292,8 @@ def _synthesis_to_api(sr: SynthesisResponse, *, sql_generated: str) -> Analytics
             title=c.citation_id,
             source=(c.source_table or ""),
             snippet=c.summary,
+            supporting_count=c.supporting_count,
+            time_period=c.time_period,
         )
         for c in sr.citations
     ]
@@ -293,9 +301,19 @@ def _synthesis_to_api(sr: SynthesisResponse, *, sql_generated: str) -> Analytics
         answer=answer or "No answer could be generated for this question.",
         evidence=evidence,
         confidence=float(sr.confidence),
+        periods_described=sr.periods_described,
+        confidence_flagged_low=bool(sr.confidence_flagged_low),
+        confidence_explanation=sr.confidence_explanation,
+        volume_flagged_low=bool(sr.volume_flagged_low),
+        volume_warning=sr.volume_warning,
+        refused=bool(sr.refused),
+        refusal_message=sr.refusal_message,
+        sql_execution_error_detail=sr.sql_execution_error_detail,
         follow_up_questions=list(sr.follow_up_questions or []),
         sql_generated=sql_generated,
         cost_usd=float(sr.total_cost_usd),
+        total_cost_usd=float(sr.total_cost_usd),
+        cost_breakdown_usd={leg: float(cost) for leg, cost in sr.cost_breakdown_usd.items()},
     )
 
 
@@ -332,7 +350,8 @@ def run_analytics_qna(
         )
 
     try:
-        classification = classify_workforce_question(q, correlation_id=cid)
+        ledger = CostLedger()
+        classification = classify_workforce_question(q, correlation_id=cid, cost_ledger=ledger)
         intent_label = str(classification.get("intent") or "other")
         conf = float(classification.get("confidence") or 0.0)
         payload_audit = {
@@ -363,7 +382,6 @@ def run_analytics_qna(
             correlation_id=cid,
         )
 
-        ledger = CostLedger()
         syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)
 
         audit_log.insert_orchestration_audit(

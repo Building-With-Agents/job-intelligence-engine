@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from analytics.query_engine.evidence import build_evidence_bundle
 from analytics.query_engine.fixtures import sample_query_request, sample_query_result_payload_ok
 from analytics.query_engine.schemas import DataSufficiency, QueryResultPayload
@@ -143,6 +145,47 @@ def test_build_evidence_bundle_router_error_appends_postgres_detail() -> None:
     assert bundle.sql_execution_error_detail == 'column "nope" does not exist'
     assert "PostgreSQL:" in (bundle.refusal_reason or "")
     assert 'column "nope" does not exist' in (bundle.refusal_reason or "")
+
+
+@pytest.mark.parametrize("period_key", ["week_start", "velocity_week"])
+def test_build_evidence_bundle_recognizes_router_period_fields(period_key: str) -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="trend_compare",
+        classification_confidence=0.9,
+        columns=[period_key, "posting_count"],
+        rows=[{period_key: "2025-04-21", "posting_count": 42}],
+        row_count_returned=1,
+        tables_referenced=["skill_demand_weekly"],
+    )
+
+    bundle = build_evidence_bundle(payload)
+
+    assert bundle.period_coverage == "2025-04-21"
+    assert bundle.facts[0].time_period == "2025-04-21"
+    assert "explicit time period" not in bundle.confidence_explanation
+
+
+def test_build_evidence_bundle_orders_multi_period_ranges_oldest_to_newest() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="trend_compare",
+        classification_confidence=0.9,
+        columns=["time_period", "posting_count"],
+        rows=[
+            {"time_period": "2025-W05", "posting_count": 10},
+            {"time_period": "2025-W04", "posting_count": 9},
+            {"time_period": "2025-W03", "posting_count": 8},
+            {"time_period": "2025-W02", "posting_count": 7},
+            {"time_period": "2025-W01", "posting_count": 6},
+        ],
+        row_count_returned=5,
+        tables_referenced=["analytics_aggregates"],
+    )
+
+    bundle = build_evidence_bundle(payload)
+
+    assert bundle.period_coverage == "2025-W01 to 2025-W05 (5 periods)"
 
 
 def test_distinct_posting_count_overrides_volume_heuristic() -> None:
