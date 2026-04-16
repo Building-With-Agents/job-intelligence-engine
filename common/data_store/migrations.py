@@ -268,6 +268,8 @@ _SERIAL_SEQUENCE_TARGETS = (
     ("extracted_intelligence", "id"),
     ("llm_audit_log", "id"),
     ("employer_profiles", "id"),
+    ("cohort_gap_cache", "id"),
+    ("orchestration_audit_log", "id"),
 )
 
 
@@ -465,6 +467,88 @@ def run_migrations(engine: Engine) -> None:
         except Exception as exc:
             log.warning(
                 "migration_week7_analytics_aggregates_skipped",
+                error=str(exc),
+            )
+
+    # 4e. Week 8 — cohort gap cache stub (Pair A owns disruption_fingerprints DDL)
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+CREATE TABLE IF NOT EXISTS dbo.cohort_gap_cache (
+    id SERIAL PRIMARY KEY,
+    cohort_key TEXT NOT NULL,
+    computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    gap_data JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+"""
+                    )
+                )
+            log.info("migrations_cohort_gap_cache_stub_created")
+        except Exception as exc:
+            log.warning(
+                "migration_cohort_gap_cache_stub_skipped",
+                error=str(exc),
+            )
+
+    # 4f. Orchestration audit log + cohort_gap_cache unique cache key (Week 8 analytics API)
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+CREATE TABLE IF NOT EXISTS dbo.orchestration_audit_log (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(128) NOT NULL,
+    source_agent VARCHAR(64) NOT NULL DEFAULT 'analytics-api',
+    correlation_id VARCHAR(64),
+    success BOOLEAN NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+                    )
+                )
+                conn.execute(
+                    text(
+                        """
+CREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_created_at
+    ON dbo.orchestration_audit_log (created_at);
+"""
+                    )
+                )
+                conn.execute(
+                    text(
+                        """
+CREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_event_type
+    ON dbo.orchestration_audit_log (event_type);
+"""
+                    )
+                )
+            log.info("migrations_orchestration_audit_created")
+        except Exception as exc:
+            log.warning(
+                "migration_orchestration_audit_skipped",
+                error=str(exc),
+            )
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
+    ON dbo.cohort_gap_cache (cohort_key);
+"""
+                    )
+                )
+            log.info("migrations_cohort_gap_cache_unique_key_created")
+        except Exception as exc:
+            log.warning(
+                "migration_cohort_gap_cache_unique_index_skipped",
                 error=str(exc),
             )
 
