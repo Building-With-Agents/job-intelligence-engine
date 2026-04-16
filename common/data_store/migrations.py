@@ -470,46 +470,26 @@ def run_migrations(engine: Engine) -> None:
                 error=str(exc),
             )
 
-    # 4e. Week 8 — cohort gap + disruption fingerprints (depends on canonical_roles for FK)
+    # 4e. Week 8 — cohort gap cache stub (Pair A owns disruption_fingerprints DDL)
     if engine.dialect.name == "postgresql":
         try:
             with engine.begin() as conn:
-                for stmt in (
-                    """
+                conn.execute(
+                    text(
+                        """
 CREATE TABLE IF NOT EXISTS dbo.cohort_gap_cache (
     id SERIAL PRIMARY KEY,
     cohort_key TEXT NOT NULL,
     computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     gap_data JSONB NOT NULL DEFAULT '{}'::jsonb
 );
-""",
-                    """
-CREATE TABLE IF NOT EXISTS dbo.disruption_fingerprints (
-    id SERIAL PRIMARY KEY,
-    canonical_role_id TEXT REFERENCES dbo.canonical_roles(role_id) ON DELETE SET NULL,
-    disruption_category JSONB,
-    disruption_intensity DOUBLE PRECISION,
-    skill_velocity JSONB,
-    tool_transition JSONB,
-    task_shift JSONB,
-    responsibility_expansion DOUBLE PRECISION,
-    ai_intensity_trend TEXT,
-    workflow_restructuring_score DOUBLE PRECISION,
-    trajectory TEXT,
-    period_comparison JSONB,
-    computed_at TIMESTAMPTZ DEFAULT NOW()
-);
-""",
-                    """
-CREATE INDEX IF NOT EXISTS ix_disruption_fingerprints_canonical_role_id
-    ON dbo.disruption_fingerprints (canonical_role_id);
-""",
-                ):
-                    conn.execute(text(stmt))
-            log.info("migrations_cohort_gap_disruption_created")
+"""
+                    )
+                )
+            log.info("migrations_cohort_gap_cache_stub_created")
         except Exception as exc:
             log.warning(
-                "migration_cohort_gap_disruption_skipped",
+                "migration_cohort_gap_cache_stub_skipped",
                 error=str(exc),
             )
 

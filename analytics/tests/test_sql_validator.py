@@ -1,8 +1,8 @@
-"""Adversarial tests for ``sql_validator`` (sqlglot AST)."""
+"""Adversarial tests for ``sql_guardrails`` (sqlglot AST)."""
 
 from __future__ import annotations
 
-from analytics.query_engine.sql_validator import (
+from analytics.query_engine.sql_guardrails import (
     ALLOWED_TABLES,
     MAX_ROWS,
     validate_analytics_sql,

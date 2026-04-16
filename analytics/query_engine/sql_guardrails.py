@@ -1,4 +1,4 @@
-"""SQL guardrails for analytics — sqlglot AST (SELECT-only, allowlist, LIMIT ≤ 100)."""
+"""SQL guardrails for analytics — Pair C canonical module (sqlglot AST, SELECT-only, allowlist, LIMIT ≤ 100)."""
 
 from __future__ import annotations
 
@@ -25,7 +25,6 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
         "trajectory_map",
         "analytics_pipeline_state",
         "cohort_gap_cache",
-        "disruption_fingerprints",
         "canonical_roles",
     }
 )
@@ -43,7 +42,7 @@ class SqlValidationResult:
 
 @dataclass(frozen=True)
 class ValidationResult:
-    """Compatibility alias for :func:`validate_sql` (pipeline + execute_safe)."""
+    """Maps to :func:`validate_sql` for callers (routing, triggers, execute_safe)."""
 
     ok: bool
     reason: str | None
@@ -173,7 +172,7 @@ def validate_analytics_sql(sql_text: str) -> SqlValidationResult:
 
 
 def validate_sql(sql: str) -> ValidationResult:
-    """Pipeline entry point — maps to :class:`ValidationResult` for legacy callers."""
+    """Maps to :class:`ValidationResult` for routing, triggers, and execute_safe."""
     res = validate_analytics_sql(sql)
     if res.ok and res.sql:
         return ValidationResult(True, None, res.sql)

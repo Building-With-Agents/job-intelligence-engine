@@ -1,100 +1,829 @@
-"""Route intent → candidate SQL (LLM optional, always validated downstream)."""
+"""Workforce Intelligence Q&A — intent-to-SQL router (Analytics / Week 8).
+
+Takes the structured output from
+:func:`analytics.query_engine.intent.classify_workforce_question` and produces
+parameterised ORM queries against the aggregate tables.
+
+Guardrails (always enforced — see ``.cursor/rules/sql-guardrails.mdc``):
+
+- **SELECT-only** ORM queries — no DDL or DML paths.
+- **Allowlisted tables only** — :data:`ALLOWED_TABLES`.
+- **100-row LIMIT** — configurable via ``ANALYTICS_QUERY_LIMIT`` env var.
+- **30-second timeout** — configurable via ``ANALYTICS_QUERY_TIMEOUT_SECONDS``.
+- Every routing decision is logged via structlog (no PII).
+
+Usage::
+
+    from analytics.query_engine.intent import classify_workforce_question
+    from analytics.query_engine.router import QueryRouter
+
+    classification = classify_workforce_question("What skills are trending?")
+    with Session(engine) as session:
+        result = QueryRouter().route(classification, session)
+        for row in result.rows:
+            print(row)
+"""
 
 from __future__ import annotations
 
-import json
 import os
 import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import date, timedelta
+from typing import Any
 
 import structlog
+from sqlalchemy import Text, cast, or_, select
+from sqlalchemy.orm import Session
 
-from analytics.query_engine.intent import QueryIntent, QueryIntentKind
-from common.llm_adapter import complete
+from common.data_store.models import (
+    CanonicalRole,
+    Company,
+    EmployerProfile,
+    GeoDemandWeekly,
+    SectorSummaryWeekly,
+    SkillDemandWeekly,
+    SkillVelocity,
+    ToolDemandWeekly,
+)
 
 log = structlog.get_logger()
 
-_AGENT = "analytics-query-router"
+# ---------------------------------------------------------------------------
+# Guardrail constants
+# ---------------------------------------------------------------------------
+
+_QUERY_LIMIT: int = int(os.getenv("ANALYTICS_QUERY_LIMIT", "100"))
+_QUERY_TIMEOUT_SECONDS: int = int(os.getenv("ANALYTICS_QUERY_TIMEOUT_SECONDS", "30"))
+
+#: Tables the router is permitted to query.  Extending this set requires an
+#: explicit PR review — do not add raw pipeline tables here.
+ALLOWED_TABLES: frozenset[str] = frozenset(
+    {
+        "skill_demand_weekly",
+        "tool_demand_weekly",
+        "skill_velocity",
+        "skill_co_occurrence",
+        "canonical_roles",
+        "role_snapshot_weekly",
+        "geo_demand_weekly",
+        "sector_summary_weekly",
+        "employer_profiles",
+        "companies",
+    }
+)
+
+# ---------------------------------------------------------------------------
+# Geo / time helpers
+# ---------------------------------------------------------------------------
+
+# Canonical borderplex subregion tokens (locked values from integration-schema.mdc)
+_BORDERPLEX_CANONICAL: frozenset[str] = frozenset(
+    {"el_paso", "las_cruces", "ciudad_juarez", "regional"}
+)
+
+_BORDERPLEX_ALIASES: dict[str, str] = {
+    "el paso": "el_paso",
+    "elpaso": "el_paso",
+    "el_paso": "el_paso",
+    "las cruces": "las_cruces",
+    "las_cruces": "las_cruces",
+    "ciudad juarez": "ciudad_juarez",
+    "ciudad_juarez": "ciudad_juarez",
+    "juarez": "ciudad_juarez",
+    "regional": "regional",
+}
+
+# Ordered heuristic patterns for time-reference → weeks-back translation.
+# Each tuple is (compiled pattern, weeks_back).  A weeks_back of -1 means
+# "extract the day count from the match and convert to weeks".
+_TIME_PATTERNS: list[tuple[re.Pattern[str], int]] = [
+    (re.compile(r"\blast\s*week\b", re.I), 1),
+    (re.compile(r"\blast\s*(?:30|thirty)\s*days?\b", re.I), 4),
+    (re.compile(r"\blast\s*month\b", re.I), 4),
+    (re.compile(r"\blast\s*(?:90|ninety)\s*days?\b", re.I), 13),
+    (re.compile(r"\blast\s*quarter\b|Q[1-4]\b", re.I), 13),
+    (re.compile(r"\blast\s*(?:6\s*months?|half\s*year)\b", re.I), 26),
+    (re.compile(r"\blast\s*year\b|(?:past|previous)\s*year\b", re.I), 52),
+    # Generic "N days" — converted below
+    (re.compile(r"\b(\d+)\s*days?\b", re.I), -1),
+]
+
+_DEFAULT_WEEKS_BACK: int = 12
 
 
-def _extract_json_sql(content: str) -> str | None:
-    text = (content or "").strip()
-    m = re.search(r"\{[\s\S]*\"sql\"[\s\S]*\}", text)
-    if not m:
-        return None
-    try:
-        obj = json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
-    sql = obj.get("sql")
-    return str(sql).strip() if sql else None
+def _parse_weeks_back(time_refs: list[str]) -> int:
+    """Heuristically map free-text time references to a *weeks-back* integer."""
+    for ref in time_refs:
+        for pattern, weeks in _TIME_PATTERNS:
+            m = pattern.search(ref)
+            if not m:
+                continue
+            if weeks >= 0:
+                return weeks
+            # weeks == -1 → extract day count from the first capture group
+            try:
+                days = int(m.group(1))
+                return max(1, round(days / 7))
+            except (IndexError, ValueError):
+                pass
+    return _DEFAULT_WEEKS_BACK
 
 
-def _template_sql(intent: QueryIntent) -> str:
-    """Deterministic read-only queries over allowlisted aggregate tables."""
-    k = intent.kind
-    if k == QueryIntentKind.GEO_DEMAND:
-        return (
-            "SELECT week_start, borderplex_subregion, posting_count "
-            "FROM dbo.geo_demand_weekly ORDER BY week_start DESC, posting_count DESC LIMIT 100"
+def _week_floor(weeks_back: int) -> date:
+    """Return the Monday-anchored ``week_start`` that is *weeks_back* weeks ago."""
+    today = date.today()
+    current_monday = today - timedelta(days=today.weekday())
+    return current_monday - timedelta(weeks=weeks_back)
+
+
+def _resolve_geo_terms(geo_terms: list[str]) -> list[tuple[str, bool]]:
+    """Map geo terms to ``(value, is_exact)`` pairs.
+
+    Canonical borderplex values are returned with ``is_exact=True`` so the
+    query uses ``==`` instead of ``ILIKE``.
+    """
+    out: list[tuple[str, bool]] = []
+    for term in geo_terms:
+        key = term.lower().strip()
+        canonical = _BORDERPLEX_ALIASES.get(key)
+        if canonical:
+            out.append((canonical, True))
+        else:
+            out.append((term, False))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Result model
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class RouteResult:
+    """Structured output from :class:`QueryRouter`.
+
+    Attributes:
+        intent:       The intent label that was routed.
+        tables_used:  Allowlisted tables queried.
+        query_label:  Human-readable description of the query.
+        rows:         Serialised result rows (list of plain dicts).
+        row_count:    ``len(rows)``; set even when ``routed=False``.
+        is_partial:   ``True`` when the result was capped at ``QUERY_LIMIT``.
+        routed:       ``False`` if the intent could not be mapped to a query
+                      or the query raised an exception.
+        error:        Error message when ``routed=False``.
+        confidence:   Forwarded from the intent classifier.
+    """
+
+    intent: str
+    tables_used: list[str]
+    query_label: str
+    rows: list[dict[str, Any]] = field(default_factory=list)
+    row_count: int = 0
+    is_partial: bool = False
+    routed: bool = True
+    error: str | None = None
+    confidence: float = 0.0
+
+
+# ---------------------------------------------------------------------------
+# Router
+# ---------------------------------------------------------------------------
+
+
+class QueryRouter:
+    """Routes intent classifications to parameterised ORM queries.
+
+    Each of the 10 intents defined in ``intent.py`` maps to a private handler
+    that builds a SQLAlchemy ``select()`` statement, applies guardrails, and
+    returns a :class:`RouteResult`.
+
+    The router is stateless — instantiate once and call :meth:`route` for
+    every incoming classification.
+    """
+
+    # Public entry point -------------------------------------------------------
+
+    def route(
+        self,
+        classification: dict[str, Any],
+        session: Session,
+    ) -> RouteResult:
+        """Dispatch a classification dict to the appropriate query handler.
+
+        Args:
+            classification: Output of ``classify_workforce_question`` — keys
+                ``intent`` (str), ``confidence`` (float),
+                ``extracted_entities`` (dict).
+            session: Open SQLAlchemy ``Session`` (read path; the router never
+                issues write statements).
+
+        Returns:
+            :class:`RouteResult` with result rows or structured error details.
+        """
+        intent: str = str(classification.get("intent") or "other")
+        confidence: float = float(classification.get("confidence") or 0.0)
+        entities: dict[str, list[str]] = classification.get("extracted_entities") or {}
+
+        skill_names: list[str] = entities.get("skill_names") or []
+        role_names: list[str] = entities.get("role_names") or []
+        geo_terms: list[str] = entities.get("geographic_terms") or []
+        time_refs: list[str] = entities.get("time_references") or []
+
+        weeks_back = _parse_weeks_back(time_refs)
+        wfloor = _week_floor(weeks_back)
+
+        log.info(
+            "query_router_dispatch",
+            intent=intent,
+            confidence=confidence,
+            weeks_back=weeks_back,
+            skill_names=skill_names[:5],
+            role_names=role_names[:3],
+            geo_terms=geo_terms[:3],
         )
-    if k == QueryIntentKind.ROLE_SNAPSHOT:
-        return (
-            "SELECT week_start, canonical_role_id, posting_count, role_title "
-            "FROM dbo.role_snapshot_weekly ORDER BY week_start DESC LIMIT 100"
+
+        handler: Callable[..., RouteResult] | None = _INTENT_HANDLERS.get(intent)
+        if handler is None:
+            return self._route_other(
+                intent=intent,
+                confidence=confidence,
+                skill_names=skill_names,
+                role_names=role_names,
+                geo_terms=geo_terms,
+                week_floor=wfloor,
+                session=session,
+            )
+
+        try:
+            return handler(
+                self,
+                intent=intent,
+                confidence=confidence,
+                skill_names=skill_names,
+                role_names=role_names,
+                geo_terms=geo_terms,
+                week_floor=wfloor,
+                session=session,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_handler_error",
+                intent=intent,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=[],
+                query_label=f"{intent} (handler error)",
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
+
+    # Internal helpers ---------------------------------------------------------
+
+    def _execute(
+        self,
+        session: Session,
+        stmt: Any,
+        *,
+        intent: str,
+        tables_used: list[str],
+        query_label: str,
+        confidence: float,
+    ) -> RouteResult:
+        """Apply LIMIT + timeout, execute, serialise rows, return RouteResult."""
+        try:
+            bounded = stmt.limit(_QUERY_LIMIT)
+            result = session.execute(
+                bounded,
+                execution_options={"timeout": _QUERY_TIMEOUT_SECONDS},
+            )
+            rows = [dict(row._mapping) for row in result]
+            is_partial = len(rows) >= _QUERY_LIMIT
+            log.info(
+                "query_router_result",
+                intent=intent,
+                query_label=query_label,
+                row_count=len(rows),
+                is_partial=is_partial,
+                tables_used=tables_used,
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=tables_used,
+                query_label=query_label,
+                rows=rows,
+                row_count=len(rows),
+                is_partial=is_partial,
+                confidence=confidence,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_execute_error",
+                intent=intent,
+                query_label=query_label,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=tables_used,
+                query_label=query_label,
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
+
+    @staticmethod
+    def _ilike_or(column: Any, names: list[str], max_terms: int = 5) -> Any | None:
+        """Build an ``OR ILIKE`` filter clause for *names* against *column*.
+
+        Returns ``None`` when *names* is empty so callers can skip the
+        ``.where()`` call cleanly.
+        """
+        if not names:
+            return None
+        clauses = [column.ilike(f"%{n}%") for n in names[:max_terms]]
+        return or_(*clauses) if len(clauses) > 1 else clauses[0]
+
+    # Intent handlers ----------------------------------------------------------
+
+    def _route_trend(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """trend → ``skill_demand_weekly`` ordered by demand, optionally filtered by skill."""
+        t = SkillDemandWeekly
+        stmt = (
+            select(
+                t.skill_label,
+                t.esco_uri,
+                t.week_start,
+                t.posting_count,
+                t.employer_count,
+                t.computed_at,
+            )
+            .where(t.week_start >= week_floor)
+            .order_by(t.week_start.desc(), t.posting_count.desc())
         )
-    if k == QueryIntentKind.SECTOR:
-        return (
-            "SELECT week_start, sector, posting_count, employer_count, avg_salary "
-            "FROM dbo.sector_summary_weekly ORDER BY week_start DESC LIMIT 100"
+
+        skill_filter = self._ilike_or(t.skill_label, skill_names)
+        if skill_filter is not None:
+            stmt = stmt.where(skill_filter)
+
+        label = "skill demand trend"
+        if skill_names:
+            label += f" — {', '.join(skill_names[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["skill_demand_weekly"],
+            query_label=label,
+            confidence=confidence,
         )
-    if k == QueryIntentKind.VELOCITY:
-        return (
-            "SELECT skill_label, week, demand_count, week_over_week_change, four_week_trend "
-            "FROM dbo.skill_velocity ORDER BY week DESC LIMIT 100"
+
+    def _route_role_evolution(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """role_evolution → ``canonical_roles`` ordered by posting volume."""
+        cr = CanonicalRole
+        stmt = (
+            select(
+                cr.role_id,
+                cr.label,
+                cr.description,
+                cr.posting_count,
+                cr.representative_titles,
+                cr.top_skills,
+                cr.top_tools,
+                cr.computed_at,
+            )
+            .order_by(cr.posting_count.desc(), cr.computed_at.desc())
         )
-    if k == QueryIntentKind.CO_OCCURRENCE:
-        return (
-            "SELECT skill_a, skill_b, co_occurrence_count, week_start "
-            "FROM dbo.skill_co_occurrence ORDER BY week_start DESC, co_occurrence_count DESC LIMIT 100"
+
+        role_filter = self._ilike_or(cr.label, role_names)
+        if role_filter is not None:
+            stmt = stmt.where(role_filter)
+
+        label = "canonical role evolution"
+        if role_names:
+            label += f" — {', '.join(role_names[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["canonical_roles"],
+            query_label=label,
+            confidence=confidence,
         )
-    return (
-        "SELECT week_start, skill_label, posting_count, employer_count "
-        "FROM dbo.skill_demand_weekly ORDER BY week_start DESC, posting_count DESC LIMIT 100"
-    )
+
+    def _route_disruption(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """disruption → ``skill_velocity`` rows with declining or volatile trends."""
+        sv = SkillVelocity
+        stmt = (
+            select(
+                sv.skill_label,
+                sv.esco_uri,
+                sv.velocity_week,
+                sv.demand_count,
+                sv.week_over_week_change,
+                sv.four_week_trend,
+                sv.trend_confidence,
+            )
+            .where(
+                sv.four_week_trend.in_(["declining", "volatile"]),
+                sv.velocity_week >= week_floor,
+            )
+            .order_by(sv.week_over_week_change.asc(), sv.velocity_week.desc())
+        )
+
+        skill_filter = self._ilike_or(sv.skill_label, skill_names)
+        if skill_filter is not None:
+            stmt = stmt.where(skill_filter)
+
+        label = "disruption — declining / volatile skill trends"
+        if skill_names:
+            label += f" — {', '.join(skill_names[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["skill_velocity"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_emergence(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """emergence → ``skill_velocity`` rows with emerging or accelerating trends."""
+        sv = SkillVelocity
+        stmt = (
+            select(
+                sv.skill_label,
+                sv.esco_uri,
+                sv.velocity_week,
+                sv.demand_count,
+                sv.week_over_week_change,
+                sv.four_week_trend,
+                sv.trend_confidence,
+            )
+            .where(
+                sv.four_week_trend.in_(["emerging", "accelerating"]),
+                sv.velocity_week >= week_floor,
+            )
+            .order_by(sv.week_over_week_change.desc(), sv.velocity_week.desc())
+        )
+
+        skill_filter = self._ilike_or(sv.skill_label, skill_names)
+        if skill_filter is not None:
+            stmt = stmt.where(skill_filter)
+
+        label = "emerging / accelerating skills"
+        if skill_names:
+            label += f" — {', '.join(skill_names[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["skill_velocity"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_curriculum(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """curriculum → top demanded skills from ``skill_demand_weekly`` for upskilling."""
+        t = SkillDemandWeekly
+        stmt = (
+            select(
+                t.skill_label,
+                t.esco_uri,
+                t.week_start,
+                t.posting_count,
+                t.employer_count,
+                t.computed_at,
+            )
+            .where(t.week_start >= week_floor)
+            .order_by(t.posting_count.desc(), t.week_start.desc())
+        )
+
+        skill_filter = self._ilike_or(t.skill_label, skill_names)
+        if skill_filter is not None:
+            stmt = stmt.where(skill_filter)
+
+        label = "top demanded skills for curriculum"
+        if skill_names:
+            label += f" — {', '.join(skill_names[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["skill_demand_weekly"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_employer(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """employer → ``employer_profiles`` JOIN ``companies``."""
+        ep = EmployerProfile
+        co = Company
+        stmt = (
+            select(
+                ep.company_id,
+                co.company_name,
+                ep.company_size,
+                ep.ai_maturity_signal,
+                ep.sector,
+                ep.is_known_employer,
+                ep.created_at,
+            )
+            .join(co, co.company_id == ep.company_id)
+            .order_by(ep.is_known_employer.desc(), co.company_name.asc())
+        )
+
+        # role_names / geo_terms may carry company name hints (e.g. "Microsoft jobs")
+        hints = role_names + geo_terms
+        name_filter = self._ilike_or(co.company_name, hints)
+        if name_filter is not None:
+            stmt = stmt.where(name_filter)
+
+        label = "employer profiles"
+        if hints:
+            label += f" — {', '.join(hints[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["employer_profiles", "companies"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_workflow(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
+        cr = CanonicalRole
+        stmt = (
+            select(
+                cr.role_id,
+                cr.label,
+                cr.description,
+                cr.top_skills,
+                cr.top_tools,
+                cr.posting_count,
+                cr.representative_titles,
+            )
+            .order_by(cr.posting_count.desc())
+        )
+
+        if role_names:
+            role_filter = self._ilike_or(cr.label, role_names)
+            if role_filter is not None:
+                stmt = stmt.where(role_filter)
+            label = f"role workflow — {', '.join(role_names[:3])}"
+        elif skill_names:
+            # Best-effort: cast JSONB top_skills to text and ILIKE-search skill names
+            skill_clauses = [
+                cast(cr.top_skills, Text).ilike(f"%{s}%") for s in skill_names[:3]
+            ]
+            stmt = stmt.where(or_(*skill_clauses) if len(skill_clauses) > 1 else skill_clauses[0])
+            label = f"roles using {', '.join(skill_names[:3])}"
+        else:
+            label = "role workflow — skills and tools"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["canonical_roles"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_geographic(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """geographic → ``geo_demand_weekly`` filtered by borderplex_subregion."""
+        gd = GeoDemandWeekly
+        stmt = (
+            select(
+                gd.week_start,
+                gd.borderplex_subregion,
+                gd.posting_count,
+            )
+            .where(gd.week_start >= week_floor)
+            .order_by(gd.week_start.desc(), gd.posting_count.desc())
+        )
+
+        resolved = _resolve_geo_terms(geo_terms)
+        if resolved:
+            geo_clauses = [
+                gd.borderplex_subregion == value
+                if is_exact
+                else gd.borderplex_subregion.ilike(f"%{value}%")
+                for value, is_exact in resolved
+            ]
+            stmt = stmt.where(or_(*geo_clauses) if len(geo_clauses) > 1 else geo_clauses[0])
+
+        label = "geographic demand"
+        if geo_terms:
+            label += f" — {', '.join(geo_terms[:3])}"
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=["geo_demand_weekly"],
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_comparison(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """comparison → ``skill_demand_weekly`` for skill vs skill; ``sector_summary_weekly`` otherwise."""
+        if skill_names:
+            t = SkillDemandWeekly
+            skill_filter = self._ilike_or(t.skill_label, skill_names)
+            stmt = (
+                select(
+                    t.skill_label,
+                    t.week_start,
+                    t.posting_count,
+                    t.employer_count,
+                    t.esco_uri,
+                )
+                .where(t.week_start >= week_floor)
+                .order_by(t.skill_label, t.week_start.desc())
+            )
+            if skill_filter is not None:
+                stmt = stmt.where(skill_filter)
+
+            label = f"skill comparison — {' vs '.join(skill_names[:5])}"
+            tables_used = ["skill_demand_weekly"]
+        else:
+            ss = SectorSummaryWeekly
+            stmt = (
+                select(
+                    ss.sector,
+                    ss.week_start,
+                    ss.posting_count,
+                    ss.employer_count,
+                    ss.avg_salary,
+                    ss.top_skills,
+                )
+                .where(ss.week_start >= week_floor)
+                .order_by(ss.posting_count.desc(), ss.week_start.desc())
+            )
+
+            sector_filter = self._ilike_or(ss.sector, role_names)
+            if sector_filter is not None:
+                stmt = stmt.where(sector_filter)
+
+            label = "sector comparison"
+            if role_names:
+                label += f" — {', '.join(role_names[:3])}"
+            tables_used = ["sector_summary_weekly"]
+
+        return self._execute(
+            session,
+            stmt,
+            intent=intent,
+            tables_used=tables_used,
+            query_label=label,
+            confidence=confidence,
+        )
+
+    def _route_other(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+    ) -> RouteResult:
+        """other / unrecognised intent — return an unrouted result without executing SQL."""
+        log.info(
+            "query_router_unrouted",
+            intent=intent,
+            confidence=confidence,
+        )
+        return RouteResult(
+            intent=intent,
+            tables_used=[],
+            query_label="unrouted — intent could not be mapped to a query",
+            routed=False,
+            confidence=confidence,
+        )
 
 
-def generate_sql(user_query: str, intent: QueryIntent) -> tuple[str, float]:
-    """Return ``(sql, llm_cost_usd)`` — LLM path optional via env."""
-    template = _template_sql(intent)
-    if os.getenv("ANALYTICS_QUERY_USE_LLM_SQL", "").strip().lower() not in ("1", "true", "yes"):
-        return template, 0.0
+# ---------------------------------------------------------------------------
+# Dispatch table (populated after class definition to avoid forward-reference
+# issues while still keeping handlers as bound methods)
+# ---------------------------------------------------------------------------
 
-    system = (
-        "You output a single JSON object only, no prose. Keys: \"sql\". "
-        "The value must be one PostgreSQL SELECT statement using ONLY these tables (dbo schema allowed): "
-        "skill_demand_weekly, tool_demand_weekly, role_snapshot_weekly, sector_summary_weekly, "
-        "geo_demand_weekly, skill_velocity, skill_co_occurrence, posting_freshness, trajectory_map, "
-        "analytics_pipeline_state, cohort_gap_cache, disruption_fingerprints, canonical_roles. "
-        "Must include LIMIT 100 or less. No INSERT/UPDATE/DELETE/DROP."
-    )
-    prompt = f"User question:\n{user_query}\n\nReturn JSON: {{\"sql\": \"...\"}}"
-    try:
-        out = complete(
-            prompt=prompt,
-            agent_name=_AGENT,
-            system=system,
-            max_tokens=500,
-            role="analytics",
-        )
-    except Exception as exc:
-        log.warning("analytics_router_llm_failed", error=str(exc))
-        return template, 0.0
-
-    cost = float(out.get("cost_usd") or 0.0)
-    if out.get("extraction_failed") or not out.get("content"):
-        return template, cost
-
-    extracted = _extract_json_sql(str(out.get("content", "")))
-    if extracted:
-        return extracted, cost
-    return template, cost
+_INTENT_HANDLERS: dict[str, Callable[..., RouteResult]] = {
+    "trend": QueryRouter._route_trend,
+    "role_evolution": QueryRouter._route_role_evolution,
+    "disruption": QueryRouter._route_disruption,
+    "emergence": QueryRouter._route_emergence,
+    "curriculum": QueryRouter._route_curriculum,
+    "employer": QueryRouter._route_employer,
+    "workflow": QueryRouter._route_workflow,
+    "geographic": QueryRouter._route_geographic,
+    "comparison": QueryRouter._route_comparison,
+    "other": QueryRouter._route_other,
+}

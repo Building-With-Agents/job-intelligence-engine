@@ -27,7 +27,7 @@ def test_post_query_returns_schema(client: TestClient) -> None:
     )
     with patch("analytics.api.routes.session_scope") as sc:
         sc.return_value.__enter__.return_value = MagicMock()
-        with patch("analytics.api.routes.run_analytics_query", return_value=body):
+        with patch("analytics.api.routes.run_analytics_qna", return_value=body):
             r = client.post("/analytics/query", json={"question": "hello"})
     assert r.status_code == 200
     data = r.json()

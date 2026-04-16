@@ -9,7 +9,7 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     employer_profiles, canonical_roles, role_snapshot_weekly,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
     skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
-    cohort_gap_cache, orchestration_audit_log, disruption_fingerprints.
+    cohort_gap_cache, orchestration_audit_log.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
 """
@@ -779,7 +779,7 @@ class GeoDemandWeekly(Base):
 
 
 # ---------------------------------------------------------------------------
-# Week 8 — Analytics API cache + orchestration audit + disruption fingerprints
+# Week 8 — Analytics API cache + orchestration audit
 # ---------------------------------------------------------------------------
 
 
@@ -831,28 +831,3 @@ class OrchestrationAuditLog(Base):
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
-
-class DisruptionFingerprint(Base):
-    """Per-role disruption / emergence signals (``ARCHITECTURE_DEEP`` — analytics)."""
-
-    __tablename__ = "disruption_fingerprints"
-    __table_args__ = {"schema": "dbo"}
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    canonical_role_id: Mapped[str | None] = mapped_column(
-        String(64),
-        ForeignKey("dbo.canonical_roles.role_id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    disruption_category: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    disruption_intensity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    skill_velocity: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    tool_transition: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    task_shift: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    responsibility_expansion: Mapped[float | None] = mapped_column(Float, nullable=True)
-    ai_intensity_trend: Mapped[str | None] = mapped_column(Text, nullable=True)
-    workflow_restructuring_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    trajectory: Mapped[str | None] = mapped_column(Text, nullable=True)
-    period_comparison: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
