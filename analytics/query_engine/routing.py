@@ -63,9 +63,15 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 
 
 _SCHEMA_HINT = (
-    "Allowed tables (PostgreSQL dbo schema only): job_postings, companies, company_addresses, "
-    "skills, technology_areas, industry_sectors, analytics_aggregates, normalized_jobs, "
-    "raw_ingested_jobs. Reference as dbo.table_name."
+    "Allowed tables (PostgreSQL dbo schema only): job_postings, canonical_roles, companies, "
+    "company_addresses, skills, technology_areas, industry_sectors, analytics_aggregates, "
+    "normalized_jobs, raw_ingested_jobs. Reference as dbo.table_name.\n"
+    "dbo.job_postings columns (use exact names): job_posting_id, job_title, company_id, "
+    "publish_date (listing date; there is NO posting_date), createdat, updatedat, status, "
+    "canonical_role_id, temporal_period, borderplex_subregion, employment_type, location, "
+    "salary_range, naics_code, soc_code.\n"
+    "For grouped role labels: JOIN dbo.canonical_roles cr ON jp.canonical_role_id = cr.role_id "
+    "and SELECT cr.label (there is NO column named role on job_postings)."
 )
 
 

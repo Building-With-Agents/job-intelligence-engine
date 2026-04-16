@@ -28,6 +28,7 @@ log = structlog.get_logger()
 ASK_THE_DATA_ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     {
         "job_postings",
+        "canonical_roles",
         "companies",
         "company_addresses",
         "skills",

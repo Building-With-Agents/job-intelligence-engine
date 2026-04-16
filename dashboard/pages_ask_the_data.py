@@ -21,7 +21,10 @@ def render_ask_the_data() -> None:
         )
         return
 
-    default_q = "What roles show the highest posting volume in the latest data?"
+    default_q = (
+        "Which canonical role labels have the most job postings? "
+        "Group by role label and show counts."
+    )
     query = st.text_area("Your question", value=default_q, height=100)
     if st.button("Run query", type="primary"):
         with st.spinner("Classifying intent, generating SQL, and synthesizing…"):

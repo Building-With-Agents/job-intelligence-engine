@@ -23,6 +23,7 @@ The Analytics Agent supports text-to-SQL ("Ask the Data"). All generated SQL **m
 ```python
 ALLOWED_TABLES = {
     "job_postings",
+    "canonical_roles",
     "companies",
     "company_addresses",
     "skills",
