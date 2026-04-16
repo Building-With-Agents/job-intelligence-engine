@@ -8,25 +8,40 @@ All commands assume you are at the **repo root** with the Python venv activated.
 
 ### Activate the venv first
 
+`cd` into your local clone of `job-intelligence-engine`, then activate the venv.
+
 **Windows (PowerShell):**
 
 ```powershell
-cd C:\Users\garyl\repos\cfa-projects\building-with-agents-curriculum\job-intelligence-engine
+cd <path-to-repo>\job-intelligence-engine
 .venv\Scripts\Activate.ps1
 ```
 
 **Linux / macOS:**
 
 ```bash
-cd ~/repos/cfa-projects/building-with-agents-curriculum/job-intelligence-engine
+cd <path-to-repo>/job-intelligence-engine
 source .venv/bin/activate
 ```
 
-All Python invocations that import the analytics, query_engine, or API modules should be run with `PYTHONPATH=.` from the repo root so the `analytics.*` / `common.*` imports resolve:
+### Imports resolve without PYTHONPATH when running `python -c` from the repo root
 
-```bash
-PYTHONPATH=. python -c "from analytics.query_engine.qna import run_analytics_qna; print('ok')"
+`python -c "..."` automatically prepends the current working directory to `sys.path` (it sets `sys.path[0] = ""`), so `analytics.*` / `common.*` / `api.*` imports resolve without any extra setup **as long as you run from the repo root**. Verify:
+
 ```
+python -c "from analytics.query_engine.qna import run_analytics_qna; print('ok')"
+```
+
+Expect: `ok`.
+
+### On the `PYTHONPATH=. python ...` prefix that appears later in this runbook
+
+Many commands below include the `PYTHONPATH=.` prefix out of habit. It's harmless on bash/zsh/git-bash and redundant from the repo root. In **PowerShell**, the inline prefix form does not work — PowerShell parses `PYTHONPATH=.` as a command name and errors out.
+
+- **PowerShell users:** drop the `PYTHONPATH=.` prefix from the commands below; run just `python ...`. Works from the repo root because of the `sys.path[0] = ""` behavior above.
+- **Bash users:** leave the prefix as-is, or drop it; it's functionally identical from the repo root.
+
+If you need to run from a subdirectory (not the repo root), set `$env:PYTHONPATH = "."` (PowerShell) or `export PYTHONPATH=/path/to/repo-root` (bash) once at the start of your session.
 
 ---
 
@@ -60,9 +75,11 @@ PYTHONPATH=. python -c "from analytics.query_engine.qna import run_analytics_qna
 
 ### Step 1 — Confirm upstream data and aggregates are present
 
-```bash
-python scripts/db_check.py counts
 ```
+python scripts/week8_verify_counts.py
+```
+
+This emits a three-section report (Week 6 / Week 7 / Week 8) with row counts and a `(empty)` / `MISSING` marker per table.
 
 **Minimum for Week 8 verification:**
 
@@ -74,55 +91,161 @@ python scripts/db_check.py counts
 | canonical_roles | 5+ | Required for disruption fingerprints |
 | skill_velocity | 50+ | Required for Emergence Alerts page |
 
+If `canonical_roles` or any Week 7 aggregate is `(empty)`, run the Pair C clustering flow and Pair A aggregates refresh in the Week 7 runbook before continuing.
+
+If any Week 8 table shows `MISSING`, run migrations per §2 above.
+
 If any of these are empty, refresh the Week 7 aggregates first (see Week 7 runbook Section 5, Pair A's `verify_aggregates.py`).
 
-### Step 2 — Refresh disruption fingerprints once (Pair A)
+### Step 2 — If `canonical_roles` is empty, run clustering first (Pair C flow)
 
-```bash
-PYTHONPATH=. python -c "
-from analytics.disruption.service import DisruptionFingerprintService
-from common.data_store.database import session_scope
-svc = DisruptionFingerprintService()
-with session_scope() as s:
-    r = svc.refresh_disruption_fingerprints(session=s)
-    print(f'roles_considered={r.roles_considered} computed_count={r.computed_count}')
-"
+The disruption pipeline iterates over rows in `dbo.canonical_roles`. On a fresh dev DB this table starts empty, so Step 3 will return `roles_considered=0` until clustering runs.
+
+Run Pair C's clustering pipeline to populate it:
+
+```
+python scripts/run_clustering.py
 ```
 
-**Expected:** `roles_considered=<N>`, `computed_count=<N>` where N equals the canonical role count.
+**What this does:**
+
+1. Loads every `job_postings` row that has extracted skills/tools/responsibilities from `dbo.extracted_intelligence`.
+2. Generates an embedding vector per posting via Azure OpenAI's `embeddings-te3small` deployment.
+3. Runs HDBSCAN clustering over the embeddings to group postings into canonical roles.
+4. Labels each cluster via a cascade: dominant title → LLM fallback (`LLM_DEFAULT`, Haiku-class) → most-common title string.
+5. Detects **Emergence candidates** — noise postings with novel skills from multiple employers that look like a new-but-undersized role.
+6. Persists the result: inserts rows into `dbo.canonical_roles`, updates `job_postings.canonical_role_id` FK, refreshes `dbo.role_snapshot_weekly` for the current ISO week.
+
+**Cost:** ~1 embedding + 0–1 label LLM call per unique cluster. At ~3,500 postings forming ~5–15 clusters, the run costs roughly $0.05–$0.15 total.
+
+**Knobs:**
+- `--min-postings N` — raise the minimum posting threshold before clustering will run (default from `CLUSTER_MIN_TOTAL_POSTINGS` env, typically 500).
+- If you have fewer than 500 postings, export `CLUSTER_MIN_TOTAL_POSTINGS=20` for testing.
+
+**Expected output (abbreviated):**
+```
+CANONICAL ROLE CLUSTERING — LIVE DATA RUN
+Features loaded:  3138
+With skills:      2841 (90.5%)
+--- Generating embeddings (Azure OpenAI) ---
+Embeddings count: 3138
+--- Running HDBSCAN clustering ---
+Clustering results:
+  Total input:        3138
+  Eligible:           2920
+  Clusters found:     8
+  Noise postings:     1863
+  Noise rate:         63.8%
+--- Top clusters ---
+   1. [412 posts] Full Stack Developer
+       Skills: Python, React, SQL, ...
+   ...
+--- Persisting to DB ---
+  Roles inserted:    8
+  Postings updated:  1057
+```
+
+Verify:
+
+```
+python scripts/db_check.py query "SELECT COUNT(*) AS n FROM dbo.canonical_roles"
+```
+
+### Step 3 — Refresh disruption fingerprints once (Pair A)
+
+```
+python scripts/smoke/disruption_refresh.py
+```
+
+**Expected (with `canonical_roles` populated):**
+```
+roles_considered:    <N>
+computed_count:      <N>
+refresh_duration_ms: <ms>
+```
+
+**Expected (empty `canonical_roles`):**
+```
+roles_considered:    0
+computed_count:      0
+
+NOTE: canonical_roles is empty. Run Pair C's clustering flow first ...
+```
+If you see the empty case, run Step 2 above before re-running this script.
 
 Confirm rows landed:
 
-```bash
+```
 python scripts/db_check.py query "SELECT COUNT(*) AS n FROM dbo.disruption_fingerprints"
 ```
 
-### Step 3 — Run one Q&A through the full pipeline
+### Step 4 — Run one Q&A through the full pipeline
 
-```bash
-PYTHONPATH=. python -c "
+```
+python scripts/smoke/qa_pipeline.py
+```
+
+**Optional flags** (default uses a canonical skills question and auto-generates a correlation id):
+
+```
+python scripts/smoke/qa_pipeline.py --question "Which regions pay the most for data analysts?"
+python scripts/smoke/qa_pipeline.py --correlation-id wk8-demo-1
+python scripts/smoke/qa_pipeline.py --answer-preview-chars 500
+```
+
+**What the script does** (core body, for reference — same code is in `scripts/smoke/qa_pipeline.py`):
+
+```python
 from analytics.query_engine.routing import run_guardrailed_analytics_query
 from common.data_store.database import session_scope
 from common.types.query_request import QueryRequest
-req = QueryRequest(query='What are the top 5 skills by posting count across all weeks?')
-with session_scope() as s:
-    resp = run_guardrailed_analytics_query(req, session=s, correlation_id='qa-smoke-0')
-print('answer:', resp.answer_text[:200])
-print('citations:', len(resp.citations))
-print('confidence:', resp.confidence)
-print('cost_usd:', round(resp.total_cost_usd, 5))
-print('cost_breakdown:', resp.cost_breakdown_usd)
-"
+
+req = QueryRequest(query="What are the top 5 skills by posting count across all weeks?")
+with session_scope() as session:
+    resp = run_guardrailed_analytics_query(
+        req,
+        session=session,
+        correlation_id="qa-smoke-0",
+    )
+
+# resp is a SynthesisResponse pydantic model with these fields:
+# - answer_text            (str; empty on refused=True)
+# - citations              (list[EvidenceCitation])
+# - confidence             (float 0.0-1.0) + confidence_flagged_low + confidence_explanation
+# - volume_flagged_low     (bool) + volume_warning
+# - refused                (bool) + refusal_message
+# - follow_up_questions    (list[str], 2-3 entries)
+# - total_cost_usd         (float)
+# - cost_breakdown_usd     (dict[str, float]; keys: intent_classification, sql_generation,
+#                           synthesis, follow_up)
 ```
 
-**Expected output:**
+Under the hood, `run_guardrailed_analytics_query` fires every leg of the Week 8 pipeline:
+
+1. **Intent classification** — `complete(role="classification")` -> `LLM_DEFAULT` (Haiku-tier gpt-4.1-mini)
+2. **SQL generation** — `complete(role="analytics")` with the intent label + schema hint
+3. **SQL guardrails** — `sql_guardrails.validate_sql()` rejects non-SELECT, off-allowlist, multi-statement, etc.
+4. **Safe execute** — `execute_safe.execute_validated_query()` applies 30s `statement_timeout` at the Postgres session level
+5. **Evidence bundle** — `evidence.build_evidence_bundle()` extracts citations from the rows (deterministic; no LLM)
+6. **Synthesis** — `synthesize_answer()` -> `complete(role="synthesis")` -> `LLM_SYNTHESIS` (Sonnet-tier gpt-4.1). Skipped entirely on `bundle.refuse_synthesis=True`.
+7. **Follow-ups** — Haiku-class generation of 2–3 related questions
+8. **Audit log** — every call writes a row to `dbo.orchestration_audit_log` with correlation_id, question_hash, sql_hash
+
+**Expected output (happy path):**
 
 - `answer` is a 1–3 sentence paragraph naming real skills with posting counts.
 - `citations` is a non-zero integer (usually 3–10).
 - `confidence` between 0.0 and 1.0 (typically 0.55–0.85 on real aggregate data).
-- `cost_breakdown` contains keys `intent_classification`, `sql_generation`, `synthesis`, `follow_up`.
+- `cost_breakdown_usd` contains keys `intent_classification`, `sql_generation`, `synthesis`, `follow_up`.
 
-### Step 4 — Confirm the audit row was written
+**Expected output (NO_DATA refusal — common when Week 7 aggregates are empty):**
+
+- `refused=True`, `answer_text=""`, `refusal_message="No data in scope for the selected filters."`
+- `cost_breakdown_usd` contains **only** `intent_classification` (synthesis is skipped when refused).
+- `citations=0`, `follow_up_questions=0`.
+- This is the correct safe behavior — no LLM fabrication when the data isn't there.
+
+### Step 5 — Confirm the audit row was written
 
 ```bash
 python scripts/db_check.py query "SELECT endpoint, success, confidence, correlation_id FROM dbo.orchestration_audit_log ORDER BY created_at DESC LIMIT 3"
@@ -130,7 +253,7 @@ python scripts/db_check.py query "SELECT endpoint, success, confidence, correlat
 
 **Expected:** Most recent row has `endpoint='/analytics/query'`, `success=true`, and the `correlation_id` matches what you passed (`qa-smoke-0`).
 
-If these four steps pass, Week 8 core is wired end-to-end. Continue below for deeper per-pair verification, API smoke, adversarial SQL, and Streamlit page walkthroughs.
+If these five steps pass, Week 8 core is wired end-to-end. Continue below for deeper per-pair verification, API smoke, adversarial SQL, and Streamlit page walkthroughs.
 
 ---
 
@@ -281,10 +404,17 @@ docker compose ps   # expect Postgres + the 6 Langfuse containers running
 
 ### Verify database connectivity
 
-```bash
-python scripts/db_check.py tables
-python scripts/db_check.py counts
 ```
+python scripts/db_check.py tables
+```
+
+For row counts across Week 6 / 7 / 8 expected tables (with `MISSING` for tables that don't exist yet), use the dedicated script:
+
+```
+python scripts/week8_verify_counts.py
+```
+
+This replaces `db_check.py counts` for Week 8 purposes — `db_check.py counts` only reports 8 upstream tables (a hardcoded UNION ALL), it does not know about Week 7 aggregates, Week 8 Q&A, or disruption tables.
 
 ---
 
@@ -310,11 +440,13 @@ Week 8 does **not** re-run the ingestion → normalization → extraction → en
 
 ### One-shot verification
 
-```bash
-python scripts/db_check.py query "SELECT 'job_postings' tbl, COUNT(*) n FROM dbo.job_postings UNION ALL SELECT 'skill_demand_weekly', COUNT(*) FROM dbo.skill_demand_weekly UNION ALL SELECT 'role_snapshot_weekly', COUNT(*) FROM dbo.role_snapshot_weekly UNION ALL SELECT 'canonical_roles', COUNT(*) FROM dbo.canonical_roles UNION ALL SELECT 'skill_velocity', COUNT(*) FROM dbo.skill_velocity"
+```
+python scripts/week8_verify_counts.py
 ```
 
-If any required table is 0, refresh the Week 7 aggregates for an anchor Monday (see WEEK07_TESTING_RUNBOOK.md Section 5 for the canonical Pair A flow).
+**Expected output** is a three-section report (Week 6 / Week 7 / Week 8) with one row per expected table showing `count`, expected-row-count hint, and a `(empty)` or `MISSING` marker when applicable. Anything marked MISSING under Week 8 means the PR #161 migrations have not run locally yet — see §2 "Run Week 8 migrations".
+
+If any required table is 0 under Week 7, refresh the Week 7 aggregates for an anchor Monday (see WEEK07_TESTING_RUNBOOK.md Section 5 for the canonical Pair A flow).
 
 ---
 
