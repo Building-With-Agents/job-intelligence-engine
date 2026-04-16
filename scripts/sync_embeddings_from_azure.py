@@ -4,7 +4,7 @@ Pulls pre-computed embeddings from the shared Azure database and writes them
 to your local PostgreSQL. No Azure OpenAI API calls — zero LLM cost.
 
 Usage:
-    
+
     .venv\\Scripts\\Activate.ps1   # Windows
     # source .venv/bin/activate   # macOS/Linux
 

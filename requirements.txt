@@ -9,6 +9,9 @@ pandas>=2.0
 openpyxl>=3.1
 pyodbc>=5.0
 streamlit>=1.30
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlglot>=25.0
 plotly>=5.18
 langgraph>=0.2
 langchain>=0.3
@@ -27,4 +30,3 @@ matplotlib>=3.8
 rapidfuzz>=3.0
 pyyaml>=6.0
 hdbscan==0.8.42
-

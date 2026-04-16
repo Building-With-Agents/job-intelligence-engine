@@ -2,7 +2,7 @@
 test_tracer.py — Observability test suite.
 
 Run with:
-    
+
     pytest common/tests/test_tracer.py -v
 """
 

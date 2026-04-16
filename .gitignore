@@ -111,6 +111,9 @@ docs/planning/*
 !docs/planning/processing-loop-diagram.html
 !docs/planning/processing-loop-technical-diagram.html
 !docs/planning/processing-loop-technical-diagram-weeks7-8.html
+# Week-08 Pair C: committed research briefs under planning/research/
+!docs/planning/research/
+!docs/planning/research/**
 docs/planning/curriculum/
 docs/lesson-framework/
 

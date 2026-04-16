@@ -543,12 +543,14 @@ class EnrichmentAgent(BaseAgent):
         _input_str: str | None = None
         if tracer:
             with suppress(Exception):
-                _input_str = _json.dumps({
-                    "event_type": payload.get("event_type", "SkillsExtracted"),
-                    "correlation_id": correlation_id,
-                    "batch_id": batch_id,
-                    "record_count": len(rows),
-                })
+                _input_str = _json.dumps(
+                    {
+                        "event_type": payload.get("event_type", "SkillsExtracted"),
+                        "correlation_id": correlation_id,
+                        "batch_id": batch_id,
+                        "record_count": len(rows),
+                    }
+                )
 
         # --- Parallel fast path ---
         if self._enrichment_parallel_enabled() and len(rows) > 0:
@@ -561,7 +563,8 @@ class EnrichmentAgent(BaseAgent):
             )
             batch_start = time.perf_counter()
             parallel_results = self._enrich_batch_parallel_bridge(
-                rows, payload,
+                rows,
+                payload,
                 correlation_id=correlation_id,
                 concurrency=concurrency,
             )
@@ -590,7 +593,6 @@ class EnrichmentAgent(BaseAgent):
                         continue
                     enriched_count += 1
                     posting = r.get("__posting", {})
-                    row = r.get("__row", {})
                     tp = _distribution_bucket(r.get("temporal_period", posting.get("temporal_period")))
                     temporal_period_distribution[tp] += 1
                     bp = _distribution_bucket(r.get("borderplex_subregion"))
@@ -688,11 +690,13 @@ class EnrichmentAgent(BaseAgent):
                     tracer.start_span(
                         f"enrich/{job_title}",
                         correlation_id=correlation_id,
-                        input=_json.dumps({
-                            "title": posting.get("title", ""),
-                            "company": posting.get("company", ""),
-                            "normalized_job_id": posting.get("normalized_job_id"),
-                        }),
+                        input=_json.dumps(
+                            {
+                                "title": posting.get("title", ""),
+                                "company": posting.get("company", ""),
+                                "normalized_job_id": posting.get("normalized_job_id"),
+                            }
+                        ),
                         metadata={"idx": idx + 1, "total": len(rows)},
                     )
                     if tracer
@@ -791,24 +795,29 @@ class EnrichmentAgent(BaseAgent):
             if tracer:
                 with suppress(Exception):
                     total_processed = enriched_count + spam_rejected_count + flagged_for_review_count
-                    tracer.log_event("enrichment_complete", {
-                        "output": _json.dumps({
-                            "event_type": "RecordEnriched",
-                            "batch_id": batch_id,
+                    tracer.log_event(
+                        "enrichment_complete",
+                        {
+                            "output": _json.dumps(
+                                {
+                                    "event_type": "RecordEnriched",
+                                    "batch_id": batch_id,
+                                    "enriched_count": enriched_count,
+                                    "spam_rejected_count": spam_rejected_count,
+                                    "flagged_for_review_count": flagged_for_review_count,
+                                    "soc_classified_count": soc_classified_count,
+                                    "naics_classified_count": naics_classified_count,
+                                    "duplicate_count": duplicate_count,
+                                }
+                            ),
                             "enriched_count": enriched_count,
                             "spam_rejected_count": spam_rejected_count,
                             "flagged_for_review_count": flagged_for_review_count,
                             "soc_classified_count": soc_classified_count,
                             "naics_classified_count": naics_classified_count,
-                            "duplicate_count": duplicate_count,
-                        }),
-                        "enriched_count": enriched_count,
-                        "spam_rejected_count": spam_rejected_count,
-                        "flagged_for_review_count": flagged_for_review_count,
-                        "soc_classified_count": soc_classified_count,
-                        "naics_classified_count": naics_classified_count,
-                        "total_processed": total_processed,
-                    })
+                            "total_processed": total_processed,
+                        },
+                    )
 
         return build_record_enriched_event(
             correlation_id=correlation_id,
@@ -1234,7 +1243,9 @@ class EnrichmentAgent(BaseAgent):
                         asyncio.gather(
                             classify_naics_async(title, desc_str, session),
                             classify_soc(
-                                title, desc_str or "", session,
+                                title,
+                                desc_str or "",
+                                session,
                                 _enrichment_soc_llm(),
                                 async_llm=_enrichment_soc_llm_async(),
                             ),
@@ -1243,7 +1254,7 @@ class EnrichmentAgent(BaseAgent):
                         ),
                         timeout=_ENRICH_LLM_TIMEOUT,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     _elapsed = int((time.perf_counter() - _gather_start) * 1000)
                     log.error(
                         "enrich_record_async_gather_timeout",
@@ -1283,6 +1294,7 @@ class EnrichmentAgent(BaseAgent):
                     if nj_soc is not None and isinstance(sc, str) and sc.strip():
                         try:
                             from sqlalchemy import update as sa_update
+
                             session.execute(
                                 sa_update(NormalizedJob)
                                 .where(NormalizedJob.id == nj_soc)
@@ -1379,8 +1391,10 @@ class EnrichmentAgent(BaseAgent):
 
                         # Quality score (deterministic — no LLM call)
                         extraction = build_extraction_dict(
-                            row.get("skills"), row.get("tools"),
-                            row.get("tasks"), row.get("responsibilities"),
+                            row.get("skills"),
+                            row.get("tools"),
+                            row.get("tasks"),
+                            row.get("responsibilities"),
                             row.get("context"),
                         )
                         q_res = score_quality(
@@ -1399,7 +1413,8 @@ class EnrichmentAgent(BaseAgent):
                         if nj_promo is not None:
                             try:
                                 apply_enrichment_to_job_postings(
-                                    job_session, nj_promo,
+                                    job_session,
+                                    nj_promo,
                                     _job_postings_promotion_payload(enriched, posting),
                                 )
                             except Exception as promo_exc:
@@ -1433,9 +1448,7 @@ class EnrichmentAgent(BaseAgent):
                         )
                 return enriched
 
-        results = list(await asyncio.gather(
-            *[_enrich_one(i, row) for i, row in enumerate(rows)]
-        ))
+        results = list(await asyncio.gather(*[_enrich_one(i, row) for i, row in enumerate(rows)]))
 
         if _saturation_events > 0:
             log.info(
@@ -1461,7 +1474,8 @@ class EnrichmentAgent(BaseAgent):
         except RuntimeError:
             return asyncio.run(
                 self._enrich_batch_parallel(
-                    rows, payload,
+                    rows,
+                    payload,
                     correlation_id=correlation_id,
                     concurrency=concurrency,
                 )

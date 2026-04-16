@@ -8,7 +8,8 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     normalization_quarantine, extracted_intelligence, llm_audit_log,
     employer_profiles, canonical_roles, role_snapshot_weekly, disruption_fingerprints,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
-    skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence.
+    skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
+    cohort_gap_cache, orchestration_audit_log.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
 """
@@ -806,3 +807,58 @@ class GeoDemandWeekly(Base):
     week_start: Mapped[date] = mapped_column(Date, nullable=False)
     borderplex_subregion: Mapped[str] = mapped_column(String(32), nullable=False)
     posting_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# Week 8 — Analytics API cache + orchestration audit
+# ---------------------------------------------------------------------------
+
+
+class CohortGapCache(Base):
+    """Cached payloads for on-demand analytics triggers (read-through cache)."""
+
+    __tablename__ = "cohort_gap_cache"
+    __table_args__ = (
+        UniqueConstraint("trigger_type", "request_hash", name="uq_cohort_gap_cache_trig_hash"),
+        Index("ix_cohort_gap_cache_computed_at", "computed_at"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    trigger_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    cohort_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    params: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    gap_data: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OrchestrationAuditLog(Base):
+    """Orchestration / Q&A audit trail (append-only)."""
+
+    __tablename__ = "orchestration_audit_log"
+    __table_args__ = (
+        Index("ix_orchestration_audit_log_created_at", "created_at"),
+        Index("ix_orchestration_audit_correlation", "correlation_id"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    correlation_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    endpoint: Mapped[str] = mapped_column(String(128), nullable=False)
+    question_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    sql_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

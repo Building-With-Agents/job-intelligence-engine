@@ -9,6 +9,7 @@ ensure that the `job_postings` table has all Phase 1 extension columns.
 """
 
 import os
+
 import pytest
 from sqlalchemy import MetaData, Table, create_engine, inspect, text
 from sqlalchemy.engine import Engine
@@ -33,7 +34,6 @@ def engine() -> Engine:
     if not database_url:
         raise RuntimeError("PYTHON_DATABASE_URL is not set")
     return create_engine(database_url, future=True)
-
 
 
 @pytest.mark.skipif(not os.getenv("PYTHON_DATABASE_URL"), reason="requires database")

@@ -71,7 +71,7 @@ def _retry_delay_seconds(retry_after: str | None, attempt: int, base_delay: int,
             return max(1, min(max_delay, int(float(retry_after))))
         except (TypeError, ValueError):
             pass
-    return min(max_delay, base_delay * (2 ** attempt))
+    return min(max_delay, base_delay * (2**attempt))
 
 
 def _get_rps_state() -> dict:
@@ -238,7 +238,6 @@ class JSearchAdapter(SourceAdapter):
         country = (os.getenv("JSEARCH_COUNTRY", "us") or "us").strip().lower()
         language = (os.getenv("JSEARCH_LANGUAGE", "en") or "en").strip().lower()
         date_posted = (os.getenv("JSEARCH_DATE_POSTED", "all") or "all").strip().lower()
-
         num_pages = max(1, min(50, _env_int("JSEARCH_MAX_PAGES", 50)))
         max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
         base_delay = max(1, _env_int("JSEARCH_RETRY_BASE_DELAY_SECONDS", 10))

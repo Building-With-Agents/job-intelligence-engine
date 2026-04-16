@@ -36,12 +36,7 @@ def clean_schema() -> None:
     lines = [ln for ln in lines if not re.match(r"^\\", ln)]
 
     # Remove SET statements and pg_catalog calls (session config noise)
-    lines = [
-        ln
-        for ln in lines
-        if not re.match(r"^SET\s", ln)
-        and not re.match(r"^SELECT pg_catalog\.", ln)
-    ]
+    lines = [ln for ln in lines if not re.match(r"^SET\s", ln) and not re.match(r"^SELECT pg_catalog\.", ln)]
 
     cleaned = "\n".join(lines)
 

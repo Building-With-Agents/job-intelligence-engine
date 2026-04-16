@@ -224,9 +224,9 @@ def write_json(filepath: Path, data: object) -> None:
 
 def export_reference(cur: psycopg2.extensions.cursor, limit: int | None) -> dict:
     """Export all non-PII dbo tables to fixtures/."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Reference Scope -> fixtures/")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     all_tables = get_dbo_tables(cur)
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
@@ -263,9 +263,9 @@ def export_reference(cur: psycopg2.extensions.cursor, limit: int | None) -> dict
 
 def export_agent(cur: psycopg2.extensions.cursor, limit: int | None) -> dict:
     """Export agent pipeline tables only to fixtures/."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Agent Scope -> fixtures/")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -303,9 +303,7 @@ def export_agent(cur: psycopg2.extensions.cursor, limit: int | None) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Export PostgreSQL fixture data for local dev seeding."
-    )
+    parser = argparse.ArgumentParser(description="Export PostgreSQL fixture data for local dev seeding.")
     parser.add_argument(
         "--scope",
         choices=["reference", "agent", "all"],
@@ -336,14 +334,14 @@ def main() -> None:
     cur.close()
     conn.close()
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     if ref_meta:
         ref_rows = sum(ref_meta["counts"].values())
         print(f"Reference: {ref_rows:,} rows across {len(ref_meta['counts'])} tables -> fixtures/")
     if agent_meta:
         agent_rows = sum(agent_meta["counts"].values())
         print(f"Agent:     {agent_rows:,} rows across {len(agent_meta['counts'])} tables -> fixtures/")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":
