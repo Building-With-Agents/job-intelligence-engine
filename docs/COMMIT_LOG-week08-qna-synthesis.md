@@ -19,6 +19,21 @@
 | **Demo** | `scripts/demo_qna_synthesis_metrics.py` patches `analytics.query_engine.synthesis.complete` (not `_invoke_qna_completion`). |
 | **Tests** | `test_qna_grounding.py`, `test_qna_routing.py`; evidence test updates for max volume heuristic. |
 
+### Follow-up — SQL execution error detail (Ask the Data debug)
+
+**Commit:** `53b3e83` — `Ask Data debug` (on `week-08/synthesis-citation`)
+
+When guardrailed SQL **executes** but PostgreSQL raises (e.g. `ProgrammingError`), operators and Streamlit users need the **driver/DB message**, not only `sql_execution_failed:ProgrammingError`.
+
+| Area | Description |
+|------|-------------|
+| **Routing** | `analytics/query_engine/routing.py` — `_truncate_sql_execution_error` (single line, 400 chars, `exc` + `__cause__`); `log.warning("analytics_qna_sql_execution_failed", …, error_detail=…)`; `QueryResultPayload.sql_execution_error_detail`. |
+| **Schemas** | `QueryResultPayload.sql_execution_error_detail`; `EvidenceBundle.sql_execution_error_detail`; `SynthesisResponse.sql_execution_error_detail` (API/UI echo; no user query text in this field). |
+| **Evidence** | `build_evidence_bundle`: refusal reason appends `. PostgreSQL: {detail}` when detail is set. |
+| **Synthesis** | Refused-path `SynthesisResponse` sets `sql_execution_error_detail` from the bundle. |
+| **Streamlit** | `dashboard/pages_ask_the_data.py` — collapsible **Database error (debug)** with `st.code` when the field is present. |
+| **Tests** | `test_routing_sql_execution_failure_surfaces_truncated_db_message`; `test_build_evidence_bundle_router_error_appends_postgres_detail`; router-errors test asserts `sql_execution_error_detail is None` when absent. |
+
 **PR:** Reference **#117**, Week 8 runbook (`docs/Week 8/WEEK-08-synthesis-evidence-citation-bryan-emilio-runbook.md`), and `.cursor/rules/analytics-qna-synthesis.mdc`.
 
 ---
@@ -52,6 +67,14 @@ py -3.11 -m pytest analytics/tests/test_qna_synthesis.py -v
 ```
 
 Validates synthesis behavior with a mocked completion path (no live LLM required).
+
+### Unit tests (routing + evidence + guardrails)
+
+```powershell
+py -3.11 -m pytest analytics/tests/test_qna_routing.py analytics/tests/test_qna_evidence.py analytics/tests/test_qna_grounding.py analytics/tests/test_sql_guardrails.py -v
+```
+
+Covers guardrailed `run_guardrailed_analytics_query`, SQL execution failure messaging, evidence bundle policy, numeric grounding, and `validate_sql`.
 
 ### Ruff (touched paths)
 
@@ -127,5 +150,6 @@ py -3.11 scripts/demo_qna_synthesis_metrics.py --live
 ## Quick verification checklist
 
 1. `py -3.11 -m pytest analytics/tests/test_qna_synthesis.py -v` — all pass or one skip (evidence stub).  
-2. `py -3.11 scripts/demo_qna_synthesis_metrics.py` — JSON to stdout, no import errors.  
-3. `py -3.11 -m streamlit run dashboard/streamlit_app.py` — no `ModuleNotFoundError: common`.
+2. `py -3.11 -m pytest analytics/tests/test_qna_routing.py analytics/tests/test_qna_evidence.py -v` — routing + evidence (includes SQL failure detail assertions).  
+3. `py -3.11 scripts/demo_qna_synthesis_metrics.py` — JSON to stdout, no import errors.  
+4. `py -3.11 -m streamlit run dashboard/streamlit_app.py` — no `ModuleNotFoundError: common`; Ask the Data shows **Database error (debug)** when execute fails after guardrails.
