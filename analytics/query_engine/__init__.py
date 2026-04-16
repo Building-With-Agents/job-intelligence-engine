@@ -18,10 +18,18 @@ from analytics.query_engine.schemas import (
     QueryResultPayload,
     SynthesisResponse,
 )
-from analytics.query_engine.sql_guardrails import ALLOWED_TABLES, validate_sql
+from analytics.query_engine.sql_guardrails import (
+    ALLOWED_TABLES,
+    ASK_THE_DATA_ALLOWED_TABLES,
+    extract_tables_referenced,
+    validate_analytics_sql,
+    validate_ask_the_data_sql,
+    validate_sql,
+)
 from analytics.query_engine.synthesis import synthesize_answer
 
 __all__ = [
+    "ASK_THE_DATA_ALLOWED_TABLES",
     "CONFIDENCE_TRANSPARENCY_THRESHOLD",
     "VOLUME_WARNING_POSTING_THRESHOLD",
     "ALLOWED_TABLES",
@@ -33,8 +41,11 @@ __all__ = [
     "QueryResultPayload",
     "SynthesisResponse",
     "build_evidence_bundle",
+    "extract_tables_referenced",
     "run_analytics_qna",
     "run_guardrailed_analytics_query",
     "synthesize_answer",
+    "validate_analytics_sql",
+    "validate_ask_the_data_sql",
     "validate_sql",
 ]

@@ -11394,15 +11394,6 @@
     "lng": -78.24566
   },
   {
-    "zip": "15534",
-    "city": "Buffalo Mills",
-    "county": "Bedford",
-    "state_code": "PA",
-    "state": "Pennsylvania",
-    "lat": 39.89712,
-    "lng": -78.69589
-  },
-  {
     "zip": "15535",
     "city": "Clearville",
     "county": "Bedford",
@@ -48879,15 +48870,6 @@
     "lng": -102.61236
   },
   {
-    "zip": "58773",
-    "city": "Powers Lake",
-    "county": "Burke",
-    "state_code": "ND",
-    "state": "North Dakota",
-    "lat": 48.58631,
-    "lng": -102.66852
-  },
-  {
     "zip": "58775",
     "city": "Roseglen",
     "county": "McLean",
@@ -50929,15 +50911,6 @@
     "state": "Arkansas",
     "lat": 34.72909,
     "lng": -94.0376
-  },
-  {
-    "zip": "72927",
-    "city": "Booneville",
-    "county": "Logan",
-    "state_code": "AR",
-    "state": "Arkansas",
-    "lat": 35.07254,
-    "lng": -93.94333
   },
   {
     "zip": "72928",
@@ -91944,15 +91917,6 @@
     "lng": -100.43787
   },
   {
-    "zip": "76904",
-    "city": "San Angelo",
-    "county": "Tom Green",
-    "state_code": "TX",
-    "state": "Texas",
-    "lat": 31.28844,
-    "lng": -100.41695
-  },
-  {
     "zip": "76905",
     "city": "San Angelo",
     "county": "Tom Green",
@@ -97279,15 +97243,6 @@
     "state": "Texas",
     "lat": 27.86668,
     "lng": -97.20167
-  },
-  {
-    "zip": "78363",
-    "city": "Kingsville",
-    "county": "Kleberg",
-    "state_code": "TX",
-    "state": "Texas",
-    "lat": 27.43836,
-    "lng": -97.85532
   },
   {
     "zip": "78368",
@@ -123489,15 +123444,6 @@
     "lng": -93.73171
   },
   {
-    "zip": "71105",
-    "city": "Shreveport",
-    "county": "Caddo",
-    "state_code": "LA",
-    "state": "Louisiana",
-    "lat": 32.45512,
-    "lng": -93.71012
-  },
-  {
     "zip": "71106",
     "city": "Shreveport",
     "county": "Caddo",
@@ -138373,15 +138319,6 @@
     "state": "Florida",
     "lat": 30.65367,
     "lng": -86.11597
-  },
-  {
-    "zip": "32437",
-    "city": "Ebro",
-    "county": "Washington",
-    "state_code": "FL",
-    "state": "Florida",
-    "lat": 30.43315,
-    "lng": -85.90694
   },
   {
     "zip": "32438",
@@ -216360,15 +216297,6 @@
     "lng": -117.39076
   },
   {
-    "zip": "92317",
-    "city": "Blue Jay",
-    "county": "San Bernardino",
-    "state_code": "CA",
-    "state": "California",
-    "lat": 34.24507,
-    "lng": -117.20874
-  },
-  {
     "zip": "92320",
     "city": "Calimesa",
     "county": "Riverside",
@@ -258012,15 +257940,6 @@
     "lng": -86.68569
   },
   {
-    "zip": "38501",
-    "city": "Cookeville",
-    "county": "Putnam",
-    "state_code": "TN",
-    "state": "Tennessee",
-    "lat": 36.22682,
-    "lng": -85.53841
-  },
-  {
     "zip": "38503",
     "city": "Cookeville",
     "county": "Putnam",
@@ -287674,15 +287593,6 @@
     "state": "New York",
     "lat": 42.02993,
     "lng": -76.35461
-  },
-  {
-    "zip": "13813",
-    "city": "Nineveh",
-    "county": "Broome",
-    "state_code": "NY",
-    "state": "New York",
-    "lat": 42.16808,
-    "lng": -75.54266
   },
   {
     "zip": "13814",

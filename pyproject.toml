@@ -62,7 +62,7 @@ ignore = [
 "scripts/pg-seed-data/seed_pg_database.py" = ["T201"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agents"]
+known-first-party = ["agents", "analytics"]
 
 [tool.pytest.ini_options]
 pythonpath = [".."]

@@ -1,7 +1,11 @@
-"""Intent + SQL generation, guardrailed execution → ``QueryResultPayload`` → Q&A (GitHub #117).
+"""Analytics Q&A routing: guardrailed NL→SQL (Ask the Data) and HTTP ORM path (GitHub #117).
 
-Uses ``common.llm_adapter.complete`` only. User text is never concatenated into executable SQL;
-only model output is validated via :mod:`analytics.query_engine.sql_guardrails`.
+``run_guardrailed_analytics_query`` uses ``common.llm_adapter.complete`` only. User text is
+never concatenated into executable SQL; model output is validated via
+:func:`validate_ask_the_data_sql`.
+
+``run_analytics_qna`` in this module is the **REST** entrypoint (session, question, correlation
+id) that delegates evidence + synthesis to :func:`analytics.query_engine.qna.run_analytics_qna`.
 """
 
 from __future__ import annotations
@@ -11,6 +15,7 @@ import hashlib
 import json
 import re
 import time
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -19,10 +24,13 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
+from analytics.query_engine import audit_log, qna
+from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
-from analytics.query_engine.qna import run_analytics_qna
+from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
-from analytics.query_engine.sql_guardrails import extract_tables_referenced, validate_sql
+from analytics.query_engine.sql_guardrails import extract_tables_referenced, validate_ask_the_data_sql
 from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
@@ -182,9 +190,9 @@ def run_guardrailed_analytics_query(
             router_error="sql_generation_did_not_return_json_sql",
             correlation_id=correlation_id,
         )
-        return run_analytics_qna(payload, cost_ledger=ledger)
+        return qna.run_analytics_qna(payload, cost_ledger=ledger)
 
-    ok, reason, normalized_sql = validate_sql(raw_sql)
+    ok, reason, normalized_sql = validate_ask_the_data_sql(raw_sql)
     if not ok or not normalized_sql:
         log.warning("analytics_qna_sql_rejected", query_fingerprint=fp, reason=reason)
         payload = QueryResultPayload(
@@ -195,7 +203,7 @@ def run_guardrailed_analytics_query(
             router_error=f"sql_validation_failed:{reason}",
             correlation_id=correlation_id,
         )
-        return run_analytics_qna(payload, cost_ledger=ledger)
+        return qna.run_analytics_qna(payload, cost_ledger=ledger)
 
     tables = extract_tables_referenced(normalized_sql)
     t0 = time.perf_counter()
@@ -238,4 +246,190 @@ def run_guardrailed_analytics_query(
             correlation_id=correlation_id,
         )
 
-    return run_analytics_qna(payload, cost_ledger=ledger)
+    return qna.run_analytics_qna(payload, cost_ledger=ledger)
+
+
+# --- HTTP / ORM path (same transaction as caller) ---------------------------------
+
+
+def _json_safe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        out.append({k: _json_safe_value(v) for k, v in row.items()})
+    return out
+
+
+def _router_error_message(route_result: Any) -> str | None:
+    if route_result.routed and not route_result.error:
+        return None
+    if route_result.error:
+        return str(route_result.error)
+    return str(route_result.query_label or "query_not_routed")
+
+
+def _sql_generated_line(route_result: Any) -> str:
+    """ORM path has no raw SQL string; expose tables + label for clients and audit."""
+    parts: list[str] = []
+    if route_result.tables_used:
+        parts.append("tables: " + ", ".join(route_result.tables_used))
+    if route_result.query_label:
+        parts.append(route_result.query_label)
+    return " | ".join(parts) if parts else ""
+
+
+def _synthesis_to_api(sr: SynthesisResponse, *, sql_generated: str) -> AnalyticsQueryResponse:
+    answer = (sr.refusal_message or "").strip() if sr.refused else (sr.answer_text or "").strip()
+    if not answer and sr.refusal_message:
+        answer = sr.refusal_message
+    evidence = [
+        EvidenceItem(
+            title=c.citation_id,
+            source=(c.source_table or ""),
+            snippet=c.summary,
+        )
+        for c in sr.citations
+    ]
+    return AnalyticsQueryResponse(
+        answer=answer or "No answer could be generated for this question.",
+        evidence=evidence,
+        confidence=float(sr.confidence),
+        follow_up_questions=list(sr.follow_up_questions or []),
+        sql_generated=sql_generated,
+        cost_usd=float(sr.total_cost_usd),
+    )
+
+
+def run_analytics_qna(
+    session: Session,
+    question: str,
+    correlation_id: str | None,
+) -> AnalyticsQueryResponse:
+    """Run Q&A inside an open SQLAlchemy session (same transaction as caller)."""
+    cid = correlation_id or str(uuid.uuid4())
+    endpoint = "POST /analytics/query"
+    q = (question or "").strip()
+    payload_audit: dict[str, Any] = {}
+
+    if not q:
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=question,
+            sql_generated=None,
+            confidence=0.0,
+            success=False,
+            error_code="empty_question",
+            payload={},
+        )
+        return AnalyticsQueryResponse(
+            answer="Please provide a non-empty question.",
+            evidence=[],
+            confidence=0.0,
+            follow_up_questions=[],
+            sql_generated="",
+            cost_usd=0.0,
+        )
+
+    try:
+        classification = classify_workforce_question(q, correlation_id=cid)
+        intent_label = str(classification.get("intent") or "other")
+        conf = float(classification.get("confidence") or 0.0)
+        payload_audit = {
+            "intent": intent_label,
+            "classification_confidence": conf,
+            "needs_clarification": classification.get("needs_clarification"),
+        }
+
+        router = QueryRouter()
+        route_result = router.route(classification, session)
+
+        rows = _json_safe_rows(route_result.rows)
+        col_names = list(rows[0].keys()) if rows else []
+        router_error = _router_error_message(route_result)
+        sql_line = _sql_generated_line(route_result)
+
+        q_payload = QueryResultPayload(
+            request=QueryRequest(query=q),
+            intent_label=intent_label,
+            classification_confidence=conf,
+            executed_sql=None,
+            columns=col_names,
+            rows=rows,
+            row_count_returned=int(route_result.row_count),
+            result_truncated=bool(route_result.is_partial),
+            tables_referenced=list(route_result.tables_used),
+            router_error=router_error,
+            correlation_id=cid,
+        )
+
+        ledger = CostLedger()
+        syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)
+
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=q,
+            sql_generated=sql_line or None,
+            confidence=float(syn.confidence),
+            success=True,
+            error_code=None,
+            payload={
+                **payload_audit,
+                "row_count": len(rows),
+                "citations": len(syn.citations),
+                "refused": syn.refused,
+            },
+        )
+
+        return _synthesis_to_api(syn, sql_generated=sql_line)
+
+    except RuntimeError as exc:
+        code = str(exc)
+        log.warning("analytics_query_runtime_error", error=code, correlation_id=cid)
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=q,
+            sql_generated=None,
+            confidence=0.0,
+            success=False,
+            error_code=code,
+            payload=payload_audit,
+        )
+        msg = (
+            "The query took too long and was stopped."
+            if code == "query_timeout"
+            else "The query could not be completed."
+        )
+        return AnalyticsQueryResponse(
+            answer=msg,
+            evidence=[],
+            confidence=0.0,
+            follow_up_questions=[],
+            sql_generated="",
+            cost_usd=0.0,
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.exception("analytics_query_unhandled", correlation_id=cid)
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=q,
+            sql_generated=None,
+            confidence=0.0,
+            success=False,
+            error_code="internal_error",
+            payload={**payload_audit, "error": type(exc).__name__},
+        )
+        return AnalyticsQueryResponse(
+            answer="An unexpected error occurred while processing your question.",
+            evidence=[],
+            confidence=0.0,
+            follow_up_questions=[],
+            sql_generated="",
+            cost_usd=0.0,
+        )
