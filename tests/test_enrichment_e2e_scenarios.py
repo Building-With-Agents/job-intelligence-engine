@@ -5,7 +5,7 @@ Azure/OpenAI (or configured provider), and ``pytest --live``.
 
 **Run (see logs on stdout):**
 
-    
+
     pytest tests/test_enrichment_e2e_scenarios.py --live -s
 
 No LLM mocks — classifiers and spam preview call real endpoints.
@@ -475,9 +475,7 @@ def test_live_enrichment_scenario_end_to_end_grounded_codes_and_employer_profile
         if naics_s.lower() == "unknown":
             log.info("naics_uncertain_literal_unknown slug=%s (skipping dbo.naics grounding)", scenario.slug)
         else:
-            assert _naics_code_grounded(scenarios_e2e_engine, naics_s), (
-                f"naics_code {naics_s!r} not found in dbo.naics"
-            )
+            assert _naics_code_grounded(scenarios_e2e_engine, naics_s), f"naics_code {naics_s!r} not found in dbo.naics"
 
         assert jp.get("employer_profile_id"), "employer_profile_id should be set when company_id resolves"
         ep = _fetch_employer_profile(scenarios_e2e_engine, seed.company_id)

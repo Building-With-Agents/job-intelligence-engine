@@ -9,6 +9,8 @@ tables: raw_ingested_jobs, normalized_jobs, and job_ingestion_runs.
 
 import os
 import uuid
+from collections.abc import Iterator
+
 import pytest
 from sqlalchemy import create_engine, delete, select, text
 from sqlalchemy.engine import Engine
@@ -36,7 +38,6 @@ def engine() -> Engine:
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS dbo"))
     Base.metadata.create_all(engine)
     return engine
-
 
 
 @pytest.fixture

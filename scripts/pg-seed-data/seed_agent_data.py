@@ -65,9 +65,7 @@ def get_pg_connection() -> psycopg2.extensions.connection:
     if not dsn:
         print("ERROR: Set PYTHON_DATABASE_URL in your .env file")
         sys.exit(1)
-    return psycopg2.connect(
-        dsn, connect_timeout=30, options="-c statement_timeout=300000"
-    )
+    return psycopg2.connect(dsn, connect_timeout=30, options="-c statement_timeout=300000")
 
 
 def get_primary_key(cur: psycopg2.extensions.cursor, table: str) -> list[str]:
@@ -122,21 +120,19 @@ def upsert_records(
     col_names = ", ".join(f'"{c}"' for c in columns)
     conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
 
-    insert_sql = (
-        f'INSERT INTO "dbo"."{table}" ({col_names}) VALUES %s '
-        f"ON CONFLICT ({conflict_cols}) DO NOTHING"
-    )
+    insert_sql = f'INSERT INTO "dbo"."{table}" ({col_names}) VALUES %s ON CONFLICT ({conflict_cols}) DO NOTHING'
 
     # Pre-convert all values into tuple list
     values_list = []
     for record in records:
-        values_list.append(
-            tuple(_convert_value(record.get(c)) for c in columns)
-        )
+        values_list.append(tuple(_convert_value(record.get(c)) for c in columns))
 
     try:
         psycopg2.extras.execute_values(
-            cur, insert_sql, values_list, page_size=1000,
+            cur,
+            insert_sql,
+            values_list,
+            page_size=1000,
         )
         inserted = cur.rowcount if cur.rowcount >= 0 else len(values_list)
         skipped = len(values_list) - inserted
@@ -223,10 +219,7 @@ def seed_all() -> None:
             conn.commit()
             total_inserted += inserted
             total_skipped += skipped
-            print(
-                f"  {table}: {inserted:,} inserted, {skipped:,} skipped "
-                f"(of {len(records):,} total)"
-            )
+            print(f"  {table}: {inserted:,} inserted, {skipped:,} skipped (of {len(records):,} total)")
         except Exception as e:
             conn.rollback()
             print(f"  {table}: ERROR — {e}")

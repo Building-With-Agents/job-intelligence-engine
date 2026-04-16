@@ -13,6 +13,8 @@ class EvidenceItem(BaseModel):
     title: str = ""
     source: str = ""
     snippet: str = ""
+    supporting_count: int | None = None
+    time_period: str | None = None
 
 
 class AnalyticsQueryRequest(BaseModel):
@@ -31,9 +33,19 @@ class AnalyticsQueryResponse(BaseModel):
     answer: str
     evidence: list[EvidenceItem]
     confidence: float
+    periods_described: str = ""
+    confidence_flagged_low: bool = False
+    confidence_explanation: str | None = None
+    volume_flagged_low: bool = False
+    volume_warning: str | None = None
+    refused: bool = False
+    refusal_message: str | None = None
+    sql_execution_error_detail: str | None = None
     follow_up_questions: list[str]
     sql_generated: str
     cost_usd: float
+    total_cost_usd: float = 0.0
+    cost_breakdown_usd: dict[str, float] = Field(default_factory=dict)
 
 
 class TriggerEnvelope(BaseModel):

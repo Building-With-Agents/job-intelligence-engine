@@ -19,10 +19,10 @@ What this script does
 Why this shape
 --------------
 - The ESCO portal supports CSV downloads and API access; for a one-time setup
-  seed, the English CSV package is the simplest and most reproducible option. 
+  seed, the English CSV package is the simplest and most reproducible option.
 - ESCO's digital label is an official subset of the skills pillar, so this
   script treats digitalSkillsCollection_en.csv as the authoritative digital
-  subset and enriches each row from skills_en.csv. 
+  subset and enriches each row from skills_en.csv.
 
 Expected inputs
 ---------------
@@ -72,9 +72,10 @@ import tempfile
 import unicodedata
 import urllib.request
 import zipfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -86,10 +87,16 @@ except Exception:  # pragma: no cover - SQLAlchemy may not be available in all e
     create_engine = None
     text = None
 
-DIGITAL_COLLECTION_FILENAME = Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "digitalSkillsCollection_en.csv"
+DIGITAL_COLLECTION_FILENAME = (
+    Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "digitalSkillsCollection_en.csv"
+)
 SKILLS_FILENAME = Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "skills_en.csv"
-DEFAULT_OUTPUT_JSON = Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "esco_digital_skills.json"
-DEFAULT_METADATA_JSON = Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "esco_source_metadata.json"
+DEFAULT_OUTPUT_JSON = (
+    Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "esco_digital_skills.json"
+)
+DEFAULT_METADATA_JSON = (
+    Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "esco_source_metadata.json"
+)
 DEFAULT_GENAI_EXTENSION_JSON = (
     Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "genai_extension.json"
 )
@@ -192,6 +199,7 @@ INCLUDE_LABEL_KEYWORDS = {
     "web",
 }
 
+
 @dataclass(frozen=True)
 class Config:
     download_url: str | None
@@ -255,13 +263,16 @@ def parse_args() -> Config:
     )
     args = parser.parse_args()
 
-    if not args.download_url and not args.extracted_dir:
-        if not DIGITAL_COLLECTION_FILENAME.exists() or not SKILLS_FILENAME.exists():
-            parser.error(
-                "Provide either --download-url or --extracted-dir, or place "
-                "digitalSkillsCollection_en.csv and skills_en.csv under "
-                "skills_extraction/taxonomy/"
-            )
+    if (
+        not args.download_url
+        and not args.extracted_dir
+        and (not DIGITAL_COLLECTION_FILENAME.exists() or not SKILLS_FILENAME.exists())
+    ):
+        parser.error(
+            "Provide either --download-url or --extracted-dir, or place "
+            "digitalSkillsCollection_en.csv and skills_en.csv under "
+            "skills_extraction/taxonomy/"
+        )
 
     return Config(
         download_url=args.download_url,
@@ -362,7 +373,15 @@ def load_skills_by_uri(skills_csv_path: Path) -> dict[str, dict[str, str]]:
     skills_by_uri: dict[str, dict[str, str]] = {}
     with skills_csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
-        required = {"conceptUri", "preferredLabel", "altLabels", "hiddenLabels", "definition", "scopeNote", "description"}
+        required = {
+            "conceptUri",
+            "preferredLabel",
+            "altLabels",
+            "hiddenLabels",
+            "definition",
+            "scopeNote",
+            "description",
+        }
         missing = required - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"skills_en.csv missing expected columns: {sorted(missing)}")
@@ -388,9 +407,7 @@ def load_digital_rows(digital_csv_path: Path) -> list[dict[str, str]]:
         }
         missing = required - set(reader.fieldnames or [])
         if missing:
-            raise ValueError(
-                f"digitalSkillsCollection_en.csv missing expected columns: {sorted(missing)}"
-            )
+            raise ValueError(f"digitalSkillsCollection_en.csv missing expected columns: {sorted(missing)}")
         return list(reader)
 
 
@@ -441,7 +458,9 @@ def build_record(digital_row: dict[str, str], skills_by_uri: dict[str, dict[str,
     }
 
 
-def build_records(digital_rows: Iterable[dict[str, str]], skills_by_uri: dict[str, dict[str, str]]) -> list[dict[str, Any]]:
+def build_records(
+    digital_rows: Iterable[dict[str, str]], skills_by_uri: dict[str, dict[str, str]]
+) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     seen_uris: set[str] = set()
 
@@ -483,6 +502,7 @@ def write_metadata(
     }
     with metadata_json.open("w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2, ensure_ascii=False)
+
 
 def filter_records(records: list[dict]) -> list[dict]:
     """
@@ -728,6 +748,7 @@ def seed_postgres(records: list[dict[str, Any]], db_url: str, db_table: str) -> 
         connection.execute(create_table_sql)
         connection.execute(upsert_sql, payload)
 
+
 def resolve_workspace(config: Config) -> tuple[Path, Path | None, bool]:
     """Return (workspace_dir, zip_path_or_none, cleanup_when_done)."""
     # Repo-local mode
@@ -743,6 +764,7 @@ def resolve_workspace(config: Config) -> tuple[Path, Path | None, bool]:
     workspace_dir = Path(tempfile.mkdtemp(prefix="esco_seed_"))
     zip_path = workspace_dir / "esco_dataset.zip"
     return workspace_dir, zip_path, not config.keep_workdir
+
 
 def run(config: Config) -> int:
     workspace_dir, zip_path, cleanup_when_done = resolve_workspace(config)
@@ -767,9 +789,7 @@ def run(config: Config) -> int:
             "yes",
         )
         if apply_filter:
-            records = merge_missing_genai_parent_concepts(
-                all_records, filter_records(all_records)
-            )
+            records = merge_missing_genai_parent_concepts(all_records, filter_records(all_records))
         else:
             records = all_records
 

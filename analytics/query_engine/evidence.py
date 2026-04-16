@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Iterable
+from datetime import date, datetime
 from numbers import Real
 from typing import Any
 
@@ -35,9 +36,11 @@ _PERIOD_KEYS = (
     "time_period",
     "period",
     "period_label",
+    "week_start",
     "quarter",
     "month",
     "week",
+    "velocity_week",
     "year",
     "date",
 )
@@ -159,12 +162,70 @@ def _extract_row_period(row: dict[str, Any]) -> str | None:
     return None
 
 
+def _period_sort_ordinal(period: str) -> int | None:
+    value = (period or "").strip()
+    if not value:
+        return None
+
+    try:
+        return date.fromisoformat(value).toordinal()
+    except ValueError:
+        pass
+
+    try:
+        normalized = value.replace("Z", "+00:00")
+        return datetime.fromisoformat(normalized).date().toordinal()
+    except ValueError:
+        pass
+
+    if match := re.match(r"^(\d{4})-W(\d{1,2})$", value, re.IGNORECASE):
+        year = int(match.group(1))
+        week = int(match.group(2))
+        try:
+            return date.fromisocalendar(year, week, 1).toordinal()
+        except ValueError:
+            return None
+
+    if match := re.match(r"^(\d{4})-Q([1-4])$", value, re.IGNORECASE):
+        year = int(match.group(1))
+        quarter = int(match.group(2))
+        month = (quarter - 1) * 3 + 1
+        return date(year, month, 1).toordinal()
+
+    if match := re.match(r"^(\d{4})-(\d{2})$", value):
+        year = int(match.group(1))
+        month = int(match.group(2))
+        try:
+            return date(year, month, 1).toordinal()
+        except ValueError:
+            return None
+
+    if match := re.match(r"^(\d{4})$", value):
+        return date(int(match.group(1)), 1, 1).toordinal()
+
+    return None
+
+
+def _ordered_unique_periods(periods: list[str]) -> list[str]:
+    unique_periods = list(dict.fromkeys(periods))
+    ordinals = [_period_sort_ordinal(period) for period in unique_periods]
+    if any(ordinal is None for ordinal in ordinals):
+        return unique_periods
+    return [
+        period
+        for _, period in sorted(
+            zip(ordinals, unique_periods, strict=True),
+            key=lambda pair: pair[0],
+        )
+    ]
+
+
 def _period_coverage(payload: QueryResultPayload) -> tuple[str, bool]:
     periods = [period for row in payload.rows if (period := _extract_row_period(row))]
     if not periods:
         return "period unknown", False
 
-    unique_periods = list(dict.fromkeys(periods))
+    unique_periods = _ordered_unique_periods(periods)
     partial_period_coverage = len(periods) < len(payload.rows)
     if len(unique_periods) == 1:
         coverage = unique_periods[0]

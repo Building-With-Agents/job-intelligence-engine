@@ -103,8 +103,7 @@ def make_soc_llm() -> Callable[[str], str]:
         except TypeError as exc:
             if "api_key" in str(exc).lower() or "auth" in str(exc).lower():
                 print(
-                    f"LLM authentication failed (missing key?). "
-                    f"Check AZURE_OPENAI_* env vars. Detail: {exc}",
+                    f"LLM authentication failed (missing key?). Check AZURE_OPENAI_* env vars. Detail: {exc}",
                     file=sys.stderr,
                 )
                 return "unclassified"
@@ -123,9 +122,7 @@ async def main() -> None:
     _ensure_llm_configured_or_exit()
 
     with session_scope() as session:
-        row = session.scalars(
-            select(NormalizedJob).order_by(NormalizedJob.id.desc()).limit(1)
-        ).first()
+        row = session.scalars(select(NormalizedJob).order_by(NormalizedJob.id.desc()).limit(1)).first()
         if row is None:
             print("No rows in dbo.normalized_jobs — seed or ingest data first.")
             return
@@ -135,12 +132,8 @@ async def main() -> None:
         print("company:", job_record.company)
 
         # Same title/description strings for Tier 1 preview, classify_soc, and DB write-back.
-        desc_for_soc = (
-            job_record.description if isinstance(job_record.description, str) else ""
-        )
-        cand_rows = await get_soc_candidates(
-            job_record.title, desc_for_soc or None, session
-        )
+        desc_for_soc = job_record.description if isinstance(job_record.description, str) else ""
+        cand_rows = await get_soc_candidates(job_record.title, desc_for_soc or None, session)
 
         if cand_rows:
             print("\nSOC candidates from dbo.socc (ranked, top 15):")
