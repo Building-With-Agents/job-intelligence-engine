@@ -6,7 +6,7 @@ schema. Reference tables (companies, industry_sectors, etc.) are seeded via
 
 Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     normalization_quarantine, extracted_intelligence, llm_audit_log,
-    employer_profiles, canonical_roles, role_snapshot_weekly,
+    employer_profiles, canonical_roles, role_snapshot_weekly, disruption_fingerprints,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
     skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
     cohort_gap_cache, orchestration_audit_log.
@@ -470,6 +470,37 @@ class TrajectoryMap(Base):
     trajectory_data: Mapped[dict] = mapped_column(JSON, nullable=True)
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class DisruptionFingerprint(Base):
+    """Persisted disruption fingerprint per canonical role (Analytics step 12, issue #108).
+
+    One row per ``canonical_role_id``; ``session.merge`` replaces metrics on refresh.
+    """
+
+    __tablename__ = "disruption_fingerprints"
+    __table_args__ = (
+        Index("ix_disruption_fingerprints_computed_at", "computed_at"),
+        {"schema": "dbo"},
+    )
+
+    canonical_role_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    disruption_category: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    disruption_intensity: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    skill_velocity: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    tool_transition: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    task_shift: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    responsibility_expansion: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ai_intensity_trend: Mapped[str] = mapped_column(Text, nullable=False, default="stable")
+    workflow_restructuring_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    trajectory: Mapped[str] = mapped_column(Text, nullable=False, default="stable")
+    period_comparison: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    content_fingerprint: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
 
