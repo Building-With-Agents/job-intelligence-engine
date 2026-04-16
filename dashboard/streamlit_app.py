@@ -1004,7 +1004,7 @@ def main() -> None:
         st.sidebar.caption("Set `PYTHON_DATABASE_URL` (or `PYTHON_DATABASE_URL_READONLY`) in `.env`.")
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("Week 6 — observability · Week 7 — weekly insights · Week 8 — analytics views (Ask the Data: Pair C)")
+    st.sidebar.caption("Week 6 — observability · Week 7 — weekly insights")
     page = st.sidebar.radio(
         "Navigate",
         options=[
@@ -1014,9 +1014,6 @@ def main() -> None:
             "Record Journey",
             "Batch Insights",
             "Weekly Insights",
-            "Skills Gap Map",
-            "Emergence Alerts",
-            "Regional Heatmap",
         ],
     )
 
@@ -1039,18 +1036,6 @@ def main() -> None:
             from dashboard.pages_weekly_insights import render_weekly_insights
 
             render_weekly_insights()
-        elif page == "Skills Gap Map":
-            from dashboard.pages_skills_gap_map import render_skills_gap_map
-
-            render_skills_gap_map()
-        elif page == "Emergence Alerts":
-            from dashboard.pages_emergence_alerts import render_emergence_alerts
-
-            render_emergence_alerts()
-        elif page == "Regional Heatmap":
-            from dashboard.pages_regional_heatmap import render_regional_heatmap
-
-            render_regional_heatmap()
     else:
         entries = _load_run_log()
         if page == "Weekly Insights":
@@ -1070,24 +1055,6 @@ def main() -> None:
             _page_record_journey_json(entries)
         elif page == "Batch Insights":
             _page_batch_insights_json(entries)
-        elif page == "Skills Gap Map":
-            st.title("Skills Gap Map")
-            st.warning(
-                "This page needs PostgreSQL and the **cohort_gap_cache** table. "
-                "Set `PYTHON_DATABASE_URL` (or `PYTHON_DATABASE_URL_READONLY`) and restart the app."
-            )
-        elif page == "Emergence Alerts":
-            st.title("Emergence Alerts")
-            st.warning(
-                "This page needs PostgreSQL and **disruption_fingerprints** / **canonical_roles**. "
-                "Set `PYTHON_DATABASE_URL` (or `PYTHON_DATABASE_URL_READONLY`) and restart the app."
-            )
-        elif page == "Regional Heatmap":
-            st.title("Regional Heatmap")
-            st.warning(
-                "This page needs PostgreSQL and **geo_demand_weekly**. "
-                "Set `PYTHON_DATABASE_URL` (or `PYTHON_DATABASE_URL_READONLY`) and restart the app."
-            )
 
 
 if __name__ == "__main__":

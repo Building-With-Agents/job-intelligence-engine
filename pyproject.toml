@@ -53,7 +53,7 @@ ignore = [
 "scripts/export_langfuse_dataset.py" = ["T201"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agents", "analytics"]
+known-first-party = ["agents"]
 
 [tool.pytest.ini_options]
 pythonpath = [".."]
