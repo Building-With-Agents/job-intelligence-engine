@@ -118,11 +118,14 @@ class TestJSearchQueryConstruction:
             resp.status_code = 200
             return resp
 
-        with patch.dict(
-            os.environ,
-            {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
-            clear=False,
-        ), patch("httpx.AsyncClient.get", new=fake_get):
+        with (
+            patch.dict(
+                os.environ,
+                {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
+                clear=False,
+            ),
+            patch("httpx.AsyncClient.get", new=fake_get),
+        ):
             asyncio.run(JSearchAdapter().fetch(region=region))
 
         assert captured_params, "adapter never called client.get"
@@ -160,11 +163,14 @@ class TestJSearchQueryConstruction:
             resp.status_code = 200
             return resp
 
-        with patch.dict(
-            os.environ,
-            {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
-            clear=False,
-        ), patch("httpx.AsyncClient.get", new=fake_get):
+        with (
+            patch.dict(
+                os.environ,
+                {"JSEARCH_API_KEY": "k", "JSEARCH_MAX_PAGES": "1", "JSEARCH_RPS": "100"},
+                clear=False,
+            ),
+            patch("httpx.AsyncClient.get", new=fake_get),
+        ):
             asyncio.run(JSearchAdapter().fetch(region=region))
 
         assert captured[0]["query"] == "data scientist"

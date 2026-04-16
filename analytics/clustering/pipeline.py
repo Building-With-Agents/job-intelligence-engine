@@ -39,9 +39,7 @@ def _default_clusterer_factory(**kwargs: Any) -> Any:
     try:
         import hdbscan
     except ModuleNotFoundError as exc:
-        raise RuntimeError(
-            "hdbscan is not installed; install requirements.txt before running clustering"
-        ) from exc
+        raise RuntimeError("hdbscan is not installed; install requirements.txt before running clustering") from exc
     return hdbscan.HDBSCAN(**kwargs)
 
 

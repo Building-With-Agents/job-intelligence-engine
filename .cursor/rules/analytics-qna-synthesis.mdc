@@ -1,0 +1,71 @@
+---
+description: "Analytics Q&A — grounded synthesis, evidence citation, confidence/volume transparency (#117)"
+alwaysApply: false
+globs:
+  - "analytics/query_engine/**"
+---
+
+# Analytics Q&A — synthesis and evidence
+
+**Scope:** Workforce “Ask the Data” natural-language answers built from **structured query results**, with citations, confidence and volume transparency, refusal when data is insufficient, and per-query LLM cost rollups. Tracked in [GitHub #117](https://github.com/Building-With-Agents/job-intelligence-engine/issues/117).
+
+**References:** `docs/Week 8/WEEK-08-synthesis-evidence-citation-bryan-emilio-runbook.md`, `docs/Week 8/IMP-027-synthesis-evidence-citation-bryan-emilio-reading.md`
+
+## Contract vs documentation
+
+| Layer | Role |
+|-------|------|
+| **`analytics/query_engine/schemas.py` (Pydantic)** | **Source of truth** for `QueryResultPayload`, `EvidenceBundle`, `SynthesisResponse`, cost types. |
+| **This rule** | Engineering conventions: architecture, thresholds, integration, tests — keep aligned with code. |
+
+Change models **first**, then prompts, tests, and this rule when behavior shifts.
+
+## Related project rules
+
+- **`sql-guardrails.mdc`** — SELECT-only, allowlisted tables, row limit, timeout, logging.
+- **`python-agent-patterns.mdc`** — structlog, no PII, `common/llm_adapter`, Pydantic at boundaries.
+- **`skills-naming.mdc`** — use `skill_name`, not `label`, when touching skills payloads.
+
+## Architecture
+
+1. **Evidence before synthesis:** Build an **`EvidenceBundle`** (tables, counts, periods, citeable facts) from router output **before** the main synthesis LLM call.
+2. **Grounded generation:** Synthesis (**Sonnet-class**; Azure OpenAI `chat-gpt41` by default via `LLM_SYNTHESIS`) may **only paraphrase** facts in the bundle — **no invented statistics**.
+3. **Follow-ups:** Use a cheaper tier (**Haiku-class**; Azure OpenAI `chat-gpt41mini` by default via `LLM_DEFAULT`, routed as `role="classification"`) per runbook; questions must be **contextually relevant**, not generic.
+4. **No post-hoc citation:** Do not draft the answer first and attach sources afterward.
+5. **Post-generation grounding:** After the main synthesis call, `verify_answer_grounding` checks numeric tokens in `answer_text` against the evidence corpus; on failure, one constrained retry then a safe template (`grounding.py`).
+6. **Temporal line:** Final `answer_text` must include `period_coverage` (deterministic `Data period: …` prefix when missing).
+7. **NL→SQL security:** User text is never executed as SQL; only `validate_sql`-approved strings run on a read-only session (`routing.py`, `sql_guardrails.py`). Prompts use a fixed schema hint — no connection strings or secrets.
+
+## Thresholds (runbook)
+
+Align with `analytics/query_engine/constants.py` and product sign-off:
+
+- **Confidence transparency** when blended confidence **< 0.6** — include **why** (e.g. volume, intent match), not only a label.
+- **Volume warning** when primary posting count **< 30** (or agreed metric).
+- **Temporal precision:** user-visible answers state the **period(s)** covered.
+- **Refusal:** insufficient data → refuse or strong caveat; **never** fabricate numbers.
+
+Distinguish **zero rows** from **small but non-zero sample**.
+
+## LLM and cost
+
+- Use **`common/llm_adapter`** / `common/llm_client`; avoid ad-hoc vendor SDKs in `query_engine`.
+- **Per-query cost:** sum adapter-reported cost/tokens for **classification + routing + synthesis + follow-ups**; extend the adapter if a leg lacks metrics instead of duplicating price tables.
+
+## Upstream integration
+
+- **`run_guardrailed_analytics_query`** in `analytics/query_engine/routing.py` produces **`QueryResultPayload`** after guardrailed execution, then calls **`run_analytics_qna`**. Streamlit **Ask the Data** (`dashboard/pages_ask_the_data.py`) and REST `POST /analytics/query` are both shipped entrypoints.
+- Optional **`QueryResultPayload.distinct_posting_count`** when SQL returns a true distinct posting count; otherwise volume uses a conservative **max** of per-row count columns when multiple rows exist.
+- REST adapters must preserve the Week 8 transparency contract: periods, confidence and volume flags, refusal/debug fields, citations, follow-ups, and total cost.
+- Share **`schemas.py`** with all callers; document in PR **#117** and, if the public contract changes, `docs/planning/ARCHITECTURE_DEEP.md`.
+
+## Production bar
+
+- **Unit tests** for scoring, refusal, and flags **without** live LLM.
+- **Integration tests** with **mock LLM** for output shape and grounding.
+- **No PII** in logs.
+
+## PR hygiene
+
+- Reference **#117** when changing this area.
+- Update **this rule**, the **Week 8 runbook**, and/or **ARCHITECTURE_DEEP.md** when thresholds or the integration contract change.

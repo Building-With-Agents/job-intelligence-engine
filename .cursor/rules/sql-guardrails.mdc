@@ -14,7 +14,7 @@ The Analytics Agent supports text-to-SQL ("Ask the Data"). All generated SQL **m
 
 1. **SELECT only** — reject any INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, EXEC, TRUNCATE, MERGE
 2. **Allowed tables only** — queries may only reference tables in the allowlist
-3. **100-row maximum** — enforce `LIMIT 100` on all queries
+3. **100-row maximum** — enforce PostgreSQL `LIMIT 100` on all queries (this repo uses PostgreSQL `dbo`, not MSSQL `TOP`)
 4. **30-second timeout** — kill queries exceeding this limit
 5. **Log everything** — all SQL attempts (approved and rejected) written to `llm_audit_log`
 
@@ -55,9 +55,9 @@ def validate_sql(query: str) -> tuple[bool, str]:
     # (extract table names from FROM/JOIN clauses and verify against ALLOWED_TABLES)
     ...
 
-    # Ensure row limit
-    if "TOP" not in query.upper():
-        query = query.replace("SELECT", "SELECT TOP 100", 1)
+    # Ensure row limit (PostgreSQL)
+    if "LIMIT" not in query.upper():
+        query = query.rstrip().rstrip(";") + " LIMIT 100"
 
     return True, "ok"
 ```

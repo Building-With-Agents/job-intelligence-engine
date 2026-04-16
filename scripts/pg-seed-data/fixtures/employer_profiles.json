@@ -1,5 +1,15 @@
 [
   {
+    "id": "17b7726c-b1b5-42a4-8dba-d01ed81d2447",
+    "company_id": "27e583c2-2688-4b07-b557-fb098b480be8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:11:33.423825+00:00",
+    "updated_at": "2026-04-15T07:11:33.423825+00:00"
+  },
+  {
     "id": "cf2eda7f-79a4-48fd-b928-0a3e0698364b",
     "company_id": "5305a552-7e86-4afa-8c81-38e257b55dc4",
     "company_size": "unknown",
@@ -50,14 +60,14 @@
     "updated_at": "2026-04-07T01:01:13.749728+00:00"
   },
   {
-    "id": "683a9b92-45fd-4ff8-a84e-b6b782e01282",
-    "company_id": "da68a206-7303-4e74-b9cd-722139477793",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "traditional",
-    "sector": "education",
+    "id": "87085408-7116-424e-8445-8407058b0a9c",
+    "company_id": "faacf54d-d3e1-4fa3-aeea-584f14a9c0e7",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
     "is_known_employer": true,
-    "created_at": "2026-04-07T06:16:41.775999+00:00",
-    "updated_at": "2026-04-07T17:18:26.011067+00:00"
+    "created_at": "2026-04-15T07:11:33.423825+00:00",
+    "updated_at": "2026-04-15T07:11:33.423825+00:00"
   },
   {
     "id": "4309510d-a8e2-44af-a91b-31990d5537c5",
@@ -70,51 +80,11 @@
     "updated_at": "2026-04-07T22:56:06.378145+00:00"
   },
   {
-    "id": "7fcad499-8ef7-4b51-adfd-92e8b9534d93",
-    "company_id": "58cde994-c8c0-4a21-a7d8-91fed280252d",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:22.553228+00:00",
-    "updated_at": "2026-04-07T17:22:21.765818+00:00"
-  },
-  {
-    "id": "cd03d336-c825-41e9-812c-e627888bd4a5",
-    "company_id": "f3203821-ca10-4a38-96d7-136055fe1470",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T06:23:07.715682+00:00",
-    "updated_at": "2026-04-07T17:22:21.765818+00:00"
-  },
-  {
-    "id": "f89fe9eb-6fe6-4037-b53b-93f23bef5188",
-    "company_id": "83171880-1b58-4489-a5e6-400a42ca5741",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:22.553228+00:00",
-    "updated_at": "2026-04-07T17:22:21.765818+00:00"
-  },
-  {
     "id": "0815606e-85e0-4114-96f1-13fb17ea6439",
     "company_id": "bf0f7f77-b8ae-4fe3-8e0d-5fdbbe19d380",
     "company_size": "unknown",
     "ai_maturity_signal": "ai_native",
     "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:22.553228+00:00",
-    "updated_at": "2026-04-07T17:22:21.765818+00:00"
-  },
-  {
-    "id": "2f5489d8-7e9b-4275-80c4-65a163b245ba",
-    "company_id": "942141d3-98a2-45fb-8476-8057bdb5b4f3",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "healthcare",
     "is_known_employer": true,
     "created_at": "2026-04-07T17:22:22.553228+00:00",
     "updated_at": "2026-04-07T17:22:21.765818+00:00"
@@ -150,26 +120,6 @@
     "updated_at": "2026-04-07T17:14:02.272356+00:00"
   },
   {
-    "id": "8e064446-b806-4a69-888a-b1cc0336edd1",
-    "company_id": "dfe7650f-9fd7-47dd-86c0-1a38056e35e2",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "unknown",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T01:36:08.400261+00:00",
-    "updated_at": "2026-04-07T17:14:02.272356+00:00"
-  },
-  {
-    "id": "c766e318-4273-4ee5-b3c1-5719ca599fd1",
-    "company_id": "eeab5d3a-df39-467d-8bbd-7934e4fa768c",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "traditional",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T07:08:59.227408+00:00",
-    "updated_at": "2026-04-07T17:18:26.011067+00:00"
-  },
-  {
     "id": "68b74305-f6ce-4532-a95d-5d8a19997f8a",
     "company_id": "a06f13e5-8129-48dd-9aa9-79c2ad245412",
     "company_size": "mid_market",
@@ -190,14 +140,34 @@
     "updated_at": "2026-04-07T17:18:26.011067+00:00"
   },
   {
-    "id": "31999bda-4082-44da-8108-4f564a213479",
-    "company_id": "7cd4ea8f-c318-4868-9bf5-0ffd0017502c",
-    "company_size": "enterprise",
+    "id": "8e064446-b806-4a69-888a-b1cc0336edd1",
+    "company_id": "dfe7650f-9fd7-47dd-86c0-1a38056e35e2",
+    "company_size": "unknown",
     "ai_maturity_signal": "unknown",
-    "sector": "government",
+    "sector": "unknown",
     "is_known_employer": true,
-    "created_at": "2026-04-07T17:30:31.961014+00:00",
-    "updated_at": "2026-04-07T17:31:56.128471+00:00"
+    "created_at": "2026-04-07T01:36:08.400261+00:00",
+    "updated_at": "2026-04-14T10:07:55.195739+00:00"
+  },
+  {
+    "id": "b42a31e6-d002-4f46-83d8-a9179d6547da",
+    "company_id": "0b6333e8-0c87-44cb-a043-2bd7c43a8f50",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:11:33.423825+00:00",
+    "updated_at": "2026-04-15T07:11:33.423825+00:00"
+  },
+  {
+    "id": "52f1ec77-1009-4b65-a435-d511b9e14986",
+    "company_id": "c3184473-cb1f-4bb1-8d55-0738ccd8a628",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:15:56.911576+00:00",
+    "updated_at": "2026-04-15T07:36:09.212365+00:00"
   },
   {
     "id": "c834e1f4-c92d-4cb4-a9ee-97c81564a4e2",
@@ -220,6 +190,16 @@
     "updated_at": "2026-04-07T21:45:02.977570+00:00"
   },
   {
+    "id": "683a9b92-45fd-4ff8-a84e-b6b782e01282",
+    "company_id": "da68a206-7303-4e74-b9cd-722139477793",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T06:16:41.775999+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
     "id": "e38497a6-f698-42ca-9594-93635683d8e2",
     "company_id": "b78c19bb-380e-4ee2-8962-30200e8cde4d",
     "company_size": "unknown",
@@ -238,6 +218,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T17:30:31.961014+00:00",
     "updated_at": "2026-04-08T01:27:00.372683+00:00"
+  },
+  {
+    "id": "7fcad499-8ef7-4b51-adfd-92e8b9534d93",
+    "company_id": "58cde994-c8c0-4a21-a7d8-91fed280252d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:22:22.553228+00:00",
+    "updated_at": "2026-04-15T10:54:08.746814+00:00"
+  },
+  {
+    "id": "f89fe9eb-6fe6-4037-b53b-93f23bef5188",
+    "company_id": "83171880-1b58-4489-a5e6-400a42ca5741",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:22:22.553228+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
   },
   {
     "id": "8a6428bc-dd48-4760-9522-e85177e39ba4",
@@ -330,6 +330,16 @@
     "updated_at": "2026-04-11T22:53:06.267029+00:00"
   },
   {
+    "id": "c766e318-4273-4ee5-b3c1-5719ca599fd1",
+    "company_id": "eeab5d3a-df39-467d-8bbd-7934e4fa768c",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T07:08:59.227408+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
     "id": "fd15d616-0194-4659-a9a7-47554deda667",
     "company_id": "181cf374-4565-4a5e-803a-03f0b6016361",
     "company_size": "mid_market",
@@ -390,14 +400,14 @@
     "updated_at": "2026-04-12T07:22:06.732124+00:00"
   },
   {
-    "id": "b5e23f82-f77f-4a8a-98ab-5f7b30e8fc76",
-    "company_id": "a7c27653-2e83-449a-8169-e8ab869e43b6",
-    "company_size": "mid_market",
+    "id": "2f5489d8-7e9b-4275-80c4-65a163b245ba",
+    "company_id": "942141d3-98a2-45fb-8476-8057bdb5b4f3",
+    "company_size": "enterprise",
     "ai_maturity_signal": "traditional",
-    "sector": "consulting",
+    "sector": "healthcare",
     "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:21.765818+00:00",
-    "updated_at": "2026-04-12T08:37:30.252841+00:00"
+    "created_at": "2026-04-07T17:22:22.553228+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
   },
   {
     "id": "19bc9c58-0a84-45cc-bfe0-f6e37c6b88a0",
@@ -430,6 +440,16 @@
     "updated_at": "2026-04-12T08:17:48.449005+00:00"
   },
   {
+    "id": "42f49aef-c844-44fb-80ff-6e5219cc8471",
+    "company_id": "de2ba20b-47ce-4b49-8b0e-e34ee5d8c957",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T21:45:02.977570+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
     "id": "f2524c54-16af-46dc-985e-1fc9372fc402",
     "company_id": "c334c0c9-d8ab-4e9c-a374-c2c9510e6a8c",
     "company_size": "enterprise",
@@ -438,6 +458,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T17:26:45.861949+00:00",
     "updated_at": "2026-04-12T10:37:28.393955+00:00"
+  },
+  {
+    "id": "c1865f16-a38c-47ef-8f4a-24b247530b98",
+    "company_id": "3460389f-3b07-47fd-aedb-b5f1f8d6f25e",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T06:23:07.715682+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
+    "id": "7a0900d9-ff96-4fed-a0df-adfa61829325",
+    "company_id": "711c0509-ae09-4609-8288-56157dbd791f",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:11:33.423825+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
   },
   {
     "id": "03778cca-267b-4ff3-b462-e2e552b14246",
@@ -450,14 +490,14 @@
     "updated_at": "2026-04-12T09:36:55.138951+00:00"
   },
   {
-    "id": "42f49aef-c844-44fb-80ff-6e5219cc8471",
-    "company_id": "de2ba20b-47ce-4b49-8b0e-e34ee5d8c957",
+    "id": "cd03d336-c825-41e9-812c-e627888bd4a5",
+    "company_id": "f3203821-ca10-4a38-96d7-136055fe1470",
     "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "technology",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
     "is_known_employer": true,
-    "created_at": "2026-04-07T21:45:02.977570+00:00",
-    "updated_at": "2026-04-12T11:29:52.017543+00:00"
+    "created_at": "2026-04-07T06:23:07.715682+00:00",
+    "updated_at": "2026-04-15T11:05:01.061027+00:00"
   },
   {
     "id": "fc2517b5-0cf3-4b24-a44b-d71a531996ff",
@@ -480,14 +520,14 @@
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
   },
   {
-    "id": "c1865f16-a38c-47ef-8f4a-24b247530b98",
-    "company_id": "3460389f-3b07-47fd-aedb-b5f1f8d6f25e",
+    "id": "31999bda-4082-44da-8108-4f564a213479",
+    "company_id": "7cd4ea8f-c318-4868-9bf5-0ffd0017502c",
     "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
+    "ai_maturity_signal": "unknown",
     "sector": "government",
     "is_known_employer": true,
-    "created_at": "2026-04-07T06:23:07.715682+00:00",
-    "updated_at": "2026-04-12T17:21:14.591320+00:00"
+    "created_at": "2026-04-07T17:30:31.961014+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
   },
   {
     "id": "6c764f32-9d0d-4e31-9c37-f1db34567267",
@@ -820,6 +860,16 @@
     "updated_at": "2026-04-07T22:23:35.275847+00:00"
   },
   {
+    "id": "545f4c94-1095-4c18-b131-96b504488d59",
+    "company_id": "6d852a01-dbaf-4721-9000-286a8d00ab82",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:46:57.932200+00:00",
+    "updated_at": "2026-04-15T10:54:08.746814+00:00"
+  },
+  {
     "id": "b510a160-e82a-48c3-8b11-8dba93ae68f7",
     "company_id": "BC778CAD-F4BD-42E9-8943-64001527BD49",
     "company_size": "enterprise",
@@ -1020,14 +1070,14 @@
     "updated_at": "2026-04-12T06:40:22.162016+00:00"
   },
   {
-    "id": "545f4c94-1095-4c18-b131-96b504488d59",
-    "company_id": "6d852a01-dbaf-4721-9000-286a8d00ab82",
-    "company_size": "startup",
-    "ai_maturity_signal": "ai_native",
-    "sector": "technology",
+    "id": "b8a9f0ef-8977-4f03-9f80-2f1a0cbe5d06",
+    "company_id": "b5b8bb4a-a643-4762-a1f5-d23a894da578",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "consulting",
     "is_known_employer": true,
-    "created_at": "2026-04-07T17:46:57.932200+00:00",
-    "updated_at": "2026-04-12T09:01:35.591724+00:00"
+    "created_at": "2026-04-15T07:15:56.911576+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
   },
   {
     "id": "9cede163-6575-44a8-8d90-f8b11607f0f6",
@@ -1068,16 +1118,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T21:45:02.977570+00:00",
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
-  },
-  {
-    "id": "a5e108bb-b961-421f-a3c0-e982a5801c34",
-    "company_id": "40effc3e-0d81-4864-83a1-0c653f516f2e",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T21:45:02.977570+00:00",
-    "updated_at": "2026-04-12T17:38:21.902378+00:00"
   },
   {
     "id": "306562ae-8377-44ef-b7d5-892094a0a568",
@@ -1145,16 +1185,6 @@
     "company_size": "enterprise",
     "ai_maturity_signal": "unknown",
     "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T22:23:35.275847+00:00",
-    "updated_at": "2026-04-07T22:23:35.275847+00:00"
-  },
-  {
-    "id": "ff756a7b-8f37-4b47-b010-ae4729dd0cf9",
-    "company_id": "6da90d77-a7df-4763-9927-bb01e4d2ee28",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_exploring",
-    "sector": "education",
     "is_known_employer": true,
     "created_at": "2026-04-07T22:23:35.275847+00:00",
     "updated_at": "2026-04-07T22:23:35.275847+00:00"
@@ -1250,14 +1280,24 @@
     "updated_at": "2026-04-07T22:56:06.378145+00:00"
   },
   {
-    "id": "54431768-a042-453c-a16a-24b1c060d830",
-    "company_id": "05a205b5-77dc-4090-8a28-0e8721960308",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
+    "id": "28652034-a5a4-43b5-ba82-ce17e9f68b62",
+    "company_id": "f7e12f77-d9d0-44a3-a46f-d61b31290f1f",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
     "is_known_employer": false,
-    "created_at": "2026-04-07T22:23:35.275847+00:00",
-    "updated_at": "2026-04-08T02:23:30.283394+00:00"
+    "created_at": "2026-04-15T07:15:56.911576+00:00",
+    "updated_at": "2026-04-15T07:15:56.911576+00:00"
+  },
+  {
+    "id": "b5e23f82-f77f-4a8a-98ab-5f7b30e8fc76",
+    "company_id": "a7c27653-2e83-449a-8169-e8ab869e43b6",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:22:21.765818+00:00",
+    "updated_at": "2026-04-15T07:15:56.911576+00:00"
   },
   {
     "id": "ec7afcf9-7db7-416d-976e-0319b829bf24",
@@ -1280,6 +1320,16 @@
     "updated_at": "2026-04-08T03:24:30.679415+00:00"
   },
   {
+    "id": "c5a14bfd-14de-4f86-bd73-f502de690624",
+    "company_id": "5d8bd864-49b4-4d33-b888-33a430acc38b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
+  },
+  {
     "id": "1b213269-e253-40aa-bc18-896d6120d278",
     "company_id": "ca6b7bd5-b7b2-45d2-8361-8e39da0cbda2",
     "company_size": "unknown",
@@ -1298,6 +1348,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T22:56:06.378145+00:00",
     "updated_at": "2026-04-07T22:56:06.378145+00:00"
+  },
+  {
+    "id": "aba0a688-dd30-4633-b374-01a99ed08079",
+    "company_id": "bd2ebcae-7ac6-4d83-b156-f0cd36013752",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
   },
   {
     "id": "d01a58ea-a669-4b99-ba9c-768b4973a937",
@@ -1340,14 +1400,14 @@
     "updated_at": "2026-04-07T22:56:06.378145+00:00"
   },
   {
-    "id": "05205449-00a5-4d53-a4d5-9a158edc7c61",
-    "company_id": "31ec7b68-5578-477c-942d-5b1f50004f3b",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
+    "id": "91dd8581-4dbe-4c17-a1fa-b06483361be5",
+    "company_id": "c70d6938-baf1-42c0-a31e-cc95007e0acd",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
     "is_known_employer": true,
-    "created_at": "2026-04-07T22:56:06.378145+00:00",
-    "updated_at": "2026-04-07T22:56:06.378145+00:00"
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
   },
   {
     "id": "00dd04a6-dea6-4ebc-8dbf-0ff729e16310",
@@ -1358,6 +1418,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T22:56:06.378145+00:00",
     "updated_at": "2026-04-07T22:56:06.378145+00:00"
+  },
+  {
+    "id": "e63ef20f-02e8-4c96-8db9-a34eb984d496",
+    "company_id": "49f8a929-69d0-4540-9ea5-ed4541189fee",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
   },
   {
     "id": "d1e05754-3bc1-4a0a-95ff-d4171cfcf8ce",
@@ -1408,6 +1478,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T23:26:49.314288+00:00",
     "updated_at": "2026-04-07T23:26:49.314288+00:00"
+  },
+  {
+    "id": "54431768-a042-453c-a16a-24b1c060d830",
+    "company_id": "05a205b5-77dc-4090-8a28-0e8721960308",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:23:35.275847+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
   },
   {
     "id": "77822d02-bac8-40cf-85e6-baf68dc6198b",
@@ -1540,6 +1620,16 @@
     "updated_at": "2026-04-12T07:58:33.878219+00:00"
   },
   {
+    "id": "05205449-00a5-4d53-a4d5-9a158edc7c61",
+    "company_id": "31ec7b68-5578-477c-942d-5b1f50004f3b",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:56:06.378145+00:00",
+    "updated_at": "2026-04-15T11:31:25.902594+00:00"
+  },
+  {
     "id": "b55f8049-db2b-4d29-86bd-e97d851454e8",
     "company_id": "16c983c6-60ff-4d72-bd39-4cbae14b8ed2",
     "company_size": "unknown",
@@ -1588,6 +1678,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T22:56:06.378145+00:00",
     "updated_at": "2026-04-12T00:13:38.842940+00:00"
+  },
+  {
+    "id": "561e75df-2471-4ab6-96e0-22006260a543",
+    "company_id": "837b730d-454c-4638-b7f7-d64aec94c1c7",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "ac73569c-ebe7-45c7-918f-07b657bff162",
@@ -1700,6 +1800,16 @@
     "updated_at": "2026-04-07T23:26:49.314288+00:00"
   },
   {
+    "id": "52e9c839-efb9-4018-ac22-555f7e33693b",
+    "company_id": "1ce48736-1187-4576-ba27-006f23fb5b8e",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
+  },
+  {
     "id": "2d811331-1810-4253-9cf0-08c0c9db75cd",
     "company_id": "8c7c21cc-c729-424b-8421-b36ec9937a55",
     "company_size": "enterprise",
@@ -1708,6 +1818,36 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T00:17:37.096976+00:00",
     "updated_at": "2026-04-08T00:17:37.096976+00:00"
+  },
+  {
+    "id": "e69d2255-aaca-4479-be93-43f7f62c67a8",
+    "company_id": "d7273a72-c064-4219-944d-9325c65563a1",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
+  },
+  {
+    "id": "d8f5f730-b543-4c56-ab7b-40768b2b1f6c",
+    "company_id": "7dca557a-0bcc-4685-9474-8101d10a8e0f",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T07:20:58.985679+00:00"
+  },
+  {
+    "id": "eb4b11cc-65aa-4e23-bf6f-0202c29eaaa4",
+    "company_id": "c98a2e3f-fa35-4e3d-b40c-9e232e8abe19",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T07:25:50.212404+00:00"
   },
   {
     "id": "ff0a53c2-f59c-4f33-9bec-2e14d82a9fe9",
@@ -1728,6 +1868,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T00:17:37.096976+00:00",
     "updated_at": "2026-04-08T00:17:37.096976+00:00"
+  },
+  {
+    "id": "48e8e9fb-3b65-46a6-9eb6-d507ff78e268",
+    "company_id": "8fd12501-e285-4db8-8a75-5c8f1aab3b22",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T07:25:50.212404+00:00"
   },
   {
     "id": "3705767b-a21b-4395-be41-e7ef83196233",
@@ -1870,6 +2020,16 @@
     "updated_at": "2026-04-08T00:17:37.096976+00:00"
   },
   {
+    "id": "1d25d07a-96cb-448c-8460-aa86da4a4750",
+    "company_id": "3775fd2a-302e-48c0-a357-b4ba6236189a",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:17:37.096976+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
     "id": "a502d3be-f670-4f0c-ac5a-19ab9dba8b77",
     "company_id": "a8fd23fe-36c1-4654-be09-c6d0a6c48fb6",
     "company_size": "enterprise",
@@ -2010,16 +2170,6 @@
     "updated_at": "2026-04-08T00:17:37.096976+00:00"
   },
   {
-    "id": "7b0bb254-0f35-4e23-9f75-3d482e6cb9a1",
-    "company_id": "52433baf-e50d-4a99-9e04-bba9224f4a82",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:17:37.096976+00:00",
-    "updated_at": "2026-04-08T00:17:37.096976+00:00"
-  },
-  {
     "id": "dd2b6d92-ff5d-4fc6-b3ca-5fa47d1d9c24",
     "company_id": "f579d773-077a-4c84-8971-b456d9f195f4",
     "company_size": "unknown",
@@ -2050,6 +2200,26 @@
     "updated_at": "2026-04-12T07:41:51.418256+00:00"
   },
   {
+    "id": "914fb458-76c2-4f48-b671-fa9febf8530f",
+    "company_id": "b1b7c16a-79b2-49fd-b5bf-1ef22f15d3e5",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:17:37.096976+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "b7cfe09e-e7c6-4b17-a746-b23433adcd17",
+    "company_id": "77cc3c04-03fe-42b9-80e6-852ea54f9d7b",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:20:58.985679+00:00",
+    "updated_at": "2026-04-15T10:43:36.750699+00:00"
+  },
+  {
     "id": "0f394052-0043-4eb1-9612-6acf9909e285",
     "company_id": "055E513E-C5CC-4773-A05E-B60E6B526C2B",
     "company_size": "enterprise",
@@ -2070,16 +2240,6 @@
     "updated_at": "2026-04-12T07:26:41.859921+00:00"
   },
   {
-    "id": "914fb458-76c2-4f48-b671-fa9febf8530f",
-    "company_id": "b1b7c16a-79b2-49fd-b5bf-1ef22f15d3e5",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "energy",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:17:37.096976+00:00",
-    "updated_at": "2026-04-12T08:17:48.449005+00:00"
-  },
-  {
     "id": "d1fdfce9-5dbc-40d2-8c04-ff66753c1c46",
     "company_id": "0e795960-4525-4ba4-8b3e-a9cce0fe3f29",
     "company_size": "unknown",
@@ -2098,16 +2258,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T22:56:06.378145+00:00",
     "updated_at": "2026-04-12T07:32:05.947189+00:00"
-  },
-  {
-    "id": "1d25d07a-96cb-448c-8460-aa86da4a4750",
-    "company_id": "3775fd2a-302e-48c0-a357-b4ba6236189a",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:17:37.096976+00:00",
-    "updated_at": "2026-04-12T11:40:35.395783+00:00"
   },
   {
     "id": "d90256e9-02aa-4cd8-b0d2-7eeab979fca0",
@@ -2250,6 +2400,16 @@
     "updated_at": "2026-04-08T00:52:59.174117+00:00"
   },
   {
+    "id": "44208455-62fe-4119-ba7a-4edf09f94a5f",
+    "company_id": "49dfcfee-70c3-48e4-83cc-2ca6e2006654",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T01:27:00.372683+00:00",
+    "updated_at": "2026-04-15T07:25:50.212404+00:00"
+  },
+  {
     "id": "f4829ed1-f9fb-4f54-a673-b2d3099fb895",
     "company_id": "26014c6c-f7de-4ad2-80df-f8616fe1535d",
     "company_size": "unknown",
@@ -2300,6 +2460,16 @@
     "updated_at": "2026-04-08T00:52:59.174117+00:00"
   },
   {
+    "id": "1d37ea0a-1cc5-4354-8cd5-ac4132204de8",
+    "company_id": "b29a1601-449c-43c2-9141-90f6a5f050e9",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T01:27:00.372683+00:00",
+    "updated_at": "2026-04-15T06:09:58.456300+00:00"
+  },
+  {
     "id": "2bebc47d-5bd7-4188-bb9f-55efd897fdcb",
     "company_id": "28d98e8d-a98f-4ba3-8d4b-c5a2c9b6f83f",
     "company_size": "unknown",
@@ -2345,26 +2515,6 @@
     "company_size": "unknown",
     "ai_maturity_signal": "unknown",
     "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:52:59.174117+00:00",
-    "updated_at": "2026-04-08T00:52:59.174117+00:00"
-  },
-  {
-    "id": "28c5fa74-34be-4095-88af-d2ace7256708",
-    "company_id": "2acc26f8-d0a4-4b9b-b37a-e27f31d35a8d",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:52:59.174117+00:00",
-    "updated_at": "2026-04-08T00:52:59.174117+00:00"
-  },
-  {
-    "id": "fde93e89-4797-445b-a566-89d881d4c2c6",
-    "company_id": "2ee35fa7-5d29-4c63-835b-83fc88e860b2",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "real_estate",
     "is_known_employer": true,
     "created_at": "2026-04-08T00:52:59.174117+00:00",
     "updated_at": "2026-04-08T00:52:59.174117+00:00"
@@ -2430,16 +2580,6 @@
     "updated_at": "2026-04-08T00:52:59.174117+00:00"
   },
   {
-    "id": "91a45b20-1f2f-4478-94fb-586c9132451e",
-    "company_id": "6b7c3a68-8174-4019-a2fa-338819320491",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:52:59.174117+00:00",
-    "updated_at": "2026-04-08T00:52:59.174117+00:00"
-  },
-  {
     "id": "0a71bcbf-fdc9-458b-8e32-09ca09ea7054",
     "company_id": "efe151bf-34db-4829-8e93-82edd67cf4d5",
     "company_size": "unknown",
@@ -2500,14 +2640,24 @@
     "updated_at": "2026-04-08T00:52:59.174117+00:00"
   },
   {
-    "id": "aa15012f-c40e-4b55-a62a-ec6a84d94a49",
-    "company_id": "52f4f054-f91b-44db-bf1d-bdee52b6934c",
+    "id": "a0608682-87df-4187-835a-0a7ab90241cd",
+    "company_id": "c7cf80ec-7d24-466e-a563-76d1e1dda4e2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
+  },
+  {
+    "id": "a9a59050-62b9-4785-9bc0-24ab3c64a2a8",
+    "company_id": "34e17374-8f30-492a-aff2-d6cb0c839e60",
     "company_size": "enterprise",
     "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
+    "sector": "healthcare",
     "is_known_employer": true,
-    "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-08T01:27:00.372683+00:00"
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
   },
   {
     "id": "31e4a743-8bed-4610-9391-6c4ce327918c",
@@ -2610,14 +2760,14 @@
     "updated_at": "2026-04-12T09:14:49.064082+00:00"
   },
   {
-    "id": "44208455-62fe-4119-ba7a-4edf09f94a5f",
-    "company_id": "49dfcfee-70c3-48e4-83cc-2ca6e2006654",
+    "id": "0aba479f-7476-4b35-8000-f4659552b37c",
+    "company_id": "1d91ff64-e0fb-4e9e-8d4e-1a40fdc280de",
     "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "consulting",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
     "is_known_employer": true,
-    "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-12T09:09:16.798827+00:00"
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T08:47:00.897935+00:00"
   },
   {
     "id": "d729fbba-ff63-4f57-9aa2-a81010c22c0f",
@@ -2680,14 +2830,74 @@
     "updated_at": "2026-04-12T11:12:45.246858+00:00"
   },
   {
-    "id": "1d37ea0a-1cc5-4354-8cd5-ac4132204de8",
-    "company_id": "b29a1601-449c-43c2-9141-90f6a5f050e9",
+    "id": "431fb263-c749-4c07-bb03-0f4fefc4adab",
+    "company_id": "5579b831-062a-4afa-8538-cacac5b7150c",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
+  },
+  {
+    "id": "1fdb3575-2e6f-4f77-9b85-5209838aa2f6",
+    "company_id": "49bc6102-9a76-41e8-a966-0ceb25f32fe3",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "c756065d-1e22-4eb7-bca4-22f718264614",
+    "company_id": "d0b91c3b-e3b0-4216-b3eb-4cb971e2e30a",
     "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T10:20:45.365659+00:00"
+  },
+  {
+    "id": "aa15012f-c40e-4b55-a62a-ec6a84d94a49",
+    "company_id": "52f4f054-f91b-44db-bf1d-bdee52b6934c",
+    "company_size": "enterprise",
     "ai_maturity_signal": "unknown",
     "sector": "technology",
     "is_known_employer": true,
     "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-12T17:34:55.634736+00:00"
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "91a45b20-1f2f-4478-94fb-586c9132451e",
+    "company_id": "6b7c3a68-8174-4019-a2fa-338819320491",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:52:59.174117+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "fde93e89-4797-445b-a566-89d881d4c2c6",
+    "company_id": "2ee35fa7-5d29-4c63-835b-83fc88e860b2",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:52:59.174117+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
+  },
+  {
+    "id": "777abc6b-8f5e-4b35-bf5d-b96ee36f290a",
+    "company_id": "fbc515da-e3a6-4d88-b9cb-97d614cd27af",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:25:50.212404+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
   },
   {
     "id": "911367f4-e632-4970-8a35-09c26cb8881d",
@@ -2718,6 +2928,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T01:27:00.372683+00:00",
     "updated_at": "2026-04-08T01:27:00.372683+00:00"
+  },
+  {
+    "id": "85475719-deb9-4d88-aefe-db99d9bddd6d",
+    "company_id": "a9974d0c-2b54-425b-95eb-ee79a0f4c89f",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
   },
   {
     "id": "49646370-3f38-490b-a567-213a0dce4126",
@@ -2780,6 +3000,16 @@
     "updated_at": "2026-04-08T01:27:00.372683+00:00"
   },
   {
+    "id": "fe7ec154-c0a9-44f5-bb66-cc8393141c8e",
+    "company_id": "5549558c-a4ca-446b-accc-2a0147ee64e7",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
+  },
+  {
     "id": "0c9bfb35-0fcc-44e4-9b07-294f8ffd00fd",
     "company_id": "8a53994b-fc24-468c-ae56-a8592e606bdc",
     "company_size": "unknown",
@@ -2840,6 +3070,16 @@
     "updated_at": "2026-04-08T04:02:10.527323+00:00"
   },
   {
+    "id": "dfcb9bb0-e474-4afc-82f1-0b633e612d6d",
+    "company_id": "b8c0cf0c-ba59-4911-be28-2601042137aa",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:31:15.757978+00:00"
+  },
+  {
     "id": "42176394-325b-4ef5-8b0a-de367795e40c",
     "company_id": "dd4ea42b-02fc-44c0-8af1-3b848e48c26a",
     "company_size": "mid_market",
@@ -2885,16 +3125,6 @@
     "company_size": "unknown",
     "ai_maturity_signal": "unknown",
     "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T02:23:30.283394+00:00",
-    "updated_at": "2026-04-08T03:24:30.679415+00:00"
-  },
-  {
-    "id": "0af0ef5a-f199-44e7-aa73-300d40630bfb",
-    "company_id": "bb36ce7f-e7b0-47c6-b7ae-b1a498b89a2d",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
     "is_known_employer": true,
     "created_at": "2026-04-08T02:23:30.283394+00:00",
     "updated_at": "2026-04-08T03:24:30.679415+00:00"
@@ -2970,6 +3200,16 @@
     "updated_at": "2026-04-08T03:24:30.679415+00:00"
   },
   {
+    "id": "e7e6d5a5-ded1-4302-9326-835965403b19",
+    "company_id": "0c6bc93a-aefd-42f3-b8bd-24df85ae773c",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T07:36:09.212365+00:00"
+  },
+  {
     "id": "52f689f8-9228-48c4-bc26-d155db3fa441",
     "company_id": "42e18e45-4401-4db5-aefa-45c11eded04c",
     "company_size": "enterprise",
@@ -2978,6 +3218,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T02:23:30.283394+00:00",
     "updated_at": "2026-04-08T03:24:30.679415+00:00"
+  },
+  {
+    "id": "0af0ef5a-f199-44e7-aa73-300d40630bfb",
+    "company_id": "bb36ce7f-e7b0-47c6-b7ae-b1a498b89a2d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T02:23:30.283394+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
   },
   {
     "id": "91dff775-e619-4b56-bed6-5d4a14a5b77d",
@@ -3030,6 +3280,16 @@
     "updated_at": "2026-04-08T04:02:10.527323+00:00"
   },
   {
+    "id": "255455a9-9067-4065-82da-f04ae18f4672",
+    "company_id": "e5f7d076-0ce5-4f72-a4e9-b607a85a6446",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
     "id": "3085f666-5df8-460a-9762-b7464671f4a9",
     "company_id": "ef76fcf2-2f4b-4bf0-8e32-bb1cbb11a3ac",
     "company_size": "unknown",
@@ -3038,6 +3298,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T04:02:10.527323+00:00",
     "updated_at": "2026-04-08T04:02:10.527323+00:00"
+  },
+  {
+    "id": "8a4a36f5-2daf-4ed7-a52c-2ed4754e722a",
+    "company_id": "ae65ef5c-d94b-4f6d-903f-a646ce800f10",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:36:09.212365+00:00",
+    "updated_at": "2026-04-15T07:36:09.212365+00:00"
   },
   {
     "id": "f6245470-6c9c-41a9-b462-af954935719d",
@@ -3068,6 +3338,36 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T04:02:10.527323+00:00",
     "updated_at": "2026-04-08T04:02:10.527323+00:00"
+  },
+  {
+    "id": "bf9b059b-36e3-460b-b0e1-9f45f11b0002",
+    "company_id": "44461d1a-98f2-45dc-b20a-93b8cbc40f22",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:31:15.757978+00:00",
+    "updated_at": "2026-04-15T10:32:39.159489+00:00"
+  },
+  {
+    "id": "09f8b0e9-bd1c-4e26-87da-521df4647d02",
+    "company_id": "b089bd2a-a9ae-4fbe-bb61-4d455e1fcd40",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:36:09.212365+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "7e2556c9-e18e-4327-8e8d-3a54c412377b",
+    "company_id": "333f9d50-e19e-43ed-b74b-8c0217a661ec",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:36:09.212365+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
   },
   {
     "id": "68871b3a-b917-4e24-a6c0-98e7383264b5",
@@ -3110,6 +3410,16 @@
     "updated_at": "2026-04-12T09:50:50.806048+00:00"
   },
   {
+    "id": "f898c80a-9fef-4bee-a050-177018f64843",
+    "company_id": "BC876644-9665-45E9-90E5-95E000929317",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T01:27:00.372683+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
     "id": "c06b5f22-0665-4d1c-8bfe-87a7979c93c3",
     "company_id": "77377fcf-6cf2-40ea-be61-b6dcbc31a65d",
     "company_size": "unknown",
@@ -3142,22 +3452,12 @@
   {
     "id": "3158f2d4-b6d2-4353-8d41-bcd7a87913ce",
     "company_id": "82754E16-FE7C-436A-BFBC-780DE5E5A5E3",
-    "company_size": "unknown",
+    "company_size": "startup",
     "ai_maturity_signal": "unknown",
-    "sector": "unknown",
+    "sector": "technology",
     "is_known_employer": true,
     "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-12T11:40:35.395783+00:00"
-  },
-  {
-    "id": "f898c80a-9fef-4bee-a050-177018f64843",
-    "company_id": "BC876644-9665-45E9-90E5-95E000929317",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "manufacturing",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-12T17:20:11.721194+00:00"
+    "updated_at": "2026-04-15T11:31:25.902594+00:00"
   },
   {
     "id": "5a7c3abc-4f3a-464e-af04-a27d1fd7d149",
@@ -3290,6 +3590,16 @@
     "updated_at": "2026-04-08T04:38:42.056851+00:00"
   },
   {
+    "id": "92bc0fcb-bd99-4fe7-88fb-797d7bf54d8b",
+    "company_id": "1fb5c28b-5f62-45b2-aa41-6ecbfbb6634c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:40:54.363021+00:00",
+    "updated_at": "2026-04-15T07:40:54.363021+00:00"
+  },
+  {
     "id": "164864e8-adbb-4c69-aa3e-2114d853531d",
     "company_id": "896932a7-53f0-4b33-84df-0f736c5d3771",
     "company_size": "unknown",
@@ -3400,16 +3710,6 @@
     "updated_at": "2026-04-08T04:38:42.056851+00:00"
   },
   {
-    "id": "41fc1ae2-d49e-4853-98bb-4816a71308cb",
-    "company_id": "716e08cf-397e-4ab5-b0b6-e35e1c180e0f",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T04:38:42.056851+00:00",
-    "updated_at": "2026-04-08T04:38:42.056851+00:00"
-  },
-  {
     "id": "8cbe7982-8ab1-4c6a-8665-b096a4a59042",
     "company_id": "a2e03f8c-57a5-4756-bdf5-53e2b3e35ed0",
     "company_size": "smb",
@@ -3440,6 +3740,86 @@
     "updated_at": "2026-04-08T04:38:42.056851+00:00"
   },
   {
+    "id": "90741670-6d3c-420d-adef-e03d5efd3838",
+    "company_id": "32deda63-18c1-4d94-a9cf-edcbcb3b070c",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:40:54.363021+00:00",
+    "updated_at": "2026-04-15T07:40:54.363021+00:00"
+  },
+  {
+    "id": "6cd7ccec-3a3b-4bc9-92b7-b2ad3e1ac2e9",
+    "company_id": "57200a43-a80c-4e23-8668-97e944932aa4",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:40:54.363021+00:00",
+    "updated_at": "2026-04-15T07:40:54.363021+00:00"
+  },
+  {
+    "id": "8f10229f-677b-468a-a596-aabda0c8172c",
+    "company_id": "71d9c935-f831-4086-8e5e-ae050d5bcbdc",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T07:45:45.209696+00:00"
+  },
+  {
+    "id": "9865d5cd-c89a-4b37-b31c-6f37a71a5581",
+    "company_id": "6421a774-9a72-4892-aa26-fd9ee2f57a8a",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T07:45:45.209696+00:00"
+  },
+  {
+    "id": "48291cf7-fae6-47cb-9ab4-6437b2b5c658",
+    "company_id": "b45a3cf0-0382-43b3-8614-fc839efb47b4",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T07:45:45.209696+00:00"
+  },
+  {
+    "id": "1f283aee-55ad-467d-a669-1a4d5713f973",
+    "company_id": "cbc50286-e15f-4ad9-acc0-e820fc0b98de",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T07:45:45.209696+00:00"
+  },
+  {
+    "id": "55996e61-c039-4292-b2bc-62a2a970ad6c",
+    "company_id": "d062d223-e851-4d03-bdc0-50eb47cf2ba8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
+    "id": "b49dc5be-d1f8-4ad8-a666-2522be810b4a",
+    "company_id": "b054f9b5-051d-40a1-a1b4-ae8e4e32898b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
     "id": "36a238d3-bbdd-4d66-8b8d-88bd1c23a796",
     "company_id": "7266e0c7-2140-463e-8724-74c4b1f3f6f0",
     "company_size": "enterprise",
@@ -3448,6 +3828,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T20:40:02.753519+00:00",
     "updated_at": "2026-04-11T20:40:02.753519+00:00"
+  },
+  {
+    "id": "20d1c6b2-718e-4c13-9b4a-4124cd5205d5",
+    "company_id": "2fcfd56e-0da7-4f72-9ae3-7e884c0c18d6",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "88a50b83-cc90-4910-985a-68234b90858c",
+    "company_id": "c4f15c22-1f28-46d8-be96-ecb9bcf898b9",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T10:50:41.895334+00:00"
   },
   {
     "id": "e0f4210b-6ee3-4f89-9066-b8bbc30eaf21",
@@ -3498,6 +3898,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T04:38:42.056851+00:00",
     "updated_at": "2026-04-12T17:38:22.040183+00:00"
+  },
+  {
+    "id": "3af8057e-92aa-4201-bd97-043436eb6e84",
+    "company_id": "fe43a335-dfdc-4d73-8e92-159621049dcb",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:40:54.363021+00:00",
+    "updated_at": "2026-04-15T10:05:30.667369+00:00"
+  },
+  {
+    "id": "41fc1ae2-d49e-4853-98bb-4816a71308cb",
+    "company_id": "716e08cf-397e-4ab5-b0b6-e35e1c180e0f",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T04:38:42.056851+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "d761a8bd-427a-4412-a052-c6fdb2774a20",
@@ -3620,6 +4040,26 @@
     "updated_at": "2026-04-12T17:39:39.778936+00:00"
   },
   {
+    "id": "dc5ba4b6-8e72-4ab2-ac85-6978a1efca0f",
+    "company_id": "3a95290d-300c-4cdf-a55d-277b65a6ec6b",
+    "company_size": "smb",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
+    "id": "945e0a5e-bf53-431c-9b3f-3d68130e4fd2",
+    "company_id": "8cf9db8b-cd56-4e24-a59f-4ff7d5eb12a3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
     "id": "b9038d5d-8972-4403-807c-8ba2531484c5",
     "company_id": "c3a3f97b-7cda-47db-b321-36458a244ba4",
     "company_size": "unknown",
@@ -3628,6 +4068,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T22:02:05.154458+00:00",
     "updated_at": "2026-04-11T22:02:05.154458+00:00"
+  },
+  {
+    "id": "91fb2914-3a46-408c-91bb-728f3430744b",
+    "company_id": "231f1444-e059-49db-a2e1-280cd17d97bd",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
   },
   {
     "id": "81a018d3-3d16-4ab8-bf42-e2fba3f5753c",
@@ -3640,6 +4090,16 @@
     "updated_at": "2026-04-11T22:34:06.347482+00:00"
   },
   {
+    "id": "8b5f6a46-2787-4665-8f47-1540de222eb2",
+    "company_id": "dd3da4f0-853f-4f3d-ae3e-c537bc70344b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
     "id": "cb1dde2c-360e-4f4d-b47f-8a683892a2a6",
     "company_id": "579ac03a-de5e-4a83-acdb-eb50207f47b8",
     "company_size": "smb",
@@ -3650,6 +4110,16 @@
     "updated_at": "2026-04-11T22:08:00.827017+00:00"
   },
   {
+    "id": "71b5c023-79a8-48cd-b27d-4b729d604756",
+    "company_id": "aaf655ce-5a3f-4416-8977-6e6ec283af87",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
     "id": "08515e37-d6ea-4f6b-b2b4-014d454b7095",
     "company_id": "a94deb6a-2599-4cea-8fe1-04dbe6941fd0",
     "company_size": "startup",
@@ -3658,6 +4128,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T22:43:42.018295+00:00",
     "updated_at": "2026-04-12T06:40:22.162016+00:00"
+  },
+  {
+    "id": "2fb45a6a-258b-4d05-aad3-2aa1ec6fd735",
+    "company_id": "ddb99e15-df31-4ae6-9014-9c294b1d96df",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
   },
   {
     "id": "f3a2f8fd-5e5f-46b9-a7f4-96267bcc6be5",
@@ -3770,6 +4250,16 @@
     "updated_at": "2026-04-11T22:18:46.904337+00:00"
   },
   {
+    "id": "86f331ae-e3cf-4723-b43a-5fa2632dd7f9",
+    "company_id": "f4beeca8-0ee9-4a47-97d8-0e9a0259ddc6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:50:34.098218+00:00",
+    "updated_at": "2026-04-15T07:50:34.098218+00:00"
+  },
+  {
     "id": "9e4f8369-84b5-4b47-a76f-b9f5bcfaea6f",
     "company_id": "aacf6f9a-037c-4673-88c5-44c104fda2c6",
     "company_size": "unknown",
@@ -3810,6 +4300,16 @@
     "updated_at": "2026-04-11T22:23:47.791049+00:00"
   },
   {
+    "id": "e6893c49-1c60-4e62-a28c-cde6072fa4e0",
+    "company_id": "a42d4688-c495-433c-872f-75be25f54334",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T07:55:35.256641+00:00"
+  },
+  {
     "id": "a0f0ef2c-ce17-4d47-874f-37e6fc159e42",
     "company_id": "1071ca45-776c-4086-a980-c4032e66aaca",
     "company_size": "unknown",
@@ -3838,6 +4338,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T22:34:06.347482+00:00",
     "updated_at": "2026-04-11T22:34:06.347482+00:00"
+  },
+  {
+    "id": "0ea59c33-2425-4eff-83b0-16332d129881",
+    "company_id": "5b51082b-758a-4569-91c1-0bf03b12c4dc",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T07:55:35.256641+00:00"
+  },
+  {
+    "id": "9e536b43-8338-4f44-a6f5-b254766af91b",
+    "company_id": "454505fe-fef7-4547-885e-b2e3041b547d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T07:55:35.256641+00:00"
   },
   {
     "id": "126cf4ed-b8df-4951-970c-284cd6b56f74",
@@ -3918,6 +4438,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T22:23:47.791049+00:00",
     "updated_at": "2026-04-12T05:38:03.027352+00:00"
+  },
+  {
+    "id": "c940d54e-66d5-4ae0-9d58-d144f5cd4693",
+    "company_id": "69f95561-c81c-46a6-8475-fd4b520832d2",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
   },
   {
     "id": "5f0e7193-3b48-4341-8e25-4606ce7310bc",
@@ -4100,6 +4630,26 @@
     "updated_at": "2026-04-12T19:22:35.116619+00:00"
   },
   {
+    "id": "a6c97f79-9a96-4b83-b038-3de6148873eb",
+    "company_id": "699e88f9-f624-46f9-979d-1303c7f6530f",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": false,
+    "created_at": "2026-04-11T22:48:11.450684+00:00",
+    "updated_at": "2026-04-15T06:12:14.701968+00:00"
+  },
+  {
+    "id": "b84e5b13-8849-4ced-bdc9-2b3a3b4aab35",
+    "company_id": "50a69774-cea0-408f-ace6-bcdb6711fe2e",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-11T23:03:05.861460+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
     "id": "65f73a76-fdcf-44a1-bd79-0678b820970a",
     "company_id": "755549f0-a305-41d2-9cff-8ce31b2a0855",
     "company_size": "unknown",
@@ -4110,14 +4660,54 @@
     "updated_at": "2026-04-11T22:53:06.267029+00:00"
   },
   {
-    "id": "6d70ff22-2ab4-4f01-b495-d69d7b020f3d",
-    "company_id": "c17d050f-7e86-4efb-a384-4cecbd21a84c",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
+    "id": "d1404a3b-3b3d-476a-9e48-4c84ff3ad9fc",
+    "company_id": "aff81410-9ab9-41be-b41a-a22377ee74fb",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
     "sector": "technology",
     "is_known_employer": true,
-    "created_at": "2026-04-07T22:23:35.275847+00:00",
-    "updated_at": "2026-04-11T22:58:11.523884+00:00"
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T08:00:11.243316+00:00"
+  },
+  {
+    "id": "a128ebea-4103-477f-aee9-a68fac2c82a8",
+    "company_id": "ef49b142-69e7-4ccd-ae9e-9f1fd1ef6c59",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:00:11.243316+00:00",
+    "updated_at": "2026-04-15T08:00:11.243316+00:00"
+  },
+  {
+    "id": "78f9cbbf-fba3-4c88-b6cd-1ea7b7c77e47",
+    "company_id": "1a8238c0-c32c-4118-9809-a2ad632b5ca8",
+    "company_size": "smb",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:00:11.243316+00:00",
+    "updated_at": "2026-04-15T08:00:11.243316+00:00"
+  },
+  {
+    "id": "c1556047-b257-43f8-afdb-0d59174eb5b9",
+    "company_id": "e4d2cdb5-c9f8-46b8-9182-f1230bbbf48f",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
+  },
+  {
+    "id": "33204141-6ae9-4081-b361-27b2288d8ee5",
+    "company_id": "8c30d65d-07d1-4faa-b87a-a3119b53d7cb",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
   },
   {
     "id": "df2491dc-7cf4-463a-825d-7e09621dc6b8",
@@ -4130,6 +4720,26 @@
     "updated_at": "2026-04-12T07:12:37.428169+00:00"
   },
   {
+    "id": "71a70186-fa7d-46dd-b479-badb0c7aad8a",
+    "company_id": "6f96adbd-874c-49f8-867e-46979bb0b5f6",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:00:11.243316+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
+  },
+  {
+    "id": "3507eab3-129a-4e72-8270-9abfd4286839",
+    "company_id": "7443484b-8c69-455b-ba36-46a5a9fd22b7",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
+  },
+  {
     "id": "2c9764c7-bec4-460f-bb6e-e448ec1707eb",
     "company_id": "d04dfcbe-a385-4a3f-8bc0-845b9f9e644f",
     "company_size": "smb",
@@ -4138,6 +4748,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:03:05.861460+00:00",
     "updated_at": "2026-04-11T23:03:05.861460+00:00"
+  },
+  {
+    "id": "b6dfdfec-1f11-4c5a-8224-7a50c9f8dd59",
+    "company_id": "3b9e4678-2900-43b7-9e5c-0fd7fdd97689",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
   },
   {
     "id": "5c74ecd6-22a0-4d85-9858-638511d19489",
@@ -4160,6 +4780,26 @@
     "updated_at": "2026-04-11T23:08:13.223330+00:00"
   },
   {
+    "id": "3e1c48d5-e4c5-436e-bd74-09cfe9ed1a3d",
+    "company_id": "6feef4b0-5bf6-4356-b7c7-d3296eb7a1a6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:04:46.237374+00:00"
+  },
+  {
+    "id": "959c7a28-8b55-462f-aa2a-f693ccb7f9b2",
+    "company_id": "03762f36-b6da-4b96-ade7-1ca798ea1626",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:09:38.077585+00:00",
+    "updated_at": "2026-04-15T08:09:38.077585+00:00"
+  },
+  {
     "id": "2399d2e6-12b4-449d-8ebc-2ae46dfc3721",
     "company_id": "7d344503-417c-44f9-8926-772a428a4e06",
     "company_size": "unknown",
@@ -4168,6 +4808,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:12:13.706650+00:00",
     "updated_at": "2026-04-11T23:12:13.706650+00:00"
+  },
+  {
+    "id": "fb49c29f-f0f2-49bc-9c49-691e37500798",
+    "company_id": "e7476be7-4ffb-4fd0-8ec3-ff738621029c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:09:38.077585+00:00",
+    "updated_at": "2026-04-15T08:09:38.077585+00:00"
   },
   {
     "id": "f0df4a63-7505-4f5e-885f-b7ab8cb4cbf5",
@@ -4188,6 +4838,36 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:12:13.706650+00:00",
     "updated_at": "2026-04-11T23:12:13.706650+00:00"
+  },
+  {
+    "id": "8ea8c3fb-2d59-479c-9005-ba55b1a61ef2",
+    "company_id": "0eb2fa5a-a836-42e6-9ea6-83591f782473",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:09:38.077585+00:00",
+    "updated_at": "2026-04-15T08:09:38.077585+00:00"
+  },
+  {
+    "id": "fa3a6a39-602e-4bbb-85bf-a47da3754ea6",
+    "company_id": "5b0905d8-2544-48e7-b1d5-f57da34717b0",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:09:38.077585+00:00"
+  },
+  {
+    "id": "4a7993ce-240f-42cf-bffd-44edb75bafb7",
+    "company_id": "94dff9f8-dfba-4b71-b200-4b4e64b17df7",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:09:38.077585+00:00",
+    "updated_at": "2026-04-15T08:09:38.077585+00:00"
   },
   {
     "id": "4ed0d973-f915-447c-95cd-480aa5b6e4e6",
@@ -4230,6 +4910,16 @@
     "updated_at": "2026-04-11T23:21:40.903128+00:00"
   },
   {
+    "id": "c622e5bd-48fc-4a67-90b2-0837864af9b0",
+    "company_id": "dd9ddae0-b068-42de-b037-e51a464459b2",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:04:46.237374+00:00",
+    "updated_at": "2026-04-15T08:15:11.501105+00:00"
+  },
+  {
     "id": "59b91e4a-4dd3-462d-862a-4b4f184b2b94",
     "company_id": "5a417d38-d627-46a8-8352-03b921db70bb",
     "company_size": "mid_market",
@@ -4270,14 +4960,54 @@
     "updated_at": "2026-04-12T06:50:59.868336+00:00"
   },
   {
-    "id": "b84e5b13-8849-4ced-bdc9-2b3a3b4aab35",
-    "company_id": "50a69774-cea0-408f-ace6-bcdb6711fe2e",
+    "id": "6d70ff22-2ab4-4f01-b495-d69d7b020f3d",
+    "company_id": "c17d050f-7e86-4efb-a384-4cecbd21a84c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:23:35.275847+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "857703b8-f77f-4165-88d0-63c6cf82bae6",
+    "company_id": "cf3cd922-1c15-4a73-80ae-4506507be434",
     "company_size": "unknown",
     "ai_maturity_signal": "ai_adopting",
-    "sector": "telecommunications",
+    "sector": "technology",
     "is_known_employer": true,
-    "created_at": "2026-04-11T23:03:05.861460+00:00",
-    "updated_at": "2026-04-12T07:07:40.653511+00:00"
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "6568e99a-8488-4a33-97c5-b2b13c268402",
+    "company_id": "27867ecc-6b80-41e6-9117-efce82fea6c8",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "58536787-b468-4f7a-9d52-6675a4422503",
+    "company_id": "db43dc06-7aa3-42d1-976f-77f0bdc9bdea",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-11T23:16:47.496669+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
+    "id": "a5e108bb-b961-421f-a3c0-e982a5801c34",
+    "company_id": "40effc3e-0d81-4864-83a1-0c653f516f2e",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T21:45:02.977570+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
   },
   {
     "id": "3685ad51-c396-4a39-8e3c-a62efbe9857a",
@@ -4328,16 +5058,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:08:13.223330+00:00",
     "updated_at": "2026-04-12T07:12:37.428169+00:00"
-  },
-  {
-    "id": "58536787-b468-4f7a-9d52-6675a4422503",
-    "company_id": "db43dc06-7aa3-42d1-976f-77f0bdc9bdea",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-11T23:16:47.496669+00:00",
-    "updated_at": "2026-04-12T07:32:05.947189+00:00"
   },
   {
     "id": "b0dc82e8-e67f-4754-adcc-0da3610384fb",
@@ -4398,16 +5118,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:21:40.903128+00:00",
     "updated_at": "2026-04-12T07:37:00.394253+00:00"
-  },
-  {
-    "id": "a6c97f79-9a96-4b83-b038-3de6148873eb",
-    "company_id": "699e88f9-f624-46f9-979d-1303c7f6530f",
-    "company_size": "unknown",
-    "ai_maturity_signal": "ai_native",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-11T22:48:11.450684+00:00",
-    "updated_at": "2026-04-12T17:20:12.015342+00:00"
   },
   {
     "id": "6000bf50-0706-4abb-97e3-992b0c509922",
@@ -4620,16 +5330,6 @@
     "updated_at": "2026-04-12T20:14:37.195029+00:00"
   },
   {
-    "id": "ae3b362d-bc73-4b68-89bd-3ba52992fdc3",
-    "company_id": "056625c4-4bbf-429a-b7e3-009a0cb9cbe0",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "ai_exploring",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-11T23:31:09.707614+00:00",
-    "updated_at": "2026-04-12T20:14:48.740421+00:00"
-  },
-  {
     "id": "4d4d0399-cc97-492d-82e5-7074be58f61d",
     "company_id": "c54587b6-3c48-44db-95a8-461c6e48ba48",
     "company_size": "unknown",
@@ -4670,6 +5370,386 @@
     "updated_at": "2026-04-12T20:18:08.136421+00:00"
   },
   {
+    "id": "91f0fa87-e848-469f-a9c7-07771fb3fbfb",
+    "company_id": "39777f87-eea2-4f78-bf21-25cb1bb5741d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:21:19.977634+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "cd010a75-9cac-4068-bd21-6314195cfbaf",
+    "company_id": "f89a9261-bf2c-49c4-b0fb-6f0735913a95",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "57c51244-b081-4bb5-9bf6-a46544685dfe",
+    "company_id": "d64acd69-e1fd-4d80-ae9c-65a075719e1f",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "1dd7097c-5545-4922-ba1a-a6c9c1135b09",
+    "company_id": "c27acefa-6580-475a-bfe1-d852aae39995",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "0171087f-f07f-43c8-979c-e2a512fa468b",
+    "company_id": "9187a6a0-5cf3-45f9-bf89-28727b7aa0f8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:15:11.501105+00:00",
+    "updated_at": "2026-04-15T08:15:11.501105+00:00"
+  },
+  {
+    "id": "7af950c3-2955-4c72-b1d7-f3ad7bf59364",
+    "company_id": "d17a3f55-c904-49fa-9285-198ee09e0775",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:15:11.501105+00:00",
+    "updated_at": "2026-04-15T08:15:11.501105+00:00"
+  },
+  {
+    "id": "1ae0dfeb-b695-41d9-afd5-ad1c0b065e2b",
+    "company_id": "9d8fdaed-eebd-4ce2-869b-c40beaa20741",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:15:11.501105+00:00",
+    "updated_at": "2026-04-15T08:15:11.501105+00:00"
+  },
+  {
+    "id": "20deded7-d4af-4b79-9a66-39ab0b2d363b",
+    "company_id": "145585f6-cc0e-4e78-81b3-1d15ca378646",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:15:11.501105+00:00",
+    "updated_at": "2026-04-15T08:21:19.977634+00:00"
+  },
+  {
+    "id": "94dde45b-2b1e-4fa9-8897-1293c60b0ae6",
+    "company_id": "187daa5e-086e-4c69-b1fc-cb49d46ac6c4",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:21:19.977634+00:00",
+    "updated_at": "2026-04-15T08:21:19.977634+00:00"
+  },
+  {
+    "id": "52ee61f4-8063-417c-ae53-9a6dbba5cd98",
+    "company_id": "658bbdd6-9683-4f31-ad12-6edf61a86a89",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "7aec4d62-23d8-45bc-a269-a7b94c4fe5f4",
+    "company_id": "4b76e34b-ea54-40ba-b559-1c8a3a136123",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T08:26:48.638468+00:00"
+  },
+  {
+    "id": "5d2431a4-8afb-4330-9cb8-dddc922be2ba",
+    "company_id": "48151597-585a-4d1a-8202-b4a1fffac2fc",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T08:26:48.638468+00:00"
+  },
+  {
+    "id": "9055d1f7-3b8d-4cd2-a663-6cb4365abee8",
+    "company_id": "f3d09add-a5ff-4dd8-a78a-cce774741eff",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T08:26:48.638468+00:00"
+  },
+  {
+    "id": "69a2bcc4-d513-4a2b-bd4a-b8713edafa11",
+    "company_id": "c4f4f4f7-f451-44d1-b7cd-94b55d011992",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T08:26:48.638468+00:00"
+  },
+  {
+    "id": "64cc0ddd-84b0-4450-af01-bdc002880e29",
+    "company_id": "b7d242de-a58b-4b14-9a92-8e7991869466",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T08:26:48.638468+00:00"
+  },
+  {
+    "id": "500947b5-bcfb-4d14-8a33-b28d832f5e87",
+    "company_id": "929b9744-9b42-4133-ba91-2819a50c7f83",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "308533d8-e19a-4853-9f58-ac33c9670d11",
+    "company_id": "91f6ed5b-5d49-4490-9390-94a34fdd65e6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "c49001d9-0ca5-44a9-91c0-0b6814e4c7da",
+    "company_id": "e2375c78-42ad-4530-9bb5-1c0fa348f9d2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:21:19.977634+00:00",
+    "updated_at": "2026-04-15T09:57:22.707474+00:00"
+  },
+  {
+    "id": "1e76588a-97b0-4b20-a7f5-bcef4fd17a03",
+    "company_id": "b70c1068-8ef1-4d3a-9b01-0aacde3b16d9",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "63498c75-9331-4574-a9ff-d7c2dc558fc2",
+    "company_id": "19df1bb9-7401-46bf-aa07-669a002f554a",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "41f10520-3a79-4b18-b97c-8d88d8c483a6",
+    "company_id": "6d7ae249-6951-4812-a579-81c1166fa30a",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "0ad9058a-2b53-49d1-a0a9-4f9072fd37b5",
+    "company_id": "92078ea0-d0b8-48b2-9291-a6c3491447ff",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "23427716-367e-4e9f-bfe9-aea449cd01e4",
+    "company_id": "1fcdaba8-a289-4270-9491-a2b6fb48b7a8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "cc26f7a7-767a-4578-ad5d-ae96d099f7fd",
+    "company_id": "9eb3e68d-b22a-4293-aca0-e20b65bb0ca2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T08:31:54.364344+00:00"
+  },
+  {
+    "id": "fe6c3189-3d16-4045-b781-7e0bef2e2c0e",
+    "company_id": "bc06a4f9-1a32-4137-b2af-6f3a543b04ee",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "af4f75e0-2599-42d2-ab1f-1303443b5af3",
+    "company_id": "07c10350-84da-4060-87e3-e9d68f386731",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "74b68a89-974b-41e2-a428-5c7a7fdfbe00",
+    "company_id": "5d3f2db5-61b3-429f-81e9-4a04e650c219",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "d9f68f92-e300-4509-aefb-155bef1bb07d",
+    "company_id": "9dfe4e22-e837-431c-be88-1d09db074bc3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "6ad09932-b983-4c80-b288-54486d628cd5",
+    "company_id": "968b4f73-72c9-4864-a60a-69ceab8a549d",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T08:36:58.503082+00:00"
+  },
+  {
+    "id": "b28f6005-cffc-4946-b9a2-c1913ef8a47c",
+    "company_id": "3f4eca79-c94f-4dd8-9830-c722b1a16c95",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
+    "id": "2c1bb181-ec45-4bbd-8b5b-047ea9429bd8",
+    "company_id": "7a263928-276f-44ba-bdf5-ad1d86d777e4",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
+    "id": "680b3637-c435-4fd5-84a5-053bb50b1df1",
+    "company_id": "63a4a7e3-def4-4e46-a548-883b847d6e3e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
+  },
+  {
+    "id": "55ed5445-588f-49ca-9024-9cd281970b1b",
+    "company_id": "ec1c7517-a26d-4324-b000-e31e1c1c6a13",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:36:58.503082+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "33e88f02-eef1-4dd8-b7a4-93030c923fbb",
+    "company_id": "05687dea-bde4-4d29-be0a-68d9de40363f",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "2836afc3-c37f-4304-8a65-3f3116da5d7f",
+    "company_id": "6309e85c-3152-4f72-b5a8-976b6c2c29b1",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:21:19.977634+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "52b700d2-caa0-4754-9033-33db65e6a6bf",
+    "company_id": "af77f49e-90a0-4526-a307-a45eb7e09afa",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "97bf7323-58e0-4eb4-97da-adb51fa53c73",
+    "company_id": "40eaf80c-849c-4ff1-9e3a-9ee6e3e66b76",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "5117f045-8fc0-4de5-ba1b-7ea750a60372",
+    "company_id": "e0ee4fb5-37fe-4435-b5a2-100b84fe762f",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
     "id": "a8b1f5dc-4926-4f13-a1a2-e926dd40447b",
     "company_id": "e20ac958-b4db-46dd-9252-77d16d41acef",
     "company_size": "unknown",
@@ -4680,6 +5760,16 @@
     "updated_at": "2026-04-11T23:31:09.707614+00:00"
   },
   {
+    "id": "13c9177b-34a2-4ab3-880c-ba59b2429aa8",
+    "company_id": "0293682a-dd7a-4bcd-b569-585155323cd0",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
     "id": "9e2797f9-6fdd-4e52-acd7-8b1ab4c9051f",
     "company_id": "8cd8727a-1376-44f1-a62d-3bb9020fbd4c",
     "company_size": "startup",
@@ -4688,6 +5778,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:36:17.340920+00:00",
     "updated_at": "2026-04-11T23:36:17.340920+00:00"
+  },
+  {
+    "id": "18c6b466-6caf-4c50-915a-fbf30b12decf",
+    "company_id": "2ca09979-e75e-4507-b7d2-45036f7116f0",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:56:06.378145+00:00",
+    "updated_at": "2026-04-15T05:31:05.205698+00:00"
   },
   {
     "id": "5bf22670-92f5-4793-b493-500c95067a55",
@@ -4730,6 +5830,16 @@
     "updated_at": "2026-04-11T23:42:56.378668+00:00"
   },
   {
+    "id": "a0b54c4e-bd36-4b70-8216-fc33e8694b59",
+    "company_id": "19bf0fb1-efcf-4d6c-8c85-19b0bfdb9e52",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
     "id": "b945fb74-d9a7-4a98-8c6d-c3d20c0e65a5",
     "company_id": "4c3393b5-d299-41a0-a22a-af65980e6c93",
     "company_size": "unknown",
@@ -4748,6 +5858,36 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:53:48.340672+00:00",
     "updated_at": "2026-04-11T23:53:48.340672+00:00"
+  },
+  {
+    "id": "183e23a4-c558-4f8f-a9c1-2679ea89f273",
+    "company_id": "07f4f15b-aa3f-48f2-ada2-35cc4255790c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
+    "id": "75ccfd95-69f9-409e-bb54-085d92fe1cf5",
+    "company_id": "9e09a4fa-3ac5-4b81-9936-96779c47fad9",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:41:55.248017+00:00"
+  },
+  {
+    "id": "4a403e95-059c-46f0-90cd-95f0241795d5",
+    "company_id": "23b6a9e7-5ccf-4b0a-885b-95133f9bb65d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:47:00.897935+00:00",
+    "updated_at": "2026-04-15T08:47:00.897935+00:00"
   },
   {
     "id": "34e19db2-401b-412c-be0f-8b2228cd3478",
@@ -4840,6 +5980,16 @@
     "updated_at": "2026-04-12T07:58:33.878219+00:00"
   },
   {
+    "id": "7b0bb254-0f35-4e23-9f75-3d482e6cb9a1",
+    "company_id": "52433baf-e50d-4a99-9e04-bba9224f4a82",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:17:37.096976+00:00",
+    "updated_at": "2026-04-15T10:32:39.159489+00:00"
+  },
+  {
     "id": "c1dd1de6-4b37-447d-a602-090f2b7b3b95",
     "company_id": "4b488c6d-a666-401f-b00b-a6f681ab7944",
     "company_size": "unknown",
@@ -4847,16 +5997,6 @@
     "sector": "technology",
     "is_known_employer": true,
     "created_at": "2026-04-12T00:18:20.870626+00:00",
-    "updated_at": "2026-04-12T00:18:20.870626+00:00"
-  },
-  {
-    "id": "18c6b466-6caf-4c50-915a-fbf30b12decf",
-    "company_id": "2ca09979-e75e-4507-b7d2-45036f7116f0",
-    "company_size": "unknown",
-    "ai_maturity_signal": "ai_native",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T22:56:06.378145+00:00",
     "updated_at": "2026-04-12T00:18:20.870626+00:00"
   },
   {
@@ -4890,6 +6030,26 @@
     "updated_at": "2026-04-12T00:28:35.514908+00:00"
   },
   {
+    "id": "ae522bea-d46f-44d4-a177-592ac3dced5e",
+    "company_id": "4bf4463e-f9a9-4a7d-ad2b-86ac91960516",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:47:00.897935+00:00",
+    "updated_at": "2026-04-15T10:16:45.106814+00:00"
+  },
+  {
+    "id": "c0dddd07-6d0d-45f9-8029-747582c2133e",
+    "company_id": "05abebb9-97f8-43ca-ad3f-193afe567409",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:47:00.897935+00:00",
+    "updated_at": "2026-04-15T08:47:00.897935+00:00"
+  },
+  {
     "id": "42f47834-a047-4b0d-b836-d5b1211ecd9a",
     "company_id": "73319a29-9ccb-4f81-a2a6-aa76f0d47bea",
     "company_size": "unknown",
@@ -4908,6 +6068,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T00:34:19.025417+00:00",
     "updated_at": "2026-04-12T00:34:19.025417+00:00"
+  },
+  {
+    "id": "c5044459-7ed6-41bb-a905-607b15c597fa",
+    "company_id": "21943c17-1c2a-4b31-b4aa-b078eb8e8229",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:47:00.897935+00:00",
+    "updated_at": "2026-04-15T08:47:00.897935+00:00"
   },
   {
     "id": "67b099a9-df87-4d56-9c45-64df88f07389",
@@ -4938,6 +6108,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-11T23:42:56.378668+00:00",
     "updated_at": "2026-04-12T07:41:51.418256+00:00"
+  },
+  {
+    "id": "c9cbf4e0-fb59-4342-ab22-c591503f25ff",
+    "company_id": "8cec4b9a-ec1d-4ca5-8370-4cbf32e732b2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
   },
   {
     "id": "0b4b41d4-2576-4be3-93d5-d3668569f66c",
@@ -5040,6 +6220,16 @@
     "updated_at": "2026-04-12T09:09:16.798827+00:00"
   },
   {
+    "id": "f9892b15-a71f-416f-acdb-2d3583e3939c",
+    "company_id": "5aef0d94-aa9b-4a21-afbd-17f971fda569",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:47:00.897935+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
     "id": "00264d81-f32e-456b-b970-72268f29ccf5",
     "company_id": "5ee6d0e2-9a32-43f9-8319-0bb9a06238cc",
     "company_size": "mid_market",
@@ -5090,6 +6280,26 @@
     "updated_at": "2026-04-12T17:34:42.761596+00:00"
   },
   {
+    "id": "3e896178-6c10-4d4f-b12f-d6879d995e71",
+    "company_id": "fb5417f2-19c3-43ea-a054-92c9831f5180",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "0d2b357c-682d-44c4-aff9-73ecc76ad144",
+    "company_id": "08387982-c06f-497e-aede-4697642c9946",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
     "id": "37dfc0c0-f3e9-40b1-9115-ddca929065ad",
     "company_id": "22d4edd6-eaf0-40cb-a663-773a5c667694",
     "company_size": "mid_market",
@@ -5098,6 +6308,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T00:34:19.025417+00:00",
     "updated_at": "2026-04-12T00:34:19.025417+00:00"
+  },
+  {
+    "id": "97d4dee3-08af-4157-9737-b4cc6e25c859",
+    "company_id": "2904665c-50e1-4511-a014-612c2e943799",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:41:55.248017+00:00",
+    "updated_at": "2026-04-15T08:47:00.897935+00:00"
   },
   {
     "id": "4d5c8799-f1a8-424e-afce-4bbd1d5379bf",
@@ -5560,6 +6780,16 @@
     "updated_at": "2026-04-12T08:17:48.449005+00:00"
   },
   {
+    "id": "37da08b3-4db1-41fe-8bca-1f6ff773dca1",
+    "company_id": "4d16951a-6099-44af-ac5b-508830f27c95",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
     "id": "7931809a-8bef-46e2-a45d-ba70b244ac93",
     "company_id": "10c21d14-c853-47d0-aabd-60444047b619",
     "company_size": "unknown",
@@ -5870,6 +7100,16 @@
     "updated_at": "2026-04-12T08:52:49.582357+00:00"
   },
   {
+    "id": "3188366f-b0f1-4f01-b3de-b78047fa35ec",
+    "company_id": "e1e5878e-c796-4537-a0de-ee2ebd4b0812",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
     "id": "306c10f4-0b23-4ce5-8fc0-aa6d05505faf",
     "company_id": "e4d6bd33-c136-4df6-abe1-51897b58e55a",
     "company_size": "enterprise",
@@ -5880,14 +7120,14 @@
     "updated_at": "2026-04-12T08:52:49.582357+00:00"
   },
   {
-    "id": "de1d4d72-e6dd-402e-b4c9-1cef58b70527",
-    "company_id": "429c11b8-02dd-4d3c-9873-3990694f45ca",
-    "company_size": "startup",
-    "ai_maturity_signal": "unknown",
-    "sector": "energy",
+    "id": "8b38e462-6830-47d3-8c51-c0a80e692eb8",
+    "company_id": "3f7582d7-90b7-4e47-8fe7-b0cd254a96ee",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
     "is_known_employer": true,
-    "created_at": "2026-04-12T08:44:19.780629+00:00",
-    "updated_at": "2026-04-12T08:52:49.582357+00:00"
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
   },
   {
     "id": "7733ea97-20df-46f2-b7b3-375eefc52f0a",
@@ -5914,16 +7154,6 @@
     "company_id": "d3884083-65c2-4b63-a0c0-7949b53b008b",
     "company_size": "enterprise",
     "ai_maturity_signal": "ai_adopting",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T09:01:35.591724+00:00",
-    "updated_at": "2026-04-12T09:01:35.591724+00:00"
-  },
-  {
-    "id": "535525fd-7d85-4d0e-943a-3fe2a8e6eb94",
-    "company_id": "13095de4-78ff-49d1-9abd-21992e34b076",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "ai_native",
     "sector": "consulting",
     "is_known_employer": true,
     "created_at": "2026-04-12T09:01:35.591724+00:00",
@@ -5958,6 +7188,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T09:09:16.798827+00:00",
     "updated_at": "2026-04-12T09:09:16.798827+00:00"
+  },
+  {
+    "id": "f1c37bf9-cf4f-4ce6-b558-b03437f935f2",
+    "company_id": "4dcbb5bf-6fdf-4b1d-8409-80ca63d8759b",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
   },
   {
     "id": "4e86b2b3-e47f-4bed-9fa9-5317f922a023",
@@ -6020,6 +7260,16 @@
     "updated_at": "2026-04-12T09:20:39.032242+00:00"
   },
   {
+    "id": "90bcb808-b690-4142-a422-0c00bcdd4e84",
+    "company_id": "4263cb33-998f-4007-9e48-64d42ce807e2",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
     "id": "190a3fa0-d867-44ab-ba71-047487b769ab",
     "company_id": "20943828-9177-4d72-a871-ff997b2bfb2a",
     "company_size": "unknown",
@@ -6058,6 +7308,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T09:14:49.064082+00:00",
     "updated_at": "2026-04-12T09:26:44.572947+00:00"
+  },
+  {
+    "id": "50e7d668-7a36-4a9c-a916-9c43aa659e60",
+    "company_id": "44575831-8832-4580-a82e-d8d193a132c6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
+    "id": "de1d4d72-e6dd-402e-b4c9-1cef58b70527",
+    "company_id": "429c11b8-02dd-4d3c-9873-3990694f45ca",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T08:44:19.780629+00:00",
+    "updated_at": "2026-04-15T10:40:14.226899+00:00"
   },
   {
     "id": "faac0794-acbc-4589-bd7f-858ae62d733f",
@@ -6220,6 +7490,26 @@
     "updated_at": "2026-04-12T20:14:36.974801+00:00"
   },
   {
+    "id": "e5525b87-8abf-4de1-9584-e7941685b3de",
+    "company_id": "9858afba-d981-459b-bfa9-a49362132edc",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
+    "id": "32dca5f8-bc7b-4cbb-9010-854c39356f9c",
+    "company_id": "2b8d557d-8a41-49fc-9b5e-f955afd6ed97",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
     "id": "15f70c31-43d8-4b37-89cd-09da3be9eab0",
     "company_id": "b0723c90-2028-45e8-84d3-9808b2097a10",
     "company_size": "smb",
@@ -6230,6 +7520,16 @@
     "updated_at": "2026-04-12T20:15:00.203688+00:00"
   },
   {
+    "id": "5919aaf5-1cbb-44db-b258-20faba19db21",
+    "company_id": "e74bd341-b937-4abd-9966-ca708bf848bd",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
     "id": "120ca792-de62-4783-8671-00fd38c3697a",
     "company_id": "725d4cae-e6a4-4ace-9e9b-e6d14c2e417d",
     "company_size": "mid_market",
@@ -6238,6 +7538,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T20:16:20.971500+00:00",
     "updated_at": "2026-04-12T20:16:20.971500+00:00"
+  },
+  {
+    "id": "fab21574-f633-469e-b6f0-c72e628ad73a",
+    "company_id": "4a868a4a-eb8e-4328-be9f-c045666e0df1",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
   },
   {
     "id": "2d470c41-bc23-4448-b1f4-6a5869e25a3f",
@@ -6268,6 +7578,316 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T20:18:17.594348+00:00",
     "updated_at": "2026-04-12T20:18:17.594348+00:00"
+  },
+  {
+    "id": "97387c9c-8235-43b6-a7fa-a29b6fcf1075",
+    "company_id": "950292ed-3297-48ad-939b-935f643e0cef",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
+    "id": "c477d974-ce85-4075-9d44-6c929e61d206",
+    "company_id": "0fc5c746-e5fc-441e-9763-765cc43cef57",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
+    "id": "7b5a7579-9a99-4b32-9d6f-3501404d06bd",
+    "company_id": "74257ea5-10d8-499d-9072-11e675662040",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T08:52:28.175874+00:00"
+  },
+  {
+    "id": "97dfc69c-bb3d-46b8-b65f-dd61775408dd",
+    "company_id": "beebc0d2-afe7-48af-930f-d1c2369a6f3a",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
+    "id": "89e3b19a-4d87-4e4e-af70-ebeead16fc79",
+    "company_id": "96769f7a-eeae-4194-b22a-b94f721e5928",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
+    "id": "0cdbc443-8bbe-4f4c-b1ec-a38b1257c6f5",
+    "company_id": "0fd696d5-afe3-4d36-8162-1931cca7ae0d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
+    "id": "44351a11-c897-4eaf-af52-321ec21d312e",
+    "company_id": "b41e9e27-dd29-41ca-a34b-5097d79e47a4",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
+    "id": "8d0b846e-20c5-44ca-9525-dfe0c12dce1f",
+    "company_id": "049a4304-2152-41ad-a416-9f559e1019de",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T08:57:39.850551+00:00"
+  },
+  {
+    "id": "535525fd-7d85-4d0e-943a-3fe2a8e6eb94",
+    "company_id": "13095de4-78ff-49d1-9abd-21992e34b076",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T09:01:35.591724+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "0357ce45-a562-4154-9bef-4ab104820aaa",
+    "company_id": "058e0c44-9175-4b47-9a04-74542851d8ff",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "af912db7-a094-4b7e-b0e8-b49a8abd5609",
+    "company_id": "18bacaec-ca14-46fe-ae50-f552ded8d4cf",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "1ba43107-f722-4ad8-bd87-b0e0e0ce2d5f",
+    "company_id": "d3f8312f-c7eb-4851-8619-5e2531ae6860",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "ffb03e36-636e-4ca0-892c-4968f083e08f",
+    "company_id": "b39acbc1-4544-4c18-966c-081a6a089048",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "7f87fba2-d0d1-4bc7-8678-bf4a3427370c",
+    "company_id": "b9c301d5-4301-4923-a304-86b781399692",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "a672e3cc-a19b-4322-b2ff-67ca9f290bbd",
+    "company_id": "f3d5b4ea-1560-40bf-8b68-00e3263055d2",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "0c84c5db-4111-42f0-b148-da621a0029a1",
+    "company_id": "84e23f6b-ca87-48ba-b1f9-26f07fe99804",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "3596dafb-c616-4659-9efe-70a55a64158a",
+    "company_id": "bbeb0ec0-a27c-4607-8470-43f5f9290abf",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "8e863b7a-71f7-4659-af06-1bf2653d20ec",
+    "company_id": "ef2c1129-dd90-42d0-8fef-75bb97c0cfcf",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "5e60d577-842a-4061-ba6b-bb401057d3d4",
+    "company_id": "5446020f-68c7-4fe2-a401-f88780d9cd2e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "1750564a-edb5-4e5b-8bda-77f7938100d0",
+    "company_id": "fd702116-c6de-474d-8a12-843d7501c82a",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "d2a7b907-40d5-42af-b9b4-33fe2ecfba99",
+    "company_id": "b2bebeb2-2df4-47f4-93e1-532ca7d032d5",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "247a2045-9328-4117-979d-a10d852a2c81",
+    "company_id": "83f8a487-3e89-44e1-afe6-dc1ab256bffc",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:08:25.729781+00:00"
+  },
+  {
+    "id": "79cca740-ec57-47c7-b35d-9f37acd0ab17",
+    "company_id": "9116b016-511c-483e-b582-360b3afbd70f",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:13:02.618714+00:00",
+    "updated_at": "2026-04-15T09:13:02.618714+00:00"
+  },
+  {
+    "id": "192e6caf-734d-4c65-9469-a2bf12e0b630",
+    "company_id": "1cb75d02-49dc-468e-9229-85f51da62dbd",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:13:02.618714+00:00",
+    "updated_at": "2026-04-15T09:13:02.618714+00:00"
+  },
+  {
+    "id": "f8a74f2c-4c12-4127-942e-4bd97bcb98f4",
+    "company_id": "bd9d145c-92d3-4038-b2f0-65fdceeef331",
+    "company_size": "smb",
+    "ai_maturity_signal": "unknown",
+    "sector": "hospitality",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
+    "id": "8bdd9045-abc4-434d-8d31-5d3ceeaff502",
+    "company_id": "0359b14d-41d1-48bb-ad64-899f77c9d2ef",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:52:28.175874+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "688e7b8f-c06d-4384-aa96-eb7726d14c18",
+    "company_id": "9541d028-770b-42f7-af90-f79ce4f183d6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "nonprofit",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "e1e456ad-ec31-4fbf-82b7-ad46e75b5e70",
+    "company_id": "52a56c96-1961-4c55-8235-83dc09f2ec84",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:03:23.934805+00:00",
+    "updated_at": "2026-04-15T10:40:14.226899+00:00"
+  },
+  {
+    "id": "00039279-8111-4e49-800d-b62eb38d77bc",
+    "company_id": "94348f3a-78be-4f23-af17-13a2e751decd",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "0d106b7e-04c3-4362-afb1-e8cb3564564c",
+    "company_id": "97403429-3ee0-4ad3-b515-56e838641fed",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:55:35.256641+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "bad78ed7-d8a4-4fb6-9c7c-52d7e66c29b8",
+    "company_id": "d8d773c5-b2e8-425a-9e43-a595cc31f530",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:13:02.618714+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "03671011-4ce5-48c8-9224-72926a906bc9",
@@ -6460,6 +8080,16 @@
     "updated_at": "2026-04-12T09:42:03.183686+00:00"
   },
   {
+    "id": "f4ef092c-ad96-4eec-b017-6c0121c8aae3",
+    "company_id": "253ff143-c1c5-4c55-9502-9fe7948926f5",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T19:35:41.045763+00:00",
+    "updated_at": "2026-04-15T10:50:41.895334+00:00"
+  },
+  {
     "id": "2b1c4003-2a83-4202-8646-c59f3a7e3cd2",
     "company_id": "4cbb4c21-2eff-4988-ab21-11710e02d3dd",
     "company_size": "unknown",
@@ -6530,6 +8160,16 @@
     "updated_at": "2026-04-12T09:50:50.806048+00:00"
   },
   {
+    "id": "885da86d-97c7-4779-95b1-3ba07c5e2ad0",
+    "company_id": "39d7888d-fb16-496b-bfb5-878e34507486",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
     "id": "df1f2e65-177d-42bc-9db1-a134d7c92e76",
     "company_id": "b55bdd43-4749-4514-a7f1-8e47fc7f59f4",
     "company_size": "unknown",
@@ -6570,16 +8210,6 @@
     "updated_at": "2026-04-12T19:30:54.996047+00:00"
   },
   {
-    "id": "3f0b95fa-623d-4fac-935d-db0755d5424a",
-    "company_id": "ce85a0e2-98e9-4483-89b3-fe29c74ec0c0",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_native",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T09:36:55.138951+00:00",
-    "updated_at": "2026-04-12T09:55:33.292213+00:00"
-  },
-  {
     "id": "f154c7f6-075d-4c1a-9b06-d745e85128a7",
     "company_id": "2fdcb8bb-78c9-4260-bb35-b71ac6e7539d",
     "company_size": "enterprise",
@@ -6598,16 +8228,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T19:33:41.164943+00:00",
     "updated_at": "2026-04-12T19:33:41.164943+00:00"
-  },
-  {
-    "id": "f4ef092c-ad96-4eec-b017-6c0121c8aae3",
-    "company_id": "253ff143-c1c5-4c55-9502-9fe7948926f5",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T19:35:41.045763+00:00",
-    "updated_at": "2026-04-12T19:35:41.045763+00:00"
   },
   {
     "id": "0daa5678-3f21-40f1-babf-f679f3de1081",
@@ -6830,6 +8450,16 @@
     "updated_at": "2026-04-12T20:11:15.921362+00:00"
   },
   {
+    "id": "d4b6bc29-56df-4c5b-af21-4be66fb50473",
+    "company_id": "fa72e541-3375-4905-a277-2519c0e5dbab",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
     "id": "ab0d14c7-38cd-4ff4-9c31-4a32a6f85eeb",
     "company_id": "ee32d4b2-a214-48f6-b172-1c5d28fc8373",
     "company_size": "unknown",
@@ -6930,16 +8560,6 @@
     "updated_at": "2026-04-12T19:30:55.004780+00:00"
   },
   {
-    "id": "83e23b51-196c-4e59-9ad4-66db666bc71f",
-    "company_id": "58db9c0e-f935-4456-b19f-c0ae0a378e31",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:52:59.174117+00:00",
-    "updated_at": "2026-04-12T19:31:22.778071+00:00"
-  },
-  {
     "id": "3998e3de-a558-4147-86e0-55e1e9753906",
     "company_id": "b87be71f-5246-404b-bf7a-28f4a90ea6a7",
     "company_size": "unknown",
@@ -6958,16 +8578,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T01:27:00.372683+00:00",
     "updated_at": "2026-04-12T19:33:48.034562+00:00"
-  },
-  {
-    "id": "a9492eb7-7ed7-44ea-961c-8e684cdd02e7",
-    "company_id": "28102a52-a289-4190-898c-b8de253ca9f1",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T02:23:30.283394+00:00",
-    "updated_at": "2026-04-12T19:35:41.040290+00:00"
   },
   {
     "id": "38ce2229-465e-408f-8a87-1aa8fd4ae78d",
@@ -7030,6 +8640,36 @@
     "updated_at": "2026-04-12T20:17:54.360387+00:00"
   },
   {
+    "id": "c14a67ea-93cc-439d-8980-f8e9c12513ee",
+    "company_id": "026b7426-8238-4d99-9a79-105b942d81ad",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:08:25.729781+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
+  },
+  {
+    "id": "c30630f2-ee9f-4935-9251-d2804d27d86c",
+    "company_id": "2ef6089a-9be1-45f0-8e26-2bdd8392ea5f",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "hospitality",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
+    "id": "00a3e435-186e-422a-b61d-18582646259b",
+    "company_id": "531018db-2a77-44f1-a691-c3ba58290712",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
     "id": "40e8bbd1-d550-4b02-8c2d-65815a7f3564",
     "company_id": "339152c0-cc84-470d-9b97-4a848db57e8e",
     "company_size": "unknown",
@@ -7048,6 +8688,116 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T04:38:42.056851+00:00",
     "updated_at": "2026-04-12T20:19:34.271642+00:00"
+  },
+  {
+    "id": "02769cf1-0e1d-4021-a3f6-6f9279769418",
+    "company_id": "fe087b39-2d4c-47cc-8e49-a735caabccfc",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
+    "id": "fff01514-e8c8-4a91-a7e0-8140852546f3",
+    "company_id": "c4cb781d-193c-407b-8888-f19e8fed6300",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:18:44.085475+00:00"
+  },
+  {
+    "id": "8f36f8ff-90f5-484c-ba1e-0d91729788e1",
+    "company_id": "ac74a017-57eb-4be1-9e14-0d072517fd5d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:18:44.085475+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "314242d1-71e6-4217-9d3a-1d8f4f509e49",
+    "company_id": "debde417-59a0-484a-97e1-1cfe018f6d4e",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:24:05.781618+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "aa7a6932-0316-45fd-9630-d642b9d278b4",
+    "company_id": "492d6a4e-9f15-4e61-814a-87af4e45a2c9",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "d81feace-013d-468c-93a4-3a4d235d6148",
+    "company_id": "326d78ca-f176-429a-ab32-2af319c13186",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:24:05.781618+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "0e1acd58-ea50-4328-bdb2-3ab5ccb87a4e",
+    "company_id": "064ce808-548c-4781-b9fd-848631a1853c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:24:05.781618+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "9c4fb922-f95d-4803-9339-160dc6f3d13a",
+    "company_id": "1596a18c-987b-41f5-8c03-25884dc25f3b",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:57:39.850551+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "a9492eb7-7ed7-44ea-961c-8e684cdd02e7",
+    "company_id": "28102a52-a289-4190-898c-b8de253ca9f1",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T02:23:30.283394+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "e7436917-5ff6-4254-828f-c24bfd551347",
+    "company_id": "6c7ddaa1-5583-4a70-bde0-9dc80290318f",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:24:05.781618+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
+  },
+  {
+    "id": "83e23b51-196c-4e59-9ad4-66db666bc71f",
+    "company_id": "58db9c0e-f935-4456-b19f-c0ae0a378e31",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:52:59.174117+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "fea5a908-a398-4646-81ac-6129a405b806",
@@ -7088,6 +8838,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T10:23:50.433655+00:00",
     "updated_at": "2026-04-12T10:23:50.433655+00:00"
+  },
+  {
+    "id": "3addb388-a43c-4c28-a37b-a2c5849fd815",
+    "company_id": "9a00db89-6fc5-4c9b-bae1-9be7456528f9",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
   },
   {
     "id": "4e271f18-35a5-46bb-b829-18b8e7fd8c40",
@@ -7138,6 +8898,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T10:37:28.393955+00:00",
     "updated_at": "2026-04-12T10:37:28.393955+00:00"
+  },
+  {
+    "id": "26147ffe-7821-4c0d-a976-3ec017633991",
+    "company_id": "276ca1b8-f901-43da-abc4-fdb805da5475",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
   },
   {
     "id": "8f9bc256-cc17-48fd-adbc-cfde1214c4ef",
@@ -7370,16 +9140,6 @@
     "updated_at": "2026-04-12T11:07:42.338567+00:00"
   },
   {
-    "id": "f8ae0ed0-979b-416a-9210-d51e87344f79",
-    "company_id": "d295523c-a708-4f8f-a86f-410ccaa62711",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T11:07:42.338567+00:00",
-    "updated_at": "2026-04-12T11:07:42.338567+00:00"
-  },
-  {
     "id": "e1b527b5-c2de-4c6c-93d4-780637839c88",
     "company_id": "7fe337fc-bac4-4fd3-8ba7-6d99e15cb039",
     "company_size": "unknown",
@@ -7580,6 +9340,16 @@
     "updated_at": "2026-04-12T11:35:27.940493+00:00"
   },
   {
+    "id": "0d553e2b-892e-41f2-8a72-cb3f9756496d",
+    "company_id": "06db3a1c-d038-44f5-b745-fc1195f737c9",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
     "id": "2dd3c785-b668-42c8-b5a2-a13c4631c593",
     "company_id": "89e06cce-0cf2-4aa5-be5d-9b83068b027e",
     "company_size": "startup",
@@ -7598,6 +9368,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T10:37:28.393955+00:00",
     "updated_at": "2026-04-12T19:25:35.725660+00:00"
+  },
+  {
+    "id": "da772d57-96f2-4921-84d4-83d0c1d9d62c",
+    "company_id": "dc3e6de5-561d-47b1-b207-879c3f27ccd1",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "f8ae0ed0-979b-416a-9210-d51e87344f79",
+    "company_id": "d295523c-a708-4f8f-a86f-410ccaa62711",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T11:07:42.338567+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
   },
   {
     "id": "7e77b54f-aacb-4561-9b59-38266c0ca557",
@@ -7680,26 +9470,6 @@
     "updated_at": "2026-04-12T19:33:17.377270+00:00"
   },
   {
-    "id": "69a0fac1-da48-4af8-bd6e-3ef4b1195fdc",
-    "company_id": "406f6a72-e284-4afe-a0b7-8597de5152f2",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T19:33:48.069904+00:00",
-    "updated_at": "2026-04-12T19:33:48.069904+00:00"
-  },
-  {
-    "id": "4534cfeb-0317-4bd3-b943-1dc93ace653e",
-    "company_id": "97679758-1d77-4ff8-bb1f-d924f9b8578b",
-    "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T19:36:07.792704+00:00",
-    "updated_at": "2026-04-12T19:36:07.792704+00:00"
-  },
-  {
     "id": "478a25f6-bf0f-4a7e-b73a-9d499f53246c",
     "company_id": "2b198c3e-e19e-4a62-9848-4c6cec0a4ffc",
     "company_size": "unknown",
@@ -7728,6 +9498,446 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T20:19:41.027838+00:00",
     "updated_at": "2026-04-12T20:19:41.027838+00:00"
+  },
+  {
+    "id": "05b24a6a-5c1f-4046-9d78-5bc9019cb1c0",
+    "company_id": "53814d8a-a297-4bb6-8165-dcadbdd24b2f",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T10:01:21.971363+00:00"
+  },
+  {
+    "id": "c9b63bda-6af4-4dc5-9aca-3efb4d5cbe97",
+    "company_id": "74d8ba56-2f4e-4371-9ec1-1818e63050d2",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "f351db4d-5c96-4734-8ed5-ae22e787380d",
+    "company_id": "c5eda951-242a-4140-adeb-521e921d42b6",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "325f8ed2-7df1-4849-bdab-94c83f71ebe7",
+    "company_id": "ccd18614-d6b0-4c3d-bb65-ca9c140e7c4e",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "4e089c06-3be1-4f28-8843-5b66354989c1",
+    "company_id": "23a48e2e-709c-4390-85f5-3b8958b923ec",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "0632b686-0932-4b4c-8a11-2465d9bf2826",
+    "company_id": "b3cfc7a4-35ac-4c64-804c-3aa3f2223252",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "966d4336-c128-47cb-ad0d-f08d4e04cc11",
+    "company_id": "75c36370-0b74-479a-aeda-a5c4d2441af2",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "a5b38e5e-1d41-4ec0-8898-b8f936b7fbbb",
+    "company_id": "de47bcd8-159d-4243-a8f0-80f789397152",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "09251188-cf0b-441c-937e-a903f9e75915",
+    "company_id": "d4cb67a9-795a-4d93-805d-f037328b3940",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:31:54.364344+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "8243310e-b338-4cad-b7eb-9ce640180337",
+    "company_id": "2421f366-ee66-4926-87ce-05d2d87d5da1",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "dfac2a1c-4421-42e0-b3bc-accf78bfb77a",
+    "company_id": "98906eb6-68d4-4398-aa75-a1a4ee36deb2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "b82129f5-9ded-4d15-bb63-327da48cf996",
+    "company_id": "763b48a9-c318-45ec-9f5d-eb4a72bbf064",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "4e5dd86b-4935-47e7-bb4f-3d07463d363c",
+    "company_id": "fc311eab-34e2-480d-a6f7-612c6af56c82",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:33:49.824369+00:00",
+    "updated_at": "2026-04-15T09:33:49.824369+00:00"
+  },
+  {
+    "id": "4b11cd94-865e-47d7-b097-31897dc7bece",
+    "company_id": "1b93a41d-bc29-4ba1-966b-84e011fad35e",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "1d2c1b11-6ff2-439e-af29-455552429424",
+    "company_id": "dddc5801-5804-4078-8510-c535d1687d07",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "286356c5-092d-4b54-9e73-3206e370d011",
+    "company_id": "B99E0682-F1A4-499B-9A5B-27EB47464072",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:57:22.707474+00:00"
+  },
+  {
+    "id": "8659442e-6f89-44e5-9d98-67d5d25eff67",
+    "company_id": "f15ac9ef-4cad-4abe-9dd0-f728e98709d0",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "442fc83f-d5fc-4c5a-915f-fdbcab3b36bc",
+    "company_id": "87438b11-a74e-4165-935f-6843b92655db",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "28f4b749-6fa3-4e5e-95af-ad0dde154f30",
+    "company_id": "182f8f04-07ca-42f9-8a2a-e2682f5a49b8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T03:55:51.862876+00:00",
+    "updated_at": "2026-04-15T08:00:11.243316+00:00"
+  },
+  {
+    "id": "4a8c8220-a119-4257-b6ef-ce8a19be51f3",
+    "company_id": "46daaae8-eecf-48f5-b735-ba4344c9dbc7",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "421cb8b7-b079-445a-9b3f-be9b3fb21f83",
+    "company_id": "1eb3a032-2d0d-433c-bb32-144cf93e4d5f",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "ff756a7b-8f37-4b47-b010-ae4729dd0cf9",
+    "company_id": "6da90d77-a7df-4763-9927-bb01e4d2ee28",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:23:35.275847+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "69a0fac1-da48-4af8-bd6e-3ef4b1195fdc",
+    "company_id": "406f6a72-e284-4afe-a0b7-8597de5152f2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T19:33:48.069904+00:00",
+    "updated_at": "2026-04-15T07:36:09.212365+00:00"
+  },
+  {
+    "id": "112a0513-534c-48b9-b3fd-7843ce91a923",
+    "company_id": "99d9e718-437a-425e-8051-10502a3d33b2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "47846bb2-3f9a-4e04-813c-4f96ef400507",
+    "company_id": "73444f0d-cff0-410d-a728-5f718eb5d37e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "de9fe06a-8d87-4280-9e91-f5e98f0aa196",
+    "company_id": "d0598ab9-a657-4169-aaa6-0c56e78acf7e",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "be002690-9b9a-4964-ad46-2645481a2dab",
+    "company_id": "afc67d53-d7a2-44e1-b189-54d9c10fbda7",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "12c7934b-680f-4d16-bbc0-d53e44e11d64",
+    "company_id": "6d1fc218-0e1b-406b-9a7c-2785ede9fd4a",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "dc4e1a5e-a46b-46f6-8c1a-12010d2654da",
+    "company_id": "b69b5345-f2c1-4f78-ae7a-cad47abfa33b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "3a6d0fd5-059b-44e0-9aa1-a43426824f90",
+    "company_id": "56be11a1-d6e7-49dc-b3db-444abba31b8e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "dad4676d-4953-4d2e-9614-342f14d1b943",
+    "company_id": "f92c0f1b-295e-4f34-b061-3244e53c16f6",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "aafbd87d-f8b8-4d4d-9f9d-070ad2091a4d",
+    "company_id": "09a279cf-e8d6-4e61-9415-e9056eaaad70",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:28:46.459504+00:00"
+  },
+  {
+    "id": "5a227869-473b-43fa-98d9-85873ae3190e",
+    "company_id": "811d67e2-5f14-42b2-8af4-ff3d238d4705",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "9b0473ba-0a29-4d52-b7eb-969a0954a92a",
+    "company_id": "0d949fec-bb3d-4b41-ba03-17e17bb7af5b",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "a1f4067b-0ae2-4ec7-a625-cd2a21df9c8a",
+    "company_id": "c60dbb16-8e0e-4dad-a346-678f8e18cbfa",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "d81aea40-fbc9-470c-9475-bca5841140da",
+    "company_id": "62345b4b-6ffa-4d39-9899-b825eadce8a1",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "2f51f7ce-bf49-4bf0-9657-932d44586a7b",
+    "company_id": "94eaeba7-d587-44cd-9860-d426dccd99c2",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "3f83f578-a6d8-443d-89e8-716fc6524c16",
+    "company_id": "f67d1217-5bf9-419b-8eaa-5287c981127d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "6cb08928-7949-4dcf-af13-09e85b474ef0",
+    "company_id": "c5e7cf0c-4aaf-4cdb-a7c6-b8862ae17fe9",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "cecc67a4-c087-4ff2-9e24-44e077218ee1",
+    "company_id": "856c72f6-32c4-417f-b2f7-f5468bf014a0",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "f848fbd5-a9a8-42f3-86f6-d891c4a2faad",
+    "company_id": "58211972-3890-4857-a759-db1133a93d17",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
+    "id": "0c93fa9a-7544-44ed-a43e-134395c746ba",
+    "company_id": "744fd677-1bc4-400f-8fc4-42599152cf65",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "28c5fa74-34be-4095-88af-d2ace7256708",
+    "company_id": "2acc26f8-d0a4-4b9b-b37a-e27f31d35a8d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:52:59.174117+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "4534cfeb-0317-4bd3-b943-1dc93ace653e",
+    "company_id": "97679758-1d77-4ff8-bb1f-d924f9b8578b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T19:36:07.792704+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
   },
   {
     "id": "91716984-af8a-416b-a1d7-93ab78434985",
@@ -7860,6 +10070,16 @@
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
   },
   {
+    "id": "0e37e466-77c8-45b4-815f-a36c4e06d2cb",
+    "company_id": "3c464ef7-833d-4473-a7ca-9cd84cc6a766",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T11:40:35.395783+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
     "id": "979ed23e-277b-4a0c-9e5d-767763c426a0",
     "company_id": "13aee4b0-31a8-431f-9546-bdaa7abdde92",
     "company_size": "enterprise",
@@ -7880,6 +10100,16 @@
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
   },
   {
+    "id": "4f0d14e9-34e9-4f4b-aaf4-40a2de761c3a",
+    "company_id": "3d5bde81-34c7-4372-944e-2ebfb6460dc1",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:44:19.415976+00:00",
+    "updated_at": "2026-04-15T09:44:19.415976+00:00"
+  },
+  {
     "id": "ed0a732b-5b5f-4779-8947-985c012471e4",
     "company_id": "20ad0d8d-51d4-4370-b6a2-35605c600452",
     "company_size": "mid_market",
@@ -7898,6 +10128,26 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T11:40:35.395783+00:00",
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
+  },
+  {
+    "id": "5cd602cd-f7b1-4e31-9ea4-9ce871fae56b",
+    "company_id": "a5b0f2d4-f0a5-4c93-a642-33a5a100bf05",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "2e38c6ae-789b-4788-907c-0259dee927d5",
+    "company_id": "44e4bcb8-1e77-4d58-ae0d-50c5b54192e6",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T11:05:01.061027+00:00"
   },
   {
     "id": "288361e5-5232-4649-93ba-266e8c1bd5ef",
@@ -8070,14 +10320,34 @@
     "updated_at": "2026-04-12T11:40:35.395783+00:00"
   },
   {
-    "id": "0e37e466-77c8-45b4-815f-a36c4e06d2cb",
-    "company_id": "3c464ef7-833d-4473-a7ca-9cd84cc6a766",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "manufacturing",
+    "id": "5f58bdfb-5627-4970-a3e7-559bebb137e0",
+    "company_id": "8f633991-9903-44f4-8329-d2e4ff5bb2d1",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
     "is_known_employer": true,
-    "created_at": "2026-04-12T11:40:35.395783+00:00",
-    "updated_at": "2026-04-12T11:40:35.395783+00:00"
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "764efc2f-713b-4224-bf1e-d5b88fd115b8",
+    "company_id": "b7a23dbe-3aee-481f-b652-1676ab1c7f46",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "b9e329da-c70a-493b-a96c-f1685fb1c80c",
+    "company_id": "4ca07ad1-d06f-472a-a15c-b2829dfa78ca",
+    "company_size": "smb",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
   },
   {
     "id": "7f3f1c4a-ff5d-4738-904f-e1420d31456a",
@@ -8280,16 +10550,6 @@
     "updated_at": "2026-04-12T17:20:11.857714+00:00"
   },
   {
-    "id": "5bafa780-769a-4d87-b226-4e19171aeb50",
-    "company_id": "6b4e389e-9e72-4be3-9d57-2fb37320554c",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "energy",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T17:20:11.736627+00:00",
-    "updated_at": "2026-04-12T17:20:11.736627+00:00"
-  },
-  {
     "id": "b14e23df-9eb1-4b32-812f-d233495a0693",
     "company_id": "2a16ed55-620a-426c-a230-c9318ed84004",
     "company_size": "enterprise",
@@ -8318,6 +10578,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T17:20:11.803230+00:00",
     "updated_at": "2026-04-12T17:20:11.803230+00:00"
+  },
+  {
+    "id": "5bafa780-769a-4d87-b226-4e19171aeb50",
+    "company_id": "6b4e389e-9e72-4be3-9d57-2fb37320554c",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T17:20:11.736627+00:00",
+    "updated_at": "2026-04-15T07:25:50.212404+00:00"
   },
   {
     "id": "a8b44d33-11fa-4a5a-a1d4-8b0e5306d27a",
@@ -8540,6 +10810,156 @@
     "updated_at": "2026-04-12T20:19:43.709963+00:00"
   },
   {
+    "id": "170fe8e6-0db0-4219-89c0-9ea7e8ce4a7d",
+    "company_id": "a85a56ad-3f1c-45b4-a0a0-0f4266d9199d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "9f1b4a68-7172-4f33-bc99-c3f3e428b96d",
+    "company_id": "0cadf1c9-0451-4391-b30c-0ebbcb3059f8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "14cf8b50-6b2b-4276-b568-e70a0d7e595f",
+    "company_id": "28e8d90d-7b16-4a37-af87-73b092c9f34d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "cc9ea550-4a46-415b-b80e-54b73081227f",
+    "company_id": "1aa7921f-bb23-458d-af06-e4c977b182c7",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "dc864a20-1caa-4505-bc0b-8310059358c6",
+    "company_id": "b304bcb2-3863-4e68-beb1-120d017184a7",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:28:46.459504+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "84d98b90-2f51-4065-b235-fa14fd8257cc",
+    "company_id": "14bdc747-df30-4eda-b92f-c812f83d4900",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T03:55:51.792928+00:00",
+    "updated_at": "2026-04-15T03:55:51.792928+00:00"
+  },
+  {
+    "id": "4d85fb65-2762-4e8d-817a-5686ecb76b59",
+    "company_id": "d7d4009c-5949-40c1-acb8-faa5050835c3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "media",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:20:55.771270+00:00",
+    "updated_at": "2026-04-15T05:20:55.771270+00:00"
+  },
+  {
+    "id": "74688871-f8ac-45cb-8f3b-8a48a9889e10",
+    "company_id": "a4b536b9-8bed-4558-9214-87376f947c57",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "3ab2c8ad-2268-4bdc-9211-a3e4a1debe63",
+    "company_id": "363e8972-233f-4016-9e95-8341428ecab3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "39ebb8e9-01ae-42d3-9f6f-418451776d0a",
+    "company_id": "af24f14b-6d6d-466e-b8cc-226b4fa41909",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:48:48.884256+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
+    "id": "d2c28e19-a4a6-4f6c-8245-22246f71c12a",
+    "company_id": "e31a026c-9423-40c0-a4cf-397fba06a849",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:53:15.097853+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "1e735a93-5f4a-49a0-868a-d39b85f230c6",
+    "company_id": "0257f0f7-6a3f-4f2f-8afe-8966662ce953",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:53:15.097853+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "b8e40062-389a-40b6-92a5-7c0953630367",
+    "company_id": "ef33451c-a083-42ef-b6ec-ea00f14d7ded",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:53:15.097853+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "a511147f-accc-456a-93b7-241d495fc50c",
+    "company_id": "a4308299-d003-40a7-b903-fdf644f6fd1e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:53:15.097853+00:00",
+    "updated_at": "2026-04-15T09:53:15.097853+00:00"
+  },
+  {
+    "id": "553106c7-00ee-497a-8cdc-c742251e1a04",
+    "company_id": "f2639348-b3e3-4563-9e8e-5c49d1e2550d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:57:22.707474+00:00",
+    "updated_at": "2026-04-15T09:57:22.707474+00:00"
+  },
+  {
     "id": "62345327-c8a7-4265-9005-747734303383",
     "company_id": "63058d80-bf65-4f7c-814d-de638fede1b7",
     "company_size": "enterprise",
@@ -8660,6 +11080,86 @@
     "updated_at": "2026-04-12T20:19:43.732246+00:00"
   },
   {
+    "id": "48e01ebf-bc9a-4bf4-a4e9-6150c8cff1e1",
+    "company_id": "195db04c-61e0-441b-b4c6-810630185602",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-14T10:07:55.396773+00:00",
+    "updated_at": "2026-04-14T10:07:55.396773+00:00"
+  },
+  {
+    "id": "e1cd55a5-303b-4330-9a17-4adff9e79bba",
+    "company_id": "c05fe613-668e-4358-9280-722bf3bec05b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:20:52.520503+00:00",
+    "updated_at": "2026-04-15T11:31:25.902594+00:00"
+  },
+  {
+    "id": "3afe7b6f-73a1-4242-a8d5-1640eeb09619",
+    "company_id": "8a556f3f-0494-4c67-92bd-480f5f02cfcd",
+    "company_size": "smb",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:01:21.971363+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "a98e7cec-969c-40de-af15-01b7b849bc69",
+    "company_id": "e268e60a-bd70-42e5-84c1-c26710591faf",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:01:21.971363+00:00",
+    "updated_at": "2026-04-15T10:01:21.971363+00:00"
+  },
+  {
+    "id": "47dc9973-a295-4d44-863b-4cfb34394fa8",
+    "company_id": "57dae123-7630-4474-b6b6-11a31c0c9fef",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:01:21.971363+00:00",
+    "updated_at": "2026-04-15T10:01:21.971363+00:00"
+  },
+  {
+    "id": "a3e9bb56-2a9e-4b54-a307-aef40bad6040",
+    "company_id": "d3474414-080f-4595-b1e6-35c32755260a",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:20:54.040858+00:00",
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "1e12421e-6877-46b7-8e02-37186215b60a",
+    "company_id": "2001f35a-f29e-468e-92ae-e7b9aa1e4c54",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "media",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:01:21.971363+00:00",
+    "updated_at": "2026-04-15T10:01:21.971363+00:00"
+  },
+  {
+    "id": "10863fa4-2b85-41cd-bc46-f946e4bc552f",
+    "company_id": "09abbacd-2e92-47cc-9791-ce6729cfd405",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:01:21.971363+00:00",
+    "updated_at": "2026-04-15T10:01:21.971363+00:00"
+  },
+  {
     "id": "fe6a49fa-3bfa-4d1d-bfaf-b447b965e017",
     "company_id": "3f0b7d63-946e-4058-b944-ec4a22e57c66",
     "company_size": "enterprise",
@@ -8680,24 +11180,14 @@
     "updated_at": "2026-04-12T17:34:55.626754+00:00"
   },
   {
-    "id": "d0b20a9c-6caa-45ff-ae22-954ed3065a7e",
-    "company_id": "2ceb431d-255e-4b10-bee3-804256e0b676",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
+    "id": "f10d66dc-b810-4203-816d-d39d0e2ec7f8",
+    "company_id": "e180078b-fc81-4186-82b4-577abd758dd7",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
     "sector": "technology",
     "is_known_employer": true,
-    "created_at": "2026-04-12T11:40:35.395783+00:00",
-    "updated_at": "2026-04-12T19:30:54.987945+00:00"
-  },
-  {
-    "id": "c13af95b-cc31-4d4e-9816-c26ff49592a1",
-    "company_id": "9FDECBA4-64F8-4361-98C0-6A67905D0D6C",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T22:23:35.275847+00:00",
-    "updated_at": "2026-04-12T19:33:17.371550+00:00"
+    "created_at": "2026-04-15T05:30:12.309415+00:00",
+    "updated_at": "2026-04-15T07:25:50.212404+00:00"
   },
   {
     "id": "6dcfa786-d530-4691-b88e-64149fa0e697",
@@ -8710,6 +11200,16 @@
     "updated_at": "2026-04-12T19:33:48.053371+00:00"
   },
   {
+    "id": "c13af95b-cc31-4d4e-9816-c26ff49592a1",
+    "company_id": "9FDECBA4-64F8-4361-98C0-6A67905D0D6C",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T22:23:35.275847+00:00",
+    "updated_at": "2026-04-15T09:48:48.884256+00:00"
+  },
+  {
     "id": "2d16019f-460d-43b1-841b-00510f77362f",
     "company_id": "9ee7ac50-2c17-485c-a56d-abac912f1919",
     "company_size": "unknown",
@@ -8718,6 +11218,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T19:35:41.100641+00:00",
     "updated_at": "2026-04-12T19:35:41.100641+00:00"
+  },
+  {
+    "id": "104cc7fb-5d1a-472a-8b97-526b81954047",
+    "company_id": "3f2a5608-2c25-4baf-ae4f-f916568ae97f",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "nonprofit",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:05:30.667369+00:00",
+    "updated_at": "2026-04-15T10:05:30.667369+00:00"
   },
   {
     "id": "420391c0-c077-4458-932c-32bc1a5dad3d",
@@ -8750,14 +11260,24 @@
     "updated_at": "2026-04-12T20:14:48.734547+00:00"
   },
   {
-    "id": "d119a21c-edf2-48e3-a4ae-ab4c2d219ddd",
-    "company_id": "df703eb1-c4d4-48c3-aaf2-58ae5867445c",
+    "id": "5a2c5e8c-8b60-417e-a5de-8553c7af4a6c",
+    "company_id": "e32c061e-722b-4b74-821c-2cc3e0c8a510",
     "company_size": "unknown",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "government",
     "is_known_employer": true,
-    "created_at": "2026-04-07T17:43:17.059221+00:00",
-    "updated_at": "2026-04-12T20:17:54.365107+00:00"
+    "created_at": "2026-04-15T10:09:31.481654+00:00",
+    "updated_at": "2026-04-15T10:09:31.481654+00:00"
+  },
+  {
+    "id": "cae94aab-2b52-4843-b8ae-4e4036501328",
+    "company_id": "15f53422-5725-44b4-8e73-1bfd2ef76d6c",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:09:31.481654+00:00",
+    "updated_at": "2026-04-15T10:09:31.481654+00:00"
   },
   {
     "id": "06953a33-f6ba-473a-af46-599f6e581d16",
@@ -8768,6 +11288,126 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T02:23:30.283394+00:00",
     "updated_at": "2026-04-12T20:19:43.642805+00:00"
+  },
+  {
+    "id": "1257ae2a-8efd-427b-b4c9-be9fe576a143",
+    "company_id": "269ba4b8-3bbb-48b8-9b72-6ffc0f2a6238",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:09:31.481654+00:00",
+    "updated_at": "2026-04-15T10:09:31.481654+00:00"
+  },
+  {
+    "id": "8db8d402-fdf5-4263-86d2-7025a7d6507e",
+    "company_id": "0351fe36-920f-409a-8dac-db1f64e80a55",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:09:31.481654+00:00",
+    "updated_at": "2026-04-15T10:09:31.481654+00:00"
+  },
+  {
+    "id": "8b4bc215-a7e7-4846-ae11-e47909ce92d7",
+    "company_id": "1a9abf52-a5a5-472e-8e95-c88f0fa774a3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:13:03.672799+00:00",
+    "updated_at": "2026-04-15T10:13:03.672799+00:00"
+  },
+  {
+    "id": "1bea1b1f-0ce3-46fa-b804-9be25d91c96e",
+    "company_id": "48aaad7e-a73f-4acb-93fb-53f51da677ce",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:20:45.365659+00:00",
+    "updated_at": "2026-04-15T10:20:45.365659+00:00"
+  },
+  {
+    "id": "3513aeef-87e6-4650-a6fe-7c34b1237f9d",
+    "company_id": "45d73fc2-9c2c-4c3c-a2d4-bf9588ad02d4",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:20:45.365659+00:00",
+    "updated_at": "2026-04-15T10:20:45.365659+00:00"
+  },
+  {
+    "id": "d119a21c-edf2-48e3-a4ae-ab4c2d219ddd",
+    "company_id": "df703eb1-c4d4-48c3-aaf2-58ae5867445c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "government",
+    "is_known_employer": false,
+    "created_at": "2026-04-07T17:43:17.059221+00:00",
+    "updated_at": "2026-04-15T05:20:43.520841+00:00"
+  },
+  {
+    "id": "034ac328-b39d-4b1a-95ae-d734e8466e44",
+    "company_id": "c7afe633-7750-41fc-a85a-a969c4d66f30",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:20:45.365659+00:00",
+    "updated_at": "2026-04-15T10:20:45.365659+00:00"
+  },
+  {
+    "id": "8f6074ee-a149-48cc-88ac-947966da4138",
+    "company_id": "aafc33af-3d26-42e3-ae5b-09422f0490d4",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:24:16.738151+00:00",
+    "updated_at": "2026-04-15T10:24:16.738151+00:00"
+  },
+  {
+    "id": "d8534941-b58b-4cd9-b6ac-c262d61a985a",
+    "company_id": "cbc88d54-4d15-4426-bac5-faf550523c84",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:24:16.738151+00:00",
+    "updated_at": "2026-04-15T10:24:16.738151+00:00"
+  },
+  {
+    "id": "0247ee00-4b02-42f7-b193-95db3ebfc9ca",
+    "company_id": "dbbd1338-fbba-455f-86da-b5e9213a30e1",
+    "company_size": "smb",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:24:16.738151+00:00",
+    "updated_at": "2026-04-15T10:24:16.738151+00:00"
+  },
+  {
+    "id": "d0b20a9c-6caa-45ff-ae22-954ed3065a7e",
+    "company_id": "2ceb431d-255e-4b10-bee3-804256e0b676",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T11:40:35.395783+00:00",
+    "updated_at": "2026-04-15T10:32:39.159489+00:00"
+  },
+  {
+    "id": "3f0b95fa-623d-4fac-935d-db0755d5424a",
+    "company_id": "ce85a0e2-98e9-4483-89b3-fe29c74ec0c0",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T09:36:55.138951+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "692f962a-1222-4f19-8eb6-d114e6ab7351",
@@ -8840,6 +11480,216 @@
     "updated_at": "2026-04-12T19:38:28.336879+00:00"
   },
   {
+    "id": "7a90dc4b-130f-448b-ae39-1c7e1f276bbd",
+    "company_id": "0c004a11-ee39-42f8-9c6e-4ce4e31524d3",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:31:11.725753+00:00",
+    "updated_at": "2026-04-15T05:31:11.725753+00:00"
+  },
+  {
+    "id": "d61f5101-2e2b-43df-b248-e950e5c01905",
+    "company_id": "dd1178c0-5d6e-4974-a2a0-1748d163b6f8",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:36:35.804013+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "ea9c49d4-18da-45e5-9908-c5a32c6ab87c",
+    "company_id": "60bea7ff-ee59-4d77-8bf4-2f8bee5f05ce",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:36:35.804013+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "53a47421-835c-4847-91aa-cb9d1c22cc21",
+    "company_id": "0193c1e4-bb1b-413b-9fb3-2c51eeb55916",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:36:35.804013+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "5fbe215e-4f05-4c19-882c-d54e46343902",
+    "company_id": "f3bee2f9-5d6b-42b0-b0cc-9a8dd3259ebf",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:36:35.804013+00:00",
+    "updated_at": "2026-04-15T10:36:35.804013+00:00"
+  },
+  {
+    "id": "e6ada6b3-cc73-4fe2-83ae-e9695314fff2",
+    "company_id": "0bedb131-8ce6-4bf7-8d3f-7c4dbddeead7",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:40:14.226899+00:00",
+    "updated_at": "2026-04-15T10:40:14.226899+00:00"
+  },
+  {
+    "id": "24d5c622-6124-443d-bde5-c99d1d1978c0",
+    "company_id": "51181574-8634-47e4-b40f-d6fe66d736c8",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:40:14.226899+00:00",
+    "updated_at": "2026-04-15T10:40:14.226899+00:00"
+  },
+  {
+    "id": "d0e1a134-bb83-4b7a-8f5d-f8e22b19cd07",
+    "company_id": "c826a3f3-f1f1-4c56-993f-90a755840874",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:40:14.226899+00:00",
+    "updated_at": "2026-04-15T10:40:14.226899+00:00"
+  },
+  {
+    "id": "c024c53d-dfa3-4af7-b86c-152ba3fb3c9c",
+    "company_id": "b398d5e4-7ca0-4f64-8691-f1ebc077065d",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:31:03.513223+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "cea3215b-2dda-408d-aa36-48482f4a63e4",
+    "company_id": "ac04a49d-558a-44ed-9681-d11d77f799e4",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T08:26:48.638468+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "3d398594-5a36-49db-9f14-22037bc191ce",
+    "company_id": "eec51b07-16d9-49c1-8615-214bd82e177e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:47:11.858182+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "e25fca37-0091-4ebe-863a-a62f174e7bf9",
+    "company_id": "a3f42cb6-c6bc-433c-8e5d-36bead7f070f",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:47:11.858182+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "18875c25-9509-475c-94a4-d0bcb675a3ec",
+    "company_id": "b21fcad0-5595-4ff0-a6e7-476d13856f8c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:47:11.858182+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "e658b1b8-7695-4edc-9e5d-c52d1a89726d",
+    "company_id": "d2431ce8-85fa-44bb-b39d-6312f0bf3798",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "unknown",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:47:11.858182+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "ae3b362d-bc73-4b68-89bd-3ba52992fdc3",
+    "company_id": "056625c4-4bbf-429a-b7e3-009a0cb9cbe0",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-11T23:31:09.707614+00:00",
+    "updated_at": "2026-04-15T10:47:11.858182+00:00"
+  },
+  {
+    "id": "dcf3c5f3-5004-4fdb-b2f5-4f5a37dd615f",
+    "company_id": "e8627c9e-f26d-4253-b9bf-184f096d14d9",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "logistics",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:50:41.895334+00:00",
+    "updated_at": "2026-04-15T10:50:41.895334+00:00"
+  },
+  {
+    "id": "99158b84-be15-4a23-b451-50a9824b62f6",
+    "company_id": "a4469724-bab9-4041-bb82-fd2d764822c6",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:54:08.746814+00:00",
+    "updated_at": "2026-04-15T10:54:08.746814+00:00"
+  },
+  {
+    "id": "087736c7-4f83-4797-9ac7-59568c997ea7",
+    "company_id": "0c57c122-9f6c-4c26-8583-9f7b66280617",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:57:47.962082+00:00",
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "c63986f9-9556-458e-b9ef-d011a7908ab9",
+    "company_id": "086065EA-9AE5-4D26-8F9F-D63A212E5908",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:57:47.962082+00:00",
+    "updated_at": "2026-04-15T10:57:47.962082+00:00"
+  },
+  {
+    "id": "17d17376-369f-4398-ac64-ac2e4083ce0d",
+    "company_id": "40f1a16a-5bea-47c9-a797-0210fef0e048",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "real_estate",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:01:14.938977+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
+  },
+  {
+    "id": "f4033ce1-8725-48b9-bfe9-a73c4ab3c7f2",
+    "company_id": "409ba700-94d7-49ad-aab6-38060ca70fe5",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T10:40:14.226899+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
     "id": "366e0485-646b-46f8-b311-613901136980",
     "company_id": "520cbb9b-7430-4377-b6ce-13ece9e6fe4e",
     "company_size": "enterprise",
@@ -8880,6 +11730,286 @@
     "updated_at": "2026-04-12T19:38:28.380234+00:00"
   },
   {
+    "id": "721df870-b243-48b8-bedd-17adb625cc37",
+    "company_id": "2efff4c1-7b9b-4abf-b892-ac2050dbacb6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T05:31:08.368979+00:00",
+    "updated_at": "2026-04-15T08:15:11.501105+00:00"
+  },
+  {
+    "id": "e614f658-86cb-49ef-b627-902b4912eaef",
+    "company_id": "26aff6b2-ac05-4599-822b-fd76878f0bef",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:05:01.061027+00:00",
+    "updated_at": "2026-04-15T11:05:01.061027+00:00"
+  },
+  {
+    "id": "4f6c88b7-9509-4386-8e0e-456d58d22d48",
+    "company_id": "496f3b4d-a5bf-4cf1-9e9d-ec911f497900",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:05:01.061027+00:00",
+    "updated_at": "2026-04-15T11:05:01.061027+00:00"
+  },
+  {
+    "id": "322a1fbf-8775-4815-bdba-e4a8beab346e",
+    "company_id": "3bc39d32-0680-471c-9d37-7f92f0e8dfa2",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "bd93a913-704f-4b05-a5f1-aadcf18e3db2",
+    "company_id": "e5a207c3-5cd1-4704-b07d-7fd3f93479c2",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "41d27c44-e6e7-4c9c-8d8e-98879fc48322",
+    "company_id": "9de48a82-a63c-4021-b394-629b5ba0b55b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "retail",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "9d8b2a6c-6c25-4c3a-acb9-f375cdec4b0b",
+    "company_id": "fa754bc4-2ee8-415b-8393-5cdaede54fba",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "e9b2c788-d47c-4497-b5f7-4884e872954e",
+    "company_id": "9a85a456-eeb3-468b-b5ca-b0d6f30a70d8",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "media",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "654c7389-172a-42bf-bc51-ba1670ac32db",
+    "company_id": "cba2cb7f-9101-49aa-bcbd-7e2ce3e2af6a",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:09:28.986193+00:00"
+  },
+  {
+    "id": "32af645c-5832-4d1b-96d1-c082d9f69c2e",
+    "company_id": "195ebb5c-f06a-4599-85e4-8426dc154c64",
+    "company_size": "smb",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "fde9c83c-6a90-4484-ae09-2edb4852ef52",
+    "company_id": "ffef3a64-ff5b-4497-864d-ac70a6a7618e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "befa9ee8-bd03-4c76-9485-c6c3ee5de64e",
+    "company_id": "d2d76cac-8301-4647-8c91-ea8bd8ffdae1",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:45:45.209696+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "2204a9bd-af46-447e-a733-76179500eb5c",
+    "company_id": "b4a8626b-dc8d-4154-a24c-ea3083b0a65e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "9597e043-cfbc-4248-88df-2971a6e9f56c",
+    "company_id": "bbbb9621-dfb9-4a8e-85d8-e23855c85bff",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "292333d5-6a59-4970-865c-0ddc51b0d403",
+    "company_id": "d3fbf013-f937-4187-8960-7d01e83fa626",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "0daa2dd4-f991-447c-b677-0646a02cd7e7",
+    "company_id": "6b4c45e8-87dc-4150-ac76-b7cbccf1b75c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:14:41.993599+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "587f4174-f1d5-489d-9e9b-1f1492247ca6",
+    "company_id": "06a61cce-88bf-4055-b8d1-5662fd57ecdd",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "9c20957f-be0c-4426-b3b1-0a3ce50fdae4",
+    "company_id": "dfa72370-62c3-4a6d-b88c-d4297f76d0c0",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "78bffb6f-7485-4541-8d9c-33e640d7e200",
+    "company_id": "68d0641a-dd4b-44e2-92d3-94dcb57ea223",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "9e8f8396-3b73-450f-bafc-45abf452a863",
+    "company_id": "95a8d86b-f5ef-4cf7-833c-30cc2c1486a0",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "df38182b-3a28-455e-a149-501094ed2e76",
+    "company_id": "87ddc4df-68d6-4f70-a8fc-76725e93b028",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "e20e36b8-7086-4df7-8d61-0332b4511989",
+    "company_id": "f4f2572c-c043-4716-b9b4-52c512692113",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:19:31.423071+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "ed13970a-c2ce-4e5f-85bd-e98b766c4d9a",
+    "company_id": "ae6a8ffd-739c-4d83-8cc7-47ad00f5ebc3",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:24:12.365561+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "b562ece9-1f5f-4050-a02c-99b6fee5e1e5",
+    "company_id": "52568b59-ccad-4a1b-8c48-1c07142e3f7b",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:24:12.365561+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "1f654aa6-9d10-4ef8-b68b-a4a82da442fa",
+    "company_id": "98b47a13-ab3f-43dd-8ede-528d93e41eb2",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:24:12.365561+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "1c502d02-f88c-4790-b68e-fa342529c6bd",
+    "company_id": "abd1d77d-18d7-4e90-acc8-babd24ee3f24",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:24:12.365561+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "1366f8fd-a567-407c-a973-ba07b41c680d",
+    "company_id": "00c0fb36-3a36-4f53-b9f8-37271607f1b6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:09:28.986193+00:00",
+    "updated_at": "2026-04-15T11:24:12.365561+00:00"
+  },
+  {
+    "id": "5266babb-033a-48ec-bd02-5c406d5e41fd",
+    "company_id": "3fe7d7fb-eff7-4899-ba46-710d6df5c599",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:31:25.902594+00:00",
+    "updated_at": "2026-04-15T11:31:25.902594+00:00"
+  },
+  {
     "id": "0682037e-da7b-4481-8013-3f5af9c43346",
     "company_id": "e36cffab-69df-4a00-8de9-98f06167334e",
     "company_size": "enterprise",
@@ -8888,6 +12018,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T17:21:14.577027+00:00",
     "updated_at": "2026-04-12T17:21:14.577027+00:00"
+  },
+  {
+    "id": "9b3ce67e-619a-460d-8d80-ac79e4f6889e",
+    "company_id": "44BA2D57-3013-49AF-A98C-ACAD3D004782",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T01:01:13.749728+00:00",
+    "updated_at": "2026-04-15T10:50:41.895334+00:00"
   },
   {
     "id": "774a4c0d-eb78-4482-bc15-cb1be2d4bede",
@@ -8990,16 +12130,6 @@
     "updated_at": "2026-04-12T17:33:29.303299+00:00"
   },
   {
-    "id": "cbdf1a04-d5dc-4719-b304-2163b2a2aa7c",
-    "company_id": "a40d8f9a-58cd-47a4-92a8-0c901560d65e",
-    "company_size": "unknown",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-11T23:16:47.496669+00:00",
-    "updated_at": "2026-04-12T17:33:29.484575+00:00"
-  },
-  {
     "id": "c363d129-2ca0-48c4-9b4b-076a99756349",
     "company_id": "04392d38-cba1-402d-91f7-0da2a32c2f7d",
     "company_size": "unknown",
@@ -9028,6 +12158,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T17:34:30.028963+00:00",
     "updated_at": "2026-04-12T17:34:30.028963+00:00"
+  },
+  {
+    "id": "cbdf1a04-d5dc-4719-b304-2163b2a2aa7c",
+    "company_id": "a40d8f9a-58cd-47a4-92a8-0c901560d65e",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-11T23:16:47.496669+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
   },
   {
     "id": "4a63e817-bab0-4e1b-91fa-bcf4bc7b4cf7",
@@ -9168,16 +12308,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T17:38:21.803157+00:00",
     "updated_at": "2026-04-12T17:38:21.803157+00:00"
-  },
-  {
-    "id": "9b3ce67e-619a-460d-8d80-ac79e4f6889e",
-    "company_id": "44BA2D57-3013-49AF-A98C-ACAD3D004782",
-    "company_size": "unknown",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T01:01:13.749728+00:00",
-    "updated_at": "2026-04-12T17:38:21.727398+00:00"
   },
   {
     "id": "a22cc001-3268-4661-b88a-d0542ab4fda7",
@@ -9340,6 +12470,16 @@
     "updated_at": "2026-04-12T17:39:39.889872+00:00"
   },
   {
+    "id": "bd47aff1-2f27-44a4-b2a9-a0a98e2745e0",
+    "company_id": "62ed6a8b-ccb6-4d8b-8392-19623eb2467b",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:28:33.593607+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
+  },
+  {
     "id": "c179af87-1d8a-41e6-8788-61e1397aaddf",
     "company_id": "cf245bd1-f90a-4327-8112-875ffef924fa",
     "company_size": "unknown",
@@ -9440,6 +12580,26 @@
     "updated_at": "2026-04-12T19:18:42.537999+00:00"
   },
   {
+    "id": "477f2af1-4adf-4dae-b86d-16aebeeb1d6c",
+    "company_id": "765a65fc-c315-4984-9886-de64ed7503b0",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "energy",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:28:33.593607+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
+  },
+  {
+    "id": "bae6f4fd-1ac3-43af-919c-60b10de47a27",
+    "company_id": "da2dae87-5248-47b7-be94-2d361d64b87d",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T11:28:33.593607+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
+  },
+  {
     "id": "7e137f25-deb3-4659-9353-41b0dc9ec668",
     "company_id": "75c39001-4520-499b-bb32-f783b8399e41",
     "company_size": "unknown",
@@ -9518,6 +12678,16 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T21:45:02.977570+00:00",
     "updated_at": "2026-04-12T19:25:17.918924+00:00"
+  },
+  {
+    "id": "86a0d751-3411-4376-89fc-35ac231994c8",
+    "company_id": "eb8f5e48-11e6-4a84-a3ea-e0fa3ae5a1fd",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": false,
+    "created_at": "2026-04-15T05:31:15.961156+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
   },
   {
     "id": "4d09dd4f-45f8-4d63-92c6-fff2fb56f9ef",
@@ -9730,26 +12900,6 @@
     "updated_at": "2026-04-12T19:25:17.924245+00:00"
   },
   {
-    "id": "db72443e-de97-4675-bccd-1ddbff61776d",
-    "company_id": "11d6d274-78a6-4947-8b8a-6a81ed873ecf",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T01:01:13.749728+00:00",
-    "updated_at": "2026-04-12T19:27:37.348084+00:00"
-  },
-  {
-    "id": "4f747b7e-6e1c-49cd-acb7-69fe3e7d8431",
-    "company_id": "f8482c23-86dd-41ad-84b1-5f7c3bbc268f",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_exploring",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-11T23:48:25.571205+00:00",
-    "updated_at": "2026-04-12T19:28:02.945452+00:00"
-  },
-  {
     "id": "6006a3e3-89b0-4810-b932-016de0f80c3e",
     "company_id": "3a9fcbb0-8e70-4e1e-89dc-971d850b5bcc",
     "company_size": "enterprise",
@@ -9788,6 +12938,56 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T03:24:30.679415+00:00",
     "updated_at": "2026-04-12T20:11:41.219635+00:00"
+  },
+  {
+    "id": "297690ff-e232-462e-a893-ccc0ba348bb3",
+    "company_id": "d1a6105e-8a68-4f8a-9b0f-338eac1ac12b",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T06:09:52.128298+00:00",
+    "updated_at": "2026-04-15T06:09:52.128298+00:00"
+  },
+  {
+    "id": "c66cf417-87df-4c26-964b-9bac18f60f82",
+    "company_id": "1b2da855-7124-4fda-a725-82ad02ecc361",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "consulting",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T06:11:00.760308+00:00",
+    "updated_at": "2026-04-15T11:05:01.061027+00:00"
+  },
+  {
+    "id": "db72443e-de97-4675-bccd-1ddbff61776d",
+    "company_id": "11d6d274-78a6-4947-8b8a-6a81ed873ecf",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T01:01:13.749728+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "4f747b7e-6e1c-49cd-acb7-69fe3e7d8431",
+    "company_id": "f8482c23-86dd-41ad-84b1-5f7c3bbc268f",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-11T23:48:25.571205+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "e7cde28a-d94c-4113-9abc-84de39ef6b2f",
+    "company_id": "b4437826-15c4-4976-aaa1-72d2d40f6c79",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "unknown",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T06:14:24.892777+00:00",
+    "updated_at": "2026-04-15T11:28:33.593607+00:00"
   },
   {
     "id": "e597737a-823f-47e9-bc66-3b725f41030c",
@@ -9880,6 +13080,16 @@
     "updated_at": "2026-04-12T20:11:37.386990+00:00"
   },
   {
+    "id": "30fed9db-3cb9-45c6-8baf-662a47066e9c",
+    "company_id": "4d64134c-f8e8-45db-b367-67c620431624",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T06:11:00.739034+00:00",
+    "updated_at": "2026-04-15T06:11:00.739034+00:00"
+  },
+  {
     "id": "262627b8-cb94-4700-9465-902b3518833c",
     "company_id": "34a12e17-32b8-403e-98cc-6b72f5d6b3c6",
     "company_size": "unknown",
@@ -9950,14 +13160,14 @@
     "updated_at": "2026-04-12T20:11:43.076539+00:00"
   },
   {
-    "id": "7def0be3-b348-4ba7-93b2-8f207bfb1502",
-    "company_id": "35bd0c31-8ffa-4586-8141-622798f456fc",
-    "company_size": "unknown",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
+    "id": "a106d432-db54-406b-9526-e4edcb044600",
+    "company_id": "3cd4f4f9-f4dd-473b-b9ec-27c801e39481",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "finance",
     "is_known_employer": true,
-    "created_at": "2026-04-12T19:19:09.540972+00:00",
-    "updated_at": "2026-04-12T19:19:09.540972+00:00"
+    "created_at": "2026-04-15T06:13:19.428228+00:00",
+    "updated_at": "2026-04-15T06:13:19.428228+00:00"
   },
   {
     "id": "4f5997f1-9a99-4b10-b796-01c4d1aa85f1",
@@ -9990,16 +13200,6 @@
     "updated_at": "2026-04-12T19:28:02.917321+00:00"
   },
   {
-    "id": "cc6ddce2-0437-40e3-bdf8-a607dc7a6c96",
-    "company_id": "a3a962db-241c-4178-8e80-5e0f0c2da7ca",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T10:11:32.193439+00:00",
-    "updated_at": "2026-04-12T20:11:34.811702+00:00"
-  },
-  {
     "id": "c99d0344-7c76-4516-9a69-340479bf04dc",
     "company_id": "c80f1f73-491e-4860-8564-0b3b3b95eb12",
     "company_size": "mid_market",
@@ -10008,6 +13208,36 @@
     "is_known_employer": true,
     "created_at": "2026-04-08T04:02:10.527323+00:00",
     "updated_at": "2026-04-12T20:11:45.146786+00:00"
+  },
+  {
+    "id": "c6f06358-d30c-4d4e-95be-379b4de8535f",
+    "company_id": "3c6ed4e9-ebbf-44e3-a3c4-cbe651db2f17",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T06:58:40.002134+00:00",
+    "updated_at": "2026-04-15T09:03:23.934805+00:00"
+  },
+  {
+    "id": "7def0be3-b348-4ba7-93b2-8f207bfb1502",
+    "company_id": "35bd0c31-8ffa-4586-8141-622798f456fc",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "telecommunications",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T19:19:09.540972+00:00",
+    "updated_at": "2026-04-15T10:32:39.159489+00:00"
+  },
+  {
+    "id": "cc6ddce2-0437-40e3-bdf8-a607dc7a6c96",
+    "company_id": "a3a962db-241c-4178-8e80-5e0f0c2da7ca",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T10:11:32.193439+00:00",
+    "updated_at": "2026-04-15T10:32:39.159489+00:00"
   },
   {
     "id": "b818ced0-1af2-4e8a-b01d-b59be7d22f55",
@@ -10080,16 +13310,6 @@
     "updated_at": "2026-04-12T19:25:45.396213+00:00"
   },
   {
-    "id": "62f8f2cd-d833-4a30-90c8-fe809f23a0f0",
-    "company_id": "2788737D-068A-459A-9AC6-38EB25E5597A",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T08:52:49.582357+00:00",
-    "updated_at": "2026-04-12T19:28:02.890100+00:00"
-  },
-  {
     "id": "4f265fac-9dfe-4d58-a35d-b09135e52eed",
     "company_id": "7142e1ce-2308-4675-af58-9c2374edfd55",
     "company_size": "mid_market",
@@ -10108,16 +13328,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T09:20:39.032242+00:00",
     "updated_at": "2026-04-12T19:28:26.908890+00:00"
-  },
-  {
-    "id": "7b3f7d58-a5f2-4f0c-8a06-11c1cc23746f",
-    "company_id": "2582650b-179f-4eb4-a95c-4abf139b0535",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T01:27:00.372683+00:00",
-    "updated_at": "2026-04-12T19:33:17.415200+00:00"
   },
   {
     "id": "29e9d4b6-0858-48b8-991a-f0b2c8237e1d",
@@ -10188,6 +13398,126 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T20:19:20.551964+00:00",
     "updated_at": "2026-04-12T20:19:20.551964+00:00"
+  },
+  {
+    "id": "5e5d99b0-e53c-4714-a75c-c44c8f3e6dec",
+    "company_id": "f7b4c233-2789-46e6-9bcd-9f67a5f5cc29",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "traditional",
+    "sector": "education",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "5e82ae10-2b39-43b0-82d0-a4fb91174d0d",
+    "company_id": "4b4a6eba-49a9-4283-94a4-2f8fa5e55621",
+    "company_size": "unknown",
+    "ai_maturity_signal": "ai_exploring",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "776a9353-1e01-4398-bdf2-7a2dbbf5e74e",
+    "company_id": "3eea183a-9ef5-4151-8e32-4d609d9ea1e2",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "bedc3ee8-7469-4064-ba8c-a09dc8b6a578",
+    "company_id": "02fe66c9-d63b-4050-aa03-f5f565f908c2",
+    "company_size": "startup",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "8f4ef66e-4a7c-420c-84a5-c9a912b7c252",
+    "company_id": "d9583003-6aaf-438d-b2d9-36a1cf9a2481",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "25bde40d-4842-4ff6-bf3b-ce3a94c88d40",
+    "company_id": "ad182a52-251d-45ff-8f20-6efcb2aff9d6",
+    "company_size": "unknown",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T07:07:11.917062+00:00"
+  },
+  {
+    "id": "a5aa6aea-866b-4c5a-a7a2-3e5893cb5198",
+    "company_id": "74CB45FC-B9D5-4DB2-ABA9-CA7121DE7684",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T09:24:05.781618+00:00"
+  },
+  {
+    "id": "78af4b8f-1dff-426f-84ed-38ea56894177",
+    "company_id": "060fd889-71a2-4113-b466-d258971c5122",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "manufacturing",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T09:39:03.036054+00:00"
+  },
+  {
+    "id": "2e514a2b-2f57-4c9b-92c0-34c66c6de429",
+    "company_id": "6b244fce-08d3-48f3-8606-520f693ec71c",
+    "company_size": "unknown",
+    "ai_maturity_signal": "traditional",
+    "sector": "healthcare",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T09:57:22.707474+00:00"
+  },
+  {
+    "id": "46706489-9044-4691-a035-14fef7d03a4d",
+    "company_id": "76a95c81-6570-4624-b1b4-133b4dd180d1",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_native",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-04-15T11:01:14.938977+00:00"
+  },
+  {
+    "id": "62f8f2cd-d833-4a30-90c8-fe809f23a0f0",
+    "company_id": "2788737D-068A-459A-9AC6-38EB25E5597A",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "traditional",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T08:52:49.582357+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
+  },
+  {
+    "id": "7b3f7d58-a5f2-4f0c-8a06-11c1cc23746f",
+    "company_id": "2582650b-179f-4eb4-a95c-4abf139b0535",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T01:27:00.372683+00:00",
+    "updated_at": "2026-04-15T11:19:31.423071+00:00"
   },
   {
     "id": "8160bd95-ef13-402b-9d47-ac6e4b994666",
@@ -10290,16 +13620,6 @@
     "updated_at": "2026-04-12T20:18:08.082906+00:00"
   },
   {
-    "id": "bf315fac-70b2-43b7-9e11-625bc2baa27a",
-    "company_id": "8bdea1e1-fd69-47bd-a189-61dc34fd6b54",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "finance",
-    "is_known_employer": true,
-    "created_at": "2026-04-12T19:19:35.082317+00:00",
-    "updated_at": "2026-04-12T19:19:35.082317+00:00"
-  },
-  {
     "id": "48a48bb1-e81f-4b00-8628-a51279635f15",
     "company_id": "20a84cc3-9d6b-40d2-9790-b809bb31ffd5",
     "company_size": "unknown",
@@ -10330,16 +13650,6 @@
     "updated_at": "2026-04-12T19:25:45.425679+00:00"
   },
   {
-    "id": "897ecd01-a1d4-458c-9fa5-a2b69f4ffa0e",
-    "company_id": "37a7a843-4d3d-4164-961d-8ebc79ac86ae",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T01:32:53.328881+00:00",
-    "updated_at": "2026-04-12T19:27:37.310964+00:00"
-  },
-  {
     "id": "782565d3-844a-4fb4-8d05-a2fb835eb41a",
     "company_id": "cd047142-c83d-4541-90bd-d4f3de736925",
     "company_size": "unknown",
@@ -10348,16 +13658,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T19:28:16.846514+00:00",
     "updated_at": "2026-04-12T19:28:16.846514+00:00"
-  },
-  {
-    "id": "efdebd2b-921e-406a-ab22-15329060e110",
-    "company_id": "8870219a-34ec-447a-8ed9-98936bf373dd",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-08T00:17:37.096976+00:00",
-    "updated_at": "2026-04-12T20:14:37.177723+00:00"
   },
   {
     "id": "8dbc405e-de5f-4179-9371-d5534cc5562b",
@@ -10398,5 +13698,35 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T20:19:20.573558+00:00",
     "updated_at": "2026-04-12T20:19:43.725585+00:00"
+  },
+  {
+    "id": "efdebd2b-921e-406a-ab22-15329060e110",
+    "company_id": "8870219a-34ec-447a-8ed9-98936bf373dd",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "government",
+    "is_known_employer": true,
+    "created_at": "2026-04-08T00:17:37.096976+00:00",
+    "updated_at": "2026-04-15T11:14:41.993599+00:00"
+  },
+  {
+    "id": "897ecd01-a1d4-458c-9fa5-a2b69f4ffa0e",
+    "company_id": "37a7a843-4d3d-4164-961d-8ebc79ac86ae",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "unknown",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T01:32:53.328881+00:00",
+    "updated_at": "2026-04-14T10:09:25.227439+00:00"
+  },
+  {
+    "id": "bf315fac-70b2-43b7-9e11-625bc2baa27a",
+    "company_id": "8bdea1e1-fd69-47bd-a189-61dc34fd6b54",
+    "company_size": "enterprise",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "finance",
+    "is_known_employer": true,
+    "created_at": "2026-04-12T19:19:35.082317+00:00",
+    "updated_at": "2026-04-15T05:20:43.540989+00:00"
   }
 ]

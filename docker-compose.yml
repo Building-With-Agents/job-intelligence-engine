@@ -1,4 +1,9 @@
-version: "3.8"
+# Pin the Compose project name so all developers' local stacks share the same
+# container names and named volumes (e.g. `watechcoalition_postgres_data`).
+# Without this, Compose derives the project name from the directory it's run
+# from, which caused cross-repo container-name conflicts with the legacy
+# watechcoalition stack.
+name: watechcoalition
 
 services:
   postgres:

@@ -216,10 +216,7 @@ def _record_run_requests(run_id: str, pages: int) -> None:
         engine = get_engine()
         with engine.begin() as conn:
             conn.execute(
-                text(
-                    "UPDATE dbo.job_ingestion_runs "
-                    "SET api_requests_used = :pages WHERE run_id = :run_id"
-                ),
+                text("UPDATE dbo.job_ingestion_runs SET api_requests_used = :pages WHERE run_id = :run_id"),
                 {"pages": pages, "run_id": run_id},
             )
     except Exception as exc:
@@ -241,24 +238,36 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Show plan without API calls")
     parser.add_argument("--delay", type=int, default=5, help="Seconds between queries (default: 5)")
     parser.add_argument(
-        "--start-key", type=int, default=None, metavar="K",
-        help="Start with JSearch key slot K (e.g. 4 uses JSEARCH_API_KEY_4). "
-             "Defaults to JSEARCH_START_KEY_INDEX or 1.",
+        "--start-key",
+        type=int,
+        default=None,
+        metavar="K",
+        help="Start with JSearch key slot K (e.g. 4 uses JSEARCH_API_KEY_4). Defaults to JSEARCH_START_KEY_INDEX or 1.",
     )
     parser.add_argument(
-        "--start-query", type=int, default=1, metavar="N",
+        "--start-query",
+        type=int,
+        default=1,
+        metavar="N",
         help="Start at query N (1-indexed), skipping all prior queries.",
     )
     parser.add_argument(
-        "--queries", type=str, default="", metavar="name1,name2,...",
+        "--queries",
+        type=str,
+        default="",
+        metavar="name1,name2,...",
         help="Run only the named queries (comma-separated).",
     )
     parser.add_argument(
-        "--location-tier", type=str, default=None, metavar="TIER",
+        "--location-tier",
+        type=str,
+        default=None,
+        metavar="TIER",
         help="Override every query's location_tier with TIER (must exist in YAML location_tiers).",
     )
     parser.add_argument(
-        "--no-locations", action="store_true",
+        "--no-locations",
+        action="store_true",
         help="Disable geo expansion — run each query once with no location context.",
     )
     args = parser.parse_args()
@@ -285,7 +294,7 @@ def main() -> None:
         if missing:
             log.warning("unknown_query_names", names=sorted(missing))
     elif args.start_query > 1:
-        queries = all_queries[args.start_query - 1:]
+        queries = all_queries[args.start_query - 1 :]
         log.info("skipping_queries", skipped=args.start_query - 1, remaining=len(queries))
     else:
         queries = all_queries
@@ -355,7 +364,7 @@ def main() -> None:
     _all_query_names = [q["name"] for q in all_queries]
 
     if args.dry_run:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("Batch Ingestion Plan")
         if api_keys:
             print(f"  (starting at key slot {effective_start_slot})")
@@ -367,7 +376,7 @@ def main() -> None:
             print(f"  (tier override: {args.location_tier})")
         if args.no_locations:
             print("  (geo expansion disabled)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Group expanded pairs by query name for readable output — each
         # expansion row is a (single-keyword, location) call.
@@ -381,10 +390,7 @@ def main() -> None:
             orig_idx = _all_query_names.index(name) + 1 if name in _all_query_names else "?"
             print(f"\n  [{orig_idx}] {name}")
             print(f"      Keywords: {q['keywords']}")
-            print(
-                f"      Calls: {len(pairs)} × {max_pages} pages "
-                f"= {len(pairs) * max_pages} requests max"
-            )
+            print(f"      Calls: {len(pairs)} × {max_pages} pages = {len(pairs) * max_pages} requests max")
             for kw, loc in pairs:
                 print(f"        - '{kw}' in {loc}")
 
@@ -406,7 +412,7 @@ def main() -> None:
         print("       --location-tier TIER to override every query's tier")
         print("       --no-locations to disable geo expansion")
         print("       --queries name1,name2 to run specific queries only")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
         return
 
     if over_budget:
@@ -548,7 +554,9 @@ def main() -> None:
             except Exception as exc:
                 error_str = str(exc)
                 if "429" in error_str:
-                    log.warning("rate_limited_exception", name=query["name"], rotating_key=True, key_slot=active_key_slot)
+                    log.warning(
+                        "rate_limited_exception", name=query["name"], rotating_key=True, key_slot=active_key_slot
+                    )
                     current_key_idx += 1
                     requests_used_on_key = 0
                     if current_key_idx >= len(api_keys):
