@@ -615,5 +615,6 @@ For complete implementation specs, read in this order:
 7. `docs/planning/BRD.md` — business scope, success criteria, design decisions
 8. `docs/planning/PRD.md` — user stories, feature list, UX requirements
 9. Week files in `docs/planning/curriculum/` — weekly deliverables and exercises
+10. `docs/planning/QA_DATA_CONTRACT.md` — Q&A schema contract: authoritative column catalog, join paths, JSONB extraction patterns, and canonical query recipes for the Ask-the-Data SQL generator (#177)
 
 **Visual diagrams:** `docs/planning/component-diagram.html` (full system) and `docs/planning/component-diagram-walking-skeleton.html` (Week 2 walking skeleton)
