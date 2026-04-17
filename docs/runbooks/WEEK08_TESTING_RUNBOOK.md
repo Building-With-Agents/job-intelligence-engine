@@ -71,7 +71,7 @@ If you need to run from a subdirectory (not the repo root), set `$env:PYTHONPATH
 1. `.env` has `PYTHON_DATABASE_URL`, `LLM_DEFAULT=chat-gpt41mini`, `LLM_SYNTHESIS=chat-gpt41`, and Azure OpenAI credentials.
 2. Venv activated, `pip install -r requirements.txt` is current.
 3. Database is reachable: `python scripts/db_check.py tables`.
-4. Week 7 aggregate tables are populated (see Week 7 runbook Section 5 if they are empty).
+4. Week 7 aggregate tables are populated (if empty, see §9 Prerequisite Steps A–C to populate them).
 
 ### Step 1 — Confirm upstream data and aggregates are present
 
@@ -91,11 +91,9 @@ This emits a three-section report (Week 6 / Week 7 / Week 8) with row counts and
 | canonical_roles | 5+ | Required for disruption fingerprints |
 | skill_velocity | 50+ | Required for Emergence Alerts page |
 
-If `canonical_roles` or any Week 7 aggregate is `(empty)`, run the Pair C clustering flow and Pair A aggregates refresh in the Week 7 runbook before continuing.
+If `canonical_roles` or any Week 7 aggregate is `(empty)`, run the Pair C clustering flow (Step 2 below) and the aggregate population commands in §9 Prerequisite (Steps A–C) before continuing.
 
 If any Week 8 table shows `MISSING`, run migrations per §2 above.
-
-If any of these are empty, refresh the Week 7 aggregates first (see Week 7 runbook Section 5, Pair A's `verify_aggregates.py`).
 
 ### Step 2 — If `canonical_roles` is empty, run clustering first (Pair C flow)
 
@@ -1223,6 +1221,87 @@ The route handler translates `ValueError` to `HTTPException 400`. Currently audi
 
 The dashboard is the user-facing layer of the JIE analytics stack. It calls the FastAPI API over HTTP — it never imports agent code directly. This architecture boundary is enforced by `dashboard/analytics_query_client.py`, which wraps all HTTP calls to the API. Bryan | Emilio (Pair C) own the Ask-the-Data page; Juan | Enrique (Pair D) own the 3 trigger visualization pages (Skills Gap Map, Emergence Alerts, Regional Heatmap).
 
+### Prerequisite — Week 7 aggregate tables MUST be populated
+
+Most Week 8 Streamlit pages read from Week 7 aggregate tables. If these tables are empty, pages will render but show "no data" states — they will not crash, but they will not display any charts or meaningful content.
+
+**Minimum table population required per page:**
+
+| Page | Required tables | Populated by |
+|------|----------------|-------------|
+| Weekly Insights | `skill_demand_weekly` | Week 7 analytics aggregates (`verify_aggregates.py`) |
+| Skills Gap Map | `cohort_gap_cache` (with non-empty `gap_data`) | API trigger `POST /analytics/triggers/cohort_gap_analysis` — but returns empty `market_skill_demand` if `skill_demand_weekly` is empty |
+| Emergence Alerts | `disruption_fingerprints` + `canonical_roles` | §4 disruption refresh + §0 Step 2 clustering |
+| Regional Heatmap | `geo_demand_weekly` | Week 7 analytics geo-demand aggregation step |
+| Ask the Data | `skill_demand_weekly`, operational tables | Q&A pipeline needs aggregate evidence to answer questions |
+
+**If pages show "no data" on refresh, check table row counts first:**
+
+```
+python scripts/week8_verify_counts.py
+```
+
+If the Week 7 aggregate tables show `(empty)` or `0`, populate them:
+
+```
+python scripts/smoke/refresh_aggregates.py
+```
+
+**Optional flags:**
+
+```
+python scripts/smoke/refresh_aggregates.py --week 2026-04-14      # target a specific Monday
+python scripts/smoke/refresh_aggregates.py --skip-pipeline         # steps 2,3,8,9 only (skip sector/geo)
+```
+
+**What the script does:**
+
+1. **Step A — `process_aggregates`** calls four aggregator functions that scan `dbo.extracted_intelligence` and roll up counts per ISO week:
+   - `refresh_skill_demand_weekly` (step 2) — counts how many postings mention each skill per week → `dbo.skill_demand_weekly`
+   - `refresh_tool_demand_weekly` (step 3) — same for tools → `dbo.tool_demand_weekly`
+   - `refresh_skill_velocity` (step 8) — week-over-week change rates for skills → `dbo.skill_velocity`
+   - `refresh_skill_co_occurrence` (step 9) — which skills appear together → `dbo.skill_co_occurrence`
+   
+   The target week defaults to the most recent Monday before the current date. All four functions scan the same underlying data, so if `extracted_intelligence` has rows, these tables will populate.
+
+2. **Step B — `run_pipeline`** runs the full 13-step analytics batch, which adds two more tables not covered by Step A:
+   - `compute_sector_summary_weekly` (step 6) — posting/employer counts grouped by NAICS sector → `dbo.sector_summary_weekly`
+   - `compute_geo_demand_weekly` (step 7) — posting counts grouped by Borderplex subregion → `dbo.geo_demand_weekly`
+   
+   **Why these can still be empty:** `run_pipeline` computes its own `week_start` from the current date independently of Step A. If the postings in `job_postings` all have dates in a different week than the one `run_pipeline` targets, the SQL `WHERE date_posted >= week_start AND date_posted < week_start + 7 days` returns zero rows. This is a known week-alignment gap — pass `--week` with the Monday that matches your posting dates (check with `SELECT MIN(date_posted), MAX(date_posted) FROM dbo.job_postings`).
+
+3. **Step C — Verification** queries `COUNT(*)` on each aggregate table and prints OK / (empty).
+
+**Expected output:**
+
+```
+--- Step A: process_aggregates (steps 2, 3, 8, 9) ---
+  skill demand weekly              <N>
+  tool demand weekly               <N>
+  skill velocity                   <N>
+  skill co occurrence              <N>
+
+--- Step B: run_pipeline (steps 6, 7 — sector + geo demand) ---
+  pipeline completed
+
+--- Verification ---
+  skill_demand_weekly               <N>  OK
+  tool_demand_weekly                <N>  OK
+  sector_summary_weekly             <N>  OK    (may be 0 — see week alignment note above)
+  geo_demand_weekly                 <N>  OK    (may be 0 — see week alignment note above)
+  skill_velocity                    <N>  OK
+  skill_co_occurrence               <N>  OK
+  posting_freshness                 <N>  OK
+```
+
+If Step B prints `pipeline skipped (minimum data guard)`, there are not enough enriched postings in `dbo.job_postings` — check §3 upstream data.
+
+**Why some aggregate tables may still be empty after running this script:**
+
+The sector and geo aggregators (steps 6, 7) filter postings by date to bucket them into ISO weeks. If `job_postings.publish_date` is mostly NULL — which it is on current JSearch-ingested data — those aggregators find zero postings in any week and return empty results. This is tracked in [#172](https://github.com/Building-With-Agents/job-intelligence-engine/issues/172) (promote `date_posted` from `normalized_jobs` to `job_postings`). Once #172 lands and the backfill runs, re-running this script will populate all aggregate tables with multi-week data. See [#189](https://github.com/Building-With-Agents/job-intelligence-engine/issues/189) for the follow-up steps.
+
+After aggregates are populated, run `api_smoke.py` (Step 2 below) to pre-warm the cache tables with real data from the populated aggregates.
+
 ### Step 1 — Validate page imports (smoke test)
 
 Before launching Streamlit, confirm all 4 new page modules import cleanly:
@@ -1257,6 +1336,8 @@ python scripts/smoke/api_smoke.py
 ```
 
 This hits all 4 trigger endpoints and populates `dbo.cohort_gap_cache`, `dbo.disruption_fingerprints` (via §4), and the other cache tables. See §6 for full details on what the smoke test covers.
+
+> **Important:** If the upstream aggregate tables (`skill_demand_weekly`, `geo_demand_weekly`, etc.) are empty, the triggers will succeed but write empty or stub data to the cache tables. The pages will then render without errors but show no charts. Always verify aggregate table population first (see Prerequisite above).
 
 ### Step 3 — Launch Streamlit
 
@@ -1316,19 +1397,22 @@ Consumes `dbo.cohort_gap_cache`. If the table is empty, the page should show an 
 
 ### Emergence Alerts (Pair C, data from Pair A)
 
-Consumes `dbo.disruption_fingerprints` joined to `dbo.canonical_roles`. If either is empty, the page shows a "no data" state.
+Consumes `dbo.disruption_fingerprints` LEFT JOIN `dbo.canonical_roles` on `cr.role_id = df.canonical_role_id`. Shows all disruption fingerprints (not just Emergence-tagged ones). If the fingerprints table is empty, the page shows a "no data" state.
 
 **Verification:**
 - Refresh fingerprints (§4 Step 2) first.
-- Page should show per-role rows with `disruption_category` badges (Displacement / Augmentation / Transformation / Emergence), `ai_intensity_trend` arrows, and `workflow_restructuring_score` as a gauge.
+- Page should show a table with one row per canonical role, columns: Role, Disruption category, AI skill density, Posting growth, Employer count, Trajectory, AI intensity trend, No pre-ChatGPT baseline.
+- With single-temporal-period data (all postings from the same era), `Disruption category` will show "—" (empty) and `Trajectory` will show "stable" for all roles. This is expected — see Troubleshooting §11.
+- With multi-period data, expect category badges (Displacement / Augmentation / Transformation / Emergence) and varying trajectories.
 
 ### Regional Heatmap (Pair D)
 
-Consumes `dbo.geo_demand_weekly`. Requires at least 10+ rows with `region`/`subregion`/`posting_count`.
+Consumes `dbo.geo_demand_weekly`. Requires at least 1+ rows with `borderplex_subregion`/`posting_count`. Expected subregion values: `el_paso`, `las_cruces`, `ciudad_juarez`, `regional`.
 
 **Verification:**
-- Select a week from the dropdown.
-- Map / heat grid renders with real subregion names (`el_paso_metro`, `las_cruces`, `southern_nm`, `other`) and non-zero counts.
+- If `geo_demand_weekly` is empty, page shows "No rows in geo_demand_weekly yet" — run the Week 7 geo-demand aggregation step first (see §9 Prerequisite).
+- With data: Plotly heatmap renders with subregion labels and a temporal share-of-demand line chart below it.
+- Coverage check at the bottom reports which of the 4 expected Borderplex buckets have data.
 
 ---
 
@@ -1479,24 +1563,38 @@ Both guardrails cap rows at `MAX_ROWS=100`. This is by design — a hallucinated
 
 **Emergence Alerts page empty even though fingerprints exist**
 
-The page joins `disruption_fingerprints` to `canonical_roles` on `canonical_role_id`. If the fingerprint rows have `canonical_role_id` values that do not appear in `canonical_roles`, the inner join drops them. Confirm with:
+The page joins `disruption_fingerprints` to `canonical_roles` on `cr.role_id = df.canonical_role_id` (LEFT JOIN). If role labels show as `None`, the `role_id` values in `canonical_roles` do not match the `canonical_role_id` values in `disruption_fingerprints`. Confirm with:
 
 ```bash
 python scripts/db_check.py query "SELECT COUNT(*) AS fp_rows FROM dbo.disruption_fingerprints"
-python scripts/db_check.py query "SELECT COUNT(*) AS joined FROM dbo.disruption_fingerprints df JOIN dbo.canonical_roles cr ON cr.id = df.canonical_role_id"
+python scripts/db_check.py query "SELECT COUNT(*) AS joined FROM dbo.disruption_fingerprints df JOIN dbo.canonical_roles cr ON cr.role_id = df.canonical_role_id"
 ```
 
 If `fp_rows > joined`, the role ids are out of sync — fix in Pair A repository or re-seed `canonical_roles`.
 
+**Emergence Alerts shows all categories as "—" (empty)**
+
+When all postings come from the same temporal period (e.g., all recent JSearch ingestions land in `agentic_era`), the disruption classifier returns `disruption_category=[]` for every role. This is expected — the classifier compares skill/tool/task mix across 4 temporal eras, and with only one period the deltas are all zero (the 30% skill-change threshold is never met). Seed multi-period test data to see non-empty categories.
+
+**All Week 8 pages show "no data" after running `api_smoke.py`**
+
+The API triggers (`cohort_gap_analysis`, `role_benchmark`, `emerging_skills_scan`, `custom_employer_comparison`) query the Week 7 aggregate tables internally. If those tables are empty, the triggers succeed (HTTP 200) but write stub/empty data to their cache tables. The Streamlit pages then render the empty cache data as "no data" states.
+
+Fix: run the aggregate population commands in §9 Prerequisite (Steps A and B), then re-run `api_smoke.py` to re-populate the caches with real data.
+
 **Regional Heatmap map tile missing**
 
-The page uses Streamlit's built-in map / Plotly render from `dbo.geo_demand_weekly`. If the map is blank but the table shows rows, the subregion values may not match the expected lookup (`el_paso_metro`, `las_cruces`, `southern_nm`, `other`). Run:
+The page uses Plotly heatmap from `dbo.geo_demand_weekly`. If the map is blank but the table shows rows, the `borderplex_subregion` values may not match the expected lookup (`el_paso`, `las_cruces`, `ciudad_juarez`, `regional`). Run:
 
 ```bash
-python scripts/db_check.py query "SELECT DISTINCT subregion FROM dbo.geo_demand_weekly"
+python scripts/db_check.py query "SELECT DISTINCT borderplex_subregion FROM dbo.geo_demand_weekly"
 ```
 
 Unexpected subregion values indicate a Pair A Borderplex classification drift — see Week 7 runbook §5 Table 5.
+
+**Regional Heatmap page completely empty**
+
+`dbo.geo_demand_weekly` is populated by the Week 7 analytics geo-demand aggregation step. If the table has zero rows, the aggregation has not been run. Run the Week 7 aggregate pipeline (see §9 Prerequisite).
 
 ### Known post-merge gaps surfaced during the 2026-04-16 smoke test
 
@@ -1547,6 +1645,16 @@ The `success` field in `dbo.orchestration_audit_log` reflects the HTTP status co
 **Migration `event_type` index warning — column mismatch**
 
 `common/data_store/migrations.py` tries to index `event_type` but the ORM model column is `endpoint`. The migration logs a warning (`column "event_type" does not exist`) but does not fail — audit rows write fine, the index is just missing. Deferred fix for Pair D.
+
+**`df.id` column missing in Emergence Alerts page (FIXED)**
+
+`dashboard/pages_emergence_alerts.py` originally referenced `df.id` in the SQL query, but `dbo.disruption_fingerprints` has no `id` column — only `canonical_role_id` as the row identifier. This caused a hard crash (`UndefinedColumn: column df.id does not exist`) whenever the page loaded. Fixed by removing the `df.id` select/order-by and using `df.canonical_role_id` instead. Also removed the `WHERE` filter on Emergence patterns — with single-temporal-period data all `disruption_category` values are empty arrays, so the filter dropped every row.
+
+**Week 7 aggregate tables all empty — Streamlit pages show no data**
+
+If `skill_demand_weekly`, `tool_demand_weekly`, `role_snapshot_weekly`, `sector_summary_weekly`, `skill_velocity`, `skill_co_occurrence`, `geo_demand_weekly`, and `trajectory_map` all have zero rows, the Week 7 analytics aggregate pipeline has not been run. This is the root cause of most "no data" states on Week 8 Streamlit pages. The `cohort_gap_cache` may have rows from `api_smoke.py`, but those rows contain empty `market_skill_demand` arrays because the triggers queried empty upstream tables.
+
+Fix: run `python scripts/smoke/refresh_aggregates.py`, then re-run `api_smoke.py` to refresh caches with real data. If `sector_summary_weekly` and `geo_demand_weekly` are still empty after that, the root cause is [#172](https://github.com/Building-With-Agents/job-intelligence-engine/issues/172) — `job_postings.publish_date` is 99% NULL because `date_posted` from JSearch was never promoted from `normalized_jobs`. Once #172 merges and the backfill runs, re-run the aggregates per [#189](https://github.com/Building-With-Agents/job-intelligence-engine/issues/189).
 
 **`sqlglot` / `fastapi` / `uvicorn` missing on pre-merge venvs**
 
