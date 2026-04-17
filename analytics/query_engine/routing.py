@@ -62,11 +62,48 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
     return raw
 
 
-_SCHEMA_HINT = (
-    "Allowed tables (PostgreSQL dbo schema only): job_postings, companies, company_addresses, "
-    "skills, technology_areas, industry_sectors, analytics_aggregates, normalized_jobs, "
-    "raw_ingested_jobs. Reference as dbo.table_name."
-)
+# Derived from docs/planning/QA_DATA_CONTRACT.md — update that doc first, then re-derive here.
+# Tracks: GitHub #186 (hotfix), #171 (full fix after #170 schema work lands).
+_SCHEMA_HINT = """\
+Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
+
+PREFER aggregate tables for skill/tool/role/sector/geo count and trend questions:
+  skill_demand_weekly(skill_label, week_start, posting_count, employer_count, computed_at)
+  tool_demand_weekly(tool_label, week_start, posting_count, computed_at)
+  role_snapshot_weekly(week_start, canonical_role_id, role_title, posting_count,
+                       avg_salary, median_salary, salary_p25, salary_p50,
+                       salary_p75, salary_p95, top_skills, top_tools, computed_at)
+  sector_summary_weekly(week_start, sector, posting_count, employer_count, avg_salary, top_skills)
+  geo_demand_weekly(week_start, borderplex_subregion, posting_count)
+  skill_velocity(skill_label, week, demand_count, week_over_week_change, four_week_trend)
+  skill_co_occurrence(skill_a, skill_b, co_occurrence_count, week_start)
+  posting_freshness(posting_id, first_seen, last_seen, duration_days, is_repost, repost_count)
+  canonical_roles(role_id, label, description, posting_count, top_skills, top_tools, computed_at)
+
+Operational tables (use when aggregates cannot answer):
+  job_postings(job_posting_id, company_id, job_title, employment_type, location,
+               salary_range, status, source, external_id, createdat, ingestion_run_id,
+               borderplex_subregion, temporal_period, spam_tier, quality_score, is_spam,
+               soc_code, naics_code, canonical_role_id, employer_profile_id,
+               is_duplicate, zip_code)
+  normalized_jobs(id, source, external_id, title, company, date_posted,
+                  salary_min, salary_max, salary_currency, salary_period,
+                  city, state_province, country, is_remote, work_arrangement)
+  companies(company_id, company_name, industry_sector_id, size, city, state, normalized_location)
+  employer_profiles(id, company_id, company_size, ai_maturity_signal, sector, is_known_employer)
+  industry_sectors(industry_sector_id, sector_title)
+
+CRITICAL — columns that do NOT exist (never generate SQL referencing these):
+  - job_postings has NO skill_id, skills, posted_date, or date_posted column.
+    Skills are pre-aggregated in dbo.skill_demand_weekly.
+    For "top skills by posting count" use: SELECT skill_label, posting_count
+    FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10
+  - job_postings has NO date_posted column yet. Use createdat (ingestion timestamp)
+    as a recency proxy, or join dbo.normalized_jobs ON
+    jp.source = nj.source AND jp.external_id = nj.external_id to get nj.date_posted.
+  - Never reference: publish_date, employer_id, tech_area_id, start_date, end_date, location_id.
+    These columns are deprecated (99-100% NULL) and must not appear in any query.\
+"""
 
 
 def _query_fingerprint(q: str) -> str:
