@@ -17,7 +17,6 @@ def _load_emergence_fingerprints() -> tuple[pd.DataFrame, str | None]:
 
     q = """
         SELECT
-            df.id,
             df.canonical_role_id,
             df.disruption_category,
             df.disruption_intensity,
@@ -30,10 +29,7 @@ def _load_emergence_fingerprints() -> tuple[pd.DataFrame, str | None]:
             cr.posting_count AS cluster_posting_count
         FROM dbo.disruption_fingerprints df
         LEFT JOIN dbo.canonical_roles cr ON cr.role_id = df.canonical_role_id
-        WHERE
-            COALESCE(df.disruption_category::text, '') ILIKE '%Emergence%'
-            OR COALESCE(df.trajectory::text, '') ILIKE '%emerg%'
-        ORDER BY df.computed_at DESC NULLS LAST, df.id DESC
+        ORDER BY df.computed_at DESC NULLS LAST, df.canonical_role_id ASC
     """
     return read_sql_relation_safe(
         q,
@@ -155,8 +151,8 @@ def render_emergence_alerts() -> None:
         st.warning(hint)
     if df.empty:
         st.info(
-            "No **Emergence** roles found. Either the table is empty, or no rows are tagged with "
-            "Emergence in ``disruption_category`` / an emerging **trajectory** yet."
+            "No disruption fingerprints found. Run the disruption refresh pipeline "
+            "(``scripts/smoke/disruption_refresh.py``) after populating ``canonical_roles``."
         )
         return
 
@@ -179,10 +175,24 @@ def render_emergence_alerts() -> None:
             except Exception:
                 pc = None
 
+        cat = r.get("disruption_category")
+        if hasattr(cat, "item"):
+            cat = cat.item()
+        if isinstance(cat, str):
+            try:
+                cat = json.loads(cat)
+            except Exception:
+                pass
+        if isinstance(cat, list):
+            cat_str = ", ".join(str(c) for c in cat) if cat else "—"
+        else:
+            cat_str = str(cat) if cat else "—"
+
         missing_baseline = not _has_pre_chatgpt_baseline(pc)
         out_rows.append(
             {
                 "Role": r.get("role_label") or r.get("canonical_role_id") or "—",
+                "Disruption category": cat_str,
                 "AI skill density": _ai_skill_density(sv, r.get("disruption_intensity")),
                 "Posting growth": _posting_growth_rate(pc),
                 "Employer count": _employer_count(pc),
