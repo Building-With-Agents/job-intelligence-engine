@@ -27,14 +27,29 @@ log = structlog.get_logger()
 
 ASK_THE_DATA_ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     {
-        "job_postings",
+        # Aggregate tables — preferred for skill/tool/role/sector/geo Q&A
+        "skill_demand_weekly",
+        "tool_demand_weekly",
+        "role_snapshot_weekly",
+        "sector_summary_weekly",
+        "geo_demand_weekly",
+        "skill_velocity",
+        "skill_co_occurrence",
+        "posting_freshness",
+        # Reference / dimension tables
+        "canonical_roles",
+        "employer_profiles",
         "companies",
-        "company_addresses",
-        "skills",
-        "technology_areas",
         "industry_sectors",
-        "analytics_aggregates",
+        # Operational tables — join via (source, external_id)
+        "job_postings",
         "normalized_jobs",
+        "extracted_intelligence",
+        # Legacy / reference (kept for backward-compat; _SCHEMA_HINT does not direct LLM here)
+        "company_addresses",
+        "technology_areas",
+        "analytics_aggregates",
+        "skills",
         "raw_ingested_jobs",
     }
 )
