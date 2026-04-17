@@ -36,20 +36,51 @@ from common.data_store.database import session_scope  # noqa: E402
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Print the first N fingerprint rows with disruption categories, ai_trend, wrs.",
+    )
+    parser.add_argument(
+        "--show", type=int, default=3,
+        help="Number of fingerprint rows to show in verbose mode (default 3).",
+    )
+    parser.add_argument(
+        "--correlation-id",
+        default="wk8-disruption-demo",
+        help="Correlation id threaded through the event payload.",
+    )
+    args = parser.parse_args()
+
     svc = DisruptionFingerprintService()
     with session_scope() as session:
-        result = svc.refresh_disruption_fingerprints(session=session)
+        result = svc.refresh_disruption_fingerprints(
+            session=session,
+            correlation_id=args.correlation_id,
+        )
 
     print(f"roles_considered:    {result.roles_considered}")
     print(f"computed_count:      {result.computed_count}")
     if hasattr(result, "refresh_duration_ms"):
         print(f"refresh_duration_ms: {result.refresh_duration_ms}")
 
+    if args.verbose and hasattr(result, "fingerprints") and result.fingerprints:
+        print()
+        for fp in result.fingerprints[: args.show]:
+            cats = getattr(fp, "disruption_category", [])
+            ai = getattr(fp, "ai_intensity_trend", "?")
+            wrs = getattr(fp, "workflow_restructuring_score", 0.0)
+            role_id = getattr(fp, "canonical_role_id", "?")
+            print(f"  role={role_id}  cats={cats}  ai_trend={ai}  wrs={wrs:.3f}")
+
     if result.roles_considered == 0:
         print()
-        print("NOTE: canonical_roles is empty. Run Pair C's clustering flow first")
-        print("      (WEEK07_TESTING_RUNBOOK.md Section 5) to populate canonical_roles,")
-        print("      then re-run this script.")
+        print("NOTE: canonical_roles is empty. Run clustering first:")
+        print("      python scripts/run_clustering.py")
+        print("      (see runbook §0 Step 2)")
     return 0
 
 

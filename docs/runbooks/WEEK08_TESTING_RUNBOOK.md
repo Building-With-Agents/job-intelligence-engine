@@ -468,30 +468,40 @@ If the table does not exist, the migration in `common/data_store/migrations.py` 
 python scripts/db_check.py migrate
 ```
 
-### Step 2 — Run a full refresh
+### Step 2 — Run a full refresh (verbose — prints first 3 fingerprints)
 
-```bash
-PYTHONPATH=. python -c "
+```
+python scripts/smoke/disruption_refresh.py --verbose
+```
+
+**What the script does** (core body — same code in `scripts/smoke/disruption_refresh.py`):
+
+```python
 from analytics.disruption.service import DisruptionFingerprintService
 from common.data_store.database import session_scope
+
 svc = DisruptionFingerprintService()
-with session_scope() as s:
+with session_scope() as session:
     result = svc.refresh_disruption_fingerprints(
-        session=s,
-        correlation_id='wk8-disruption-demo',
+        session=session,
+        correlation_id="wk8-disruption-demo",
     )
-    print(f'roles_considered={result.roles_considered}')
-    print(f'computed_count={result.computed_count}')
-    for fp in result.fingerprints[:3]:
-        print(f'  role={fp.canonical_role_id}  cats={fp.disruption_category}  ai_trend={fp.ai_intensity_trend}  wrs={fp.workflow_restructuring_score:.3f}')
-"
+# result.fingerprints is a list of persisted DisruptionFingerprintRecord objects
+# Each has: canonical_role_id, disruption_category (list[str]),
+#           ai_intensity_trend (str), workflow_restructuring_score (float 0-1)
 ```
 
 **Expected output:**
 
 - `roles_considered` equals the row count in `dbo.canonical_roles`.
 - `computed_count` equals `roles_considered` (every role gets a fingerprint row, including sparse ones).
-- For each printed role: `cats` is a non-empty list (Displacement / Augmentation / Transformation / Emergence — a role may carry multiple labels); `ai_trend` is one of `increasing`/`decreasing`/`stable`; `wrs` is a float in `[0, 1]`.
+- For each printed role: `cats` is a list of disruption patterns (Displacement / Augmentation / Transformation / Emergence — a role may carry multiple labels); `ai_trend` is one of `increasing`/`decreasing`/`stable`; `wrs` is a float in `[0, 1]`.
+
+**If `cats=[]` on every role:** This is expected when all postings come from a single temporal period (e.g., all recent JSearch ingestions land in `agentic_era`). The classifier compares skill/tool/task mix **across** `pre_chatgpt` → `early_genai` → `post_gpt4` → `agentic_era`. With only one period of data, all period-over-period deltas are zero, the 30% skill-change threshold is never met, and no patterns fire. The classifier is working correctly — it doesn't fabricate patterns when the data doesn't support them. To see non-empty categories, seed test data across multiple temporal periods or backfill `temporal_period` on historical postings.
+
+**Optional flags:**
+- `--show 5` — print the first 5 fingerprints instead of 3
+- `--correlation-id my-demo-1` — use a specific correlation id for tracing
 
 ### Step 3 — Verify rows landed with the expected shape
 
@@ -510,17 +520,23 @@ python scripts/db_check.py query "SELECT canonical_role_id, disruption_category,
 python scripts/db_check.py query "SELECT cat AS pattern, COUNT(*) AS role_count FROM dbo.disruption_fingerprints, LATERAL jsonb_array_elements_text(disruption_category) AS cat GROUP BY cat ORDER BY role_count DESC"
 ```
 
-**Expected:** All four labels (`Displacement`, `Augmentation`, `Transformation`, `Emergence`) appear with non-zero counts. If one is missing, the classifier thresholds in `analytics/disruption/classifier.py` may not be triggering on your dataset — flag to Pair A.
+**Expected (multi-period data):** All four labels (`Displacement`, `Augmentation`, `Transformation`, `Emergence`) appear with non-zero counts.
+
+**Expected (single-period data — e.g., all recent JSearch ingestions):** `(no rows)` — the query returns nothing because all `disruption_category` arrays are empty. This is consistent with the §4 Step 2 note: the classifier doesn't fabricate patterns when temporal data doesn't support them. Not a bug.
+
+If one specific pattern is missing despite multi-period data, the classifier thresholds in `analytics/disruption/classifier.py` may not be triggering on your dataset — flag to Pair A.
 
 ### Step 5 — Verify `DisruptionRefreshed` event emission
 
-The service publishes `DisruptionRefreshed` only when a bus is registered. To test emission, attach an in-process capture bus:
+The service publishes `DisruptionRefreshed` only when a bus is registered. The script below attaches an in-process capture bus, runs one refresh, and prints the event payload:
 
-```bash
-PYTHONPATH=. python -c "
-from analytics.disruption.service import DisruptionFingerprintService
-from common.data_store.database import session_scope
+```
+python scripts/smoke/disruption_event_check.py
+```
 
+**What the script does** (core pattern — same code in `scripts/smoke/disruption_event_check.py`):
+
+```python
 class CaptureBus:
     def __init__(self):
         self.events = []
@@ -529,22 +545,14 @@ class CaptureBus:
 
 bus = CaptureBus()
 svc = DisruptionFingerprintService(event_bus=bus)
-with session_scope() as s:
-    svc.refresh_disruption_fingerprints(session=s, correlation_id='wk8-event-check')
-assert bus.events, 'expected at least one DisruptionRefreshed envelope'
-env = bus.events[0]
-print('event_type:', env.event_type)
-print('correlation_id:', env.correlation_id)
-print('payload.role_count:', env.payload.role_count)
-print('payload.displacement_count:', env.payload.displacement_count)
-print('payload.augmentation_count:', env.payload.augmentation_count)
-print('payload.transformation_count:', env.payload.transformation_count)
-print('payload.emergence_count:', env.payload.emergence_count)
-print('payload.refresh_duration_ms:', env.payload.refresh_duration_ms)
-"
+with session_scope() as session:
+    svc.refresh_disruption_fingerprints(session=session, correlation_id="wk8-event-check")
+# bus.events[0] is the DisruptionRefreshed envelope
 ```
 
-**Expected:** `event_type='DisruptionRefreshed'`, `correlation_id` matches what you passed, the four category counts sum to at least `role_count` (a role with multiple labels increments multiple buckets), and `refresh_duration_ms >= 0`.
+**Expected:** `event_type='DisruptionRefreshed'`, `correlation_id='wk8-event-check'`, `role_count` matches the canonical_roles count, the four category counts (`displacement_count`, `augmentation_count`, `transformation_count`, `emergence_count`) sum to at least `role_count` (a role with multiple labels increments multiple buckets), and `refresh_duration_ms >= 0`.
+
+**If `canonical_roles` is empty:** the script prints a WARNING and exits 1 (no event emitted because no roles were refreshed). Run clustering first per §0 Step 2.
 
 ### Step 6 — Content fingerprint stability
 
@@ -566,67 +574,105 @@ This walks a realistic workforce question through every leg: intent classificati
 
 ### Step 1 — Intent classification in isolation
 
-```bash
-PYTHONPATH=. python -c "
-from analytics.query_engine.intent import classify_workforce_question
-r = classify_workforce_question(
-    'Which welding skills are growing fastest in El Paso over the last 90 days?',
-    correlation_id='wk8-intent-demo',
-)
-import json; print(json.dumps(r, indent=2))
-"
+Run a `trend` question first — expected intent is `trend`:
+
 ```
+python scripts/smoke/qa_intent_only.py --question "Which AI and machine learning skills are growing fastest in El Paso over the last 90 days?"
+```
+
+Then run an `employer` question — expected intent is `employer`:
+
+```
+python scripts/smoke/qa_intent_only.py --question "What employers hire the most data analysts?"
+```
+
+The two runs should return **different** `intent` values (`trend` vs `employer`). If both return the same intent, the classifier isn't distinguishing question types — flag to Pair B.
+
+The `--correlation-id` flag is optional; use it when you want a human-readable tag for tracing a specific run in `llm_audit_log` or Langfuse (e.g., `--correlation-id wk8-intent-demo`).
+
+**What the script does:**
+
+The intent classifier is the first leg of the Q&A pipeline. It takes a free-text workforce question and returns a structured classification that the downstream router uses to decide which aggregate tables to query. The call flows through `common.llm_adapter.complete` with `role="classification"`, which routes to the Haiku-tier model (`chat-gpt41mini` via `LLM_DEFAULT`) for speed and cost efficiency.
+
+```python
+from analytics.query_engine.intent import classify_workforce_question
+
+result = classify_workforce_question(
+    question="Which AI and machine learning skills are growing fastest in El Paso?",
+    correlation_id="wk8-intent-demo",
+)
+# Returns a dict with: intent, confidence, needs_clarification, extracted_entities
+```
+
+The classifier extracts 4 entity types from the question text:
+- **geographic_terms** — place names (El Paso, Las Cruces, Ciudad Juarez, Borderplex subregions)
+- **role_names** — job roles mentioned (data engineer, software developer, etc.)
+- **skill_names** — skills or technologies mentioned (Python, machine learning, cloud computing)
+- **time_references** — temporal phrases (last 90 days, this quarter, Q1 2025)
+
+**The 10 intent categories** — each routes to different aggregate tables downstream:
+
+| Intent | What the user is asking | Routes to |
+|--------|------------------------|-----------|
+| `trend` | Skill/tool demand changes over time | `skill_demand_weekly`, `tool_demand_weekly`, `skill_velocity` |
+| `role_evolution` | How a specific role is changing | `canonical_roles`, `role_snapshot_weekly`, `disruption_fingerprints` |
+| `disruption` | Which roles are being displaced, augmented, transformed | `disruption_fingerprints`, temporal period comparisons |
+| `emergence` | New roles or skills appearing | Emergence candidate data, `skill_velocity` (high-growth) |
+| `curriculum` | What should training programs teach | `skill_demand_weekly` cross-referenced with program data |
+| `employer` | What a specific employer or sector needs | `employer_profiles`, `sector_summary_weekly` |
+| `workflow` | How work processes are changing | `canonical_roles`, task/responsibility extraction data |
+| `geographic` | Regional demand differences | `geo_demand_weekly`, Borderplex subregion data |
+| `comparison` | Compare two things (skills, roles, regions, employers) | Cross-table joins based on extracted entities |
+| `other` | Doesn't fit the 9 above; or LLM parse failure | Catch-all — cautious response or clarification request |
+
+**`needs_clarification`** triggers when `confidence < 0.55`. This signals the downstream UI to ask the user a disambiguating follow-up instead of routing a low-confidence guess.
 
 **Expected output shape:**
 
 ```json
 {
   "intent": "trend",
-  "confidence": 0.85,
+  "confidence": 0.9,
   "needs_clarification": false,
   "extracted_entities": {
     "geographic_terms": ["El Paso"],
     "role_names": [],
-    "skill_names": ["welding"],
+    "skill_names": ["AI", "machine learning"],
     "time_references": ["last 90 days"]
   }
 }
 ```
 
 **What to check:**
-- `intent` is one of the 10 allowed labels: `trend | role_evolution | disruption | emergence | curriculum | employer | workflow | geographic | comparison | other`.
-- `confidence` is a float in `[0, 1]`. `needs_clarification` is `true` only when `confidence < 0.55`.
+- `intent` is one of the 10 labels in the table above.
+- `confidence` is a float in `[0, 1]`.
+- `needs_clarification` is `true` only when `confidence < 0.55`.
 - `extracted_entities` always contains the 4 keys, even if lists are empty.
-- The call went through `common.llm_adapter.complete` with `role="classification"` (Haiku-tier / `chat-gpt41mini` via `LLM_DEFAULT`).
+- Cost: ~$0.00025 per classification call (Haiku-tier, ~400–500 tokens total).
 
 ### Step 2 — Full guardrailed routing (end-to-end happy path)
 
-```bash
-PYTHONPATH=. python -c "
+Step 1 tested intent classification in isolation. This step fires **every leg** of the Q&A pipeline in sequence: intent classification → SQL generation → SQL guardrails validation → safe execute (30s timeout) → evidence bundle → synthesis (Sonnet-class) → follow-up generation (Haiku-class) → cost ledger rollup. One command exercises all of Pair B's, Pair C's, and Pair D's Week 8 code in a single call.
+
+The question is a `trend` intent designed to hit `skill_demand_weekly` — the most populated aggregate table. `--answer-preview-chars 500` shows the first 500 chars of the synthesized answer so you can assess quality without scrolling.
+
+```
+python scripts/smoke/qa_pipeline.py --question "Which 10 skills had the highest posting counts in the most recent week?" --correlation-id wk8-qa-happy --answer-preview-chars 500
+```
+
+> **Known issue (#186):** If `_SCHEMA_HINT` in `analytics/query_engine/routing.py` has not been patched with column-level schema, the LLM may generate invalid SQL (e.g., referencing `job_postings.skill_id` which doesn't exist). The pipeline will refuse safely — `refused=True`, synthesis skipped, cost only shows `intent_classification` + `sql_generation`. This is the correct guardrail behavior on a bad query, not a crash. See issue [#186](https://github.com/Building-With-Agents/job-intelligence-engine/issues/186) for the hotfix.
+
+**What the script does:**
+
+```python
 from analytics.query_engine.routing import run_guardrailed_analytics_query
 from common.data_store.database import session_scope
 from common.types.query_request import QueryRequest
 
-q = 'Which 10 skills had the highest posting counts in the most recent week?'
-req = QueryRequest(query=q)
+req = QueryRequest(query=question)
 with session_scope() as s:
-    resp = run_guardrailed_analytics_query(req, session=s, correlation_id='wk8-qa-happy')
-
-print('--- ANSWER ---')
-print(resp.answer_text)
-print()
-print('--- CITATIONS (first 3) ---')
-for c in resp.citations[:3]:
-    print(f'  [{c.citation_id}] {c.summary} (table={c.source_table}, n={c.supporting_count}, period={c.time_period})')
-print()
-print('periods_described:', resp.periods_described)
-print('confidence:', resp.confidence, 'flagged_low:', resp.confidence_flagged_low)
-print('volume_flagged_low:', resp.volume_flagged_low)
-print('refused:', resp.refused)
-print('follow_up_questions:', resp.follow_up_questions)
-print('total_cost_usd:', round(resp.total_cost_usd, 5))
-print('cost_breakdown_usd:', resp.cost_breakdown_usd)
-"
+    resp = run_guardrailed_analytics_query(req, session=s, correlation_id=correlation_id)
+# Prints: answer, citations, confidence, refused, follow_ups, cost_breakdown_usd
 ```
 
 **Expected output (happy path):**
@@ -641,64 +687,145 @@ print('cost_breakdown_usd:', resp.cost_breakdown_usd)
 - `follow_up_questions`: 2–3 contextual suggestions (Haiku-tier).
 - `cost_breakdown_usd`: keys include `intent_classification`, `sql_generation`, `synthesis`, `follow_up` (values in USD). Sum equals `total_cost_usd` (to 6 decimal places).
 
+**Expected output (before [#186](https://github.com/Building-With-Agents/job-intelligence-engine/issues/186) hotfix lands):**
+
+Until the `_SCHEMA_HINT` is expanded with column-level schema, the LLM will hallucinate column names that don't exist on the actual tables (e.g., `posted_date` instead of `publish_date`, `skill_id` on `job_postings` which has no such column). The pipeline refuses safely:
+
+- `refused=True`
+- `refusal_message` includes `sql_execution_failed:ProgrammingError` with the specific Postgres error
+- `cost_breakdown_usd` only contains `intent_classification` + `sql_generation` — synthesis is skipped (no LLM fabrication)
+- `citations=0`, `follow_ups=0`
+
+This is the correct guardrail behavior — see [#186](https://github.com/Building-With-Agents/job-intelligence-engine/issues/186) for the root cause and proposed fix. Once #186 lands, this step should produce the happy-path output described above.
+
 ### Step 3 — Inspect SQL guardrails in isolation
 
-```bash
-PYTHONPATH=. python -c "
-from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql, validate_sql
+Step 2 ran the full pipeline — when the LLM generates SQL, it passes through a **guardrail validator** before touching the database. This step tests that validator directly with known-good SQL to verify it allows legitimate queries and correctly normalizes LIMIT clauses.
 
-ok, reason, sql = validate_ask_the_data_sql(
-    'SELECT skill_label, posting_count FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 50'
-)
-print('ask_the_data ok:', ok, 'reason:', reason)
-print('normalized_sql:', sql)
-print()
-res = validate_sql('SELECT skill_label, posting_count FROM dbo.skill_demand_weekly LIMIT 500')
-print('validate_sql ok:', res.ok, 'reason:', res.reason)
-print('sql_for_execution:', res.sql_for_execution)
-"
+The JIE has **two guardrail functions** serving different table scopes:
+
+- **`validate_ask_the_data_sql()`** — validates SQL against the **operational** table allowlist (`ASK_THE_DATA_ALLOWED_TABLES`: `job_postings`, `companies`, `skills`, etc.). Used by the Ask-the-Data Streamlit page path.
+- **`validate_sql()`** — validates SQL against the **aggregate** table allowlist (`ALLOWED_TABLES`: `skill_demand_weekly`, `canonical_roles`, etc.). Used by the FastAPI trigger endpoints and the routing pipeline. Returns a `ValidationResult` object with `.ok`, `.reason`, and `.sql_for_execution` (with LIMIT normalized).
+
+Both enforce: SELECT-only, single-statement, schema-scoped tables, and a row cap (`MAX_ROWS=100`). If a query requests `LIMIT 500`, the guardrail rewrites it to `LIMIT 100` rather than rejecting — safe capping, not hard failure.
+
+```
+python scripts/smoke/sql_guardrails_check.py
 ```
 
-**Expected:**
-- `validate_ask_the_data_sql`: `ok=True`, `reason='ok'`, `normalized_sql` ends with `LIMIT 50` (cap is 100 — requested 50, kept).
-- `validate_sql`: `ok=True`, `reason=None`, and the returned `sql_for_execution` has `LIMIT 100` (the 500 was capped to `MAX_ROWS=100`).
+**What the script does:**
+
+```python
+from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql, validate_sql
+
+# Test 1: Ask-the-Data path — job_postings is in the operational allowlist → ok=True
+validate_ask_the_data_sql("SELECT job_title, location FROM dbo.job_postings LIMIT 20")
+
+# Test 2: Ask-the-Data path — skill_demand_weekly is NOT in the operational allowlist → ok=False
+validate_ask_the_data_sql("SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 50")
+
+# Test 3: Aggregate path — LIMIT 500 gets capped to 100 → ok=True, sql rewritten
+validate_sql("SELECT skill_label, posting_count FROM dbo.skill_demand_weekly LIMIT 500")
+
+# Test 4: Aggregate path — LIMIT 10 within cap → ok=True, sql unchanged
+validate_sql("SELECT skill_label, posting_count FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10")
+```
+
+The script prints the input SQL and the result for each test, with PASS/FAIL per case and a summary.
+
+**Expected:** 4/4 passed:
+- Test 1: `ok=True` — `job_postings` is in the Ask-the-Data allowlist
+- Test 2: `ok=False`, `reason=disallowed_table:skill_demand_weekly` — aggregate tables aren't in the operational allowlist (intentional separation)
+- Test 3: `ok=True`, `sql_for_execution` has `LIMIT 100` (capped from 500)
+- Test 4: `ok=True`, `sql_for_execution` has `LIMIT 10` (within cap, unchanged)
+
+§7 covers the full adversarial test suite (DROP, UNION, injection, etc.). This step just confirms the happy path and the allowlist boundary.
+
+**Interactive testing — validate any SQL string against either allowlist:**
+
+To test your own SQL against the **operational** (Ask-the-Data) allowlist:
+
+```
+python scripts/smoke/validate_atd_sql.py "SELECT job_title FROM dbo.job_postings LIMIT 10"
+python scripts/smoke/validate_atd_sql.py "DROP TABLE dbo.job_postings"
+python scripts/smoke/validate_atd_sql.py "SELECT * FROM dbo.skill_demand_weekly"
+```
+
+To test against the **aggregate** (trigger/routing) allowlist:
+
+```
+python scripts/smoke/validate_agg_sql.py "SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 10"
+python scripts/smoke/validate_agg_sql.py "SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 5000"
+python scripts/smoke/validate_agg_sql.py "SELECT * FROM dbo.job_postings"
+```
+
+These accept any SQL string as an argument and print the guardrail's verdict (`PASS` or `REJECTED` with reason). Useful for exploring the boundary between the two allowlists — e.g., `skill_demand_weekly` passes the aggregate guardrail but is rejected by the Ask-the-Data guardrail, while `job_postings` is the reverse.
 
 ### Step 4 — Verify `execute_safe` enforces the 30s timeout
 
-Every Q&A path and every trigger runs through `execute_validated_query()`, which issues `SET LOCAL statement_timeout = 30000` before running the SELECT. Timeouts surface as `RuntimeError("query_timeout")`.
+After the guardrail validates the SQL, `execute_validated_query()` runs it against Postgres with a **30-second timeout** at the session level (`SET LOCAL statement_timeout = 30000`). This is the last safety layer before results reach the evidence builder — it prevents runaway queries from blocking the pipeline or the database.
 
-```bash
-PYTHONPATH=. python -c "
-from analytics.query_engine.execute_safe import execute_validated_query
-from common.data_store.database import session_scope
-with session_scope() as s:
-    rows, n = execute_validated_query(s, 'SELECT 1 AS ping')
-    print('rows:', rows, 'count:', n)
-"
+Every Q&A path, every trigger endpoint, and every Ask-the-Data call flows through this function. If a query exceeds 30 seconds, it's killed by Postgres and surfaces as `RuntimeError("query_timeout")` — the pipeline then refuses with a clean error, no partial results.
+
+```
+python scripts/smoke/execute_safe_check.py
 ```
 
-**Expected:** `rows=[{'ping': 1}]`, `count=1`. Exceptions for timeouts or DB failures are translated to `query_timeout` / `query_execution_failed` — the raw driver message is logged but not surfaced to the caller.
+**What the script does:**
+
+```python
+from analytics.query_engine.execute_safe import execute_validated_query
+from common.data_store.database import session_scope
+
+with session_scope() as s:
+    rows, n = execute_validated_query(s, 'SELECT 1 AS ping')
+    # Returns (list[dict], int) — the result rows and row count
+```
+
+**Expected:** `rows=[{'ping': 1}]`, `count=1`. A trivial `SELECT 1` confirms the function works end-to-end: session-level timeout is set, the query runs, rows are returned as a list of dicts.
+
+Timeout behavior (not tested here, but important to know): if you ran a query like `SELECT pg_sleep(60)`, it would be killed after 30 seconds and raise `RuntimeError("query_timeout")`. The raw driver message is logged via structlog but not surfaced to the caller.
 
 ### Step 5 — Check grounding retry path (hallucination guard)
 
-Synthesis uses a two-prompt retry when the first answer mentions numbers not present in the citations. To observe the path, run a question that stretches the evidence:
+This step tests the **grounding safety** of the synthesis layer. When the LLM generates an answer, the grounding check verifies that any numbers in the answer actually appear in the evidence citations. If the first answer mentions statistics not present in the citations (hallucination), synthesis retries with a stronger grounding prompt. If the retry also fails, the response is flagged with `confidence_flagged_low=true` or refused entirely.
 
-```bash
-PYTHONPATH=. python -c "
+The test question is intentionally narrow — asking about salary data for a specific role in a specific location and time period. On most dev databases this will produce thin or empty evidence, triggering one of:
+- `volume_flagged_low=true` — answer is based on fewer than 30 postings (transparent caveat, not a refusal)
+- `confidence_flagged_low=true` — LLM confidence dropped below 0.6 (answer is still returned, but flagged)
+- `refused=True` — evidence is absent entirely, synthesis refuses rather than fabricating
+
+Run a narrow salary question — expected to produce thin or empty evidence:
+
+```
+python scripts/smoke/qa_grounding_check.py --question "What is the median salary for data engineers in El Paso this quarter?"
+```
+
+Then try a question with even thinner evidence to compare behavior — this should trigger a stronger refusal or lower confidence:
+
+```
+python scripts/smoke/qa_grounding_check.py --question "What is the average salary for cloud architects in Las Cruces?"
+```
+
+> **Known issue (#186):** Both questions may hit the `_SCHEMA_HINT` gap and refuse at the SQL execution stage rather than the grounding stage. This is the same #186 behavior as Step 2. Once #186 lands, this step will exercise the grounding path as designed.
+
+**What the script does:**
+
+```python
 from analytics.query_engine.routing import run_guardrailed_analytics_query
 from common.data_store.database import session_scope
 from common.types.query_request import QueryRequest
-req = QueryRequest(query='What is the median salary for welders in El Paso in Q1 2025?')
+
+req = QueryRequest(query="What is the median salary for data engineers in El Paso this quarter?")
 with session_scope() as s:
-    resp = run_guardrailed_analytics_query(req, session=s, correlation_id='wk8-grounding')
-print('answer_len:', len(resp.answer_text))
-print('refused:', resp.refused, 'msg:', resp.refusal_message)
-print('confidence:', resp.confidence, 'flagged_low:', resp.confidence_flagged_low)
-print('volume_flagged_low:', resp.volume_flagged_low)
-"
+    resp = run_guardrailed_analytics_query(req, session=s, correlation_id="wk8-grounding")
+# Prints: answer_len, refused, refusal_message, confidence, flagged_low, volume_flagged_low
 ```
 
-**What to check:** If the evidence is thin, `confidence_flagged_low` or `volume_flagged_low` is `true` and `answer_text` is short / cautious (not hallucinated numbers). If evidence is absent entirely, `refused=True` with a non-empty `refusal_message`.
+**What to check:**
+- If the evidence is thin: `confidence_flagged_low` or `volume_flagged_low` is `true` and `answer_text` is short / cautious (no hallucinated numbers).
+- If evidence is absent entirely: `refused=True` with a non-empty `refusal_message`.
+- The key property: the system **never invents a salary number** that isn't in the evidence. If it can't answer honestly, it says so.
 
 ---
 
@@ -706,8 +833,10 @@ print('volume_flagged_low:', resp.volume_flagged_low)
 
 ### Step 1 — Start the API
 
-```bash
-PYTHONPATH=. python scripts/run_analytics_api.py
+In a **separate terminal** (keep it running throughout §6):
+
+```
+python scripts/run_analytics_api.py
 ```
 
 **Expected console output:**
@@ -717,9 +846,13 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Application startup complete.
 ```
 
-Leave this running in one terminal; issue the curl commands below from another.
-
 ### Step 2 — Verify OpenAPI `/docs` loads
+
+FastAPI auto-generates an interactive **Swagger UI** at `/docs` from the route decorators and Pydantic schemas in `analytics/api/routes.py` and `analytics/api/schemas.py`. Opening it in a browser confirms three things at once:
+
+1. **The API server booted cleanly** — if any import fails (missing dep, broken module), the app won't start and `/docs` returns 404.
+2. **All 5 routes are registered** — if a route decorator is malformed or the router wasn't mounted in `analytics/api/app.py`, it won't appear in the UI.
+3. **Request/response schemas are valid** — Swagger renders the Pydantic models as interactive forms. If a schema has a type error, Swagger shows a parse warning. You can also use the "Try it out" button to send test requests directly from the browser without curl.
 
 Open http://127.0.0.1:8000/docs in a browser.
 
@@ -730,174 +863,266 @@ Open http://127.0.0.1:8000/docs in a browser.
 - `POST /analytics/triggers/emerging_skills_scan`
 - `POST /analytics/triggers/custom_employer_comparison`
 
-The raw JSON schema is at http://127.0.0.1:8000/openapi.json.
+The raw JSON schema is at http://127.0.0.1:8000/openapi.json. This is the machine-readable version — useful for generating API clients or validating the contract programmatically.
 
-### Step 3 — `POST /analytics/query` — Q&A happy path
+### Steps 3–5 — Full API smoke (all endpoints + cache + adversarial)
 
+One script exercises the entire API surface — no curl required, works on all shells:
+
+```
+python scripts/smoke/api_smoke.py
+```
+
+**What the script does:**
+
+The script sends HTTP requests to the running API using Python's `urllib` (no external deps). It covers 6 checks in order:
+
+1. **POST /analytics/query** — sends a skills question through the full Q&A pipeline. Will hit [#186](https://github.com/Building-With-Agents/job-intelligence-engine/issues/186) (expected `refused=True`). Use `--skip-query` to skip this step if you only want triggers.
+2. **POST /analytics/triggers/cohort_gap_analysis** — parameterized SQL, no LLM. Returns market skill demand for a cohort key.
+3. **POST /analytics/triggers/role_benchmark** — benchmarks a canonical role. Pass `--role-id <uuid>` with a real `canonical_role_id` from your DB for meaningful results.
+4. **POST /analytics/triggers/emerging_skills_scan** — scans for trending skills.
+5. **POST /analytics/triggers/custom_employer_comparison** — benchmarks an employer against the market.
+6. **Cache verification** — re-runs `cohort_gap_analysis` with the same params. Second call should return `cached=true` with the same `computed_at` timestamp.
+7. **Adversarial injection** — sends `"bobby; DROP TABLE students--"` as a `canonical_role_id` to `role_benchmark`. Should return HTTP 400 (`invalid_role_id`).
+
+**Optional flags:**
+
+```
+python scripts/smoke/api_smoke.py --skip-query                  # skip the Q&A endpoint (blocked by #186)
+python scripts/smoke/api_smoke.py --question "Custom question"  # different Q&A question
+python scripts/smoke/api_smoke.py --role-id <uuid>              # use a real canonical_role_id
+python scripts/smoke/api_smoke.py --base-url http://host:port   # non-default API host
+```
+
+**Expected output (summary):**
+
+```
+SUMMARY
+  PASS  POST /analytics/query               (or FAIL if #186 not yet fixed — expected)
+  PASS  POST /analytics/triggers/cohort_gap_analysis
+  PASS  POST /analytics/triggers/role_benchmark
+  PASS  POST /analytics/triggers/emerging_skills_scan
+  PASS  POST /analytics/triggers/custom_employer_comparison
+  PASS  Cache hit on 2nd call
+  PASS  Adversarial rejection (expect 400)
+```
+
+All 4 trigger endpoints should PASS. The Q&A endpoint may FAIL until [#186](https://github.com/Building-With-Agents/job-intelligence-engine/issues/186) lands. Cache and adversarial should always PASS.
+
+After the smoke, verify the cache table directly:
+
+```
+python scripts/db_check.py query "SELECT trigger_type, cohort_key, computed_at, expires_at FROM dbo.cohort_gap_cache ORDER BY computed_at DESC LIMIT 5"
+```
+
+`expires_at` should be ~24 hours after `computed_at`.
+
+### Individual curl commands (reference)
+
+The script above covers all of these. Use these if you want to hit a specific endpoint manually or see the raw HTTP contract. **PowerShell note:** use `curl.exe` (not the PowerShell `curl` alias which is `Invoke-WebRequest`). Assign the JSON body to a variable to avoid quoting issues.
+
+**POST /analytics/query:**
+
+bash / git-bash:
 ```bash
 curl -sS -X POST http://127.0.0.1:8000/analytics/query \
   -H "Content-Type: application/json" \
   -d '{"question":"Which 5 skills have the highest posting counts?","correlation_id":"api-smoke-1"}' | python -m json.tool
 ```
 
-**Expected response (shape):**
-
-```json
-{
-  "answer": "...grounded narrative...",
-  "evidence": [
-    {"title": "c1", "source": "skill_demand_weekly", "snippet": "...", "supporting_count": 42, "time_period": "..."}
-  ],
-  "confidence": 0.75,
-  "periods_described": "...",
-  "confidence_flagged_low": false,
-  "confidence_explanation": null,
-  "volume_flagged_low": false,
-  "volume_warning": null,
-  "refused": false,
-  "refusal_message": null,
-  "sql_execution_error_detail": null,
-  "follow_up_questions": ["...", "...", "..."],
-  "sql_generated": "SELECT ...",
-  "cost_usd": 0.0123,
-  "total_cost_usd": 0.0123,
-  "cost_breakdown_usd": {"intent_classification": 0.0005, "sql_generation": 0.0011, "synthesis": 0.0100, "follow_up": 0.0007}
-}
+PowerShell:
+```powershell
+$body = '{"question":"Which 5 skills have the highest posting counts?","correlation_id":"api-smoke-1"}'
+curl.exe -sS -X POST http://127.0.0.1:8000/analytics/query -H "Content-Type: application/json" -d $body | python -m json.tool
 ```
 
-### Step 4 — Each of the 4 triggers
+**Trigger endpoints:**
 
+bash / git-bash:
 ```bash
-# Cohort gap (week_start=null returns latest rows)
 curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis \
   -H "Content-Type: application/json" \
   -d '{"cohort_key":"demo-cohort","week_start":null}' | python -m json.tool
 
-# Role benchmark (replace role_1 with a real canonical_role_id from dbo.canonical_roles)
 curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark \
   -H "Content-Type: application/json" \
   -d '{"canonical_role_id":"role_1","week_start":null}' | python -m json.tool
 
-# Emerging skills
 curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/emerging_skills_scan \
   -H "Content-Type: application/json" \
-  -d '{"week_start":null,"min_posting_count":5}' | python -m json.tool
+  -d '{"scan_key":"smoke-test"}' | python -m json.tool
 
-# Custom employer comparison (company_id can be any safe token for now; returns market context)
 curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/custom_employer_comparison \
   -H "Content-Type: application/json" \
   -d '{"company_id":"company_42","week_start":null}' | python -m json.tool
 ```
 
-**Expected `TriggerEnvelope` shape for each:**
+PowerShell:
+```powershell
+$body = '{"cohort_key":"demo-cohort","week_start":null}'
+curl.exe -sS -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis -H "Content-Type: application/json" -d $body | python -m json.tool
 
-```json
-{
-  "trigger": "cohort_gap_analysis",
-  "cached": false,
-  "computed_at": "2026-04-16T12:34:56.789012+00:00",
-  "data": { "cohort_key": "...", "week_start": null, "market_skill_demand": [ ... ] }
-}
+$body = '{"canonical_role_id":"role_1","week_start":null}'
+curl.exe -sS -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark -H "Content-Type: application/json" -d $body | python -m json.tool
+
+$body = '{"scan_key":"smoke-test"}'
+curl.exe -sS -X POST http://127.0.0.1:8000/analytics/triggers/emerging_skills_scan -H "Content-Type: application/json" -d $body | python -m json.tool
+
+$body = '{"company_id":"company_42","week_start":null}'
+curl.exe -sS -X POST http://127.0.0.1:8000/analytics/triggers/custom_employer_comparison -H "Content-Type: application/json" -d $body | python -m json.tool
 ```
 
-### Step 5 — Confirm the 24-hour cache works
+**Adversarial SQL injection via trigger:**
 
-Rerun the same `cohort_gap_analysis` call immediately:
-
+bash / git-bash:
 ```bash
-curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis \
-  -H "Content-Type: application/json" \
-  -d '{"cohort_key":"demo-cohort","week_start":null}' | python -m json.tool
-```
-
-**Expected:** `"cached": true`, same `computed_at` timestamp as the first call, same `data` payload.
-
-Check the cache table directly:
-
-```bash
-python scripts/db_check.py query "SELECT trigger_type, cohort_key, computed_at, expires_at FROM dbo.cohort_gap_cache ORDER BY computed_at DESC LIMIT 5"
-```
-
-`expires_at` should be ~24 hours after `computed_at`.
-
----
-
-## 7. SQL Guardrails — Adversarial Verification
-
-With the API still running, throw adversarial payloads at `/analytics/query` and confirm each is rejected at the guardrail before execution.
-
-> **Note:** The guardrail operates on LLM-generated SQL, not on user questions. Adversarial user questions route through the Haiku-tier SQL generator first — the generator is prompted to produce only allow-listed SELECTs, and the guardrail is the hard backstop.
-
-### Step 1 — Directly validate known-bad SQL strings
-
-Easier to exercise the guardrail code path directly (bypasses LLM non-determinism):
-
-```bash
-PYTHONPATH=. python -c "
-from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql, validate_sql
-
-cases_atd = [
-    ('DROP TABLE', 'DROP TABLE dbo.job_postings'),
-    ('INSERT',     'INSERT INTO dbo.job_postings (id) VALUES (1)'),
-    ('UNION over disallowed', 'SELECT 1 UNION SELECT * FROM pg_shadow'),
-    ('multi-statement', 'SELECT 1; SELECT 2'),
-    ('comment bypass', 'SELECT * FROM dbo.job_postings -- ; DROP TABLE x'),
-    ('subquery forbidden table', 'SELECT * FROM dbo.job_postings WHERE id IN (SELECT id FROM pg_authid)'),
-    ('disallowed schema', 'SELECT * FROM pg_catalog.pg_tables'),
-    ('disallowed table', 'SELECT * FROM dbo.llm_audit_log'),
-    ('not SELECT', 'TRUNCATE TABLE dbo.job_postings'),
-]
-for name, sql in cases_atd:
-    ok, reason, norm = validate_ask_the_data_sql(sql)
-    print(f'[ask_the_data] {name!r:30} ok={ok!s:5} reason={reason}')
-
-print()
-cases_agg = [
-    ('DROP in aggregate',    'DROP TABLE dbo.skill_demand_weekly'),
-    ('INSERT in aggregate',  'INSERT INTO dbo.skill_demand_weekly (id) VALUES (1)'),
-    ('UPDATE forbidden',     'UPDATE dbo.skill_demand_weekly SET posting_count=0'),
-    ('multi-statement',      'SELECT 1; SELECT 2'),
-    ('non-allowlisted table','SELECT * FROM dbo.job_postings'),
-    ('LIMIT over cap',       'SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 5000'),
-]
-for name, sql in cases_agg:
-    res = validate_sql(sql)
-    print(f'[aggregate]    {name!r:30} ok={res.ok!s:5} reason={res.reason!s:40} sql={res.sql_for_execution[:80] if res.sql else \"\"}')
-"
-```
-
-**Expected:**
-
-- Every `ask_the_data` case returns `ok=False` with a specific `reason`: `forbidden_keyword`, `multiple_statements`, `disallowed_schema:pg_catalog`, `disallowed_table:llm_audit_log`, `disallowed_table:pg_authid`, `disallowed_table:pg_shadow`, `not_select`.
-- Every `aggregate` case returns `ok=False` **except** the `LIMIT over cap` case, which returns `ok=True` with `sql_for_execution` rewritten to `LIMIT 100` (cap normalized, not rejected).
-
-### Step 2 — Confirm each rejection is logged
-
-Every validation call (pass or fail) writes a zero-token audit row to `dbo.llm_audit_log` via `log_sql_validation_to_llm_audit`:
-
-```bash
-python scripts/db_check.py query "SELECT agent_name, model, provider, success, error_reason, created_at FROM dbo.llm_audit_log WHERE agent_name='analytics_query_api' ORDER BY created_at DESC LIMIT 10"
-```
-
-**Expected:** `agent_name='analytics_query_api'`, `model='sql-guardrail'`, `provider='internal'`, `success=false` for rejections with `error_reason` matching the validation reason.
-
-### Step 3 — End-to-end via the API
-
-Fire one rejection through the full HTTP path to make sure the rejection travels back as a clean 4xx (trigger endpoints raise `HTTPException 400` on `ValueError` from `validate_sql`):
-
-```bash
-# Force a rejection through the trigger path — cohort_gap_analysis hardcodes SQL, so instead
-# hit role_benchmark with an invalid canonical_role_id to exercise the _require_safe_token guard.
 curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark \
   -H "Content-Type: application/json" \
   -d '{"canonical_role_id":"bobby; DROP TABLE students--"}'
+```
+
+PowerShell:
+```powershell
+$body = '{"canonical_role_id":"bobby; DROP TABLE students--"}'
+curl.exe -sS -o NUL -w "HTTP %{http_code}`n" -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark -H "Content-Type: application/json" -d $body
 ```
 
 **Expected:** `HTTP 400`. Response body has `{"detail": "invalid_role_id"}`.
 
 ---
 
+## 7. SQL Guardrails — Adversarial Verification
+
+> **How this differs from §5 Step 3:** Step 3 tested the guardrails with **valid SQL** (happy path — does a legitimate query pass? does LIMIT get capped correctly?). This section tests with **malicious SQL** (adversarial path — does DROP TABLE get blocked? does UNION into `pg_shadow` get caught? does comment injection bypass the check?). Step 3 answers "does it let good queries through?" — this section answers "does it stop bad queries?"
+
+The Q&A pipeline accepts natural-language questions, not raw SQL — users never type SQL directly. But the pipeline generates SQL internally (via the LLM in `routing.py`), and that generated SQL passes through the guardrail **before** it reaches the database. The guardrail is the **hard backstop**: even if the LLM is tricked or hallucinates dangerous SQL, the guardrail blocks it.
+
+This section tests the guardrail **directly with raw SQL strings**, bypassing the LLM entirely. This is intentional — LLM output is non-deterministic, so testing the guardrail through the LLM would produce flaky results. By feeding known-bad SQL directly into `validate_ask_the_data_sql()` and `validate_sql()`, we verify every rejection path deterministically.
+
+**Why two guardrails?** The JIE has two SQL execution contexts with different security boundaries:
+
+- **`validate_ask_the_data_sql()`** — the Ask-the-Data Streamlit page where users ask natural-language questions. Allowlist is **operational** tables (`job_postings`, `companies`, `skills`, etc.). More restrictive because the LLM generates the SQL from user input.
+- **`validate_sql()`** — the trigger endpoints and internal routing pipeline. Allowlist is **aggregate** tables (`skill_demand_weekly`, `canonical_roles`, etc.). Still guarded, but the SQL patterns are more constrained (parameterized templates, not free-form LLM output).
+
+Both enforce: SELECT-only (no DDL/DML), single-statement (no `;` chaining), schema-scoped (`dbo.*` only), and a row cap (`LIMIT 100` max). The guardrails use **sqlglot AST parsing** (not regex) — this means attacks like comment injection (`-- ; DROP TABLE`) or whitespace obfuscation are caught because sqlglot sees the parsed tree, not the raw text.
+
+### Step 1 — Run the full adversarial test suite
+
+```
+python scripts/smoke/sql_guardrails_adversarial.py
+```
+
+This runs 15 test cases: 9 against the Ask-the-Data (operational) guardrail and 6 against the aggregate guardrail. Each case is a known-bad SQL string designed to exploit a specific attack vector:
+
+**Ask-the-Data adversarial cases (9 — all should REJECT):**
+
+| Case | Attack vector | SQL | Expected reason |
+|------|--------------|-----|-----------------|
+| DROP TABLE | DDL injection | `DROP TABLE dbo.job_postings` | `forbidden_keyword` |
+| INSERT | DML injection | `INSERT INTO dbo.job_postings (id) VALUES (1)` | `forbidden_keyword` |
+| UNION over disallowed | Data exfiltration via UNION | `SELECT 1 UNION SELECT * FROM pg_shadow` | `disallowed_table:pg_shadow` |
+| multi-statement | Statement chaining | `SELECT 1; SELECT 2` | `multiple_statements` |
+| comment bypass | Hide malicious SQL after `--` | `SELECT * FROM dbo.job_postings -- ; DROP TABLE x` | `multiple_statements` |
+| subquery forbidden | Subquery into system table | `SELECT * FROM dbo.job_postings WHERE id IN (SELECT id FROM pg_authid)` | `disallowed_table:pg_authid` |
+| disallowed schema | Access `pg_catalog` | `SELECT * FROM pg_catalog.pg_tables` | `disallowed_schema:pg_catalog` |
+| disallowed table | Access `llm_audit_log` (protected) | `SELECT * FROM dbo.llm_audit_log` | `disallowed_table:llm_audit_log` |
+| not SELECT | TRUNCATE disguised | `TRUNCATE TABLE dbo.job_postings` | `forbidden_keyword` |
+
+**Aggregate adversarial cases (6 — 5 should REJECT, 1 should PASS with cap):**
+
+| Case | SQL | Expected |
+|------|-----|----------|
+| DROP in aggregate | `DROP TABLE dbo.skill_demand_weekly` | `ok=False` |
+| INSERT in aggregate | `INSERT INTO dbo.skill_demand_weekly (id) VALUES (1)` | `ok=False` |
+| UPDATE forbidden | `UPDATE dbo.skill_demand_weekly SET posting_count=0` | `ok=False` |
+| multi-statement | `SELECT 1; SELECT 2` | `ok=False` |
+| non-allowlisted table | `SELECT * FROM dbo.job_postings` | `ok=False` (job_postings is operational, not aggregate) |
+| LIMIT over cap | `SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 5000` | `ok=True`, LIMIT rewritten to 100 |
+
+**Expected:** `15/15 passed`.
+
+**Interactive testing — validate your own SQL:**
+
+Use the interactive scripts from §5 Step 3 to test any SQL string against either guardrail:
+
+```
+python scripts/smoke/validate_atd_sql.py "SELECT * FROM pg_catalog.pg_tables"
+python scripts/smoke/validate_atd_sql.py "SELECT job_title FROM dbo.job_postings LIMIT 10"
+python scripts/smoke/validate_agg_sql.py "SELECT * FROM dbo.job_postings"
+python scripts/smoke/validate_agg_sql.py "SELECT skill_label FROM dbo.skill_demand_weekly LIMIT 10"
+```
+
+These accept any SQL string as an argument and print `PASS` or `REJECTED` with the specific reason. Try crafting your own attack vectors — if one gets through, that's a security finding to flag.
+
+### Step 2 — Confirm guardrail audit rows exist from API-path calls
+
+Guardrail validation results are logged to `dbo.llm_audit_log` **only when called through the FastAPI route handlers** (not when calling `validate_sql` / `validate_ask_the_data_sql` directly from smoke scripts). This is the same audit-coverage gap as [#187](https://github.com/Building-With-Agents/job-intelligence-engine/issues/187).
+
+The §6 API smoke test (`api_smoke.py`) and any earlier `POST /analytics/query` calls should have produced audit rows:
+
+```
+python scripts/db_check.py query "SELECT agent_name, model, provider, success, error_reason, created_at FROM dbo.llm_audit_log WHERE agent_name='analytics_query_api' ORDER BY created_at DESC LIMIT 10"
+```
+
+**Expected:**
+- `agent_name='analytics_query_api'`, `model='sql-guardrail'`, `provider='internal'`
+- `success=true` rows from trigger endpoints (valid parameterized SQL)
+- `success=false` rows from Q&A calls where LLM-generated SQL was rejected (e.g., `error_reason='disallowed_table:skill_demand_weekly'`)
+- The §7 Step 1 adversarial test cases will **NOT** appear here — they called the guardrail directly, not through the API. This is a known limitation tracked in [#187](https://github.com/Building-With-Agents/job-intelligence-engine/issues/187).
+
+### Step 3 — End-to-end adversarial via the API
+
+Step 1 tested the guardrail functions directly. This step fires a malicious payload through the **full HTTP path** to confirm the rejection travels cleanly from guardrail → route handler → HTTP 400 response (no 500, no stack trace, no crash).
+
+If you already ran `api_smoke.py` in §6, this was covered — the script includes an adversarial injection test. You can re-run just that check, or try your own injection string:
+
+```
+python scripts/smoke/api_smoke.py --skip-query
+python scripts/smoke/api_smoke.py --skip-query --adversarial-role-id "'; DROP TABLE dbo.job_postings; --"
+python scripts/smoke/api_smoke.py --skip-query --adversarial-role-id "UNION SELECT * FROM pg_shadow"
+```
+
+The adversarial test is the last item in the summary — look for `Adversarial rejection (expect 400): PASS`.
+
+**What the test does:** sends the `--adversarial-role-id` string (default: `bobby; DROP TABLE students--`) as `canonical_role_id` to `POST /analytics/triggers/role_benchmark`. The route handler's `_require_safe_token()` guard rejects the input before it reaches SQL generation. The API returns HTTP 400 with `{"detail": "invalid_role_id"}` — a structured error, not a crash.
+
+**Reminder — interactive guardrail testing from §5 Step 3:**
+
+For experimenting with raw SQL against the guardrails directly (not through the API), use:
+
+```
+python scripts/smoke/validate_atd_sql.py "YOUR SQL HERE"    # operational allowlist
+python scripts/smoke/validate_agg_sql.py "YOUR SQL HERE"    # aggregate allowlist
+```
+
+These test the guardrail logic itself; the `api_smoke.py --adversarial-role-id` flag tests the HTTP-layer input guard (`_require_safe_token`) which fires before SQL is even generated.
+
+**Individual curl (reference):**
+
+bash / git-bash:
+```bash
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark \
+  -H "Content-Type: application/json" \
+  -d '{"canonical_role_id":"bobby; DROP TABLE students--"}'
+```
+
+PowerShell:
+```powershell
+$body = '{"canonical_role_id":"bobby; DROP TABLE students--"}'
+curl.exe -sS -o NUL -w "HTTP %{http_code}`n" -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark -H "Content-Type: application/json" -d $body
+```
+
+**Expected:** `HTTP 400`. Response body: `{"detail": "invalid_role_id"}`.
+
+---
+
 ## 8. Audit Log Verification
+
+The audit log provides a complete trail of every Q&A interaction for observability, cost accounting, and debugging. Juan | Enrique (Pair D) built the writer (`analytics/query_engine/audit_log.py`), the ORM model (`common/data_store/models.py::OrchestrationAuditLog`), and the route-handler integration. Every request that hits the FastAPI layer writes an audit row with the question hash, generated SQL hash, confidence score, and success status.
+
+Two known limitations:
+- **#187 — Audit only at the API layer.** Direct function calls (e.g., `scripts/smoke/qa_pipeline.py`, `sql_guardrails_adversarial.py`) bypass the route handlers and do not write audit rows. Only HTTP requests to the FastAPI endpoints are audited.
+- **#188 — `success` reflects HTTP status, not answer quality.** A row with `success=true, confidence=0.0` may be a quality failure (refusal, low evidence). The `success` field means "the route handler returned 200," not "the answer was good."
 
 ### Step 1 — Confirm table and columns
 
@@ -907,46 +1132,133 @@ python scripts/db_check.py query "SELECT column_name, data_type, is_nullable FRO
 
 **Expected columns:** `id`, `created_at`, `correlation_id`, `endpoint`, `question_hash`, `sql_hash`, `confidence`, `success`, `error_code`, `payload`.
 
-### Step 2 — Run a few Q&A calls with distinct correlation IDs
+### Step 2 — Run the audit log smoke test
 
-```bash
-for cid in audit-1 audit-2 audit-3; do
-  curl -sS -o /dev/null -X POST http://127.0.0.1:8000/analytics/query \
-    -H "Content-Type: application/json" \
-    -d "{\"question\":\"Top skills in the most recent week\",\"correlation_id\":\"$cid\"}"
-done
+```
+python scripts/smoke/audit_log_check.py
 ```
 
-### Step 3 — Verify audit rows landed with populated fields
+**What the script does** (core body — same code in `scripts/smoke/audit_log_check.py`):
+
+```python
+import json, urllib.request
+from common.data_store.database import session_scope
+from common.data_store.models import OrchestrationAuditLog
+
+# 1. Send 3 Q&A requests with distinct correlation IDs
+for cid in ["audit-check-1", "audit-check-2", "audit-check-3"]:
+    data = json.dumps({"question": "Top skills by posting count", "correlation_id": cid}).encode()
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+    urllib.request.urlopen(req)
+
+# 2. Send 1 adversarial request
+data = json.dumps({"canonical_role_id": "bad;role--injection", "correlation_id": "audit-check-adversarial"}).encode()
+req = urllib.request.Request(trigger_url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+
+# 3. Query audit log for those correlation IDs and verify:
+#    - rows exist for each happy-path correlation_id
+#    - endpoint field is populated
+#    - question_hash length = 64 (SHA-256 hex)
+#    - success field is populated
+#    - adversarial row present (may be missing per #187)
+with session_scope() as session:
+    rows = session.query(OrchestrationAuditLog).filter(
+        OrchestrationAuditLog.correlation_id.in_(all_cids)
+    ).all()
+```
+
+**Expected output:**
+
+- 3 PASS results for happy-path correlation IDs (`audit-check-1`, `audit-check-2`, `audit-check-3`).
+- `endpoint` populated, `question_hash` length 64, `success` populated for each.
+- Adversarial audit row may show FAIL — this is expected per #187 (audit writes happen only at the route-handler layer; rejected triggers may not audit). Not a blocker.
+
+**Optional flags:**
+- `--base-url http://127.0.0.1:8000` — override API base URL
+- `--question "Which skills are trending?"` — change the test question
+
+### Step 3 — Verify audit rows manually (reference)
+
+For manual inspection of audit rows after the smoke test or after demo runs:
 
 ```bash
 python scripts/db_check.py query "SELECT created_at, correlation_id, endpoint, LENGTH(question_hash) AS qh_len, LENGTH(sql_hash) AS sh_len, confidence, success, error_code FROM dbo.orchestration_audit_log ORDER BY created_at DESC LIMIT 5"
 ```
 
 **What to check:**
-- `correlation_id` is one of the IDs you passed (`audit-1`, `audit-2`, `audit-3`).
+- `correlation_id` matches the IDs you passed.
 - `endpoint` is `/analytics/query` for Q&A calls, `/analytics/triggers/<name>` for trigger calls.
 - `qh_len = 64` (SHA-256 hex of the question).
 - `sh_len = 64` (SHA-256 hex of the generated SQL).
 - `confidence` is a float; `success = true` on happy paths.
 - `error_code` is `NULL` on success.
 
-### Step 4 — Failure-path audit (SQL rejection → audit row with error_code)
+### Step 4 — Failure-path audit (reference)
 
-Force a failure and confirm the failure is captured:
+Force a failure manually and check if a failure-path row was captured:
 
+**bash:**
 ```bash
-# invalid canonical_role_id triggers ValueError before SQL is generated — exercises the 400 path
-curl -sS -o /dev/null -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark \
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST http://127.0.0.1:8000/analytics/triggers/role_benchmark \
   -H "Content-Type: application/json" \
   -d '{"canonical_role_id":"bad;role","correlation_id":"audit-fail-1"}'
 ```
 
-The route handler translates `ValueError` to `HTTPException 400`. Currently audit rows are written from the happy-path handler; failure-path auditing for triggers is tracked in the Pair D follow-up list. If no row appears for this correlation_id, flag it in the demo debrief, not a blocker.
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/analytics/triggers/role_benchmark -Method POST -ContentType "application/json" -Body '{"canonical_role_id":"bad;role","correlation_id":"audit-fail-1"}' -ErrorAction SilentlyContinue
+```
+
+Then check for the row:
+
+```bash
+python scripts/db_check.py query "SELECT correlation_id, endpoint, success, error_code FROM dbo.orchestration_audit_log WHERE correlation_id='audit-fail-1'"
+```
+
+The route handler translates `ValueError` to `HTTPException 400`. Currently audit rows are written from the happy-path handler; failure-path auditing for triggers is tracked in the Pair D follow-up list (#187). If no row appears for this correlation_id, that is expected behavior — flag it in the demo debrief, not a blocker.
 
 ---
 
 ## 9. Streamlit Dashboard — New Pages
+
+The dashboard is the user-facing layer of the JIE analytics stack. It calls the FastAPI API over HTTP — it never imports agent code directly. This architecture boundary is enforced by `dashboard/analytics_query_client.py`, which wraps all HTTP calls to the API. Bryan | Emilio (Pair C) own the Ask-the-Data page; Juan | Enrique (Pair D) own the 3 trigger visualization pages (Skills Gap Map, Emergence Alerts, Regional Heatmap).
+
+### Step 1 — Validate page imports (smoke test)
+
+Before launching Streamlit, confirm all 4 new page modules import cleanly:
+
+```
+python scripts/smoke/streamlit_check.py
+```
+
+**What the script does** (core body — same code in `scripts/smoke/streamlit_check.py`):
+
+```python
+import importlib
+
+pages = [
+    "dashboard.pages_ask_the_data",
+    "dashboard.pages_skills_gap_map",
+    "dashboard.pages_emergence_alerts",
+    "dashboard.pages_regional_heatmap",
+]
+for module_path in pages:
+    importlib.import_module(module_path)  # raises ImportError on missing deps
+```
+
+**Expected output:** All 4 pages show `OK`. If any show `FAIL`, the error message will name the missing dependency — typically `streamlit`, `plotly`, or a module under `analytics/` that needs a post-merge `pip install -r requirements.txt`.
+
+### Step 2 — Pre-populate caches for the dashboard
+
+The trigger visualization pages read from cache tables that are populated by the API triggers. Before launching Streamlit, pre-warm the caches using the API smoke test (requires the API to be running — see §6):
+
+```
+python scripts/smoke/api_smoke.py
+```
+
+This hits all 4 trigger endpoints and populates `dbo.cohort_gap_cache`, `dbo.disruption_fingerprints` (via §4), and the other cache tables. See §6 for full details on what the smoke test covers.
+
+### Step 3 — Launch Streamlit
 
 ```bash
 streamlit run dashboard/app.py
@@ -963,6 +1275,8 @@ Open http://localhost:8501. The sidebar lists all four new Week 8 pages:
 
 Consumes `/analytics/query` (or the direct Python path when the API is not running — check `dashboard/pages_ask_the_data.py` for the live config).
 
+**Note:** Ask-the-Data is currently blocked by #186 (`_SCHEMA_HINT` missing columns). The LLM may hallucinate column names (`skill_id`, `posted_date`, `company_id`) that do not exist in the aggregate tables, triggering the refusal path. The refusal fires correctly — synthesis is skipped, no fabrication — but happy-path answers may not appear until #186 is resolved.
+
 **Verification checklist:**
 
 | Element | Expected |
@@ -978,7 +1292,7 @@ Consumes `/analytics/query` (or the direct Python path when the API is not runni
 Ask a few probes to exercise each code path:
 
 1. **Happy path:** "Top 10 skills by posting count in the most recent week" → grounded answer + 3+ citations + follow-ups.
-2. **Sparse:** "Median salary for welders in El Paso in Q1 2025" → `volume_flagged_low=true` or refusal.
+2. **Sparse:** "Median salary for data engineers in El Paso this quarter" → `volume_flagged_low=true` or refusal.
 3. **Off-topic:** "What's the weather in El Paso?" → intent `other` → cautious refusal or deflection.
 
 ### Skills Gap Map (Pair D)
@@ -986,7 +1300,18 @@ Ask a few probes to exercise each code path:
 Consumes `dbo.cohort_gap_cache`. If the table is empty, the page should show an informative "no data" state, not a crash.
 
 **Verification:**
-- Trigger the cache at least once: `curl -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis -H "Content-Type: application/json" -d '{"cohort_key":"demo-cohort"}'`.
+- If you ran `api_smoke.py` in Step 2, the cache is already populated. Otherwise trigger it manually:
+
+  **bash:**
+  ```bash
+  curl -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis -H "Content-Type: application/json" -d '{"cohort_key":"demo-cohort"}'
+  ```
+
+  **PowerShell:**
+  ```powershell
+  Invoke-RestMethod -Uri http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis -Method POST -ContentType "application/json" -Body '{"cohort_key":"demo-cohort"}'
+  ```
+
 - Refresh the page; the cached cohort row's `gap_data.market_skill_demand` should render as a bar/heat chart.
 
 ### Emergence Alerts (Pair C, data from Pair A)
@@ -1009,7 +1334,12 @@ Consumes `dbo.geo_demand_weekly`. Requires at least 10+ rows with `region`/`subr
 
 ## 10. Cost Tracking
 
-Every Q&A run populates `SynthesisResponse.cost_breakdown_usd` with per-leg spend. These numbers come from the LLM adapter (real token counts × `PRICING` dict in `common/llm_adapter.py`), not estimates.
+Cost tracking is a core JIE requirement. Every LLM call is priced at runtime using the `PRICING` dict in `common/llm_adapter.py`, and logged to `dbo.llm_audit_log`. The `CostLedger` in `analytics/query_engine/ledger_utils.py` accumulates costs across all Q&A legs so each `SynthesisResponse` carries a `cost_breakdown_usd` showing exactly what was spent per pipeline stage. These numbers come from real token counts, not estimates.
+
+There are 3 cost surfaces to be aware of:
+- **Developer generation cost** — tokens consumed by Cursor / Claude Code during development. Not tracked by the pipeline; monitored via each developer's IDE billing.
+- **Runtime inference cost** — per-query LLM calls priced by the adapter's `PRICING` dict. This is what the pipeline tracks in `dbo.llm_audit_log` and surfaces in `cost_breakdown_usd`.
+- **Context window cost** — tokens loaded into `_SCHEMA_HINT`, few-shot examples, and system prompts. Fixed per deployment; affects the per-call cost but is not separately itemized.
 
 ### Step 1 — Inspect a `SynthesisResponse.cost_breakdown_usd`
 
@@ -1041,17 +1371,23 @@ python scripts/db_check.py query "SELECT agent_name, model, provider, input_toke
 
 ### Step 3 — Verify `resolve_model_tier` maps deployments correctly
 
-```bash
-PYTHONPATH=. python -c "
+The `resolve_model_tier()` function in `common/llm_adapter.py` maps Azure deployment names (e.g., `chat-gpt41mini`) to the canonical pricing tier keys used in the `PRICING` dict. If this mapping is misconfigured, costs are over- or under-counted. The 8.6x overcounting bug fixed in PR #142 was caused by a deployment name resolving to the wrong tier.
+
+```
+python scripts/smoke/cost_model_tier_check.py
+```
+
+**What the script does** (core body — same code in `scripts/smoke/cost_model_tier_check.py`):
+
+```python
 from common.llm_adapter import resolve_model_tier, PRICING
 for dep in ('chat-gpt41mini', 'chat-gpt41', 'chat-gpt4o-mini', 'claude-sonnet-4-5'):
     tier = resolve_model_tier(dep)
     pricing = PRICING.get(tier, {})
-    print(f'{dep:25} -> {tier:20} input=${pricing.get(\"input\", \"?\")}/1M  output=${pricing.get(\"output\", \"?\")}/1M')
-"
+    print(f'{dep:25} -> {tier:20} input=${pricing.get("input", "?")}/1M  output=${pricing.get("output", "?")}/1M')
 ```
 
-**Expected:** `chat-gpt41mini → gpt-4.1-mini`, `chat-gpt41 → gpt-4.1`, each with populated input/output pricing per million tokens.
+**Expected:** `chat-gpt41mini → gpt-4.1-mini`, `chat-gpt41 → gpt-4.1`, each with populated input/output pricing per million tokens. If any deployment prints `?` for pricing, the tier mapping is broken — check `resolve_model_tier` in `common/llm_adapter.py`.
 
 ### Step 4 — Daily cost roll-up (demo-day hygiene)
 
@@ -1193,6 +1529,32 @@ The happy-path handler writes audit rows inside the `session_scope()` transactio
 **`question_hash` or `sql_hash` NULL when the call succeeded**
 
 These fields are optional (nullable). They are populated from `audit_log.question_hash()` / `audit_log.sql_hash()`. If they are NULL despite a successful call, the route handler passed `None` for `question` or `sql_generated` — check that the handler invokes `insert_orchestration_audit` with the right arguments.
+
+### Surfaced during Week 8 runbook walkthrough (2026-04-16)
+
+**#186 — `_SCHEMA_HINT` missing columns cause LLM hallucination**
+
+The LLM hallucinated `skill_id`, `posted_date`, `company_id` across 3 reproductions. These columns do not exist in the aggregate tables referenced by `_SCHEMA_HINT`. The refusal path fires correctly — synthesis is skipped and no fabricated data is returned — but happy-path answers are blocked until the schema hint is corrected. Affects: §0 Step 4, §5 Step 2, §5 Step 5, §6 Q&A endpoint, §9 Ask-the-Data page.
+
+**#187 — Audit writes happen only at the API route-handler layer**
+
+Direct function calls (`scripts/smoke/qa_pipeline.py`, `sql_guardrails_adversarial.py`) do not write audit rows because they bypass the FastAPI route handlers. Only HTTP requests that hit the endpoints in `analytics/api/routes.py` are audited. This means smoke scripts that call pipeline functions directly will show zero audit rows for their correlation IDs. Not a bug — the audit integration point is intentionally at the API boundary.
+
+**#188 — `success=true` on refused Q&A does not mean the answer was good**
+
+The `success` field in `dbo.orchestration_audit_log` reflects the HTTP status code (200 = `true`, 4xx/5xx = `false`). A row with `success=true, confidence=0.0` is a quality failure (the question was refused or the evidence was insufficient), not a system failure. When reviewing audit logs, check `confidence` and `error_code` alongside `success` to distinguish system health from answer quality.
+
+**Migration `event_type` index warning — column mismatch**
+
+`common/data_store/migrations.py` tries to index `event_type` but the ORM model column is `endpoint`. The migration logs a warning (`column "event_type" does not exist`) but does not fail — audit rows write fine, the index is just missing. Deferred fix for Pair D.
+
+**`sqlglot` / `fastapi` / `uvicorn` missing on pre-merge venvs**
+
+Venvs created before the Week 8 PRs merged are missing these dependencies. Any import of `analytics/query_engine/` modules will fail with `ModuleNotFoundError`. Fix: `pip install -r requirements.txt` after pulling the merged Week 8 branches.
+
+**Single-temporal-period data produces empty disruption categories**
+
+When all postings come from the same temporal era (e.g., all recent JSearch ingestions land in `agentic_era`), the disruption classifier returns `cats=[]` for every role. This is expected behavior — the classifier compares skill/tool/task mix across `pre_chatgpt` → `early_genai` → `post_gpt4` → `agentic_era`, and with only one period the deltas are all zero. The 30% skill-change threshold is never met, so no patterns fire. Not a bug — seed multi-period test data to see non-empty categories.
 
 ---
 
