@@ -30,7 +30,11 @@ from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
-from analytics.query_engine.sql_guardrails import extract_tables_referenced, validate_ask_the_data_sql
+from analytics.query_engine.sql_guardrails import (
+    extract_tables_referenced,
+    inject_role_classification_issue197_guard,
+    validate_ask_the_data_sql,
+)
 from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
@@ -67,6 +71,7 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 # columns promoted to job_postings by #170; CRITICAL block updated accordingly).
 # Extended: #173 (role_classification promoted), #174 (structured salary columns promoted),
 # #199 (JSONB unnest patterns for tasks/responsibilities/context — no-aggregate dimensions).
+# #197 (role_classification mis-bucket guard for employer / curriculum / workflow NL→SQL).
 _SCHEMA_HINT = """\
 Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
 
@@ -87,7 +92,8 @@ Operational tables (use when aggregates cannot answer):
   job_postings(job_posting_id, company_id, job_title, employment_type, location,
                salary_range, salary_min, salary_max, salary_currency, salary_period,
                status, source, external_id, createdat, ingestion_run_id,
-               date_posted, seniority_level, is_remote, role_classification,
+               date_posted, seniority_level, is_remote, role_classification
+                 (enrichment classifier; ~657 IT postings mislabeled as 'N/A Not an IT role' — see issue #197),
                borderplex_subregion, temporal_period, spam_tier, quality_score, is_spam,
                soc_code, naics_code, canonical_role_id, employer_profile_id,
                is_duplicate, zip_code)
@@ -148,8 +154,23 @@ CRITICAL — columns that do NOT exist (never generate SQL referencing these):
   - job_postings has NO tasks, responsibilities, or context column.
     Those live as JSONB arrays on dbo.extracted_intelligence — see unnest patterns above.
   - Never reference: publish_date, employer_id, tech_area_id, start_date, end_date, location_id.
-    These columns are deprecated (99-100% NULL) and must not appear in any query.\
+    These columns are deprecated (99-100% NULL) and must not appear in any query.
+
+INTENT employer | curriculum | workflow — role_classification guard (issue #197):
+  Whenever generated SQL references dbo.job_postings.role_classification (including JOINs and
+  subqueries on job_postings), you MUST restrict out the known mis-bucketed placeholder:
+    AND <alias>.role_classification <> 'N/A Not an IT role'
+  Use the real alias for dbo.job_postings (e.g. jp.role_classification if FROM dbo.job_postings AS jp).
+  Apply on every SELECT that reads role_classification from job_postings so results are not
+  polluted by ~657 real IT roles misclassified as non-IT.\
 """
+
+_SQL_INTENTS_ROLE_CLASS_GUARD = (
+    "INTENT-SPECIFIC (employer | curriculum | workflow): If your SELECT references "
+    "dbo.job_postings.role_classification, always add AND <jp>.role_classification <> "
+    "'N/A Not an IT role' (use the correct job_postings alias). Issue #197 — classifier "
+    "mislabels many IT postings; never return that bucket as if it were a reliable IT slice.\n"
+)
 
 
 def _query_fingerprint(q: str) -> str:
@@ -166,8 +187,15 @@ def _intent_prompt(user_query: str) -> str:
 
 
 def _sql_prompt(user_query: str, intent_label: str) -> str:
+    il = (intent_label or "").strip().lower()
+    role_guard = (
+        _SQL_INTENTS_ROLE_CLASS_GUARD
+        if il in ("employer", "curriculum", "workflow")
+        else ""
+    )
     return (
         f"{_SCHEMA_HINT}\n"
+        f"{role_guard}"
         "Write exactly one read-only SELECT query (WITH ... SELECT is allowed). "
         "No DDL/DML, no multiple statements, no tables outside the allowlist.\n"
         "Return ONLY JSON with a single key sql whose value is the SQL string, e.g. "
@@ -276,6 +304,22 @@ def run_guardrailed_analytics_query(
         return qna.run_analytics_qna(payload, cost_ledger=ledger)
 
     ok, reason, normalized_sql = validate_ask_the_data_sql(raw_sql)
+    if ok and normalized_sql:
+        guarded = inject_role_classification_issue197_guard(
+            normalized_sql,
+            intent_label=intent_label,
+        )
+        if guarded != normalized_sql:
+            ok2, reason2, normalized_sql2 = validate_ask_the_data_sql(guarded)
+            if ok2 and normalized_sql2:
+                normalized_sql = normalized_sql2
+            else:
+                log.warning(
+                    "issue197_role_class_guard_validation_failed",
+                    reason=reason2,
+                    intent_label=intent_label,
+                )
+
     audit_sql = normalized_sql if ok and normalized_sql else raw_sql.strip()
     audit_log.log_sql_validation_to_llm_audit(
         sql_text=audit_sql,

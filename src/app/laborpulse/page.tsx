@@ -42,6 +42,8 @@ type ChatMessage = {
   id: string;
   role: ChatRole;
   content: string;
+  /** Set from FastAPI SSE when `confidence` is present (typically final event). */
+  confidence?: number;
 };
 
 type StreamBanner = {
@@ -80,6 +82,17 @@ function normalizeFollowUpQuestions(raw: unknown): string[] | null {
     }
   }
   return out;
+}
+
+const LOW_CONFIDENCE_THRESHOLD = 0.6;
+
+function parseConfidence(raw: unknown): number | undefined {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string") {
+    const n = Number(raw.trim());
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
 }
 
 /**
@@ -285,6 +298,17 @@ export default function LaborPulsePage() {
                   ...prev,
                   [assistantId]: normalized,
                 }));
+              }
+            }
+
+            if (Object.prototype.hasOwnProperty.call(o, "confidence")) {
+              const conf = parseConfidence(o.confidence);
+              if (conf !== undefined) {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantId ? { ...msg, confidence: conf } : msg,
+                  ),
+                );
               }
             }
 
@@ -545,6 +569,22 @@ export default function LaborPulsePage() {
                             : "border bg-card text-card-foreground",
                         )}
                       >
+                        {m.role === "assistant" &&
+                          typeof m.confidence === "number" &&
+                          m.confidence < LOW_CONFIDENCE_THRESHOLD && (
+                            <div
+                              className="mb-3 flex gap-2 rounded-lg border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs leading-snug text-amber-950 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-50"
+                              role="status"
+                            >
+                              <span className="shrink-0" aria-hidden>
+                                🟡
+                              </span>
+                              <p>
+                                This answer is based on limited data — treat it
+                                as directional.
+                              </p>
+                            </div>
+                          )}
                         {m.content}
                         {m.role === "assistant" &&
                           isStreaming &&

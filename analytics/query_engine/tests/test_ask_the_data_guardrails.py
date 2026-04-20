@@ -12,7 +12,10 @@ from __future__ import annotations
 
 import pytest
 
-from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
+from analytics.query_engine.sql_guardrails import (
+    inject_role_classification_issue197_guard,
+    validate_ask_the_data_sql,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -257,3 +260,61 @@ def test_non_select_rejected() -> None:
         "EXPLAIN SELECT * FROM dbo.skill_demand_weekly"
     )
     assert not ok
+
+
+# ---------------------------------------------------------------------------
+# Issue #197 — role_classification guard (employer / curriculum / workflow)
+# ---------------------------------------------------------------------------
+
+
+def test_issue197_injects_predicate_when_intent_employer_and_job_postings() -> None:
+    sql = (
+        "SELECT jp.role_classification, COUNT(*) AS n FROM dbo.job_postings jp "
+        "WHERE jp.is_spam IS NOT TRUE GROUP BY jp.role_classification LIMIT 100"
+    )
+    ok, _, normalized = validate_ask_the_data_sql(sql)
+    assert ok and normalized
+    guarded = inject_role_classification_issue197_guard(
+        normalized,
+        intent_label="employer",
+    )
+    assert "N/A Not an IT role" in guarded
+    assert "jp.role_classification" in guarded
+    ok2, reason2, final = validate_ask_the_data_sql(guarded)
+    assert ok2, reason2
+
+
+def test_issue197_noop_for_non_guard_intent() -> None:
+    sql = (
+        "SELECT jp.role_classification FROM dbo.job_postings jp LIMIT 100"
+    )
+    ok, _, normalized = validate_ask_the_data_sql(sql)
+    assert ok and normalized
+    guarded = inject_role_classification_issue197_guard(
+        normalized,
+        intent_label="trend",
+    )
+    assert guarded == normalized
+
+
+def test_issue197_noop_when_role_classification_absent() -> None:
+    sql = "SELECT jp.job_title FROM dbo.job_postings jp LIMIT 100"
+    ok, _, normalized = validate_ask_the_data_sql(sql)
+    guarded = inject_role_classification_issue197_guard(
+        normalized,
+        intent_label="curriculum",
+    )
+    assert guarded == normalized
+
+
+def test_issue197_skips_duplicate_if_na_label_already_present() -> None:
+    sql = (
+        "SELECT role_classification FROM dbo.job_postings "
+        "WHERE role_classification != 'N/A Not an IT role' LIMIT 100"
+    )
+    ok, _, normalized = validate_ask_the_data_sql(sql)
+    guarded = inject_role_classification_issue197_guard(
+        normalized,
+        intent_label="workflow",
+    )
+    assert guarded == normalized
