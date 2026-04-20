@@ -63,7 +63,8 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 
 
 # Derived from docs/planning/QA_DATA_CONTRACT.md — update that doc first, then re-derive here.
-# Tracks: GitHub #186 (hotfix), #171 (full fix after #170 schema work lands).
+# Tracks: GitHub #186 (hotfix), #171 (full contract fix — date_posted/seniority_level/is_remote
+# columns promoted to job_postings by #170; CRITICAL block updated accordingly).
 _SCHEMA_HINT = """\
 Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
 
@@ -83,6 +84,7 @@ PREFER aggregate tables for skill/tool/role/sector/geo count and trend questions
 Operational tables (use when aggregates cannot answer):
   job_postings(job_posting_id, company_id, job_title, employment_type, location,
                salary_range, status, source, external_id, createdat, ingestion_run_id,
+               date_posted, seniority_level, is_remote,
                borderplex_subregion, temporal_period, spam_tier, quality_score, is_spam,
                soc_code, naics_code, canonical_role_id, employer_profile_id,
                is_duplicate, zip_code)
@@ -94,13 +96,10 @@ Operational tables (use when aggregates cannot answer):
   industry_sectors(industry_sector_id, sector_title)
 
 CRITICAL — columns that do NOT exist (never generate SQL referencing these):
-  - job_postings has NO skill_id, skills, posted_date, or date_posted column.
+  - job_postings has NO skill_id, skills, or posted_date column.
     Skills are pre-aggregated in dbo.skill_demand_weekly.
     For "top skills by posting count" use: SELECT skill_label, posting_count
     FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10
-  - job_postings has NO date_posted column yet. Use createdat (ingestion timestamp)
-    as a recency proxy, or join dbo.normalized_jobs ON
-    jp.source = nj.source AND jp.external_id = nj.external_id to get nj.date_posted.
   - Never reference: publish_date, employer_id, tech_area_id, start_date, end_date, location_id.
     These columns are deprecated (99-100% NULL) and must not appear in any query.\
 """
