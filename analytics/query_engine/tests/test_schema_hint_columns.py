@@ -15,13 +15,11 @@ No live database or LLM calls are made.
 
 from __future__ import annotations
 
-import json
 import re
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from analytics.query_engine.routing import _SCHEMA_HINT, _sql_prompt
+from analytics.query_engine.routing import _SCHEMA_HINT
 
 # ---------------------------------------------------------------------------
 # Known-good column sets (source of truth: docs/planning/QA_DATA_CONTRACT.md)
