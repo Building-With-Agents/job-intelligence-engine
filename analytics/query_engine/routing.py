@@ -65,7 +65,8 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 # Derived from docs/planning/QA_DATA_CONTRACT.md — update that doc first, then re-derive here.
 # Tracks: GitHub #186 (hotfix), #171 (full contract fix — date_posted/seniority_level/is_remote
 # columns promoted to job_postings by #170; CRITICAL block updated accordingly).
-# Extended: #173 (role_classification promoted), #174 (structured salary columns promoted).
+# Extended: #173 (role_classification promoted), #174 (structured salary columns promoted),
+# #199 (JSONB unnest patterns for tasks/responsibilities/context — no-aggregate dimensions).
 _SCHEMA_HINT = """\
 Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
 
@@ -97,11 +98,55 @@ Operational tables (use when aggregates cannot answer):
   employer_profiles(id, company_id, company_size, ai_maturity_signal, sector, is_known_employer)
   industry_sectors(industry_sector_id, sector_title)
 
+Extracted intelligence (JSONB unnest — ONLY path for task / responsibility / context questions):
+  extracted_intelligence(id, normalized_job_id, skills, tools, tasks, responsibilities, context)
+    skills, tools, tasks, responsibilities, context are JSONB arrays of objects.
+    skills + tools have aggregate tables above — PREFER those for counts.
+    tasks, responsibilities, context have NO aggregate — JSONB unnest is the only path.
+
+  Two-hop join from job_postings to extracted_intelligence:
+    JOIN dbo.normalized_jobs nj ON jp.source = nj.source AND jp.external_id = nj.external_id
+    JOIN dbo.extracted_intelligence ei ON ei.normalized_job_id = nj.id
+
+  Unnest tasks (no aggregate exists). Element fields:
+    task_description, task_category, seniority_signal, confidence, source_span
+    Example:
+      SELECT elem->>'task_description' AS task,
+             elem->>'task_category'    AS category,
+             elem->>'seniority_signal' AS seniority,
+             COUNT(*) AS task_count
+      FROM dbo.extracted_intelligence ei,
+           jsonb_array_elements(ei.tasks) AS elem
+      WHERE (elem->>'confidence')::float >= 0.75
+      GROUP BY task, category, seniority
+      ORDER BY task_count DESC LIMIT 20
+
+  Unnest responsibilities. Element fields:
+    responsibility_description, scope, requires_ai_competency, confidence, source_span
+    Example:
+      SELECT elem->>'scope' AS scope, COUNT(*) AS n
+      FROM dbo.extracted_intelligence ei,
+           jsonb_array_elements(ei.responsibilities) AS elem
+      WHERE (elem->>'requires_ai_competency')::bool = TRUE
+      GROUP BY scope ORDER BY n DESC
+
+  Unnest context. Element fields:
+    signal_type (remote_policy|team_size|reporting_structure|work_methodology|ai_adoption_signal),
+    value, confidence, source_span
+    Example:
+      SELECT elem->>'value' AS work_methodology, COUNT(*) AS n
+      FROM dbo.extracted_intelligence ei,
+           jsonb_array_elements(ei.context) AS elem
+      WHERE elem->>'signal_type' = 'work_methodology'
+      GROUP BY work_methodology ORDER BY n DESC LIMIT 10
+
 CRITICAL — columns that do NOT exist (never generate SQL referencing these):
   - job_postings has NO skill_id, skills, or posted_date column.
     Skills are pre-aggregated in dbo.skill_demand_weekly.
     For "top skills by posting count" use: SELECT skill_label, posting_count
     FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 10
+  - job_postings has NO tasks, responsibilities, or context column.
+    Those live as JSONB arrays on dbo.extracted_intelligence — see unnest patterns above.
   - Never reference: publish_date, employer_id, tech_area_id, start_date, end_date, location_id.
     These columns are deprecated (99-100% NULL) and must not appear in any query.\
 """

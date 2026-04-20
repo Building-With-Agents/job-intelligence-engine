@@ -292,3 +292,104 @@ def _extract_job_postings_line(hint: str) -> str:
             if line.strip().endswith(")"):
                 break
     return " ".join(block)
+
+
+# ---------------------------------------------------------------------------
+# JSONB unnest section (#199) — extracted_intelligence dimensions without aggregates
+# ---------------------------------------------------------------------------
+
+
+def test_schema_hint_contains_extracted_intelligence_section() -> None:
+    """The JSONB unnest section must declare extracted_intelligence + its 5 dimensions."""
+    assert "extracted_intelligence(" in _SCHEMA_HINT, (
+        "extracted_intelligence is missing from _SCHEMA_HINT. The 3 no-aggregate "
+        "dimensions (tasks, responsibilities, context) cannot be queried without it."
+    )
+    for col in ("skills", "tools", "tasks", "responsibilities", "context"):
+        assert col in _SCHEMA_HINT, f"extracted_intelligence dimension '{col}' missing from hint"
+
+
+def test_schema_hint_contains_jsonb_array_elements_pattern() -> None:
+    """The hint must show the jsonb_array_elements unnest syntax for at least the 3 no-aggregate dims."""
+    assert "jsonb_array_elements" in _SCHEMA_HINT, (
+        "_SCHEMA_HINT has no jsonb_array_elements example — LLM has no way to know "
+        "how to unnest tasks/responsibilities/context."
+    )
+    # Each of the 3 no-aggregate dimensions should have an unnest example
+    for dim in ("tasks", "responsibilities", "context"):
+        assert f"jsonb_array_elements(ei.{dim})" in _SCHEMA_HINT, (
+            f"Missing unnest example for ei.{dim} in _SCHEMA_HINT"
+        )
+
+
+def test_schema_hint_documents_two_hop_join_to_extracted_intelligence() -> None:
+    """The hint must document the (jp -> nj -> ei) two-hop join path."""
+    assert "ei.normalized_job_id = nj.id" in _SCHEMA_HINT, (
+        "_SCHEMA_HINT must document the join path: "
+        "extracted_intelligence.normalized_job_id = normalized_jobs.id"
+    )
+
+
+def test_schema_hint_critical_block_warns_no_jsonb_columns_on_job_postings() -> None:
+    """job_postings.tasks/responsibilities/context don't exist — must be called out as
+    a hallucination trap (LLM sometimes assumes JSONB columns are on job_postings)."""
+    assert "job_postings has NO tasks" in _SCHEMA_HINT or "NO tasks, responsibilities, or context" in _SCHEMA_HINT, (
+        "CRITICAL block must warn that tasks/responsibilities/context don't live on job_postings"
+    )
+
+
+# Mocked-LLM SQL tests for the 3 no-aggregate dimensions
+@pytest.mark.parametrize(
+    ("question", "mock_sql"),
+    [
+        (
+            "What kinds of tasks do mid-level data engineers typically handle?",
+            "SELECT elem->>'task_description' AS task, COUNT(*) AS task_count "
+            "FROM dbo.extracted_intelligence ei, jsonb_array_elements(ei.tasks) AS elem "
+            "WHERE (elem->>'confidence')::float >= 0.75 "
+            "GROUP BY task ORDER BY task_count DESC LIMIT 20",
+        ),
+        (
+            "Which roles require AI competency at team scope?",
+            "SELECT elem->>'scope' AS scope, COUNT(*) AS n "
+            "FROM dbo.extracted_intelligence ei, jsonb_array_elements(ei.responsibilities) AS elem "
+            "WHERE (elem->>'requires_ai_competency')::bool = TRUE "
+            "GROUP BY scope ORDER BY n DESC",
+        ),
+        (
+            "What work methodologies show up in postings?",
+            "SELECT elem->>'value' AS work_methodology, COUNT(*) AS n "
+            "FROM dbo.extracted_intelligence ei, jsonb_array_elements(ei.context) AS elem "
+            "WHERE elem->>'signal_type' = 'work_methodology' "
+            "GROUP BY work_methodology ORDER BY n DESC LIMIT 10",
+        ),
+    ],
+)
+def test_mock_llm_jsonb_unnest_sql_passes_guardrail(question: str, mock_sql: str) -> None:
+    """JSONB unnest SQL against extracted_intelligence must pass the guardrail.
+
+    extracted_intelligence is in ASK_THE_DATA_ALLOWED_TABLES, and the guardrail
+    does not block jsonb_array_elements() — these queries should be permitted.
+    """
+    from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
+
+    ok, reason, _ = validate_ask_the_data_sql(mock_sql)
+    assert ok, (
+        f"JSONB unnest SQL for {question!r} was rejected by guardrail. "
+        f"Reason: {reason!r}. SQL: {mock_sql!r}"
+    )
+
+
+def test_mock_llm_hallucinated_task_column_on_job_postings_passes_guardrail_but_would_fail_at_execute() -> None:
+    """Sanity check: the guardrail validates table allowlist + structure, NOT column existence.
+    A query referencing job_postings.task_description (hallucinated) passes the guardrail but
+    will fail at execute time — the schema hint exists to PREVENT the LLM from generating it
+    in the first place."""
+    from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
+
+    bad = "SELECT task_description FROM dbo.job_postings LIMIT 10"
+    ok, reason, _ = validate_ask_the_data_sql(bad)
+    # Guardrail is structure-only; this check is to document the layered defense:
+    # _SCHEMA_HINT prevents generation, guardrail catches table-level violations,
+    # actual execute_safe catches column-level violations.
+    assert ok, "Sanity check: the guardrail itself is structure-only and accepts this; the schema hint and actual SQL execution are the layers that catch hallucinated columns."
