@@ -1,72 +1,96 @@
-# Week 9 — Temporal Comparison + Employer Drill-Down Audit
-**Owner:** Fatima (temporal) + Nestor (employer)  
-**Date:** 2026-04-20  
-**Branch:** week-09/temporal-employer-audit
+# Week 9 — Temporal & Employer Data Audit (Exercise 9.4)
 
-## What I Tested
-- Row counts and date coverage in `skill_demand_weekly` and `skill_velocity`
-- Whether temporal period labels exist on aggregate tables
-- `skill_velocity` week-over-week calculations
-- Test question: "How has Python demand changed across temporal periods in the Borderplex?"
-- `job_postings` date range vs aggregate week coverage
+---
 
-## What I Found
+### What I Tested
 
-### Gap 1 — Only one week of aggregate data (CRITICAL)
-**Table:** `skill_demand_weekly`, `skill_velocity`  
-**Finding:** Both tables contain data for only one week: `2026-04-13`. There are 3,406 skill rows but all from a single snapshot.  
-**Root cause:** `refresh_aggregates.py` defaulted to the current week (2026-04-13), but `job_postings` only has data from 2026-03-13 to 2026-04-03. The aggregate ran for a week with no postings.  
-**Effect on Q&A:** Any temporal comparison question ("How has Python demand changed over time?") will return a single data point. Trend answers will be meaningless.  
-**Classification:** Fixable in Week 10 — re-run `refresh_aggregates.py --week` for each week in the 2026-03-13 to 2026-04-03 range.
+- **Temporal / aggregates (Fatima):** Distribution of postings by week on `job_postings`; runs of `refresh_aggregates.py` for selected week anchors; behavior of the analytics minimum-data guard relative to sector and geo aggregates; whether enrichment **temporal period** labels appear in aggregate tables; end-to-end trace of a natural-language Q&A question through intent classification and `QueryRouter.route()`.
+- **Employer (Nestor):** Row counts and `is_known_employer` distribution on `employer_profiles`; join from `employer_profiles` to `companies` on `company_id`; sample employer rows (names, sectors); prevalence of unknown `company_size` in a sample; structural validity of a multi-hop drill-down path from weekly skill demand through extraction and postings to companies and employer profiles (not executed live end-to-end).
 
-### Gap 2 — No temporal period labels on aggregate tables
-**Table:** `skill_demand_weekly`  
-**Finding:** No `temporal_period` column exists (pre_chatgpt, early_genai, post_gpt4, agentic_era). The table only has `week_start` as a date.  
-**Effect on Q&A:** Intent router cannot filter by temporal era. Questions like "How did Python demand change post-GPT4?" have no column to filter on.  
-**Classification:** Requires pipeline re-run + schema addition. Medium effort.
+---
 
-### Gap 3 — skill_velocity week-over-week calculations are all 0.0
-**Table:** `skill_velocity`  
-**Finding:** All 3,406 rows have `week_over_week_change = 0.0` and `four_week_trend = 'emerging'` with `trend_confidence = 0.8`. This is the default fallback — no real calculation possible with one week of data.  
-**Effect on Q&A:** Velocity/trend questions will return misleading "emerging" for every skill.  
-**Classification:** Automatically fixed once Gap 1 is resolved (multiple weeks populated).
+### What I Found
 
-### Gap 4 — sector_summary_weekly and geo_demand_weekly are empty
-**Table:** `sector_summary_weekly` (0 rows), `geo_demand_weekly` (0 rows)  
-**Finding:** Steps 6 and 7 of the pipeline ran but produced 0 rows.  
-**Effect on Q&A:** Geographic and sector questions will return no data.  
-**Classification:** Requires pipeline investigation — likely same root cause as Gap 1.
+- **Posting dates** cluster in recent weeks (Apr 13, Apr 6, Mar 30 dominant; earlier March dates negligible).
+- **Aggregate refresh outputs** differ by week: skill/tool demand and skill velocity row counts are large for Apr 13, Apr 6, and Mar 30; **sector and geo weekly rows are zero for Apr 13 and Apr 6**, while Mar 30 shows small non-zero sector/geo counts. **Totals across all weeks:** skill_demand 7862, skill_velocity 7862, sector 2, geo 7.
+- **Minimum-data guard:** An **`analytics_minimum_data_guard_no_created_column`** warning fires on every run; the guard references a column that does not exist (mismatch described as **createdat vs created_column**). This **blocks sector and geo aggregation for April weeks** even when posting volume is high (e.g. 2900+ postings in scope for that check).
+- **Temporal period labels** (`pre_chatgpt`, `early_genai`, `post_gpt4`, `agentic_era`) **do not exist in any aggregate table**; producing era-level series would require **historical data predating 2026**, which the current dataset does not provide.
+- **Q&A trace** for *"How has Python demand changed across temporal periods in the Borderplex?"*: classifier returns **intent `trend`**, confidence **0.9**, entities **Borderplex** + **Python**. **`_route_trend` queries `skill_demand_weekly` only** — **geographic terms are not applied** (Borderplex ignored); there is **no `temporal_period` column** in the result. **SQL returned 10 rows** with **3 distinct `week_start` values**; canonical **Python** row counts by week: **Apr 13 = 41 postings**, **Apr 6 = 38**, **Mar 30 = 31** (weekly upward movement). **Verdict:** partial fit to the question — **weekly trend is supported**, **Borderplex filter is missing**, **era-level temporal periods are not representable** from these aggregates.
+- **Employer:** **1373** profiles total; **1370** with `is_known_employer=true` (**99.8%**), **3** unknown. **`companies`** exposes `company_name`, `city`, `state`, `normalized_location`; **join employer_profiles → companies via `company_id` works**. Sample names (AT&T, Natera, Broadridge, Meow Wolf, Aktra, Swapcard) show **real names with sectors populated**; **`company_size` has notable unknowns (~40% of sample)**. The **full drill-down path** (skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles) is **structurally valid** but **not live-tested end-to-end**.
 
-## Test Question Results
+---
 
-**"How has Python demand changed across temporal periods in the Borderplex?"**  
-- Python found in `skill_demand_weekly`: 41 postings, 5 employers — but only for week 2026-04-13  
-- No prior weeks to compare against  
-- Answer: **Cannot be answered. Single week snapshot only.**
+### Recommendation
 
-## Top 3 Gaps by Demo Impact
-1. **Gap 1** — Only one week of data. No temporal comparison is possible at all. Fix: backfill weekly aggregates for March 13 – April 3 range.
-2. **Gap 4** — geo_demand_weekly empty. Geographic questions (Pair C's golden questions) will all fail.
-3. **Gap 2** — No temporal period labels. Era-based comparisons blocked even after backfill.
+1. **Week 10 — fix the minimum-data guard column reference** so sector/geo aggregation is not blocked when posting thresholds are met (one-line / narrow schema alignment: **createdat vs created_column** as described in the warning).
+2. **Week 10 — routing:** If questions combine **trend + geography**, extend **`_route_trend`** (or adjacent routing) so **Borderplex (and other resolved geo terms) constrain or blend** with an appropriate aggregate (e.g. geo demand or a documented join strategy), instead of silently ignoring `geographic_terms`.
+3. **Temporal periods in aggregates / Q&A:** Treat **era-level** answers as **out of scope for the current demo** until the pipeline is run on **historical** postings that span those labels; document that **aggregate tables do not carry `temporal_period`** today.
+4. **Employer drill-down:** After geo/sector guard behavior is corrected, **run a live end-to-end test** of the documented join path from weekly aggregates to employer profiles.
+5. **`company_size` unknowns:** Defer for demo; track as data-quality follow-up if product needs density on size band.
 
-## Recommendation for Week 10
-Run `refresh_aggregates.py` for each Monday in the job_postings date range:
-```bash
-python scripts/smoke/refresh_aggregates.py --week 2026-03-16
-python scripts/smoke/refresh_aggregates.py --week 2026-03-23
-python scripts/smoke/refresh_aggregates.py --week 2026-03-30
-```
-This will populate 3 additional weeks and enable real week-over-week velocity calculations.
+---
 
-## Tradeoffs Acknowledged
-- Not fixing temporal period labels this week — schema change requires migration and pipeline update, out of scope for audit timebox.
-- Not investigating geo/sector empty tables beyond root cause hypothesis — Nestor's employer audit may shed more light on join path issues.
+### Tradeoffs Acknowledged
 
-## Data Evidence
-| Table | Rows | Weeks | Date Range |
-|-------|------|-------|------------|
-| skill_demand_weekly | 3,406 | 1 | 2026-04-13 only |
-| skill_velocity | 3,406 | 1 | 2026-04-13 only |
-| sector_summary_weekly | 0 | 0 | — |
-| geo_demand_weekly | 0 | 0 | — |
-| job_postings (upstream) | 3,496 | ~4 | 2026-03-13 to 2026-04-03 |
+- **Fixing the guard first** unblocks sector/geo for high-volume weeks but does not by itself add **temporal_period** to aggregates or Q&A allowlists.
+- **Adding geo to `trend`** may duplicate logic with **`_route_geographic`** or require clear product rules (when to use `skill_demand_weekly` vs `geo_demand_weekly` vs multi-step evidence).
+- **Historical re-ingestion / backfill** for era labels is a **data and ops** cost, not a router-only change.
+- **Employer path live test** waits on stable upstream aggregates and correct guard behavior to avoid conflating join bugs with empty intermediate tables.
+
+---
+
+### Data / Evidence
+
+**Temporal — `job_postings` date distribution (counts by anchor date)**  
+Apr 13 = 1622, Apr 6 = 1309, Mar 30 = 556, Mar 23 = 6, Mar 16 = 1, Mar 9 = 2.
+
+**Temporal — `refresh_aggregates.py` (by `week_start`)**  
+
+| week_start | skill_demand | tool_demand | skill_velocity | sector | geo |
+|------------|-------------|-------------|------------------|--------|-----|
+| 2026-04-13 | 3406 | 70 | 3406 | 0 | 0 |
+| 2026-04-06 | 2229 | 76 | 2229 | 0 | 0 |
+| 2026-03-30 | 2227 | 81 | 2227 | 1 | 2 |
+
+**Temporal — totals across all weeks**  
+skill_demand = 7862, skill_velocity = 7862, sector = 2, geo = 7.
+
+**Temporal — guard / schema**  
+`analytics_minimum_data_guard_no_created_column` on every run; root cause: minimum-data guard references a **non-existent column** (**createdat vs created_column**); effect: **blocks sector and geo for April weeks** despite **2900+ postings** in the relevant guard context.
+
+**Temporal — aggregate schema vs enrichment**  
+Temporal period labels (`pre_chatgpt`, `early_genai`, `post_gpt4`, `agentic_era`) **do not exist in any aggregate table**; meaningful era breakdown needs **historical data predating 2026**.
+
+**Q&A trace — question**  
+*"How has Python demand changed across temporal periods in the Borderplex?"*
+
+**Q&A trace — classification**  
+Intent: **trend**, confidence **0.9**, extracted: `geographic_terms=[Borderplex]`, `skill_names=[Python]`.
+
+**Q&A trace — router**  
+`_route_trend` → **`skill_demand_weekly` only**; **geo terms not applied**; **no `temporal_period` column**.
+
+**Q&A trace — query outcome**  
+**10 rows**, **3 distinct `week_start`**; Python row: **Apr 13 = 41**, **Apr 6 = 38**, **Mar 30 = 31** postings. **Verdict:** partial — weekly trend supported; Borderplex filter missing; era-level periods not possible from current aggregates.
+
+**Employer — `employer_profiles`**  
+1373 total; 1370 `is_known_employer=true` (99.8%); 3 unknown.
+
+**Employer — `companies` and join**  
+Columns include `company_name`, `city`, `state`, `normalized_location`; **join employer_profiles → companies via `company_id` works**.
+
+**Employer — sample**  
+AT&T, Natera, Broadridge, Meow Wolf, Aktra, Swapcard — real names, sectors populated; **~40% of sample** with unknown **`company_size`**.
+
+**Employer — drill-down path**  
+skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles: **structurally valid**; **not live-tested end-to-end**.
+
+**Gaps (classified)**  
+
+1. `analytics_minimum_data_guard_no_created_column` — fixable Week 10 (column rename / alignment).  
+2. Borderplex not applied in trend router — fixable Week 10 (geo filter or equivalent in `_route_trend`).  
+3. Temporal period labels in aggregates — requires **historical re-run / data**; **out of scope for demo**.  
+4. `company_size` unknowns — **out of scope for demo**.  
+5. Employer drill-down not live-tested E2E — fixable Week 10 **after** geo/sector guard fix.
+
+Owner: Fatima + Nestor (Pair B), Week 9 Exercise 9.4
