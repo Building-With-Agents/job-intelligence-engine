@@ -2,7 +2,10 @@
 Seed agent pipeline data (enriched jobs, companies, NAICS) from JSON fixtures.
 
 Called automatically by seed_pg_database.py. Can also be run standalone.
-Uses UPSERT (INSERT ... ON CONFLICT DO NOTHING) — safe to run multiple times.
+Idempotent: existing rows are preserved. For tables in UPSERT_UPDATE_COLUMNS,
+new columns added by recent migrations get filled from the fixture via
+COALESCE — so re-seeding after a schema change populates new columns on
+existing rows without clobbering any locally-populated state.
 
 Usage (from project root, with venv activated):
     python scripts/pg-seed-data/seed_agent_data.py
@@ -31,6 +34,34 @@ import psycopg2.extras  # noqa: E402
 # ── Paths ─────────────────────────────────────────────────────────────
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+# ── UPSERT override map ───────────────────────────────────────────────
+# Tables listed here use ON CONFLICT DO UPDATE SET col = COALESCE(target.col, EXCLUDED.col)
+# instead of ON CONFLICT DO NOTHING. The COALESCE pattern means:
+#   - If existing row's column is NULL → set it from the fixture value
+#   - If existing row's column has a value → keep the existing value (no clobber)
+#
+# Use this for columns added by recent migrations: dev DBs that already have
+# the rows but lack the new column data get those columns filled in by re-seeding,
+# without losing any state that was locally populated.
+#
+# Columns not present in the fixture are silently skipped (backward compatible
+# with older fixtures that don't yet have the column).
+UPSERT_UPDATE_COLUMNS: dict[str, list[str]] = {
+    "job_postings": [
+        # Week 8 (#170) Q&A-ready promotions
+        "date_posted",
+        "seniority_level",
+        "is_remote",
+        # Week 8 (#173) role_classification promotion
+        "role_classification",
+        # Week 8 (#174) structured salary promotions
+        "salary_min",
+        "salary_max",
+        "salary_currency",
+        "salary_period",
+    ],
+}
 
 # ── FK-safe insert order ──────────────────────────────────────────────
 # Tables ordered so that FK dependencies are satisfied:
@@ -102,15 +133,38 @@ def _convert_value(val):
     return val
 
 
+def _build_on_conflict_clause(table: str, pk_cols: list[str], columns: list[str]) -> str:
+    """Build the ON CONFLICT clause for the upsert.
+
+    For tables in UPSERT_UPDATE_COLUMNS, filter the configured update columns
+    to those present in the fixture, then build:
+        ON CONFLICT (pk) DO UPDATE SET col = COALESCE("dbo"."<table>".col, EXCLUDED.col), ...
+    Otherwise:
+        ON CONFLICT (pk) DO NOTHING
+    """
+    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
+    update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table, []) if c in columns]
+    if not update_cols:
+        return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+    set_clauses = ", ".join(
+        f'"{c}" = COALESCE("dbo"."{table}"."{c}", EXCLUDED."{c}")' for c in update_cols
+    )
+    return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
+
+
 def upsert_records(
     cur: psycopg2.extensions.cursor,
     table: str,
     records: list[dict],
     pk_cols: list[str],
 ) -> tuple[int, int]:
-    """Insert records with ON CONFLICT DO NOTHING using fast batch inserts.
+    """Insert records with ON CONFLICT handling using fast batch inserts.
 
-    Returns (inserted, skipped). Uses psycopg2.extras.execute_values()
+    For tables in UPSERT_UPDATE_COLUMNS, conflicts trigger a COALESCE-based
+    UPDATE that fills NULL columns from the fixture without clobbering existing
+    values. For all other tables, conflicts are skipped (DO NOTHING).
+
+    Returns (inserted_or_updated, skipped). Uses psycopg2.extras.execute_values()
     for batched network round-trips instead of row-by-row.
     """
     if not records:
@@ -118,9 +172,9 @@ def upsert_records(
 
     columns = list(records[0].keys())
     col_names = ", ".join(f'"{c}"' for c in columns)
-    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
+    on_conflict = _build_on_conflict_clause(table, pk_cols, columns)
 
-    insert_sql = f'INSERT INTO "dbo"."{table}" ({col_names}) VALUES %s ON CONFLICT ({conflict_cols}) DO NOTHING'
+    insert_sql = f'INSERT INTO "dbo"."{table}" ({col_names}) VALUES %s {on_conflict}'
 
     # Pre-convert all values into tuple list
     values_list = []
@@ -134,9 +188,11 @@ def upsert_records(
             values_list,
             page_size=1000,
         )
-        inserted = cur.rowcount if cur.rowcount >= 0 else len(values_list)
-        skipped = len(values_list) - inserted
-        return inserted, skipped
+        # rowcount counts both INSERTed and UPDATEd rows under DO UPDATE; under
+        # DO NOTHING it counts only INSERTed. "skipped" = total - touched.
+        touched = cur.rowcount if cur.rowcount >= 0 else len(values_list)
+        skipped = len(values_list) - touched
+        return touched, skipped
     except Exception as exc:
         cur.connection.rollback()
         print(f"    BATCH ERROR: {str(exc)[:300]}")
@@ -145,20 +201,20 @@ def upsert_records(
         row_sql = (
             f'INSERT INTO "dbo"."{table}" ({col_names}) '
             f"VALUES ({placeholders}) "
-            f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+            f"{on_conflict}"
         )
-        inserted = 0
+        touched = 0
         for i, vals in enumerate(values_list):
             try:
                 cur.execute(row_sql, vals)
                 cur.connection.commit()
                 if cur.rowcount > 0:
-                    inserted += 1
+                    touched += 1
             except Exception as row_exc:
                 cur.connection.rollback()
                 if i < 3:
                     print(f"    Row {i + 1} error: {str(row_exc)[:200]}")
-        return inserted, len(values_list) - inserted
+        return touched, len(values_list) - touched
 
 
 def run_migrations() -> None:

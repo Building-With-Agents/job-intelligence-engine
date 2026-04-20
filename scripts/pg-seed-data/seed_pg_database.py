@@ -2,8 +2,13 @@
 Idempotent database seeder — reference data + agent pipeline data.
 
 Safe to re-run at any time: uses INSERT ... ON CONFLICT DO NOTHING so
-existing records are never overwritten or deleted.  New fixture records
+existing records are never overwritten or deleted. New fixture records
 are added automatically.
+
+For tables in UPSERT_UPDATE_COLUMNS (e.g. job_postings), conflicts trigger
+a COALESCE-based UPDATE that fills NULL columns from the fixture without
+clobbering existing values. This lets devs re-seed after a schema change
+to populate newly-added columns on existing rows.
 
 On a fresh database (no dbo schema), runs schema.sql DDL first.
 
@@ -38,6 +43,34 @@ SCRIPT_DIR = Path(__file__).parent
 SCHEMA_FILE = SCRIPT_DIR / "schema.sql"
 FIXTURES_DIR = SCRIPT_DIR / "fixtures"
 METADATA_FILE = FIXTURES_DIR / "metadata.json"
+
+# ── UPSERT override map ───────────────────────────────────────────────
+# Tables listed here use ON CONFLICT DO UPDATE SET col = COALESCE(target.col, EXCLUDED.col)
+# instead of ON CONFLICT DO NOTHING. The COALESCE pattern means:
+#   - If existing row's column is NULL → set it from the fixture value
+#   - If existing row's column has a value → keep the existing value (no clobber)
+#
+# Use this for columns added by recent migrations: dev DBs that already have
+# the rows but lack the new column data get those columns filled in by re-seeding,
+# without losing any state that was locally populated.
+#
+# Columns not present in the fixture are silently skipped (backward compatible
+# with older fixtures that don't yet have the column).
+UPSERT_UPDATE_COLUMNS: dict[str, list[str]] = {
+    "job_postings": [
+        # Week 8 (#170) Q&A-ready promotions
+        "date_posted",
+        "seniority_level",
+        "is_remote",
+        # Week 8 (#173) role_classification promotion
+        "role_classification",
+        # Week 8 (#174) structured salary promotions
+        "salary_min",
+        "salary_max",
+        "salary_currency",
+        "salary_period",
+    ],
+}
 
 # ── FK-safe insert order ──────────────────────────────────────────────
 # Tables are grouped into tiers: each tier only depends on tables in
@@ -223,6 +256,25 @@ def load_fixture(table_name: str) -> list[dict]:
     return json.loads(text)
 
 
+def _build_on_conflict_clause(table_name: str, pk_cols: list[str], columns: list[str]) -> str:
+    """Build the ON CONFLICT clause for the upsert.
+
+    For tables in UPSERT_UPDATE_COLUMNS, filter the configured update columns
+    to those present in the fixture, then build:
+        ON CONFLICT (pk) DO UPDATE SET col = COALESCE("dbo"."<table>".col, EXCLUDED.col), ...
+    Otherwise:
+        ON CONFLICT (pk) DO NOTHING
+    """
+    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
+    update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table_name, []) if c in columns]
+    if not update_cols:
+        return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+    set_clauses = ", ".join(
+        f'"{c}" = COALESCE("dbo"."{table_name}"."{c}", EXCLUDED."{c}")' for c in update_cols
+    )
+    return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
+
+
 def upsert_records(
     conn: psycopg2.extensions.connection,
     table_name: str,
@@ -230,9 +282,13 @@ def upsert_records(
     col_types: dict[str, str],
     pk_cols: list[str],
 ) -> tuple[int, int]:
-    """Insert records with ON CONFLICT DO NOTHING using fast batch inserts.
+    """Insert records with ON CONFLICT handling using fast batch inserts.
 
-    Returns (inserted, skipped).
+    For tables in UPSERT_UPDATE_COLUMNS, conflicts trigger a COALESCE-based
+    UPDATE that fills NULL columns from the fixture without clobbering existing
+    values. For all other tables, conflicts are skipped (DO NOTHING).
+
+    Returns (inserted_or_updated, skipped).
     """
     if not records:
         return 0, 0
@@ -263,8 +319,8 @@ def upsert_records(
             placeholder_parts.append("%s")
     values_template = "(" + ", ".join(placeholder_parts) + ")"
 
-    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
-    insert_sql = f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES %s ON CONFLICT ({conflict_cols}) DO NOTHING'
+    on_conflict = _build_on_conflict_clause(table_name, pk_cols, columns)
+    insert_sql = f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES %s {on_conflict}'
 
     # Build values list
     values_list = []
@@ -280,6 +336,8 @@ def upsert_records(
             page_size=1000,
         )
         conn.commit()
+        # rowcount counts both INSERTed and UPDATEd rows under DO UPDATE; under
+        # DO NOTHING it counts only INSERTed. "skipped" = total - touched.
         inserted = cur.rowcount if cur.rowcount >= 0 else len(values_list)
         skipped = len(values_list) - inserted
     except Exception as exc:
@@ -291,7 +349,7 @@ def upsert_records(
             row_sql = (
                 f'INSERT INTO "dbo"."{table_name}" ({col_list}) '
                 f"VALUES {values_template} "
-                f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+                f"{on_conflict}"
             )
             try:
                 cur.execute(row_sql, vals)

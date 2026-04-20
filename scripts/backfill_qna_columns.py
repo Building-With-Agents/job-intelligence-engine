@@ -116,6 +116,10 @@ EXPERIENCE_LEVEL_TO_SENIORITY = {
 
 # A single multi-column UPDATE FROM join. Each column is wrapped in COALESCE so we
 # never overwrite a non-NULL value already on the row (idempotent).
+# NOTE on duplicates: dbo.normalized_jobs has ~100 duplicate (source, external_id) pairs
+# (re-ingested rows with different id). All three backfill queries pick the latest (MAX(id))
+# normalized_jobs row per (source, external_id) deterministically via LATERAL ... LIMIT 1.
+
 _BULK_UPDATE_SQL = text(
     """
     UPDATE dbo.job_postings jp SET
@@ -125,7 +129,13 @@ _BULK_UPDATE_SQL = text(
         salary_max      = COALESCE(jp.salary_max,      nj.salary_max),
         salary_currency = COALESCE(jp.salary_currency, nj.salary_currency),
         salary_period   = COALESCE(jp.salary_period,   nj.salary_period)
-    FROM dbo.normalized_jobs nj
+    FROM (
+        SELECT DISTINCT ON (source, external_id)
+            source, external_id, date_posted, is_remote,
+            salary_min, salary_max, salary_currency, salary_period
+        FROM dbo.normalized_jobs
+        ORDER BY source, external_id, id DESC
+    ) nj
     WHERE jp.source = nj.source
       AND jp.external_id = nj.external_id
       AND (
@@ -149,7 +159,13 @@ _BULK_DRYRUN_SQL = text(
         SUM(CASE WHEN jp.salary_currency IS NULL AND nj.salary_currency IS NOT NULL THEN 1 ELSE 0 END) AS salary_currency,
         SUM(CASE WHEN jp.salary_period   IS NULL AND nj.salary_period   IS NOT NULL THEN 1 ELSE 0 END) AS salary_period
     FROM dbo.job_postings jp
-    JOIN dbo.normalized_jobs nj
+    JOIN (
+        SELECT DISTINCT ON (source, external_id)
+            source, external_id, date_posted, is_remote,
+            salary_min, salary_max, salary_currency, salary_period
+        FROM dbo.normalized_jobs
+        ORDER BY source, external_id, id DESC
+    ) nj
       ON jp.source = nj.source
      AND jp.external_id = nj.external_id
     """
@@ -209,9 +225,11 @@ _SENIORITY_FROM_EXPERIENCE_LEVEL_SQL = text(
                 ELSE NULL
             END AS mapped
         FROM dbo.job_postings jp2
-        JOIN dbo.normalized_jobs nj
-          ON jp2.source = nj.source
-         AND jp2.external_id = nj.external_id
+        JOIN LATERAL (
+            SELECT experience_level FROM dbo.normalized_jobs
+            WHERE source = jp2.source AND external_id = jp2.external_id
+            ORDER BY id DESC LIMIT 1
+        ) nj ON TRUE
         WHERE jp2.seniority_level IS NULL
           AND nj.experience_level IS NOT NULL
     ) sub
@@ -232,11 +250,18 @@ _FETCH_SENIORITY_CANDIDATES_SQL = text(
         ei.responsibilities      AS responsibilities,
         ei.context               AS context
     FROM dbo.job_postings jp
-    LEFT JOIN dbo.normalized_jobs nj
-      ON jp.source = nj.source
-     AND jp.external_id = nj.external_id
-    LEFT JOIN dbo.extracted_intelligence ei
-      ON ei.normalized_job_id = nj.id
+    LEFT JOIN LATERAL (
+        SELECT id FROM dbo.normalized_jobs
+        WHERE source = jp.source AND external_id = jp.external_id
+        ORDER BY id DESC LIMIT 1
+    ) nj ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT skills, tools, tasks, responsibilities, context
+        FROM dbo.extracted_intelligence
+        WHERE normalized_job_id = nj.id
+        ORDER BY id DESC
+        LIMIT 1
+    ) ei ON TRUE
     WHERE jp.seniority_level IS NULL
     ORDER BY jp.job_posting_id
     """
@@ -264,8 +289,11 @@ def backfill_seniority(
                 """
                 SELECT COUNT(*) AS n
                 FROM dbo.job_postings jp
-                JOIN dbo.normalized_jobs nj
-                  ON jp.source = nj.source AND jp.external_id = nj.external_id
+                JOIN LATERAL (
+                    SELECT experience_level FROM dbo.normalized_jobs
+                    WHERE source = jp.source AND external_id = jp.external_id
+                    ORDER BY id DESC LIMIT 1
+                ) nj ON TRUE
                 WHERE jp.seniority_level IS NULL
                   AND nj.experience_level IS NOT NULL
                   AND UPPER(TRIM(nj.experience_level)) IN (
@@ -344,11 +372,18 @@ _FETCH_ROLE_CANDIDATES_SQL = text(
         ei.responsibilities      AS responsibilities,
         ei.context               AS context
     FROM dbo.job_postings jp
-    LEFT JOIN dbo.normalized_jobs nj
-      ON jp.source = nj.source
-     AND jp.external_id = nj.external_id
-    LEFT JOIN dbo.extracted_intelligence ei
-      ON ei.normalized_job_id = nj.id
+    LEFT JOIN LATERAL (
+        SELECT id FROM dbo.normalized_jobs
+        WHERE source = jp.source AND external_id = jp.external_id
+        ORDER BY id DESC LIMIT 1
+    ) nj ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT skills, tools, tasks, responsibilities, context
+        FROM dbo.extracted_intelligence
+        WHERE normalized_job_id = nj.id
+        ORDER BY id DESC
+        LIMIT 1
+    ) ei ON TRUE
     WHERE jp.role_classification IS NULL
     ORDER BY jp.job_posting_id
     """
@@ -371,7 +406,7 @@ def backfill_role_classification(
     technology_areas = [
         (str(r["id"]), r["title"])
         for r in session.execute(
-            text("SELECT technology_area_id::text AS id, title FROM dbo.technology_areas WHERE title IS NOT NULL")
+            text("SELECT id::text AS id, title FROM dbo.technology_areas WHERE title IS NOT NULL")
         ).mappings().all()
     ]
     industry_sectors = [
@@ -499,7 +534,9 @@ def main() -> int:
         bulk_targets = [c for c in BULK_COLUMNS_FROM_NORMALIZED if c in columns]
         if bulk_targets:
             log.info("Bulk pass for: %s", bulk_targets)
-            backfill_bulk_columns(session, dry_run=args.dry_run)
+            bulk_counts = backfill_bulk_columns(session, dry_run=args.dry_run)
+            if args.dry_run:
+                log.info("bulk projection (would-fill per column from normalized_jobs): %s", bulk_counts)
 
         # seniority_level
         if "seniority_level" in columns:
