@@ -56,17 +56,80 @@ The scoring criteria (`ideal_answer_summary`, `must_include`, `must_not_include`
 - References to tables, columns, or data dimensions that don't exist in the current JIE schema.
 - Borderplex geography assumptions that aren't actually ingested (Austin, Albuquerque, state-wide, national — none of these are in the corpus per `config/ingestion_queries.yaml`).
 
-## After the pair finishes all assigned intents
+## After your pair finishes authoring — DO NOT overwrite the eval file directly
 
-Copy the final JSON into the shared eval file:
+**Warning:** Your local `golden_questions.json` contains all 90 records — but only the 10–30 records for your assigned intents have your authored scoring criteria. The other 60–80 records are still the untouched seeded placeholders. Copying your local file straight onto `eval/qa_golden_questions.json` will **clobber every other pair's authored criteria**.
+
+The corpus must be assembled by merging all four pairs' contributions first, then copied into `eval/`.
+
+### Step 1 — each pair commits their records to their week-9 branch
+
+Work on your pair's week-9 branch. Edit only the records for your assigned intents, save via the form, then commit:
+
+```bash
+git checkout week-9/<your-workstream>
+git add tools/golden-questions-form/golden_questions.json
+git commit -m "author: <intent> scoring criteria (gq-NNN to gq-MMM)"
+git push
+```
+
+The commit diff should touch only the records for your assigned intent IDs (see the ID convention in the Week 9 runbook). Records outside your intent range should match the seeded state byte-for-byte.
+
+### Step 2 — assemble the completed corpus (Pair C, designated collector)
+
+Pair C owns the eval harness, so they're the natural assembler. Once every pair has committed, build the integration branch by cherry-picking each pair's authoring commit:
+
+```bash
+git checkout development
+git pull
+git checkout -b publish/week-09-golden-questions-eval-corpus
+
+# Cherry-pick each pair's authoring commit in turn. The commits touch
+# disjoint record ranges, so git merges cleanly under normal conditions.
+git cherry-pick <pair-A-disruption-sha>
+git cherry-pick <pair-A-emergence-sha>
+git cherry-pick <pair-B-trend-sha>
+git cherry-pick <pair-B-role_evolution-sha>
+git cherry-pick <pair-C-geographic-sha>
+git cherry-pick <pair-C-comparison-sha>
+git cherry-pick <pair-D-employer-sha>
+git cherry-pick <pair-D-curriculum-sha>
+git cherry-pick <pair-D-workflow-sha>
+```
+
+If two pairs edited the same record (they shouldn't — the intents are disjoint), resolve the conflict by picking the version with the verified scoring criteria.
+
+### Step 3 — sanity-check before copying
+
+Confirm all 90 records have authored scoring criteria (not empty placeholders):
+
+```bash
+python -c "
+import json
+data = json.load(open('tools/golden-questions-form/golden_questions.json'))
+missing = [r['id'] for r in data if not r.get('ideal_answer_summary','').strip()]
+print(f'{len(data) - len(missing)} / {len(data)} records have ideal_answer_summary')
+if missing:
+    print('Missing:', missing)
+"
+```
+
+All 90 should have non-empty `ideal_answer_summary`. If any are still empty, chase down the owning pair before proceeding.
+
+### Step 4 — copy to the eval file and open a PR
 
 ```bash
 cp tools/golden-questions-form/golden_questions.json eval/qa_golden_questions.json
+git add eval/qa_golden_questions.json
+git commit -m "eval: assemble qa_golden_questions.json corpus for v1-baseline"
+git push -u origin publish/week-09-golden-questions-eval-corpus
+gh pr create --base development --title "Publish Week 9 golden-questions corpus (v1-baseline)" --body "..."
 ```
 
-Then upload to Langfuse per the Week 9 runbook:
+### Step 5 — after the PR merges, upload to Langfuse
 
 ```bash
+git checkout development && git pull
 python scripts/upload_qa_dataset.py
 ```
 
