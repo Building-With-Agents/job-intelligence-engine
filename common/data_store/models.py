@@ -9,7 +9,7 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     employer_profiles, canonical_roles, role_snapshot_weekly, disruption_fingerprints,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
     skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
-    cohort_gap_cache, orchestration_audit_log, qa_feedback.
+    cohort_gap_cache, orchestration_audit_log, qa_feedback, conversation_log.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
 
@@ -905,4 +905,35 @@ class QaFeedback(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Labor Pulse — conversation log (Next.js API; idempotent on session + message)
+# ---------------------------------------------------------------------------
+
+
+class ConversationLog(Base):
+    """Completed Q&A turn for session analytics; unique (session_id, message_id)."""
+
+    __tablename__ = "conversation_log"
+    __table_args__ = (
+        UniqueConstraint("session_id", "message_id", name="conversation_log_session_message_unique"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    session_id: Mapped[str] = mapped_column(Text, nullable=False)
+    message_id: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
     )

@@ -64,6 +64,8 @@ type AnalyticsQueryJson = {
   confidence?: number;
 };
 
+const PING_INTERVAL_MS = 10_000;
+
 function buildSyntheticSseStream(
   data: AnalyticsQueryJson,
   signal: AbortSignal | undefined,
@@ -72,7 +74,21 @@ function buildSyntheticSseStream(
   const answer = typeof data.answer === "string" ? data.answer : "";
 
   return new ReadableStream({
-    start(controller) {
+    async start(controller) {
+      let closed = false;
+      const pingInterval = setInterval(() => {
+        if (closed || signal?.aborted) {
+          return;
+        }
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ping\ndata: {}\n\n`),
+          );
+        } catch {
+          /* stream closing */
+        }
+      }, PING_INTERVAL_MS);
+
       try {
         for (const chunk of answerToTokenChunks(answer)) {
           if (signal?.aborted) {
@@ -80,6 +96,9 @@ function buildSyntheticSseStream(
           }
           const line = `data: ${JSON.stringify({ token: chunk })}\n\n`;
           controller.enqueue(encoder.encode(line));
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 0);
+          });
         }
         if (signal?.aborted) {
           return;
@@ -102,6 +121,8 @@ function buildSyntheticSseStream(
       } catch {
         /* non-fatal */
       } finally {
+        closed = true;
+        clearInterval(pingInterval);
         try {
           controller.close();
         } catch {

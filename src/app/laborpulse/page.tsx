@@ -58,6 +58,9 @@ const FEEDBACK_API =
   process.env.NEXT_PUBLIC_LABORPULSE_FEEDBACK_API_URL ??
   "/api/laborpulse/feedback";
 
+const LOG_API =
+  process.env.NEXT_PUBLIC_LABORPULSE_LOG_API_URL ?? "/api/laborpulse/log";
+
 function questionBeforeAssistant(messages: ChatMessage[], index: number): string {
   for (let j = index - 1; j >= 0; j--) {
     if (messages[j].role === "user") return messages[j].content;
@@ -86,6 +89,9 @@ function normalizeFollowUpQuestions(raw: unknown): string[] | null {
 
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 
+/** Idle deadline (ms); timer is implemented as a resettable setInterval per spec. */
+const SSE_IDLE_MS = 15_000;
+
 function parseConfidence(raw: unknown): number | undefined {
   if (typeof raw === "number" && Number.isFinite(raw)) return raw;
   if (typeof raw === "string") {
@@ -96,18 +102,69 @@ function parseConfidence(raw: unknown): number | undefined {
 }
 
 /**
+ * Parse one SSE event block (lines between blank-line separators).
+ * Resets idle heartbeat on any well-formed frame, including `event: ping`.
+ */
+function dispatchSseEventBlock(
+  rawEvent: string,
+  handlers: {
+    onData: (value: unknown) => void;
+    onFrame?: () => void;
+  },
+): void {
+  let eventType = "message";
+  const dataLines: string[] = [];
+  for (const line of rawEvent.split(/\r?\n/)) {
+    if (line.startsWith("event:")) {
+      eventType = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+  handlers.onFrame?.();
+  if (eventType === "ping") {
+    return;
+  }
+  const dataPayload = dataLines.join("\n");
+  if (dataPayload === "" || dataPayload === "[DONE]") {
+    return;
+  }
+  try {
+    handlers.onData(JSON.parse(dataPayload));
+  } catch {
+    /* ignore non-JSON data lines */
+  }
+}
+
+/**
  * Incrementally reads SSE from a fetch response body without buffering the full stream.
+ * Uses a resettable 15s idle timer: if no SSE frame arrives in time, `onIdleTimeout` runs.
  */
 async function consumeSseStream(
   stream: ReadableStream<Uint8Array>,
   handlers: {
     onData: (value: unknown) => void;
     signal?: AbortSignal;
+    onIdleTimeout?: () => void;
   },
 ): Promise<void> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+
+  let idleInterval: ReturnType<typeof setInterval> | null = null;
+  const armIdleTimer = () => {
+    if (idleInterval !== null) {
+      clearInterval(idleInterval);
+    }
+    idleInterval = setInterval(() => {
+      handlers.onIdleTimeout?.();
+    }, SSE_IDLE_MS);
+  };
+
+  armIdleTimer();
 
   try {
     while (true) {
@@ -122,32 +179,24 @@ async function consumeSseStream(
       buffer = parts.pop() ?? "";
 
       for (const rawEvent of parts) {
-        for (const line of rawEvent.split(/\r?\n/)) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (payload === "" || payload === "[DONE]") continue;
-          try {
-            handlers.onData(JSON.parse(payload));
-          } catch {
-            /* ignore non-JSON lines */
-          }
-        }
+        if (rawEvent.trim() === "") continue;
+        dispatchSseEventBlock(rawEvent, {
+          onData: handlers.onData,
+          onFrame: armIdleTimer,
+        });
       }
     }
 
     if (buffer.trim()) {
-      for (const line of buffer.split(/\r?\n/)) {
-        if (!line.startsWith("data:")) continue;
-        const payload = line.slice(5).trim();
-        if (payload === "" || payload === "[DONE]") continue;
-        try {
-          handlers.onData(JSON.parse(payload));
-        } catch {
-          /* ignore */
-        }
-      }
+      dispatchSseEventBlock(buffer, {
+        onData: handlers.onData,
+        onFrame: armIdleTimer,
+      });
     }
   } finally {
+    if (idleInterval !== null) {
+      clearInterval(idleInterval);
+    }
     reader.releaseLock();
   }
 }
@@ -158,6 +207,10 @@ export default function LaborPulsePage() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamBanner, setStreamBanner] = useState<StreamBanner | null>(null);
+  const [connectionLost, setConnectionLost] = useState(false);
+  const [lostRetryThread, setLostRetryThread] = useState<ChatMessage[] | null>(
+    null,
+  );
   const [committedFeedback, setCommittedFeedback] = useState<
     Record<string, FeedbackVote>
   >({});
@@ -185,6 +238,8 @@ export default function LaborPulsePage() {
   const endRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const feedbackInflightRef = useRef<Set<string>>(new Set());
+  /** True when idle timeout aborted the stream (vs user navigation). */
+  const staleStreamRef = useRef(false);
 
   useEffect(() => {
     let id = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -233,6 +288,9 @@ export default function LaborPulsePage() {
       if (!sessionId || threadForApi.length === 0) return;
 
       setStreamBanner(null);
+      setConnectionLost(false);
+      setLostRetryThread(null);
+      staleStreamRef.current = false;
       abortRef.current?.abort();
       const ac = new AbortController();
       abortRef.current = ac;
@@ -247,10 +305,13 @@ export default function LaborPulsePage() {
       setMessages([...threadForApi, assistantPlaceholder]);
       setIsStreaming(true);
 
+      let accumulatedAnswer = "";
       let sawMessageStop = false;
 
       const fail = (message: string) => {
         stripFailedAssistant();
+        setConnectionLost(false);
+        setLostRetryThread(null);
         setStreamBanner({
           message,
           retryThread: threadForApi,
@@ -287,6 +348,14 @@ export default function LaborPulsePage() {
 
         await consumeSseStream(res.body, {
           signal: ac.signal,
+          onIdleTimeout: () => {
+            staleStreamRef.current = true;
+            ac.abort();
+            stripFailedAssistant();
+            setConnectionLost(true);
+            setLostRetryThread(threadForApi);
+            setIsStreaming(false);
+          },
           onData: (value) => {
             if (!value || typeof value !== "object") return;
             const o = value as Record<string, unknown>;
@@ -315,11 +384,47 @@ export default function LaborPulsePage() {
             if (o.type === "message_stop") {
               sawMessageStop = true;
               setIsStreaming(false);
+
+              const questionText =
+                [...threadForApi]
+                  .findLast((m) => m.role === "user")
+                  ?.content.trim() ?? "";
+              if (questionText && sessionId) {
+                const payload: Record<string, string | number> = {
+                  question: questionText,
+                  answer: accumulatedAnswer,
+                  session_id: sessionId,
+                  message_id: assistantId,
+                  timestamp: new Date().toISOString(),
+                };
+                const conf = parseConfidence(o.confidence);
+                if (conf !== undefined) {
+                  payload.confidence = conf;
+                }
+                void fetch(LOG_API, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                })
+                  .then((res) => {
+                    if (!res.ok) {
+                      console.error(
+                        "[laborpulse/log]",
+                        res.status,
+                        res.statusText,
+                      );
+                    }
+                  })
+                  .catch((err) => {
+                    console.error("[laborpulse/log]", err);
+                  });
+              }
               return;
             }
 
             if (typeof o.token === "string" && o.token.length > 0) {
               const token = o.token;
+              accumulatedAnswer += token;
               startTransition(() => {
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -333,14 +438,19 @@ export default function LaborPulsePage() {
           },
         });
 
-        if (!sawMessageStop) {
+        if (!sawMessageStop && !staleStreamRef.current) {
           fail(
             "The connection ended before the reply finished. You can retry.",
           );
           return;
         }
+        staleStreamRef.current = false;
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") {
+          if (staleStreamRef.current) {
+            staleStreamRef.current = false;
+            return;
+          }
           stripFailedAssistant();
           setIsStreaming(false);
           return;
@@ -398,7 +508,19 @@ export default function LaborPulsePage() {
     if (!streamBanner) return;
     startTransition(() => {
       setStreamBanner(null);
+      setConnectionLost(false);
+      setLostRetryThread(null);
       void runQuery(streamBanner.retryThread);
+    });
+  };
+
+  const onConnectionLostRetry = () => {
+    if (!lostRetryThread) return;
+    startTransition(() => {
+      setConnectionLost(false);
+      const thread = lostRetryThread;
+      setLostRetryThread(null);
+      void runQuery(thread);
     });
   };
 
@@ -532,6 +654,27 @@ export default function LaborPulsePage() {
                   ))}
                 </CardContent>
               </Card>
+            )}
+
+            {connectionLost && lostRetryThread && (
+              <div
+                className="flex flex-col gap-3 rounded-lg border border-amber-500/50 bg-amber-500/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-400/40 dark:bg-amber-500/10"
+                role="alert"
+              >
+                <p className="text-sm text-amber-950 dark:text-amber-50">
+                  Connection lost — the response may be incomplete.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 border-amber-500/50 text-amber-950 hover:bg-amber-500/20 dark:border-amber-400/40 dark:text-amber-50"
+                  onClick={onConnectionLostRetry}
+                >
+                  <RotateCcw className="mr-2 size-4" aria-hidden />
+                  Retry
+                </Button>
+              </div>
             )}
 
             <ul className="flex flex-col gap-4">

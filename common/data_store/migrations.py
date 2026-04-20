@@ -757,4 +757,31 @@ CREATE TABLE IF NOT EXISTS dbo.qa_feedback (
                 error=str(exc),
             )
 
+    # Labor Pulse — dbo.conversation_log (Next.js POST; idempotent on session_id + message_id)
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+CREATE TABLE IF NOT EXISTS dbo.conversation_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    confidence DOUBLE PRECISION NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT conversation_log_session_message_unique UNIQUE (session_id, message_id)
+);
+"""
+                    )
+                )
+            log.info("migrations_conversation_log_created")
+        except Exception as exc:
+            log.warning(
+                "migration_conversation_log_skipped",
+                error=str(exc),
+            )
+
     log.info("migrations_complete")

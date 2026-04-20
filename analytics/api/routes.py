@@ -306,6 +306,17 @@ def run_custom_employer_comparison(
 
 @router.post("/query", response_model=AnalyticsQueryResponse)
 def post_analytics_query(body: AnalyticsQueryRequest) -> AnalyticsQueryResponse:
+    """Return JSON Q&A payload.
+
+    If this endpoint is ever converted to **SSE** (``text/event-stream``), emit a
+    heartbeat every 10 seconds so clients can reset idle timers::
+
+        event: ping
+        data: {}
+
+    (blank line after ``data``). The Labor Pulse Next.js bridge already emits
+    these pings while streaming synthetic token events.
+    """
     with session_scope() as session:
         return run_analytics_qna(session, body.question, body.correlation_id)
 
