@@ -26,16 +26,27 @@ to the Week 12 Deferred Work Log below.
   the container) and confirmed exit code `1` + `refresh_db_unreachable`
   structlog line + stderr message.
 
-**Not exercised this iteration (explicit gap, worth naming):**
-- Induced failure of a single table refresh (to prove per-table error
-  isolation ships `status=failure` with the next table still running).
-- Induced step-2 failure (to prove the `skill_velocity` /
-  `skill_co_occurrence` dependency skip emits `skip_reason="dependency
-  skill_demand_weekly not successful"`).
+**Fault-injection coverage (`tests/test_refresh_aggregates_script.py`,
+4 tests, runs in ~1.4s without a database):**
+- `test_run_refresh_catches_exception_and_records_failure` — patches the
+  refresh callable to raise `RuntimeError`, asserts `StepResult.status ==
+  "failure"`, the error is captured, and the exception never propagates
+  out of `_run_refresh` (this is the runtime proof of the "log and
+  continue" contract).
+- `test_run_refresh_records_success` — sibling happy-path assertion.
+- `test_run_refresh_truncates_long_error` — oversized exception messages
+  are clamped to `_ERROR_TRUNCATE` chars so the structured log line stays
+  tractable.
+- `test_skipped_helper_returns_skipped_status` — covers the dependency
+  short-circuit path used for `skill_velocity` / `skill_co_occurrence`
+  when `skill_demand_weekly` fails (`status="skipped"`, `skip_reason`
+  populated, no row counts touched).
 
-Both paths are structurally guarded in the script
-(`_run_refresh` catches `Exception` and `depends_on` short-circuits), but
-the runtime evidence lives in the next iteration's fault-injection tests.
+Together these cover every branch of `_run_refresh` and `_skipped`. The
+one fault path **not** in the unit suite is a live end-to-end run with
+one of the real aggregator imports swapped out — deferred because it
+would need a DB fixture and adds no signal over the monkey-patched
+version above.
 
 ## What I Found
 
