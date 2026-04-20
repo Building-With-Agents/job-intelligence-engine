@@ -730,4 +730,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
                 )
         log.info("migrations_qna_retrieval_indexes_applied")
 
+    # Labor Pulse — dbo.qa_feedback (Next.js POST upsert; unique on session_id + message_id)
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+CREATE TABLE IF NOT EXISTS dbo.qa_feedback (
+    session_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    feedback TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (session_id, message_id)
+);
+"""
+                    )
+                )
+            log.info("migrations_qa_feedback_created")
+        except Exception as exc:
+            log.warning(
+                "migration_qa_feedback_skipped",
+                error=str(exc),
+            )
+
     log.info("migrations_complete")

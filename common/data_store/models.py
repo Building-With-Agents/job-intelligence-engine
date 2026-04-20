@@ -9,7 +9,7 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     employer_profiles, canonical_roles, role_snapshot_weekly, disruption_fingerprints,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
     skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
-    cohort_gap_cache, orchestration_audit_log.
+    cohort_gap_cache, orchestration_audit_log, qa_feedback.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
 
@@ -877,3 +877,32 @@ class OrchestrationAuditLog(Base):
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# Labor Pulse — Q&A feedback (Next.js API upsert)
+# ---------------------------------------------------------------------------
+
+
+class QaFeedback(Base):
+    """Thumbs / feedback on a Q&A turn; upsert key is (session_id, message_id)."""
+
+    __tablename__ = "qa_feedback"
+    __table_args__ = {"schema": "dbo"}
+
+    session_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    message_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    feedback: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
