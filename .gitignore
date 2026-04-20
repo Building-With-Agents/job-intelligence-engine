@@ -101,6 +101,7 @@ docs/CLAUDE_CODE_SETUP.md
 
 # Planning and curriculum (keep architecture docs in repo)
 docs/planning/*
+!docs/planning/QA_DATA_CONTRACT.md
 !docs/planning/ARCHITECTURE_DEEP.md
 !docs/planning/ARCHITECTURAL_DECISIONS.md
 !docs/planning/ARCHITECTURE_COMPLETE.md
