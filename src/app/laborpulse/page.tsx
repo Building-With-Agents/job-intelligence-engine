@@ -52,7 +52,7 @@ type StreamBanner = {
   retryThread: ChatMessage[];
 };
 
-type FeedbackVote = "up" | "down";
+type FeedbackVote = "thumbs_up" | "thumbs_down";
 
 const FEEDBACK_API =
   process.env.NEXT_PUBLIC_LABORPULSE_FEEDBACK_API_URL ??
@@ -70,8 +70,10 @@ function questionBeforeAssistant(messages: ChatMessage[], index: number): string
 
 function parseServerFeedback(raw: string): FeedbackVote {
   const t = raw.trim().toLowerCase();
-  if (t === "down") return "down";
-  return "up";
+  if (t === "thumbs_down" || t === "down") {
+    return "thumbs_down";
+  }
+  return "thumbs_up";
 }
 
 /** Normalize API `follow_up_questions` to trimmed non-empty strings, or null if invalid. */
@@ -214,15 +216,23 @@ export default function LaborPulsePage() {
   const [committedFeedback, setCommittedFeedback] = useState<
     Record<string, FeedbackVote>
   >({});
-  const [optimisticFeedback, addOptimisticFeedback] = useOptimistic(
+  type OptimisticFeedbackAction =
+    | { type: "apply"; messageId: string; vote: FeedbackVote }
+    | { type: "reset"; messageId: string };
+
+  const [optimisticFeedback, dispatchOptimisticFeedback] = useOptimistic(
     committedFeedback,
     (
       state: Record<string, FeedbackVote>,
-      action: { messageId: string; vote: FeedbackVote },
-    ) => ({
-      ...state,
-      [action.messageId]: action.vote,
-    }),
+      action: OptimisticFeedbackAction,
+    ) => {
+      if (action.type === "reset") {
+        const next = { ...state };
+        delete next[action.messageId];
+        return next;
+      }
+      return { ...state, [action.messageId]: action.vote };
+    },
   );
   const [pendingFeedbackId, setPendingFeedbackId] = useState<string | null>(
     null,
@@ -238,6 +248,8 @@ export default function LaborPulsePage() {
   const endRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const feedbackInflightRef = useRef<Set<string>>(new Set());
+  /** Synchronous lock so only one follow-up chip can start a query per stream cycle. */
+  const chipClickedRef = useRef(false);
   /** True when idle timeout aborted the stream (vs user navigation). */
   const staleStreamRef = useRef(false);
 
@@ -468,6 +480,7 @@ export default function LaborPulsePage() {
         if (abortControllerRef.current === ac) {
           abortControllerRef.current = null;
         }
+        chipClickedRef.current = false;
       }
     },
     [apiUrl, sessionId, stripFailedAssistant],
@@ -476,11 +489,22 @@ export default function LaborPulsePage() {
   /**
    * Appends a user turn and POSTs full `messages` + that turn to `/api/laborpulse`.
    * @param keepChipInInput — when true (follow-up chip), set input to the question text instead of clearing.
+   * @param fromFollowUpChip — when true, synchronous ref lock blocks a second chip before streaming starts.
    */
   const sendUserTurn = useCallback(
-    (text: string, options?: { keepChipInInput?: boolean }) => {
+    (
+      text: string,
+      options?: { keepChipInInput?: boolean; fromFollowUpChip?: boolean },
+    ) => {
       const trimmed = text.trim();
       if (!trimmed || !sessionId || isStreaming) return;
+
+      if (options?.fromFollowUpChip) {
+        if (chipClickedRef.current) {
+          return;
+        }
+        chipClickedRef.current = true;
+      }
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
@@ -541,7 +565,7 @@ export default function LaborPulsePage() {
       feedbackInflightRef.current.add(messageId);
 
       startTransition(async () => {
-        addOptimisticFeedback({ messageId, vote });
+        dispatchOptimisticFeedback({ type: "apply", messageId, vote });
         setPendingFeedbackId(messageId);
         setFeedbackInlineError((prev) => {
           const next = { ...prev };
@@ -583,6 +607,7 @@ export default function LaborPulsePage() {
             [messageId]: canonical,
           }));
         } catch (e) {
+          dispatchOptimisticFeedback({ type: "reset", messageId });
           setFeedbackInlineError((prev) => ({
             ...prev,
             [messageId]:
@@ -596,7 +621,7 @@ export default function LaborPulsePage() {
         }
       });
     },
-    [sessionId, committedFeedback, addOptimisticFeedback],
+    [sessionId, committedFeedback, dispatchOptimisticFeedback],
   );
 
   const showExamples = messages.length === 0 && !isStreaming;
@@ -724,16 +749,10 @@ export default function LaborPulsePage() {
                           typeof m.confidence === "number" &&
                           m.confidence < LOW_CONFIDENCE_THRESHOLD && (
                             <div
-                              className="mb-3 flex gap-2 rounded-lg border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs leading-snug text-amber-950 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-50"
+                              className="mb-3 rounded-lg border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs leading-snug text-amber-950 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-50"
                               role="status"
                             >
-                              <span className="shrink-0" aria-hidden>
-                                🟡
-                              </span>
-                              <p>
-                                This answer is based on limited data — treat it
-                                as directional.
-                              </p>
+                              ⚠ Low confidence — treat as directional
                             </div>
                           )}
                         {m.content}
@@ -765,7 +784,10 @@ export default function LaborPulsePage() {
                               className="h-auto max-w-full whitespace-normal rounded-full px-3 py-1.5 text-left text-xs font-normal leading-snug"
                               disabled={chipsDisabled || !sessionId}
                               onClick={() =>
-                                sendUserTurn(chip, { keepChipInInput: true })
+                                sendUserTurn(chip, {
+                                  keepChipInInput: true,
+                                  fromFollowUpChip: true,
+                                })
                               }
                             >
                               {chip}
@@ -783,16 +805,16 @@ export default function LaborPulsePage() {
                               size="icon"
                               className={cn(
                                 "size-8 rounded-full",
-                                vote === "up" &&
+                                vote === "thumbs_up" &&
                                   "bg-primary/15 text-primary hover:bg-primary/20",
                               )}
                               disabled={thumbsDisabled}
-                              aria-pressed={vote === "up"}
+                              aria-pressed={vote === "thumbs_up"}
                               aria-label="Thumbs up"
                               onClick={() =>
                                 submitFeedback(
                                   m.id,
-                                  "up",
+                                  "thumbs_up",
                                   qForFeedback,
                                   m.content,
                                 )
@@ -801,7 +823,7 @@ export default function LaborPulsePage() {
                               <ThumbsUp
                                 className="size-4"
                                 aria-hidden
-                                strokeWidth={vote === "up" ? 2.5 : 2}
+                                strokeWidth={vote === "thumbs_up" ? 2.5 : 2}
                               />
                             </Button>
                             <Button
@@ -810,16 +832,16 @@ export default function LaborPulsePage() {
                               size="icon"
                               className={cn(
                                 "size-8 rounded-full",
-                                vote === "down" &&
+                                vote === "thumbs_down" &&
                                   "bg-destructive/15 text-destructive hover:bg-destructive/20",
                               )}
                               disabled={thumbsDisabled}
-                              aria-pressed={vote === "down"}
+                              aria-pressed={vote === "thumbs_down"}
                               aria-label="Thumbs down"
                               onClick={() =>
                                 submitFeedback(
                                   m.id,
-                                  "down",
+                                  "thumbs_down",
                                   qForFeedback,
                                   m.content,
                                 )
@@ -828,7 +850,7 @@ export default function LaborPulsePage() {
                               <ThumbsDown
                                 className="size-4"
                                 aria-hidden
-                                strokeWidth={vote === "down" ? 2.5 : 2}
+                                strokeWidth={vote === "thumbs_down" ? 2.5 : 2}
                               />
                             </Button>
                           </div>
