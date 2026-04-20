@@ -134,6 +134,20 @@ _JOB_POSTINGS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS employer_profile_id UUID REFERENCES dbo.employer_profiles(id)",
     # Week 7 — canonical role clustering (Pair C): posting → discovered role
     "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS canonical_role_id TEXT",
+    # Week 8 (#170) — Q&A-ready fields: date_posted promoted from normalized_jobs,
+    # seniority_level + is_remote promoted from RecordEnriched event payload.
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS date_posted TIMESTAMPTZ",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS seniority_level TEXT",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS is_remote BOOLEAN",
+    # Week 8 (#173) — role_classification promoted from RecordEnriched event payload
+    # (computed by classify_job() during enrichment; previously only used for sector_id resolution).
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS role_classification TEXT",
+    # Week 8 (#174) — structured salary columns promoted from normalized_jobs.
+    # Keep salary_range TEXT for backward compat; prefer structured columns for analytics.
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_min NUMERIC",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_max NUMERIC",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_currency TEXT",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_period TEXT",
 ]
 
 # Optional FK after ``canonical_roles`` exists (create_all + alters). Idempotent via try/except.
@@ -150,6 +164,13 @@ _JOB_POSTINGS_LEGACY_CLEANUP = [
     "ALTER TABLE dbo.job_postings DROP CONSTRAINT IF EXISTS fk_job_postings_company_addresses1",
     # Drop FK to companies — pipeline resolves company_id via _resolve_or_create_company
     "ALTER TABLE dbo.job_postings DROP CONSTRAINT IF EXISTS fk_job_postings_companies1",
+    # Drop FK to employers / technology_areas — columns are 99–100% NULL; indexes are dead weight.
+    # #170 deprecation: employer_id and tech_area_id are never written by the pipeline.
+    "ALTER TABLE dbo.job_postings DROP CONSTRAINT IF EXISTS fk_job_postings_employers1",
+    "ALTER TABLE dbo.job_postings DROP CONSTRAINT IF EXISTS fk_job_postings_technology_areas1",
+    "DROP INDEX IF EXISTS dbo.fk_job_postings_employers1_idx",
+    "DROP INDEX IF EXISTS dbo.fk_job_postings_technology_areas1_idx",
+    "DROP INDEX IF EXISTS dbo.fk_job_postings_company_addresses1_idx",
     # Make legacy NOT NULL columns nullable
     "ALTER TABLE dbo.job_postings ALTER COLUMN location_id DROP NOT NULL",
     "ALTER TABLE dbo.job_postings ALTER COLUMN county DROP NOT NULL",
@@ -280,6 +301,30 @@ _SKILL_DEMAND_WEEKLY_ALTER_STATEMENTS = [
 _JOB_INGESTION_RUNS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.job_ingestion_runs ADD COLUMN IF NOT EXISTS api_requests_used INTEGER NOT NULL DEFAULT 0",
 ]
+# Week 8 (#176) — Q&A retrieval indexes on job_postings and extracted_intelligence.
+# All statements are idempotent (CREATE INDEX IF NOT EXISTS).
+# Must be applied AFTER the #170 ADD COLUMN statements so date_posted and
+# seniority_level exist on job_postings before the index is created.
+_QNA_RETRIEVAL_INDEX_STATEMENTS = [
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_created_at "
+    "ON dbo.job_postings (createdat DESC)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_date_posted "
+    "ON dbo.job_postings (date_posted DESC)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_canonical_role "
+    "ON dbo.job_postings (canonical_role_id)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_employer_profile "
+    "ON dbo.job_postings (employer_profile_id)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_seniority "
+    "ON dbo.job_postings (seniority_level)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_role_classification "
+    "ON dbo.job_postings (role_classification)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_source_external "
+    "ON dbo.job_postings (source, external_id)",
+    # NOTE: ix_extracted_intelligence_src_ext was removed — extracted_intelligence has
+    # no source/external_id columns (it links via normalized_job_id FK). The join path
+    # is already covered by ix_normalized_jobs_source_eid on dbo.normalized_jobs.
+]
+
 _SERIAL_SEQUENCE_TARGETS = (
     ("raw_ingested_jobs", "id"),
     ("job_ingestion_runs", "id"),
@@ -669,5 +714,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
                 statement=stmt,
                 error=str(exc),
             )
+
+    # Week 8 (#176) — Q&A retrieval indexes on job_postings and extracted_intelligence.
+    # Must run AFTER #170 ADD COLUMN statements so date_posted/seniority_level exist.
+    if engine.dialect.name == "postgresql":
+        for stmt in _QNA_RETRIEVAL_INDEX_STATEMENTS:
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(stmt))
+            except Exception as exc:
+                log.warning(
+                    "migration_qna_retrieval_index_skipped",
+                    statement=stmt,
+                    error=str(exc),
+                )
+        log.info("migrations_qna_retrieval_indexes_applied")
 
     log.info("migrations_complete")

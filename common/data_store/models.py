@@ -12,6 +12,21 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     cohort_gap_cache, orchestration_audit_log.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
+
+job_postings agent-added columns (via run_migrations ALTER TABLE; not in Prisma schema):
+  Phase 1:  source, external_id, ingestion_run_id, ai_relevance_score, quality_score,
+            is_spam, spam_score, spam_tier, overall_confidence, field_confidence
+  Phase 1b: soc_code, naics_code, temporal_period, borderplex_subregion,
+            is_duplicate, duplicate_cluster_id, dedup_text_hash, dedup_embedding,
+            zip_code, employer_profile_id, canonical_role_id
+  Week 8 (#170, Q&A-ready):  date_posted, seniority_level, is_remote
+  Week 8 (#173): role_classification (computed by classify_job() during enrichment)
+  Week 8 (#174, structured salary): salary_min, salary_max, salary_currency, salary_period
+                                    (legacy salary_range TEXT remains for backward compat)
+  Deprecated (never write): employer_id, tech_area_id, location_id
+    → FK constraints fk_job_postings_employers1, fk_job_postings_technology_areas1,
+      fk_job_postings_company_addresses1 and their backing indexes are dropped by
+      run_migrations. Columns remain NULL; do not reference in new SQL.
 """
 
 from __future__ import annotations
