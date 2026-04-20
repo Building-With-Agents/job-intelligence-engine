@@ -108,6 +108,9 @@ def _build_main_prompt(user_query: str, intent_label: str, bundle: EvidenceBundl
         "Do not invent statistics, employers, or time ranges.\n"
         "- You may paraphrase the summary lines; do not add numbers absent from the facts.\n"
         "- If facts are thin, keep the answer short and explicitly cautious.\n"
+        "- Salary facts: if citeable_facts_json shows salary amounts without an explicit currency "
+        "code on that line (for example `salary=50,000–70,000` with no trailing ISO code), "
+        "state the amounts as plain numbers only — do not assume USD or any other currency.\n"
         "- Do not include markdown code fences.\n"
     )
     return instructions + "Context JSON (for grounding):\n" + json.dumps(payload, ensure_ascii=False)
