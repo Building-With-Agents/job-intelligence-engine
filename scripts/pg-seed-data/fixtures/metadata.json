@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-04-16T00:11:00.087176Z",
+  "exportedAt": "2026-04-20T05:29:35.153437Z",
   "scope": "agent",
   "source": "postgresql",
   "schema": "dbo",
@@ -13,7 +13,7 @@
     "companies": 1662,
     "naics": 2125,
     "job_postings": 3496,
-    "llm_audit_log": 28896
+    "llm_audit_log": 28991
   },
   "skipped": []
 }
