@@ -617,12 +617,20 @@ def _resolved_row_with_qna_fields(
     *,
     date_posted: object = None,
     is_remote: object = None,
+    salary_min: object = None,
+    salary_max: object = None,
+    salary_currency: object = None,
+    salary_period: object = None,
 ) -> dict[str, object]:
     return {
         "job_posting_id": "11111111-1111-1111-1111-111111111111",
         "company_id": "22222222-2222-2222-2222-222222222222",
         "date_posted": date_posted,
         "is_remote": is_remote,
+        "salary_min": salary_min,
+        "salary_max": salary_max,
+        "salary_currency": salary_currency,
+        "salary_period": salary_period,
     }
 
 
@@ -793,3 +801,122 @@ def test_apply_enrichment_qna_fields_present_for_all_tiers(tier: str, spam_score
     assert params["date_posted"] == posted_at, f"date_posted wrong for tier={tier!r}"
     assert params["seniority_level"] == "Entry-level", f"seniority_level wrong for tier={tier!r}"
     assert params["is_remote"] is True, f"is_remote wrong for tier={tier!r}"
+
+
+# ---------------------------------------------------------------------------
+# Field-level coverage for #173 (role_classification) and #174 (structured salary)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_enrichment_binds_role_classification_from_payload() -> None:
+    """role_classification from RecordEnriched payload must be bound in UPDATE params."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(),
+        {"role_classification": "Software Engineer"},
+    )
+    assert params["role_classification"] == "Software Engineer"
+
+
+def test_apply_enrichment_binds_role_classification_none_when_absent() -> None:
+    """role_classification must be None (not absent) when no key in the payload."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(),
+        {},
+    )
+    assert "role_classification" in params
+    assert params["role_classification"] is None
+
+
+def test_apply_enrichment_binds_role_classification_strips_whitespace() -> None:
+    """Whitespace-only role_classification values must be treated as None."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(),
+        {"role_classification": "   "},
+    )
+    assert params["role_classification"] is None
+
+
+def test_apply_enrichment_binds_salary_min_from_resolved_row() -> None:
+    """salary_min from normalized_jobs resolved row must be bound in UPDATE params."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_min=85000.0),
+        {},
+    )
+    assert params["salary_min"] == 85000.0
+
+
+def test_apply_enrichment_binds_salary_max_from_resolved_row() -> None:
+    """salary_max from normalized_jobs resolved row must be bound in UPDATE params."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_max=145000.0),
+        {},
+    )
+    assert params["salary_max"] == 145000.0
+
+
+def test_apply_enrichment_binds_salary_currency_from_resolved_row() -> None:
+    """salary_currency from normalized_jobs resolved row must be bound in UPDATE params."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_currency="USD"),
+        {},
+    )
+    assert params["salary_currency"] == "USD"
+
+
+def test_apply_enrichment_binds_salary_period_from_resolved_row() -> None:
+    """salary_period from normalized_jobs resolved row must be bound in UPDATE params."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_period="annual"),
+        {},
+    )
+    assert params["salary_period"] == "annual"
+
+
+def test_apply_enrichment_binds_salary_columns_none_when_missing() -> None:
+    """All 4 structured salary params must be None (not absent) when the resolved row has nulls."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(),
+        {},
+    )
+    for key in ("salary_min", "salary_max", "salary_currency", "salary_period"):
+        assert key in params
+        assert params[key] is None, f"{key} must be None when missing from resolved row"
+
+
+def test_apply_enrichment_binds_salary_currency_strips_whitespace() -> None:
+    """Whitespace-only salary_currency must be treated as None."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_currency="  "),
+        {},
+    )
+    assert params["salary_currency"] is None
+
+
+def test_apply_enrichment_binds_salary_period_strips_whitespace() -> None:
+    """Whitespace-only salary_period must be treated as None."""
+    session = MagicMock()
+    params = _apply_with_qna_payload(
+        session,
+        _resolved_row_with_qna_fields(salary_period="   "),
+        {},
+    )
+    assert params["salary_period"] is None
+

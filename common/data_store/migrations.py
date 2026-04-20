@@ -139,6 +139,15 @@ _JOB_POSTINGS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS date_posted TIMESTAMPTZ",
     "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS seniority_level TEXT",
     "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS is_remote BOOLEAN",
+    # Week 8 (#173) — role_classification promoted from RecordEnriched event payload
+    # (computed by classify_job() during enrichment; previously only used for sector_id resolution).
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS role_classification TEXT",
+    # Week 8 (#174) — structured salary columns promoted from normalized_jobs.
+    # Keep salary_range TEXT for backward compat; prefer structured columns for analytics.
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_min NUMERIC",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_max NUMERIC",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_currency TEXT",
+    "ALTER TABLE dbo.job_postings ADD COLUMN IF NOT EXISTS salary_period TEXT",
 ]
 
 # Optional FK after ``canonical_roles`` exists (create_all + alters). Idempotent via try/except.
@@ -307,6 +316,8 @@ _QNA_RETRIEVAL_INDEX_STATEMENTS = [
     "ON dbo.job_postings (employer_profile_id)",
     "CREATE INDEX IF NOT EXISTS ix_job_postings_seniority "
     "ON dbo.job_postings (seniority_level)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_role_classification "
+    "ON dbo.job_postings (role_classification)",
     "CREATE INDEX IF NOT EXISTS ix_job_postings_source_external "
     "ON dbo.job_postings (source, external_id)",
     # NOTE: ix_extracted_intelligence_src_ext was removed — extracted_intelligence has

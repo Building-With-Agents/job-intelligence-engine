@@ -65,6 +65,7 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 # Derived from docs/planning/QA_DATA_CONTRACT.md — update that doc first, then re-derive here.
 # Tracks: GitHub #186 (hotfix), #171 (full contract fix — date_posted/seniority_level/is_remote
 # columns promoted to job_postings by #170; CRITICAL block updated accordingly).
+# Extended: #173 (role_classification promoted), #174 (structured salary columns promoted).
 _SCHEMA_HINT = """\
 Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
 
@@ -83,8 +84,9 @@ PREFER aggregate tables for skill/tool/role/sector/geo count and trend questions
 
 Operational tables (use when aggregates cannot answer):
   job_postings(job_posting_id, company_id, job_title, employment_type, location,
-               salary_range, status, source, external_id, createdat, ingestion_run_id,
-               date_posted, seniority_level, is_remote,
+               salary_range, salary_min, salary_max, salary_currency, salary_period,
+               status, source, external_id, createdat, ingestion_run_id,
+               date_posted, seniority_level, is_remote, role_classification,
                borderplex_subregion, temporal_period, spam_tier, quality_score, is_spam,
                soc_code, naics_code, canonical_role_id, employer_profile_id,
                is_duplicate, zip_code)

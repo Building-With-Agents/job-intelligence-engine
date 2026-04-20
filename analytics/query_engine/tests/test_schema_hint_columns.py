@@ -42,6 +42,13 @@ JOB_POSTINGS_KNOWN_COLUMNS = frozenset(
         "date_posted",
         "seniority_level",
         "is_remote",
+        # Week 8 (#173) role_classification promotion
+        "role_classification",
+        # Week 8 (#174) structured salary promotions
+        "salary_min",
+        "salary_max",
+        "salary_currency",
+        "salary_period",
         # Enrichment columns
         "borderplex_subregion",
         "temporal_period",
@@ -99,6 +106,26 @@ def test_schema_hint_contains_is_remote_for_job_postings() -> None:
     jp_section = _extract_job_postings_line(_SCHEMA_HINT)
     assert "is_remote" in jp_section, (
         "is_remote is missing from the job_postings column list in _SCHEMA_HINT."
+    )
+
+
+def test_schema_hint_contains_role_classification_for_job_postings() -> None:
+    """role_classification must appear in the job_postings column list after #173."""
+    jp_section = _extract_job_postings_line(_SCHEMA_HINT)
+    assert "role_classification" in jp_section, (
+        "role_classification is missing from the job_postings column list in _SCHEMA_HINT. "
+        "This column was promoted by #173 and must be listed so the LLM can group/filter by role."
+    )
+
+
+@pytest.mark.parametrize("col", ["salary_min", "salary_max", "salary_currency", "salary_period"])
+def test_schema_hint_contains_structured_salary_column(col: str) -> None:
+    """Structured salary columns must appear in the job_postings column list after #174."""
+    jp_section = _extract_job_postings_line(_SCHEMA_HINT)
+    assert col in jp_section, (
+        f"{col} is missing from the job_postings column list in _SCHEMA_HINT. "
+        "This column was promoted by #174 and must be listed so the LLM can compute "
+        "salary aggregations without text-parsing salary_range."
     )
 
 
@@ -192,6 +219,25 @@ def _extract_column_names(sql: str) -> list[str]:
             "SELECT COUNT(*) AS remote_count FROM dbo.job_postings "
             "WHERE is_remote = TRUE AND location ILIKE '%Texas%'",
         ),
+        (
+            "How many software engineering postings does each role have? (#173 role_classification)",
+            "SELECT role_classification, COUNT(*) AS posting_count FROM dbo.job_postings "
+            "WHERE role_classification IS NOT NULL GROUP BY role_classification "
+            "ORDER BY posting_count DESC LIMIT 20",
+        ),
+        (
+            "What is the average annual salary in USD across data engineering roles? (#174 structured salary)",
+            "SELECT AVG(salary_max) AS avg_salary_max, COUNT(*) AS posting_count "
+            "FROM dbo.job_postings "
+            "WHERE salary_currency = 'USD' AND salary_period = 'annual' "
+            "AND role_classification ILIKE '%data engineer%' AND salary_max IS NOT NULL",
+        ),
+        (
+            "What is the salary range floor for senior remote roles? (#173 + #174 combined)",
+            "SELECT seniority_level, AVG(salary_min) AS avg_floor FROM dbo.job_postings "
+            "WHERE seniority_level = 'senior' AND is_remote = TRUE "
+            "AND salary_min IS NOT NULL GROUP BY seniority_level",
+        ),
     ],
 )
 def test_mock_llm_sql_references_valid_job_postings_columns(question: str, mock_sql: str) -> None:
@@ -206,7 +252,8 @@ def test_mock_llm_sql_references_valid_job_postings_columns(question: str, mock_
 
     col_names = _extract_column_names(mock_sql)
     unknown = [
-        c for c in col_names if c not in JOB_POSTINGS_KNOWN_COLUMNS and c not in {"remote_count"}
+        c for c in col_names if c not in JOB_POSTINGS_KNOWN_COLUMNS
+        and c not in {"remote_count", "posting_count", "avg_salary_max", "avg_floor"}
     ]
     assert not unknown, (
         f"SQL for {question!r} references unknown job_postings columns: {unknown}. "

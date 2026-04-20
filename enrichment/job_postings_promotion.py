@@ -80,7 +80,12 @@ _UPDATE_UNCERTAIN_SQL = text(
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote)
+        is_remote = COALESCE(:is_remote, is_remote),
+        role_classification = COALESCE(:role_classification, role_classification),
+        salary_min = COALESCE(:salary_min, salary_min),
+        salary_max = COALESCE(:salary_max, salary_max),
+        salary_currency = COALESCE(:salary_currency, salary_currency),
+        salary_period = COALESCE(:salary_period, salary_period)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -101,7 +106,12 @@ _UPDATE_CLEAN_SQL = text(
         spam_score = :spam_score,
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote)
+        is_remote = COALESCE(:is_remote, is_remote),
+        role_classification = COALESCE(:role_classification, role_classification),
+        salary_min = COALESCE(:salary_min, salary_min),
+        salary_max = COALESCE(:salary_max, salary_max),
+        salary_currency = COALESCE(:salary_currency, salary_currency),
+        salary_period = COALESCE(:salary_period, salary_period)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -122,7 +132,12 @@ _UPDATE_FLAGGED_SQL = text(
         spam_score = :spam_score,
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote)
+        is_remote = COALESCE(:is_remote, is_remote),
+        role_classification = COALESCE(:role_classification, role_classification),
+        salary_min = COALESCE(:salary_min, salary_min),
+        salary_max = COALESCE(:salary_max, salary_max),
+        salary_currency = COALESCE(:salary_currency, salary_currency),
+        salary_period = COALESCE(:salary_period, salary_period)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -585,6 +600,13 @@ def apply_enrichment_to_job_postings(
     role_classification = record_enriched_payload.get("role_classification")
     sector_id = resolve_sector(role_classification, session)
 
+    # role_classification (#173): also persist directly to job_postings (above only feeds resolve_sector).
+    role_classification_param: str | None = (
+        role_classification.strip()
+        if isinstance(role_classification, str) and role_classification.strip()
+        else None
+    )
+
     # seniority_level: prefer explicit "seniority_level" key; fall back to "seniority"
     # (RecordEnriched single-record contract uses "seniority"; "seniority_level" is
     # the canonical DB column name added in #170).
@@ -597,6 +619,23 @@ def apply_enrichment_to_job_postings(
     # Coerce is_remote to Python bool or None (guard against DB-returned int-like values)
     if is_remote_param is not None:
         is_remote_param = bool(is_remote_param)
+
+    # Structured salary (#174): pulled from normalized_jobs (already in resolved dict).
+    # legacy salary_range TEXT is kept for backward compat; structured columns are preferred for analytics.
+    salary_min_param = resolved.get("salary_min") if resolved else None
+    salary_max_param = resolved.get("salary_max") if resolved else None
+    salary_currency_raw = resolved.get("salary_currency") if resolved else None
+    salary_currency_param: str | None = (
+        salary_currency_raw.strip()
+        if isinstance(salary_currency_raw, str) and salary_currency_raw.strip()
+        else None
+    )
+    salary_period_raw = resolved.get("salary_period") if resolved else None
+    salary_period_param: str | None = (
+        salary_period_raw.strip()
+        if isinstance(salary_period_raw, str) and salary_period_raw.strip()
+        else None
+    )
 
     employer_profile_id_param = None
     em = record_enriched_payload.get("employer_metadata")
@@ -620,6 +659,11 @@ def apply_enrichment_to_job_postings(
         "date_posted": date_posted_param,
         "seniority_level": seniority_level_param,
         "is_remote": is_remote_param,
+        "role_classification": role_classification_param,
+        "salary_min": salary_min_param,
+        "salary_max": salary_max_param,
+        "salary_currency": salary_currency_param,
+        "salary_period": salary_period_param,
         **derived_output_fields,
     }
 
