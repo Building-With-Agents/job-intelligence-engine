@@ -77,7 +77,10 @@ _UPDATE_UNCERTAIN_SQL = text(
         naics_code = :naics_code,
         soc_code = :soc_code,
         sector_id = :sector_id,
-        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id)
+        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
+        date_posted = COALESCE(:date_posted, date_posted),
+        seniority_level = COALESCE(:seniority_level, seniority_level),
+        is_remote = COALESCE(:is_remote, is_remote)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -95,7 +98,10 @@ _UPDATE_CLEAN_SQL = text(
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = FALSE,
-        spam_score = :spam_score
+        spam_score = :spam_score,
+        date_posted = COALESCE(:date_posted, date_posted),
+        seniority_level = COALESCE(:seniority_level, seniority_level),
+        is_remote = COALESCE(:is_remote, is_remote)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -113,7 +119,10 @@ _UPDATE_FLAGGED_SQL = text(
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = NULL,
-        spam_score = :spam_score
+        spam_score = :spam_score,
+        date_posted = COALESCE(:date_posted, date_posted),
+        seniority_level = COALESCE(:seniority_level, seniority_level),
+        is_remote = COALESCE(:is_remote, is_remote)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -576,6 +585,19 @@ def apply_enrichment_to_job_postings(
     role_classification = record_enriched_payload.get("role_classification")
     sector_id = resolve_sector(role_classification, session)
 
+    # seniority_level: prefer explicit "seniority_level" key; fall back to "seniority"
+    # (RecordEnriched single-record contract uses "seniority"; "seniority_level" is
+    # the canonical DB column name added in #170).
+    raw_seniority = record_enriched_payload.get("seniority_level") or record_enriched_payload.get("seniority")
+    seniority_level_param: str | None = raw_seniority.strip() if isinstance(raw_seniority, str) and raw_seniority.strip() else None
+
+    # date_posted and is_remote come from normalized_jobs (already in resolved dict)
+    date_posted_param = resolved.get("date_posted") if resolved else None
+    is_remote_param = resolved.get("is_remote") if resolved else None
+    # Coerce is_remote to Python bool or None (guard against DB-returned int-like values)
+    if is_remote_param is not None:
+        is_remote_param = bool(is_remote_param)
+
     employer_profile_id_param = None
     em = record_enriched_payload.get("employer_metadata")
     if isinstance(em, dict) and str(company_id).strip():
@@ -595,6 +617,9 @@ def apply_enrichment_to_job_postings(
         "soc_code": soc_code,
         "sector_id": sector_id,
         "employer_profile_id": employer_profile_id_param,
+        "date_posted": date_posted_param,
+        "seniority_level": seniority_level_param,
+        "is_remote": is_remote_param,
         **derived_output_fields,
     }
 
