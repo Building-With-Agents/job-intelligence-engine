@@ -236,7 +236,7 @@ export default function LaborPulsePage() {
   >({});
   const [, startTransition] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const feedbackInflightRef = useRef<Set<string>>(new Set());
   /** True when idle timeout aborted the stream (vs user navigation). */
   const staleStreamRef = useRef(false);
@@ -248,6 +248,12 @@ export default function LaborPulsePage() {
       sessionStorage.setItem(SESSION_STORAGE_KEY, id);
     }
     setSessionId(id);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -291,9 +297,9 @@ export default function LaborPulsePage() {
       setConnectionLost(false);
       setLostRetryThread(null);
       staleStreamRef.current = false;
-      abortRef.current?.abort();
-      const ac = new AbortController();
-      abortRef.current = ac;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+      const ac = abortControllerRef.current;
 
       const assistantId = crypto.randomUUID();
       const assistantPlaceholder: ChatMessage = {
@@ -329,7 +335,7 @@ export default function LaborPulsePage() {
           body: JSON.stringify({
             messages: threadForApi.map(({ role, content }) => ({ role, content })),
           }),
-          signal: ac.signal,
+          signal: abortControllerRef.current!.signal,
         });
 
         if (!res.ok) {
@@ -347,10 +353,10 @@ export default function LaborPulsePage() {
         }
 
         await consumeSseStream(res.body, {
-          signal: ac.signal,
+          signal: abortControllerRef.current!.signal,
           onIdleTimeout: () => {
             staleStreamRef.current = true;
-            ac.abort();
+            abortControllerRef.current?.abort();
             stripFailedAssistant();
             setConnectionLost(true);
             setLostRetryThread(threadForApi);
@@ -459,7 +465,9 @@ export default function LaborPulsePage() {
           e instanceof Error ? e.message : "Something went wrong. Try again.",
         );
       } finally {
-        if (abortRef.current === ac) abortRef.current = null;
+        if (abortControllerRef.current === ac) {
+          abortControllerRef.current = null;
+        }
       }
     },
     [apiUrl, sessionId, stripFailedAssistant],

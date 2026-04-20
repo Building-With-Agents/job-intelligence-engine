@@ -227,6 +227,14 @@ class QueryRouter:
         confidence: float = float(classification.get("confidence") or 0.0)
         entities: dict[str, list[str]] = classification.get("extracted_entities") or {}
 
+        issue197_hint = classification.get("issue197_sql_guard_hint")
+        if isinstance(issue197_hint, str) and issue197_hint.strip():
+            log.info(
+                "issue197_sql_guard_hint_in_router_context",
+                intent=intent,
+                hint_preview=issue197_hint.strip()[:200],
+            )
+
         skill_names: list[str] = entities.get("skill_names") or []
         role_names: list[str] = entities.get("role_names") or []
         geo_terms: list[str] = entities.get("geographic_terms") or []

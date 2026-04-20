@@ -42,6 +42,36 @@ log = structlog.get_logger()
 
 _SQL_EXEC_ERR_DETAIL_MAX = 400
 
+# Issue #197 — ORM / QueryRouter path parity with guardrailed ``inject_role_classification_issue197_guard``
+_ISSUE197_INTENTS: frozenset[str] = frozenset({"employer", "curriculum", "workflow"})
+_ISSUE197_SQL_GUARD_HINT = (
+    "Always include WHERE role_classification != 'N/A Not an IT role' "
+    "in any query that references the role_classification column. "
+    "This guards against a known classifier bug (issue #197) where "
+    "real IT roles are misbucketed."
+)
+_NA_IT_ROLE_PLACEHOLDER = "N/A Not an IT role"
+
+
+def _get_role_classification_value(row: dict[str, Any]) -> str | None:
+    if "role_classification" in row and row["role_classification"] is not None:
+        return str(row["role_classification"]).strip()
+    for key, val in row.items():
+        if str(key).lower() == "role_classification" and val is not None:
+            return str(val).strip()
+    return None
+
+
+def _filter_issue197_misbucket_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Exclude rows whose ``role_classification`` is the known non-IT mis-bucket (#197)."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        rc = _get_role_classification_value(row)
+        if rc == _NA_IT_ROLE_PLACEHOLDER:
+            continue
+        out.append(row)
+    return out
+
 AGENT_INTENT = "analytics-qna-intent"
 AGENT_SQL = "analytics-qna-sql"
 
@@ -487,10 +517,23 @@ def run_analytics_qna(
             "needs_clarification": classification.get("needs_clarification"),
         }
 
+        if intent_label in _ISSUE197_INTENTS:
+            classification = {
+                **classification,
+                "issue197_sql_guard_hint": _ISSUE197_SQL_GUARD_HINT,
+            }
+            log.info(
+                "issue197_orm_guard_hint_attached",
+                intent=intent_label,
+                correlation_id=cid,
+            )
+
         router = QueryRouter()
         route_result = router.route(classification, session)
 
         rows = _json_safe_rows(route_result.rows)
+        if intent_label in _ISSUE197_INTENTS:
+            rows = _filter_issue197_misbucket_rows(rows)
         col_names = list(rows[0].keys()) if rows else []
         router_error = _router_error_message(route_result)
         sql_line = _sql_generated_line(route_result)
@@ -502,7 +545,7 @@ def run_analytics_qna(
             executed_sql=None,
             columns=col_names,
             rows=rows,
-            row_count_returned=int(route_result.row_count),
+            row_count_returned=len(rows),
             result_truncated=bool(route_result.is_partial),
             tables_referenced=list(route_result.tables_used),
             router_error=router_error,

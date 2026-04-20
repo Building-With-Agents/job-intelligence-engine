@@ -306,7 +306,12 @@ def run_custom_employer_comparison(
 
 @router.post("/query", response_model=AnalyticsQueryResponse)
 def post_analytics_query(body: AnalyticsQueryRequest) -> AnalyticsQueryResponse:
-    """Return JSON Q&A payload.
+    """Return JSON Q&A payload via :func:`run_analytics_qna` (ORM ``QueryRouter`` path).
+
+    **Issue #197 (employer | curriculum | workflow):** before routing, the classification
+    dict passed to ``QueryRouter`` includes ``issue197_sql_guard_hint`` (SQL guard text
+    mirroring the guardrailed NL→SQL path). After execution, rows with
+    ``role_classification == 'N/A Not an IT role'`` are dropped before synthesis.
 
     If this endpoint is ever converted to **SSE** (``text/event-stream``), emit a
     heartbeat every 10 seconds so clients can reset idle timers::
