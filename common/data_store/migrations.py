@@ -309,8 +309,9 @@ _QNA_RETRIEVAL_INDEX_STATEMENTS = [
     "ON dbo.job_postings (seniority_level)",
     "CREATE INDEX IF NOT EXISTS ix_job_postings_source_external "
     "ON dbo.job_postings (source, external_id)",
-    "CREATE INDEX IF NOT EXISTS ix_extracted_intelligence_src_ext "
-    "ON dbo.extracted_intelligence (source, external_id)",
+    # NOTE: ix_extracted_intelligence_src_ext was removed — extracted_intelligence has
+    # no source/external_id columns (it links via normalized_job_id FK). The join path
+    # is already covered by ix_normalized_jobs_source_eid on dbo.normalized_jobs.
 ]
 
 _SERIAL_SEQUENCE_TARGETS = (
