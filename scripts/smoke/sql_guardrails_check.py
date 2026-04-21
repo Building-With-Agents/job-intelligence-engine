@@ -43,7 +43,7 @@ def main() -> int:
         "SELECT job_title, location, salary_range "
         "FROM dbo.job_postings "
         "WHERE borderplex_subregion = 'el_paso' "
-        "ORDER BY publish_date DESC LIMIT 20"
+        "ORDER BY date_posted DESC LIMIT 20"
     )
     print()
     print("Test 1: validate_ask_the_data_sql (operational path)")

@@ -41,7 +41,7 @@ from tests.fuzzy_dedup_e2e_helpers import (
     run_dedup_and_persist,
     session_factory_for,
     teardown_second_company,
-    update_job_publish_date,
+    update_job_date_posted,
     update_job_text,
     update_normalized_job_fields,
 )
@@ -103,7 +103,7 @@ def test_window_29d_in_merges(monkeypatch: pytest.MonkeyPatch, e2e_engine: Engin
             company_id=seed.company_id,
             location_id=seed.company_address_id,
             zip_code=seed.zip_code,
-            publish_date=T - timedelta(days=29),
+            date_posted=T - timedelta(days=29),
             unpublish_date=ud,
             job_title=SHARED_TITLE,
             job_description=SHARED_BODY,
@@ -130,7 +130,7 @@ def test_window_29d_in_merges(monkeypatch: pytest.MonkeyPatch, e2e_engine: Engin
         meta_s = fetch_embedding_meta(e2e_engine, survivor_id)
         assert meta_s.get("has_embedding") is True
 
-        update_job_publish_date(e2e_engine, seed.job_posting_id, T)
+        update_job_date_posted(e2e_engine, seed.job_posting_id, T)
         update_job_text(e2e_engine, seed.job_posting_id, job_title=SHARED_TITLE, job_description=SHARED_BODY)
         update_normalized_job_fields(
             e2e_engine,
@@ -194,7 +194,7 @@ def test_window_31d_out_no_merge(monkeypatch: pytest.MonkeyPatch, e2e_engine: En
             company_id=seed.company_id,
             location_id=seed.company_address_id,
             zip_code=seed.zip_code,
-            publish_date=T - timedelta(days=31),
+            date_posted=T - timedelta(days=31),
             unpublish_date=ud,
             job_title=SHARED_TITLE,
             job_description=SHARED_BODY,
@@ -218,7 +218,7 @@ def test_window_31d_out_no_merge(monkeypatch: pytest.MonkeyPatch, e2e_engine: En
             run_dedup_and_persist(session, survivor_id)
             session.commit()
 
-        update_job_publish_date(e2e_engine, seed.job_posting_id, T)
+        update_job_date_posted(e2e_engine, seed.job_posting_id, T)
         update_job_text(e2e_engine, seed.job_posting_id, job_title=SHARED_TITLE, job_description=SHARED_BODY)
         update_normalized_job_fields(
             e2e_engine,
@@ -258,7 +258,7 @@ def test_same_company_different_content_no_merge(e2e_engine: Engine) -> None:
             company_id=seed.company_id,
             location_id=seed.company_address_id,
             zip_code=seed.zip_code,
-            publish_date=T - timedelta(days=5),
+            date_posted=T - timedelta(days=5),
             unpublish_date=ud,
             job_title=DIFF_SURVIVOR_TITLE,
             job_description=DIFF_SURVIVOR_BODY,
@@ -282,7 +282,7 @@ def test_same_company_different_content_no_merge(e2e_engine: Engine) -> None:
             run_dedup_and_persist(session, survivor_id)
             session.commit()
 
-        update_job_publish_date(e2e_engine, seed.job_posting_id, T)
+        update_job_date_posted(e2e_engine, seed.job_posting_id, T)
         update_job_text(
             e2e_engine,
             seed.job_posting_id,
@@ -333,7 +333,7 @@ def test_different_company_no_cross_merge(e2e_engine: Engine) -> None:
             company_id=sc.company_id,
             location_id=sc.company_address_id,
             zip_code=seed.zip_code,
-            publish_date=T,
+            date_posted=T,
             unpublish_date=ud,
             job_title=SHARED_TITLE,
             job_description=SHARED_BODY,
@@ -388,7 +388,7 @@ def test_repost_near_duplicate_merges(monkeypatch: pytest.MonkeyPatch, e2e_engin
             company_id=seed.company_id,
             location_id=seed.company_address_id,
             zip_code=seed.zip_code,
-            publish_date=T - timedelta(days=5),
+            date_posted=T - timedelta(days=5),
             unpublish_date=ud,
             job_title=SHARED_TITLE,
             job_description=SHARED_BODY,
@@ -412,7 +412,7 @@ def test_repost_near_duplicate_merges(monkeypatch: pytest.MonkeyPatch, e2e_engin
             run_dedup_and_persist(session, survivor_id)
             session.commit()
 
-        update_job_publish_date(e2e_engine, seed.job_posting_id, T)
+        update_job_date_posted(e2e_engine, seed.job_posting_id, T)
         update_job_text(e2e_engine, seed.job_posting_id, job_title=SHARED_TITLE, job_description=SHARED_BODY)
         update_normalized_job_fields(
             e2e_engine,

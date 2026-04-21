@@ -25,7 +25,7 @@ def _emb_json(t: float) -> str:
 def _survivor_row(
     *,
     job_posting_id: str,
-    publish_date: datetime,
+    date_posted: datetime,
     similarity: float,
     duplicate_cluster_id: str | None = None,
     salary_range: str | None = None,
@@ -48,7 +48,7 @@ def _survivor_row(
         "zip": None,
         "county": None,
         "job_description": job_description,
-        "publish_date": publish_date,
+        "date_posted": date_posted,
         "job_title": job_title,
         "source": "jsearch",
         "external_id": f"ext-{job_posting_id[-4:]}",
@@ -84,7 +84,7 @@ def _base_current_row(
     return {
         "job_posting_id": jid,
         "company_id": cid,
-        "publish_date": anchor,
+        "date_posted": anchor,
         "job_title": "Engineer",
         "job_description": requirements or "Build systems " * 50,
         "salary_range": salary,
@@ -203,7 +203,7 @@ def test_threshold_below_returns_unique(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
     mock_embed.return_value = [_unit_vec_xy(1.0)]
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     survivor = _survivor_row(
         job_posting_id="00000000-0000-0000-0000-000000000002",
@@ -212,7 +212,7 @@ def test_threshold_below_returns_unique(mock_embed: MagicMock) -> None:
         salary_range=None,
         location=None,
         job_description="threshold below survivor",
-        publish_date=anchor - timedelta(days=5),
+        date_posted=anchor - timedelta(days=5),
     )
 
     session.execute.side_effect = [
@@ -233,7 +233,7 @@ def test_threshold_equal_returns_unique(mock_embed: MagicMock) -> None:
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None)
     mock_embed.return_value = [_unit_vec_xy(1.0)]
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     survivor = _survivor_row(
         job_posting_id="00000000-0000-0000-0000-000000000002",
@@ -242,7 +242,7 @@ def test_threshold_equal_returns_unique(mock_embed: MagicMock) -> None:
         salary_range="100k-120k",
         location="TX",
         job_description="threshold equal survivor",
-        publish_date=anchor - timedelta(days=5),
+        date_posted=anchor - timedelta(days=5),
     )
 
     session.execute.side_effect = [
@@ -263,7 +263,7 @@ def test_threshold_above_marks_duplicate_when_survivor_wins(mock_embed: MagicMoc
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None, salary=None)
     mock_embed.return_value = [_unit_vec_xy(1.0)]
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     cluster = "00000000-0000-0000-0000-00000000aa11"
     survivor = _survivor_row(
@@ -273,7 +273,7 @@ def test_threshold_above_marks_duplicate_when_survivor_wins(mock_embed: MagicMoc
         salary_range="100k-120k",
         location="TX",
         job_description="x" * 500,
-        publish_date=anchor - timedelta(days=5),
+        date_posted=anchor - timedelta(days=5),
     )
 
     session.execute.side_effect = [
@@ -299,7 +299,7 @@ def test_cold_start_survivor_without_cached_embedding_is_backfilled_and_compared
     cur = _base_current_row(requirements="alpha beta", dedup_emb=_emb_json(1.0))
     cur_plain = build_dedup_text(cur["job_title"], cur["company_name"], row_requirements_fallback(cur))
     cur["dedup_text_hash"] = dedup_text_hash(cur_plain)
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     survivor = {
         "job_posting_id": "00000000-0000-0000-0000-000000000002",
@@ -311,7 +311,7 @@ def test_cold_start_survivor_without_cached_embedding_is_backfilled_and_compared
         "zip": None,
         "county": None,
         "job_description": "alpha beta",
-        "publish_date": anchor - timedelta(days=2),
+        "date_posted": anchor - timedelta(days=2),
         "job_title": "Engineer",
         "source": "jsearch",
         "external_id": "ext-2",
@@ -341,7 +341,7 @@ def test_current_wins_completeness_flips_contract(mock_embed: MagicMock) -> None
     session = MagicMock()
     cur = _base_current_row(dedup_hash=None, dedup_emb=None, salary="90k-100k")
     mock_embed.return_value = [_unit_vec_xy(1.0)]
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     survivor = _survivor_row(
         job_posting_id="00000000-0000-0000-0000-000000000002",
@@ -350,7 +350,7 @@ def test_current_wins_completeness_flips_contract(mock_embed: MagicMock) -> None
         salary_range=None,
         location=None,
         job_description="current wins survivor body",
-        publish_date=anchor - timedelta(days=5),
+        date_posted=anchor - timedelta(days=5),
     )
 
     session.execute.side_effect = [
@@ -375,7 +375,7 @@ def test_current_wins_by_field_count_not_weighted_score(mock_embed: MagicMock) -
     cur["zip"] = "98101"
     cur["county"] = "King"
     mock_embed.return_value = [_unit_vec_xy(1.0)]
-    anchor = cur["publish_date"]
+    anchor = cur["date_posted"]
     assert isinstance(anchor, datetime)
     survivor = _survivor_row(
         job_posting_id="00000000-0000-0000-0000-000000000002",
@@ -384,7 +384,7 @@ def test_current_wins_by_field_count_not_weighted_score(mock_embed: MagicMock) -
         salary_range="100k-120k",
         location="TX",
         job_description="",
-        publish_date=anchor - timedelta(days=5),
+        date_posted=anchor - timedelta(days=5),
     )
 
     session.execute.side_effect = [
