@@ -19,6 +19,18 @@ _DEFAULT_LATENCY_SLA_SECONDS = 45.0
 
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
 
+RELATED_INTENTS: dict[str, set[str]] = {
+    "geographic": {"comparison", "employer"},
+    "comparison": {"geographic", "trend"},
+    "trend": {"role_evolution", "comparison", "disruption"},
+    "role_evolution": {"trend", "disruption"},
+    "disruption": {"emergence", "role_evolution", "trend"},
+    "emergence": {"disruption", "trend"},
+    "employer": {"geographic", "workflow"},
+    "curriculum": {"trend", "role_evolution"},
+    "workflow": {"employer", "geographic"},
+}
+
 
 def _norm_intent(s: str | None) -> str:
     return (s or "").strip().lower()
@@ -46,7 +58,8 @@ def score_intent_accuracy(
         return 0.0, "missing expected_intent in metadata"
     if got == exp:
         return 1.0, "intent matches"
-    _ = difficulty  # reserved for IMP-030 multi-intent / hard-question overrides
+    if got in RELATED_INTENTS.get(exp, set()):
+        return 0.5, f"related: expected {exp!r}, got {got!r}"
     return 0.0, f"mismatch: expected {exp!r}, got {got!r}"
 
 

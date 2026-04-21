@@ -20,10 +20,19 @@ def test_intent_exact_match() -> None:
     assert s == 1.0
 
 
-def test_intent_mismatch() -> None:
+def test_intent_related() -> None:
     s, c = score_intent_accuracy(
         expected_intent="geographic",
         classified_intent="comparison",
+    )
+    assert s == 0.5
+    assert "related" in c
+
+
+def test_intent_mismatch() -> None:
+    s, c = score_intent_accuracy(
+        expected_intent="geographic",
+        classified_intent="curriculum",
     )
     assert s == 0.0
     assert "mismatch" in c
