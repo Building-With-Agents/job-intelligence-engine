@@ -26,7 +26,7 @@ _LOAD_CURRENT_SQL = text(
     SELECT
         jp.job_posting_id::text AS job_posting_id,
         jp.company_id::text AS company_id,
-        jp.publish_date AS publish_date,
+        COALESCE(jp.publish_date, jp.date_posted) AS publish_date,
         jp.job_title AS job_title,
         jp.job_description AS job_description,
         jp.salary_range AS salary_range,
@@ -65,7 +65,7 @@ _LIST_SURVIVORS_SQL = text(
         jp.zip AS zip,
         jp.county AS county,
         jp.job_description AS job_description,
-        jp.publish_date AS publish_date,
+        COALESCE(jp.publish_date, jp.date_posted) AS publish_date,
         jp.job_title AS job_title,
         jp.source AS source,
         jp.external_id AS external_id,
@@ -80,8 +80,8 @@ _LIST_SURVIVORS_SQL = text(
         AND nj.external_id = jp.external_id
     WHERE jp.company_id::text = :company_id
         AND (jp.is_duplicate IS NOT TRUE)
-        AND jp.publish_date >= :window_start
-        AND jp.publish_date < :anchor
+        AND COALESCE(jp.publish_date, jp.date_posted) >= :window_start
+        AND COALESCE(jp.publish_date, jp.date_posted) < :anchor
         AND jp.job_posting_id::text <> :job_posting_id
     """
 )
@@ -235,10 +235,10 @@ def run_fuzzy_dedup(
 
     anchor_raw = current.get("publish_date")
     if anchor_raw is None:
-        log.info("fuzzy_dedup_missing_publish_date", job_posting_id=jid)
+        log.info("fuzzy_dedup_missing_date", job_posting_id=jid)
         return _unique_result()
     if not isinstance(anchor_raw, datetime):
-        log.info("fuzzy_dedup_publish_date_unexpected_type", job_posting_id=jid)
+        log.info("fuzzy_dedup_date_unexpected_type", job_posting_id=jid)
         return _unique_result()
 
     anchor = _ensure_utc(anchor_raw)

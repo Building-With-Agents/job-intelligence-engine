@@ -8,11 +8,14 @@ import os
 ENV_DEDUP_COSINE_THRESHOLD = "DEDUP_COSINE_THRESHOLD"
 DEFAULT_DEDUP_COSINE_THRESHOLD = 0.92
 
-# Rolling comparison window (days before anchor publish_date).
+# Rolling comparison window (days before anchor date).
 DEDUP_ROLLING_WINDOW_DAYS = 30
 
-# Anchor column on dbo.job_postings for the window (see prisma job_postings.publish_date).
-JOB_POSTING_DATE_COLUMN = "publish_date"
+# Anchor date expression on dbo.job_postings for the window.
+# Uses COALESCE to prefer publish_date when present, falling back to the
+# promoted date_posted column (Issue #172) so rows with NULL publish_date
+# are still included in the dedup window.
+JOB_POSTING_DATE_COLUMN = "COALESCE(publish_date, date_posted)"
 
 
 def dedup_cosine_threshold() -> float:

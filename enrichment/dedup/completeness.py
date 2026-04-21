@@ -33,8 +33,14 @@ def completeness_score(row: dict[str, Any]) -> int:
 
 
 def publish_date_for_tiebreak(row: dict[str, Any]) -> datetime | None:
-    """Newer wins when completeness ties."""
+    """Newer wins when completeness ties.
+
+    Falls back to ``date_posted`` when ``publish_date`` is absent, mirroring the
+    ``COALESCE(publish_date, date_posted)`` pattern used in SQL queries.
+    """
     pd = row.get("publish_date")
+    if pd is None:
+        pd = row.get("date_posted")
     if pd is None:
         return None
     if isinstance(pd, datetime):
