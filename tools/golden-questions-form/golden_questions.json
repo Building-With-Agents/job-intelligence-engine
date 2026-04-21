@@ -874,10 +874,24 @@
     "question": "How has the Borderplex \"data analyst\" role evolved between the early_genai and agentic_era periods — which skills have been added to the typical requirements list and which have dropped off?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "context": "A workforce director wants to update curriculum to reflect how the data analyst role has structurally changed, so training programs add emerging skills and remove obsolete ones",
+    "ideal_answer_summary": "Should compare skill frequency from `extracted_intelligence.skills` for data analyst postings grouped by `temporal_period` (`early_genai` vs `agentic_era`), citing skills that are new entrants vs declining. Must filter on `borderplex_subregion IS NOT NULL` and `spam_tier = 'clean'`. If `early_genai` data is absent, must state that gap explicitly rather than fabricating a comparison.",
+    "must_include": [
+      "temporal_period",
+      "early_genai",
+      "agentic_era",
+      "extracted_intelligence",
+      "skill_demand_weekly",
+      "borderplex_subregion",
+      "spam_tier"
+    ],
+    "must_not_include": [
+      "nationally",
+      "according to industry reports",
+      "generally speaking",
+      "fabricated skills",
+      "haluccinated numbers"
+    ],
     "difficulty": "standard"
   },
   {
@@ -885,43 +899,99 @@
     "question": "How have credentialing requirements for Borderplex cloud-architect postings changed over the last two years — are specific certifications (AWS Solutions Architect, Azure Solutions Architect, Google Cloud Professional) becoming more or less common?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director wants to know whether existing cloud cert training (AWS vs Azure vs GCP) is aligned with what Borderplex employers are actually requiring today versus two years ago",
+    "ideal_answer_summary": "Should show certification frequency (`skill->>'type' = 'Certification'`) for cloud architect postings grouped by `temporal_period`, citing `skill_demand_weekly` or `skill_velocity` for trend direction per certitification. Must be scoped to `borderplex_subregion IS NOT NULL` and `spam_tier = 'clean'`",
+    "must_include": [
+      "Certification",
+      "skill_demand_weekly",
+      "skill_velocity",
+      "temporal_period",
+      "borderplex_subregion",
+      "extracted_intelligence",
+      "week_over_week_change"
+    ],
+    "must_not_include": [
+      "nationally",
+      "Third party data",
+      "industry surveys",
+      "fabricated percentages",
+      "Statements not backed by data"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-033",
     "question": "In Borderplex software engineer postings, how has the balance between AI-assistant familiarity and traditional programming skills evolved across the four temporal periods?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director needs to decide how much curriculum weight to shift from traditional programming instruction toward AI-assisted development practices",
+    "ideal_answer_summary": "Should compare traditional programming skills vs AI-assistant skills (using `is_genai_tool = true` from `extracted_intelligence.tools`) across all four temporal periods for software engineer postings. Must cite `skill_velocity.four_week_trend` for trend direction and scope to Borderplex postings with `spam_tier = 'clean'`.",
+    "must_include": [
+      "pre_chatgpt",
+      "early_genai",
+      "post_gpt4",
+      "agentic_era",
+      "skill_velocity",
+      "four_week_trend",
+      "extracted_intelligence",
+      "is_genai_tool",
+      "borderplex_subregion"
+    ],
+    "must_not_include": [
+      "all programmers should learn AI",
+      "national statistics",
+      "fabricated ratios",
+      "Borderplex data does not exist"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-034",
     "question": "How has the typical job-title wording for Borderplex ML roles drifted — is \"machine learning engineer\" being replaced by \"AI engineer\" or \"AI agent developer\" in the agentic_era period?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director wants to know whether to rename or reframe ML-focused training programs to match how employers are titling these roles in current postings and see if there are differences between ML roles and AI roles",
+    "ideal_answer_summary": "Should count postings by `job_title` pattern (`'%machine learning%'`, `'%ai engineer%'`, `'%ai agent%'`) grouped by `temporal_period`, and cross-reference `canonical_roles.label` for normalized clustering. Must note that `job_title` is raw and unnormalized. Scoped to `borderplex_subregion IS NOT NULL` and `spam_tier = 'clean'`",
+    "must_include": [
+      "job_title",
+      "temporal_period",
+      "agentic_era",
+      "canonical_roles",
+      "role_snapshot_weekly",
+      "borderplex_subregion",
+      "spam_tier"
+    ],
+    "must_not_include": [
+      "national job boards",
+      "vague answers with no data backup",
+      "fabricated title counts"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-035",
     "question": "For Borderplex cybersecurity analyst roles, how have required tools and frameworks evolved since the pre_chatgpt period — which tools are new and which are being deprecated?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "context": "A workforce director needs to audit a cybersecurity curriculum to ensure tools being taught match current employer expectations rather than what was relevant 2–3 years ago.",
+    "ideal_answer_summary": "Should compare `extracted_intelligence.tools` frequency for cybersecurity analyst postings across `pre_chatgpt` and `agentic_era`, citing `tool_demand_weekly` for aggregates and `skill_velocity.four_week_trend = 'falling'` to flag deprecated tools. Must be Borderplex-scoped and note if per-period posting volume is too low to be conclusive.",
+    "must_include": [
+      "extracted_intelligence",
+      "tools",
+      "tool_demand_weekly",
+      "skill_velocity",
+      "pre_chatgpt",
+      "agentic_era",
+      "temporal_period",
+      "borderplex_subregion",
+      "four_week_trend"
+    ],
+    "must_not_include": [
+      "Third party reports",
+      "national averages",
+      "all cybersecurity tools are relevant",
+      "fabricated tool names"
+    ],
     "difficulty": "standard"
   },
   {
@@ -929,21 +999,49 @@
     "question": "In Borderplex React developer postings, how has the supporting-skill mix (TypeScript, Next.js, testing frameworks, AI-assisted dev tools) changed over the last 18 months?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director wants to know whether React curriculum needs to add TypeScript, Next.js, or AI dev tooling as standard components rather than optional extras.",
+    "ideal_answer_summary": "Should use `skill_co_occurrence` to show which supporting skills (TypeScript, Next.js, testing frameworks, AI dev tools) appear alongside React, with `skill_velocity.week_over_week_change` for trend direction. Must flag AI dev tools via `is_genai_tool = true`. Scoped to `borderplex_subregion IS NOT NULL` and `spam_tier = 'clean'`.",
+    "must_include": [
+      "skill_co_occurrence",
+      "skill_velocity",
+      "extracted_intelligence",
+      "tool_demand_weekly",
+      "is_genai_tool",
+      "borderplex_subregion",
+      "temporal_period",
+      "week_over_week_change",
+      "percentages"
+    ],
+    "must_not_include": [
+      "Vague answer with no back up data",
+      "fabricated co-occurrence percentages",
+      "Hallucinated numbers"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-037",
     "question": "How has the seniority-level mix for Borderplex data engineer postings shifted between the early_genai and agentic_era periods — more senior, more junior, or more staff-level roles?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "context": "A workforce director wants to know whether Borderplex employers are opening entry-level data engineering pipelines or consolidating around senior talent, to calibrate which cohort levels to prioritize.",
+    "ideal_answer_summary": "Should show the distribution of `jp.seniority_level` values for data engineer postings grouped by `temporal_period` (`early_genai` vs `agentic_era`). Must acknowledge if `seniority_level` is partially null and suggest `extracted_intelligence.tasks[*].seniority_signal` as a fallback. Scoped to Borderplex postings with `spam_tier = 'clean'`.",
+    "must_include": [
+      "seniority_level",
+      "temporal_period",
+      "early_genai",
+      "agentic_era",
+      "tasks",
+      "seniority_signal",
+      "role_snapshot_weekly",
+      "borderplex_subregion"
+    ],
+    "must_not_include": [
+      "hallucinated seniority percentages",
+      "seniority data is unavailable",
+      "industry wide reports",
+      "generic statements without data"
+    ],
     "difficulty": "standard"
   },
   {
@@ -951,33 +1049,78 @@
     "question": "For Borderplex DevOps engineer postings, how have infrastructure-as-code tool requirements evolved (Terraform vs Pulumi vs CloudFormation vs AI-generated-IaC) in the last two years?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director is deciding whether to invest in Terraform-specific training or branch into Pulumi and AI-generated IaC tooling for a DevOps cohort starting next quarter.",
+    "ideal_answer_summary": "Should compare `extracted_intelligence.tools` frequency for DevOps postings across temporal periods, highlighting Terraform, Pulumi, CloudFormation, and AI-generated IaC tools (`is_genai_tool = true`). Trend direction should cite `tool_demand_weekly` and `skill_velocity`. Must note if posting volume per period is insufficient for strong conclusions.",
+    "must_include": [
+      "extracted_intelligence",
+      "tools",
+      "tool_demand_weekly",
+      "skill_velocity",
+      "is_genai_tool",
+      "temporal_period",
+      "borderplex_subregion"
+    ],
+    "must_not_include": [
+      "vague statements without data",
+      "statements based on national data",
+      "fabricated tool market share",
+      "hallucinated numbers"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-039",
     "question": "In Borderplex product manager and technical-product-manager roles, how has the expected AI-literacy level evolved from the pre_chatgpt to agentic_era periods?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director wants to understand whether project manager training programs need to incorporate AI-literacy components (prompt engineering, LLM product specs, AI roadmapping) as baseline requirements.",
+    "ideal_answer_summary": "Should measure AI-literacy signals in product manager postings across `pre_chatgpt` and `agentic_era`: AI-related skills from `extracted_intelligence.skills`, `context[*].signal_type = 'ai_adoption_signal'`, and `jp.ai_relevance_score` distribution. Must cite `skill_demand_weekly` for aggregates and scope to `borderplex_subregion IS NOT NULL` with `spam_tier = 'clean'`.",
+    "must_include": [
+      "ai_adoption_signal",
+      "ai_relevance_score",
+      "extracted_intelligence",
+      "context",
+      "temporal_period",
+      "pre_chatgpt",
+      "agentic_era",
+      "skill_demand_weekly",
+      "borderplex_subregion",
+      "precise percentages"
+    ],
+    "must_not_include": [
+      "generic statements without data",
+      "vague statements",
+      "fabricated AI-literacy percentages"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-040",
     "question": "How have Borderplex quality-engineering (QA, SDET, test-automation) role requirements evolved — is the expectation shifting from manual + scripted testing toward AI-assisted test generation?",
     "source": "wfd_archetype",
     "intent": "role_evolution",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "A workforce director wants to know whether QA training programs should pivot from teaching manual test-case writing toward AI-assisted test generation tools.",
+    "ideal_answer_summary": "Should compare traditional testing tools vs AI-assisted test tools (`is_genai_tool = true`) for QA/SDET postings across temporal periods, and check `extracted_intelligence.responsibilities[*].requires_ai_competency` as an explicit signal. Must cite `tool_demand_weekly` and `skill_velocity.four_week_trend`. Scoped to Borderplex postings with `spam_tier = 'clean'`.",
+    "must_include": [
+      "extracted_intelligence",
+      "tools",
+      "is_genai_tool",
+      "tool_demand_weekly",
+      "skill_velocity",
+      "responsibilities",
+      "requires_ai_competency",
+      "temporal_period",
+      "borderplex_subregion",
+      "spam_tier",
+      "temporal comparison"
+    ],
+    "must_not_include": [
+      "generic_statements_without_data",
+      "hallucinated_numbers",
+      "fabricated automation percentages",
+      "industry analyst forecast"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-041",
