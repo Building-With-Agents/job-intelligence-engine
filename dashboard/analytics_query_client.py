@@ -49,9 +49,13 @@ def post_analytics_query(
         return {"ok": True, **out}
 
     url = f"{analytics_query_base_url()}/analytics/query"
+    headers: dict[str, str] = {}
+    api_key = os.getenv("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if api_key:
+        headers["X-API-Key"] = api_key
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
-            resp = client.post(url, json={"query": q})
+            resp = client.post(url, json={"query": q}, headers=headers or None)
     except httpx.TimeoutException:
         return {
             "ok": False,
@@ -70,6 +74,15 @@ def post_analytics_query(
         }
 
     if resp.status_code >= 400:
+        if resp.status_code == 401:
+            return {
+                "ok": False,
+                "error": (
+                    "The analytics API rejected the request (HTTP 401). "
+                    "Set ANALYTICS_QUERY_X_API_KEY in the environment to a secret that matches "
+                    "JIE_API_KEYS on the API server (JIE #226)."
+                ),
+            }
         return {
             "ok": False,
             "error": f"The analytics API returned an error (HTTP {resp.status_code}).",
