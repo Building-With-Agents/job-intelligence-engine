@@ -18,6 +18,12 @@ def _pg_session() -> MagicMock:
     return session
 
 
+def _executed_sql(session: MagicMock) -> str:
+    """Return the SQL string passed to session.execute."""
+    stmt = session.execute.call_args[0][0]
+    return str(stmt)
+
+
 def test_compute_geo_demand_weekly_non_postgresql_raises() -> None:
     session = MagicMock()
     bind = MagicMock()
@@ -59,3 +65,43 @@ def test_compute_geo_demand_weekly_empty() -> None:
 
     rows = compute_geo_demand_weekly(session, date(2025, 12, 1))
     assert rows == []
+
+
+def test_compute_geo_demand_weekly_sql_uses_coalesce_fallback() -> None:
+    """SQL must use COALESCE(publish_date, date_posted) — not publish_date alone.
+
+    Postings promoted via Issue #172 carry date_posted but NULL publish_date.
+    A filter on publish_date IS NOT NULL would silently drop the vast majority
+    of the corpus.  This test guards against regression to the old behaviour.
+    """
+    session = _pg_session()
+    mappings = MagicMock()
+    mappings.all.return_value = []
+    session.execute.return_value.mappings.return_value = mappings
+
+    compute_geo_demand_weekly(session, date(2026, 4, 13))
+
+    sql = _executed_sql(session).upper()
+    assert "COALESCE" in sql, "SQL must use COALESCE to fall back to date_posted"
+    assert "DATE_POSTED" in sql, "SQL must reference date_posted as the COALESCE fallback"
+
+
+def test_compute_geo_demand_weekly_date_window_binds() -> None:
+    """Week window parameters must span exactly 7 days and use UTC datetimes."""
+    from datetime import timezone
+
+    session = _pg_session()
+    mappings = MagicMock()
+    mappings.all.return_value = []
+    session.execute.return_value.mappings.return_value = mappings
+
+    ws = date(2026, 4, 13)
+    compute_geo_demand_weekly(session, ws)
+
+    bound = session.execute.call_args[0][1]
+    ts_start = bound["week_start_ts"]
+    ts_end = bound["week_end_ts"]
+
+    assert ts_start.tzinfo == timezone.utc
+    assert ts_end.tzinfo == timezone.utc
+    assert (ts_end - ts_start).days == 7
