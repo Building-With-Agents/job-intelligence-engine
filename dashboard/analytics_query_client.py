@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any
 
 import httpx
@@ -53,13 +54,19 @@ def post_analytics_query(
         return {"ok": True, **out}
 
     url = f"{analytics_query_base_url()}/analytics/query"
-    headers: dict[str, str] = {}
+    headers: dict[str, str] = {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": os.getenv("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
+        "X-User-Email": os.getenv("ANALYTICS_QUERY_X_USER_EMAIL", "dashboard@thewaifinder.com").strip()
+        or "dashboard@thewaifinder.com",
+        "X-Request-Id": os.getenv("ANALYTICS_QUERY_X_REQUEST_ID", "").strip() or str(uuid.uuid4()),
+    }
     api_key = os.getenv("ANALYTICS_QUERY_X_API_KEY", "").strip()
     if api_key:
         headers["X-API-Key"] = api_key
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
-            resp = client.post(url, json={"query": q}, headers=headers or None)
+            resp = client.post(url, json={"question": q}, headers=headers)
     except httpx.TimeoutException:
         return {
             "ok": False,
@@ -83,8 +90,9 @@ def post_analytics_query(
                 "ok": False,
                 "error": (
                     "The analytics API rejected the request (HTTP 401). "
-                    "Set ANALYTICS_QUERY_X_API_KEY in the environment to a secret that matches "
-                    "JIE_API_KEYS on the API server (JIE #226)."
+                    "Set ANALYTICS_QUERY_X_API_KEY to a secret that matches JIE_API_KEYS on the API "
+                    "server (JIE #226), and ensure X-Tenant-Id / X-User-Email / X-Request-Id are sent "
+                    "(defaults come from ANALYTICS_QUERY_X_* env vars; JIE #222)."
                 ),
             }
         return {
