@@ -1,0 +1,214 @@
+[
+  {
+    "id": "gq-041",
+    "question": "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the agentic_era period.",
+    "intent": "geographic",
+    "context": "Workforce director scoping whether an AI-core (agent developer / prompt engineer / LLM engineer) training cohort in El Paso has sufficient local employer demand to justify program launch. Needs a posting count and employer list before pitching the program to the board.",
+    "ideal_answer_summary": "Should explicitly state that El Paso job_postings in the agentic_era period contain very few postings with AI agent developer, prompt engineer, or LLM engineer in the job title — expect 1 to 3 matching records at most. Should name the specific titles found (e.g., roles with 'Agentic AI' or 'LLM' in title). Should flag low posting volume explicitly and advise caution about inferring strong local employer demand from this data. Should NOT conflate the broader 'Artificial Intelligence' role_classification (17 El Paso postings) with specific AI-core titles. Should end with an actionable note such as: 'El Paso AI-core hiring is sparse in the current corpus; a broader AI-adjacent search (software engineer + AI skills) returns stronger signal.'",
+    "must_include": [
+      "posting_count_stated_explicitly",
+      "el_paso_subregion_filter_confirmed",
+      "agentic_era_temporal_period_referenced",
+      "posting_count_below_5_with_explicit_caveat_about_sparse_demand",
+      "at_least_one_specific_job_title_named"
+    ],
+    "must_not_include": [
+      "inflated_count_implying_strong_demand",
+      "national_ai_demand_data_substituted_for_el_paso",
+      "confident_answer_on_fewer_than_5_postings_without_caveat",
+      "role_classification_conflated_with_title_match"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "id": "gq-042",
+    "question": "List every Las Cruces, NM data engineer posting from the last 90 days with required skills including Python, SQL, and a cloud platform.",
+    "intent": "geographic",
+    "context": "Workforce director evaluating whether Las Cruces data engineering demand justifies launching a data pipeline bootcamp before the next fiscal quarter. Needs posting evidence with concrete skill signals to present to an academic partner.",
+    "ideal_answer_summary": "Should cite approximately 30 to 35 Las Cruces data engineer postings from the last 90 days (the query returns around 32 matching records). Should note that a minority — roughly 2 to 4 postings — mention all three of Python, SQL, and a cloud platform together; most postings carry one or two of the three (e.g., 'ETL Engineer' has Python and SQL but not cloud; 'Healthcare Data Engineer' has cloud but not Python or SQL). Representative titles include 'Microsoft Fabric Data Engineer,' 'AI Data Engineer,' 'Remote Senior Data Engineer,' and 'ETL Engineer.' Should name the cloud platforms encountered (AWS, Azure, GCP, or Microsoft Fabric). Should note that the Python-plus-SQL-plus-cloud trifecta appears in fewer than 15% of postings, not the majority. Should end with a recommendation: Las Cruces shows consistent data engineering demand, but the full-stack Python/SQL/cloud requirement is relatively rare — a bootcamp covering all three is well-positioned but should not assume every employer demands all three simultaneously.",
+    "must_include": [
+      "las_cruces_subregion_filter_confirmed",
+      "posting_count_stated_explicitly",
+      "python_sql_cloud_skill_signal_cited",
+      "at_least_two_representative_job_titles_named",
+      "time_window_referenced_90_days_or_last_3_months"
+    ],
+    "must_not_include": [
+      "el_paso_data_substituted_for_las_cruces",
+      "fabricated_skill_percentages_not_in_data",
+      "skill_demand_weekly_table_referenced_when_empty",
+      "generic_statement_without_specific_titles"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "id": "gq-043",
+    "question": "Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, and clinical data analyst roles — that require AI or ML skills.",
+    "intent": "geographic",
+    "context": "Workforce director preparing to propose a healthcare-IT-plus-AI upskilling module for El Paso hospital systems and clinics. Needs to validate employer demand before committing curriculum resources and approaching healthcare anchor employers.",
+    "ideal_answer_summary": "Should cite approximately 20 El Paso healthcare-IT postings total, of which roughly 3 explicitly mention AI or ML in the job description. Should correctly identify the 3 AI-flagged postings as coming from DataAnnotation (an AI data-labeling company) rather than traditional hospital employers — titles include 'AI Healthcare QA Specialist,' 'Health Data Analyst - AI Trainer,' and 'Health Information Analyst.' Should name the dominant non-AI healthcare-IT employers found: University Medical Center of El Paso (UMC) posts clinical systems analyst roles without AI requirements, as does El Paso Community College. Should distinguish between AI-labeling work (DataAnnotation) and clinical AI integration (absent in El Paso employer demand at this time). Should end with an actionable note: traditional hospital employers in El Paso are not yet posting AI-specific healthcare roles; curriculum framing should lead with EHR and clinical analytics fundamentals before layering in AI modules.",
+    "must_include": [
+      "el_paso_subregion_filter_confirmed",
+      "total_healthcare_it_posting_count_stated",
+      "ai_ml_subset_count_stated_separately",
+      "employer_name_examples_cited_umc_or_datannotation",
+      "distinction_between_ai_labeling_and_clinical_ai_integration"
+    ],
+    "must_not_include": [
+      "fabricated_hospital_ai_programs_not_in_data",
+      "las_cruces_healthcare_data_substituted",
+      "national_healthcare_ai_hiring_statistics",
+      "skill_demand_weekly_referenced_when_empty",
+      "confident_claim_that_el_paso_hospitals_actively_seek_ai_skills"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "gq-044",
+    "question": "Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraform experience.",
+    "intent": "geographic",
+    "context": "Workforce director evaluating whether Kubernetes and Terraform should anchor the Las Cruces cloud-infrastructure curriculum track. Needs raw posting evidence before committing to a vendor partnership with a cloud training provider.",
+    "ideal_answer_summary": "Should cite approximately 21 Las Cruces DevOps, SRE, or platform-engineer postings that mention Kubernetes or Terraform in the job description. Representative titles include 'Kubernetes Platform Engineer,' 'Associate Site Reliability Engineer,' 'DevOps & Cloud Engineer,' 'GCP Platform Engineer,' and 'Lead Cloud Infrastructure Engineer.' Should note that several postings also mention security clearance requirements (e.g., 'DevOps Engineer - TS/SCI,' 'Cloud Engineer with TS Clearance'), signaling crossover with the defense-contractor sector in Las Cruces. Should note that Las Cruces shows stronger DevOps/SRE demand than El Paso in the current corpus. Should recommend both Kubernetes and Terraform as high-priority curriculum anchors for Las Cruces cloud-track learners.",
+    "must_include": [
+      "las_cruces_subregion_filter_confirmed",
+      "posting_count_approximately_20_to_25",
+      "kubernetes_or_terraform_explicitly_referenced",
+      "at_least_two_specific_job_titles_named",
+      "at_least_one_clearance_requiring_devops_posting_named_explicitly"
+    ],
+    "must_not_include": [
+      "el_paso_data_substituted_for_las_cruces",
+      "generic_cloud_statement_without_kubernetes_or_terraform",
+      "fabricated_tool_percentages",
+      "skill_demand_weekly_referenced_when_empty"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "gq-045",
+    "question": "Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt4 or agentic_era periods.",
+    "intent": "geographic",
+    "context": "Workforce director reviewing whether a React-focused frontend bootcamp in El Paso would have sufficient employer demand to guarantee placement outcomes. Needs posting evidence before signing a training-provider contract.",
+    "ideal_answer_summary": "Should cite approximately 8 El Paso frontend developer postings mentioning React or Next.js. Should note that all matching postings fall in the agentic_era period — no post_gpt4 postings are present in the El Paso corpus for this role family. Representative titles include 'React Developer (Entry Level),' 'Front End Engineering Lead,' 'Principal React + Node Engineer,' and 'Remote Sr SW Engineer (React).' Should flag that many of these postings are labeled remote-eligible despite the El Paso geographic filter, suggesting that some listings are nationwide remote roles that surfaced in the El Paso query. Should note the small absolute count and recommend validating demand with a broader tech-stack search before committing to a React-specific cohort.",
+    "must_include": [
+      "el_paso_subregion_filter_confirmed",
+      "posting_count_approximately_8_to_12",
+      "react_or_nextjs_skill_referenced",
+      "agentic_era_temporal_period_confirmed_no_post_gpt4",
+      "remote_eligible_caveat_or_observation"
+    ],
+    "must_not_include": [
+      "las_cruces_data_mixed_in_without_clarification",
+      "fabricated_post_gpt4_el_paso_frontend_postings",
+      "confident_cohort_demand_claim_on_fewer_than_15_postings_without_caveat",
+      "national_react_demand_statistics_substituted"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "gq-046",
+    "question": "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification such as CISSP, CISA, or CompTIA Security+.",
+    "intent": "geographic",
+    "context": "Workforce director evaluating whether a clearance-track cybersecurity training pathway is viable in Las Cruces. Needs to confirm employer demand and credential expectations before approaching defense-contractor partners and designing a clearance-eligible curriculum.",
+    "ideal_answer_summary": "Should cite approximately 11 Las Cruces cybersecurity postings from the last 12 months that require a clearance or a named certification. Of those, roughly 6 require a security clearance (e.g., 'Boundary Protection Network Engineer Security Clearance,' 'Cloud Security Architect,' 'Lead DevOps Engineer with Security Clearance,' 'DOD Secret Security Clearance Software Developer') and roughly 5 mention a named certification such as CISSP (e.g., 'Azure Cloud Cybersecurity Engineer,' 'Cloud Cybersecurity Engineer,' 'Cybersecurity Threat Intelligence Expert'). Should note that CISA and CompTIA Security+ appear rarely or not at all in this subset — CISSP is the dominant named certification. Should note the overlap with DevOps and cloud engineering roles that carry security clearance requirements, indicating that clearance demand extends beyond purely security-titled roles. Should recommend a clearance-track curriculum that combines cybersecurity fundamentals with cloud and infrastructure skills.",
+    "must_include": [
+      "las_cruces_subregion_filter_confirmed",
+      "posting_count_stated_approximately_10_to_15",
+      "at_least_one_named_clearance_job_title_cited",
+      "named_certification_cissp_referenced",
+      "time_window_referenced_12_months"
+    ],
+    "must_not_include": [
+      "el_paso_cybersecurity_data_substituted",
+      "fabricated_cisa_or_security_plus_counts_not_in_data",
+      "national_clearance_cybersecurity_statistics",
+      "generic_cybersecurity_statement_without_specific_titles"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "gq-047",
+    "question": "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family.",
+    "intent": "geographic",
+    "context": "Workforce director preparing a student-facing earnings handout for the El Paso intake cohort. Needs real posted wage data grouped by IT job family to set realistic salary expectations and justify training investment to prospective learners and grant funders.",
+    "ideal_answer_summary": "Should cite exactly 6 El Paso junior or entry-level IT postings that include a published salary range. Grouped by job family: Data Analytics (3 postings — 'Junior Data Analyst' $35k–$60k/yr, 'Junior Data Analyst Security Clearance' $35k–$60k/yr, 'Data Analytics - AI/ML Developer' $75k–$125k/yr); Data Engineering (1 posting — 'Junior Data Engineer in El Paso' $56k–$108k/yr); Big Data Analytics (1 posting — 'Junior Big Data Architect in El Paso' $67k–$129k/yr); Artificial Intelligence / BI (1 posting — 'Junior Business Intelligence Engineer in El Paso' $51k–$98k/yr). Should explicitly note that only 6 of 23 El Paso junior-level postings have a published wage range — the majority of entry-level postings do not disclose salary. Should end with a student-facing takeaway: entry-level data roles in El Paso show wide ranges ($35k–$129k) depending on specialization, with AI/ML and big-data roles at the top end.",
+    "must_include": [
+      "el_paso_subregion_filter_confirmed",
+      "posting_count_between_4_and_8_stated_explicitly",
+      "salary_range_in_dollars_cited_for_at_least_two_job_families",
+      "note_that_most_junior_postings_lack_published_salary",
+      "job_family_grouping_present"
+    ],
+    "must_not_include": [
+      "fabricated_salary_figures_outside_35k_to_130k_range",
+      "las_cruces_salary_data_mixed_in_without_clarification",
+      "national_entry_level_salary_benchmarks_substituted",
+      "skill_demand_weekly_or_role_snapshot_weekly_referenced_when_empty"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "id": "gq-048",
+    "question": "Find all Borderplex (El Paso and Las Cruces combined) fintech or regtech developer postings from the agentic_era period.",
+    "intent": "geographic",
+    "context": "Workforce director preparing a grant application to a regional financial-services workforce fund. Needs current posting evidence demonstrating fintech and regtech employer demand across the Borderplex before the grant submission deadline.",
+    "ideal_answer_summary": "Should cite approximately 10 to 15 Borderplex fintech or regtech developer postings for the agentic_era period when restricted to postings where 'fintech' or 'regtech' appears in the job title or description as a primary signal — with Las Cruces accounting for roughly 3x the El Paso count. Representative El Paso titles include 'FinTech ML Intern,' 'Head of Fintech Partnerships,' and 'Remote Fintech Product Analyst - AI Trainer.' Should break down by subregion explicitly (El Paso vs. Las Cruces). Should note that a broader compliance or financial-keyword sweep returns a larger but noisier result set that includes non-developer compliance roles (e.g., 'Permitting & Regulatory Compliance Specialist'); the answer should distinguish fintech developer roles from general compliance work. Should note that some results are remote-eligible positions that surfaced through the Borderplex geographic filter rather than representing truly local fintech employers. Should recommend the grant narrative frame the Borderplex fintech sector as emerging, citing Las Cruces as the stronger of the two sub-markets.",
+    "must_include": [
+      "both_el_paso_and_las_cruces_cited_separately",
+      "temporal_period_agentic_era_referenced",
+      "posting_count_by_subregion_or_combined_total",
+      "at_least_two_representative_job_titles_named",
+      "caveat_that_many_are_compliance_not_pure_fintech_dev"
+    ],
+    "must_not_include": [
+      "single_subregion_answer_without_mentioning_both",
+      "fabricated_fintech_employer_names",
+      "national_fintech_market_statistics_substituted",
+      "confident_large_count_without_clarifying_filter_breadth"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": "gq-049",
+    "question": "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows flagged.",
+    "intent": "geographic",
+    "context": "Workforce director considering whether to pilot a legal-technology training track in El Paso in partnership with a law firm. Needs posting evidence to justify curriculum development before committing resources.",
+    "ideal_answer_summary": "Should explicitly state that the JIE corpus contains zero El Paso postings matching legal-tech, e-discovery, or legal technology analyst titles from the past 6 months. Should not fabricate any postings. Should explain the data gap: legal-technology is a niche sector that is not well-represented in the Borderplex ingestion corpus, which focuses on IT-core and AI-adjacent roles. Should suggest alternatives the director could explore — for example, checking compliance analyst or contract management roles that occasionally overlap with legal-tech workflows, or noting that a Las Cruces search would also return zero results for this role family. Should end with a clear recommendation: insufficient employer-demand evidence in JIE to support a legal-tech training track at this time; recommend validating demand through direct employer outreach before committing to curriculum development.",
+    "must_include": [
+      "explicit_zero_result_statement",
+      "el_paso_subregion_filter_confirmed",
+      "explanation_of_why_data_is_absent_or_sparse",
+      "alternative_suggested_or_adjacent_role_offered",
+      "actionable_recommendation_against_launching_on_current_data"
+    ],
+    "must_not_include": [
+      "fabricated_legal_tech_or_ediscovery_postings",
+      "confident_answer_implying_postings_exist_when_zero_found",
+      "hallucinated_law_firm_employer_names",
+      "national_legal_tech_market_data_substituted_for_el_paso"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "gq-050",
+    "question": "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC.",
+    "intent": "geographic",
+    "context": "Workforce director preparing a research-talent pipeline briefing for NMSU's economic development office. Needs to know whether AI/ML researcher roles in Las Cruces are posted by local institutions or by remote-first national employers — the answer shapes whether a university partnership or a private-sector recruitment pipeline is the right strategy.",
+    "ideal_answer_summary": "Should cite approximately 5 Las Cruces AI/ML researcher or applied-scientist postings. Should correctly identify that all 5 postings come from Virtual Vocations Inc — a remote-job aggregator — and not from NMSU, UTEP, or EPCC directly. Representative titles include 'Applied Scientist II,' 'Principal Applied ML Researcher,' 'Principal Applied Scientist,' 'Research Scientist - 3D Generation,' and 'Responsible AI Research Scientist.' Should explicitly note that NMSU appears in the Las Cruces employer corpus with only 2 to 3 non-AI postings (e.g., conference services), and is NOT currently posting AI/ML researcher roles in the JIE corpus. Should flag the aggregator attribution caveat: Virtual Vocations lists remote-eligible positions from national employers, so the actual hiring employers may not be Las Cruces-based. Should end with a clear strategic note: local institution AI/ML researcher demand is not currently reflected in JIE employer postings; the university-partnership strategy should be validated through direct NMSU engagement rather than relying on job-board data.",
+    "must_include": [
+      "las_cruces_subregion_filter_confirmed",
+      "posting_count_approximately_5",
+      "virtual_vocations_identified_as_source_employer",
+      "explicit_statement_that_nmsu_utep_epcc_not_found_posting_ai_roles",
+      "aggregator_attribution_caveat_stated",
+      "actionable_recommendation_for_direct_university_outreach"
+    ],
+    "must_not_include": [
+      "fabricated_nmsu_or_utep_ai_researcher_postings",
+      "confident_attribution_of_postings_to_universities_when_aggregator_is_source",
+      "inflated_posting_count_beyond_5_to_8",
+      "national_ai_research_hiring_statistics_substituted"
+    ],
+    "difficulty": "hard"
+  }
+]
