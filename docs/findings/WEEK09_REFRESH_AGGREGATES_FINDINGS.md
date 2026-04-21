@@ -252,8 +252,8 @@ above — no `scripts/refresh_aggregates.py` behavior is exercised here.
 `job_title_to_canonical_role` artifact. There is **no** table or module by
 that name in this repository. This audit uses the implemented join path
 `dbo.job_postings.canonical_role_id` -> `dbo.canonical_roles.role_id`
-(see `common/data_store/models.py` and `common/data_store/migrations.py`),
-plus optional join-validity checks on that FK target only.
+(see `common/data_store/models.py` and `common/data_store/migrations.py`).
+Non-null slice join-validity is recorded under **Data / Evidence** (Check 3).
 
 ### Check 1 — `dbo.canonical_roles` (cluster inventory + job-family read)
 
@@ -270,16 +270,16 @@ plus optional join-validity checks on that FK target only.
 
 - **`cluster_count`:** 6 — `SELECT COUNT(*) AS cluster_count FROM dbo.canonical_roles;` via `python scripts/db_check.py query` (dev DB `localhost:5432/talent_finder`, run ~2026-04-21 01:23 UTC per terminal log).
 - **Qualitative read (sample query, ~01:24 UTC):** `SELECT role_id, label, posting_count, representative_titles, is_llm_generated FROM dbo.canonical_roles ORDER BY posting_count DESC NULLS LAST LIMIT 25;` returned six rows. The `label` strings read as recognizable engineering families in that slice: Site Reliability Engineer; Automation and Robotics Engineer; RPA Developer (UiPath & Power Automate); two distinct Mobile Application Developer (iOS/Android) clusters; Senior SDET - AI Automation Engineer.
-- **Split / overlap signal:** The two mobile clusters use overlapping skill domains but different `label` text (one includes “(2-4 years of exp) - USC and GC's” in the pasted `label`; the other is shorter). Treat them as separate buckets when citing role names, not interchangeable shorthand for “mobile.”
+- **Split / overlap signal:** The two mobile clusters both read as mobile-application developer families in the paste but use different `label` text (one includes “(2-4 years of exp) - USC and GC's” in the pasted `label`; the other is shorter). Treat them as separate buckets when citing role names, not interchangeable shorthand for “mobile.”
 - **Heterogeneity in the top-volume row:** For `label` “Site Reliability Engineer” (`posting_count` 542 in the paste), `representative_titles` includes both SRE-flavored strings and titles naming Machine Learning Engineer, AI Engineer, and Infrastructure Administrator — adjacent but not identical families — so a one-line “this cluster is …” summary can misread scope if it ignores those strings.
 - **Provenance / noise cues in the paste:** Five rows show `is_llm_generated` = `True` and one `False` (“Mobile Application Developer … USC and GC's”). At least one pasted representative title contains a trophy emoji; that is verbatim surface text from the DB, not editorial emphasis.
 
 **Why it matters for Q&A readiness.**
 
 - Routed “role / evolution” style answers still hit `dbo.canonical_roles` for
-  human-readable labels and skill/tool context. Thin or ambiguous clusters cap
-  how confidently we can narrate **which** job family the data is about, even
-  when downstream SQL is valid.
+  human-readable `label` / `representative_titles` (the columns sampled here).
+  Thin or ambiguous clusters cap how confidently we can narrate **which** job
+  family the data is about, even when downstream SQL is valid.
 - When evidence cites `label` alone while `representative_titles` span neighboring families (visible on the pasted SRE row), synthesis should either quote the stored titles or caveat the cluster boundary — otherwise the answer can sound more precise than the taxonomy slice supports.
 
 ### Check 2 — `dbo.role_snapshot_weekly` (multi-week coverage)
@@ -320,7 +320,7 @@ plus optional join-validity checks on that FK target only.
 - Issue #229 wording calls out `job_title_to_canonical_role`; there is **no**
   such table in-repo — the audit path is explicitly
   `dbo.job_postings.canonical_role_id` -> `dbo.canonical_roles.role_id` (see
-  repo note above and migrations for the optional FK).
+  repo note above; FK definition in migrations).
 - Denominator and non-null coverage:
   `SELECT COUNT(*) AS total_job_postings, COUNT(canonical_role_id) AS with_non_null_canonical_role_id, ROUND(100.0 * COUNT(canonical_role_id) / NULLIF(COUNT(*), 0), 2) AS pct_non_null_canonical_role_id FROM dbo.job_postings;`
 - Join validity on non-null ids:
@@ -342,17 +342,17 @@ plus optional join-validity checks on that FK target only.
 **Why it matters for Q&A readiness.**
 
 - Postings without `canonical_role_id` drop out of joins that aggregate **by
-  canonical role** (including `role_snapshot_weekly` refresh inputs that filter
-  on `jp.canonical_role_id IS NOT NULL`). Low coverage or orphan ids widen the
-  gap between “jobs in `job_postings`” and “jobs we can honestly bucket into a
-  named canonical role” in an answer.
+  canonical role**. Low non-null coverage widens the gap between “jobs in
+  `job_postings`” and “jobs we can honestly bucket into a named canonical role”
+  in an answer.
 - For the **non-null slice** (`630` / `2,679` in the coverage query above), the
   join-validity pair **`630` / `630`** means taxonomy-backed answers that join
   `dbo.job_postings` to `dbo.canonical_roles` on `canonical_role_id` → `role_id`
-  can still resolve **labels and JSON facets** for those rows without a missing-key
-  drop on this check alone — the headline coverage gap remains the **null**
-  majority (`2,679 − 630 = 2,049` by arithmetic on the two counts already recorded
-  here), not broken FK targets on assigned ids.
+  can still resolve **`canonical_roles` row data** for those postings without a
+  missing-key drop on this check alone — the headline coverage gap remains the
+  **null** majority (`2,679 − 630 = 2,049` by arithmetic on the two counts already
+  recorded here), not broken FK targets on assigned ids for the counts pasted
+  above.
 
 ### Recommendation
 
@@ -381,7 +381,7 @@ Structured only from the counts and qualitative notes already recorded above (no
    - **Classification:** **fixable in Week 10** (synthesis / evidence templates — cite `representative_titles` or explicit boundary language; re-clustering is a separate, heavier lever).
 
 4. **`dbo.canonical_roles` · `label` (two mobile rows in paste)**  
-   - **Issue:** **Two** clusters share the same broad domain (**Mobile Application Developer**) but **different `label` text** (one includes visa / experience language from the paste; the other is shorter).  
+   - **Issue:** **Two** clusters share the same broad domain (**Mobile Application Developer**) but **different `label` text** (one includes “(2-4 years of exp) - USC and GC's” in the pasted `label`; the other is shorter).  
    - **Effect on Q&A answers:** Treating them as **one** interchangeable “mobile” bucket without naming the distinct **`label`** values risks **double-counting or wrong joins** when filtering on `role_id` / `label`.  
    - **Classification:** **fixable in Week 10** (router prompts, evidence captions, operator runbook — disambiguate the two `label` strings).
 
