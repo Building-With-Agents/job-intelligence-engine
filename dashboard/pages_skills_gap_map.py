@@ -47,10 +47,7 @@ def render_skills_gap_map() -> None:
 
     keys = sorted(df["cohort_key"].dropna().astype(str).unique().tolist())
     pick = st.selectbox("Cohort", keys) if keys else None
-    if pick:
-        sub = df[df["cohort_key"].astype(str) == pick]
-    else:
-        sub = df
+    sub = df[df["cohort_key"].astype(str) == pick] if pick else df
 
     row0 = sub.iloc[0]
     gap_data = row0.get("gap_data")

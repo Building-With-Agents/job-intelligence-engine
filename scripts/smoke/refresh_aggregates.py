@@ -121,9 +121,7 @@ def main() -> int:
     ]
     for t in tables:
         try:
-            df, hint = read_sql_relation_safe(
-                f"SELECT COUNT(*) AS n FROM dbo.{t}", engine
-            )
+            df, hint = read_sql_relation_safe(f"SELECT COUNT(*) AS n FROM dbo.{t}", engine)
             if hint:
                 print(f"  {t:30s} WARN: {hint}")
             else:

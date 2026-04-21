@@ -269,9 +269,7 @@ def _build_on_conflict_clause(table_name: str, pk_cols: list[str], columns: list
     update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table_name, []) if c in columns]
     if not update_cols:
         return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
-    set_clauses = ", ".join(
-        f'"{c}" = COALESCE("dbo"."{table_name}"."{c}", EXCLUDED."{c}")' for c in update_cols
-    )
+    set_clauses = ", ".join(f'"{c}" = COALESCE("dbo"."{table_name}"."{c}", EXCLUDED."{c}")' for c in update_cols)
     return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
 
 
@@ -346,11 +344,7 @@ def upsert_records(
         # Fall back to row-by-row to identify problematic rows
         inserted = 0
         for i, vals in enumerate(values_list):
-            row_sql = (
-                f'INSERT INTO "dbo"."{table_name}" ({col_list}) '
-                f"VALUES {values_template} "
-                f"{on_conflict}"
-            )
+            row_sql = f'INSERT INTO "dbo"."{table_name}" ({col_list}) VALUES {values_template} {on_conflict}'
             try:
                 cur.execute(row_sql, vals)
                 conn.commit()

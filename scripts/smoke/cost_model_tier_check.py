@@ -26,7 +26,7 @@ from common.env import load_repo_root_dotenv  # noqa: E402
 
 load_repo_root_dotenv()
 
-from common.llm_adapter import resolve_model_tier, PRICING  # noqa: E402
+from common.llm_adapter import PRICING, resolve_model_tier  # noqa: E402
 
 
 def main() -> int:

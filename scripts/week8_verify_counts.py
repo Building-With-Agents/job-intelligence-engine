@@ -18,8 +18,9 @@ from common.env import load_repo_root_dotenv
 
 load_repo_root_dotenv()
 
-from common.data_store.database import get_engine  # noqa: E402
 from sqlalchemy import text  # noqa: E402
+
+from common.data_store.database import get_engine  # noqa: E402
 
 # Section name -> list of (table_name, expected_rows_string)
 _SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [

@@ -169,3 +169,8 @@ _debug_*.py
 # --- Findings DOCX + generators (shared via Teams, not git) ---
 docs/findings/*.docx
 docs/findings/generate-*.cjs
+
+# Local agent / dev scratch files
+.codex
+.tmp_*.json
+.tmp_*.log

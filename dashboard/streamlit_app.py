@@ -997,7 +997,9 @@ def main() -> None:
         st.sidebar.caption("Set `PYTHON_DATABASE_URL` (or `PYTHON_DATABASE_URL_READONLY`) in `.env`.")
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("Week 6 — observability · Week 7 — weekly insights · Week 8 — analytics views (Ask the Data: Pair C)")
+    st.sidebar.caption(
+        "Week 6 — observability · Week 7 — weekly insights · Week 8 — analytics views (Ask the Data: Pair C)"
+    )
     page = st.sidebar.radio(
         "Navigate",
         options=[

@@ -71,9 +71,7 @@ class DisruptionRepositoryQueryError(RuntimeError):
 def _validate_schema_identifier(raw: str) -> str:
     s = raw.strip()
     if not _SCHEMA_IDENT.fullmatch(s):
-        raise DisruptionRepositoryQueryError(
-            f"JIE_SQL_SCHEMA must match {_SCHEMA_IDENT.pattern!r}, got {raw!r}"
-        )
+        raise DisruptionRepositoryQueryError(f"JIE_SQL_SCHEMA must match {_SCHEMA_IDENT.pattern!r}, got {raw!r}")
     return s
 
 
@@ -115,9 +113,7 @@ def _execute_mappings(
         return list(result.mappings().all())
     except SQLAlchemyError as exc:
         ctx = dict(params) if params is not None else {}
-        raise DisruptionRepositoryQueryError(
-            f"{operation} failed (context keys: {sorted(ctx.keys())}): {exc}"
-        ) from exc
+        raise DisruptionRepositoryQueryError(f"{operation} failed (context keys: {sorted(ctx.keys())}): {exc}") from exc
 
 
 def _optional_float(value: Any) -> float | None:
@@ -155,6 +151,7 @@ def _normalize_period_aggregate_rows(
         resp = _optional_float(row.get("responsibility_density"))
         out[period] = (posting_count, ai_avg, resp)
     return out
+
 
 # Mirrors ``DisruptionClassifier`` keyword heuristics for density when ``ai_relevance_score`` is absent.
 _AI_SIGNAL_TOKENS: tuple[str, ...] = (
@@ -524,6 +521,4 @@ class DisruptionFingerprintRepository:
                     )
                 )
         except SQLAlchemyError as exc:
-            raise DisruptionRepositoryQueryError(
-                f"save_fingerprints failed (rows={len(results)}): {exc}"
-            ) from exc
+            raise DisruptionRepositoryQueryError(f"save_fingerprints failed (rows={len(results)}): {exc}") from exc
