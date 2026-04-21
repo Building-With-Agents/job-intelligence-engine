@@ -213,134 +213,141 @@
   },
   {
     "id": "gq-051",
-    "question": "How does AI-core role demand (AI agent developer, prompt engineer, ML engineer) in El Paso, TX compare to Las Cruces, NM in the agentic_era period?",
+    "question": "Compare demand for Python versus Machine Learning skills in Borderplex IT postings — which skill is more frequently required by employers?",
     "intent": "comparison",
-    "context": "Workforce director deciding whether to split the next AI-core training cohort across both El Paso and Las Cruces campuses or concentrate it in one city. Needs a side-by-side posting count comparison to justify the allocation to the board before the fiscal year budget lock.",
-    "ideal_answer_summary": "Should compare El Paso vs Las Cruces posting counts for AI-core roles (AI agent developer, prompt engineer, ML engineer) restricted to the agentic_era period. Should cite specific posting counts per subregion — expect very low volumes in both cities (likely fewer than 10 total between them). Should explicitly name the role titles found in each city. Should flag low posting volume with a caveat that the sample size is insufficient for confident demand claims. Should note which subregion has more (or whether both are equally sparse). Should end with a recommendation: at current volumes, concentrating the cohort in the city with marginally more demand is advisable, or the director should consider broadening to AI-adjacent roles for a more robust demand signal.",
+    "context": "Workforce director deciding whether to lead the next bootcamp cohort with Python fundamentals or a Machine Learning specialization. Needs a demand comparison to justify the sequencing decision to the curriculum committee.",
+    "ideal_answer_summary": "Should compare posting counts for Python-related and Machine Learning-related skills in the Borderplex. Machine Learning (approx 87 postings for the core label plus variants like ML Systems, ML Frameworks) should outpace Python (approx 41 postings for core label plus variants like Python Programming). Should cite specific posting counts for each skill. Should note that while both are in strong demand, ML appears in roughly twice as many postings as Python. Should recommend leading with Python fundamentals as the prerequisite foundation and layering ML as a second-phase specialization, since ML roles typically assume Python proficiency.",
     "must_include": [
-      "el_paso_and_las_cruces_both_cited_with_counts",
-      "agentic_era_temporal_period_referenced",
-      "posting_count_per_subregion_stated_explicitly",
-      "low_volume_caveat_if_fewer_than_30_postings",
-      "at_least_one_specific_role_title_named"
+      "python_posting_count_stated",
+      "machine_learning_posting_count_stated",
+      "which_skill_has_higher_demand_stated_explicitly",
+      "both_skills_compared_with_counts",
+      "curriculum_sequencing_recommendation"
     ],
     "must_not_include": [
-      "national_or_non_borderplex_metro_data_substituted",
+      "national_statistics_substituted_for_borderplex",
       "fabricated_percentages_without_evidence",
-      "confident_demand_claim_on_fewer_than_10_postings_without_caveat"
+      "only_one_skill_discussed_without_comparison"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-052",
-    "question": "Which IT skills are required in El Paso, TX postings but rarely mentioned in Las Cruces, NM postings, and vice versa?",
+    "question": "How does Borderplex demand for Cloud Computing skills compare to Cybersecurity skills — which domain has more job postings?",
     "intent": "comparison",
-    "context": "Workforce director tailoring curriculum tracks by campus location. Needs to understand whether El Paso and Las Cruces employer skill demands diverge enough to justify location-specific course modules rather than a single shared curriculum across both campuses.",
-    "ideal_answer_summary": "Should identify skills that are over-represented in El Paso postings relative to Las Cruces, and vice versa. Should provide specific skill names with approximate counts or share differences for each subregion. Should cover both directions of the comparison (El Paso unique skills AND Las Cruces unique skills). Should note if certain skills appear exclusively in one subregion. Should caveat that sparse skill extraction coverage or low posting volumes may limit confidence. Should end with a recommendation about whether curriculum differentiation by campus is warranted based on the observed skill divergence.",
+    "context": "Workforce director choosing between launching a cloud computing or cybersecurity certification track for the next fiscal year. Budget only supports one new track. Needs a clear demand comparison to justify the investment to funders.",
+    "ideal_answer_summary": "Should compare posting counts for Cloud Computing (approx 84 postings for core label plus variants) versus Cybersecurity (approx 31 postings for core label). Cloud Computing should clearly dominate with roughly 2.5x to 3x more postings. Should cite specific counts for each domain. Should name related skill variants found (e.g., Cloud Certifications, Cloud AI Services for cloud; Cybersecurity Certification, CISSP for security). Should recommend the cloud track as the higher-demand option while noting cybersecurity still shows solid demand and may have less competition among training providers.",
     "must_include": [
-      "el_paso_specific_skills_listed",
-      "las_cruces_specific_skills_listed",
-      "both_directions_of_comparison_addressed",
-      "posting_counts_or_shares_cited_per_skill",
-      "caveat_about_extraction_coverage_or_sample_size"
+      "cloud_computing_posting_count_stated",
+      "cybersecurity_posting_count_stated",
+      "cloud_computing_identified_as_higher_demand",
+      "both_domains_compared_numerically",
+      "recommendation_for_track_priority"
     ],
     "must_not_include": [
-      "single_city_only_answer_missing_other_direction",
-      "fabricated_employer_names_not_in_data",
-      "generic_skill_list_without_subregion_attribution"
+      "national_cloud_or_cybersecurity_statistics_substituted",
+      "single_domain_discussed_without_comparison",
+      "fabricated_employer_names_not_in_data"
     ],
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "gq-053",
-    "question": "Compare the share of remote-eligible IT postings between El Paso and Las Cruces — which market leans more remote?",
+    "question": "Compare Borderplex demand for DevOps skills versus Data Engineering skills — which is the stronger hiring signal for curriculum investment?",
     "intent": "comparison",
-    "context": "Workforce director advising students on whether to pursue remote-first career strategies or focus on in-person employer relationships. Needs data-backed guidance on which Borderplex submarket offers more remote-eligible IT positions to set realistic expectations for the next intake cohort.",
-    "ideal_answer_summary": "Should compute and compare the share (percentage) of remote-eligible IT postings in El Paso vs Las Cruces. Should cite the total IT posting count and the remote-eligible count for each subregion. Should clearly state which market has the higher remote share. Should note how remote eligibility is determined (is_remote flag or work arrangement field). Should caveat that some remote postings may be national listings that surfaced through the geographic filter rather than truly local employers. Should end with a practical student-facing recommendation about remote work expectations in each submarket.",
+    "context": "Workforce director allocating the next round of training slots between the DevOps and Data Engineering tracks. Needs data on which skill domain shows stronger employer demand to justify the split to the academic partner.",
+    "ideal_answer_summary": "Should compare posting counts for DevOps (approx 39 postings) versus Data Engineering (approx 42 postings). The two are very close in demand — essentially comparable signal strength. Should cite counts for each skill and note that the difference is within noise range. Should mention related skills appearing alongside each domain (e.g., CI/CD and Infrastructure as Code near DevOps; ETL, SQL, and Data Modeling near Data Engineering). Should recommend maintaining roughly equal investment in both tracks given the balanced demand, or looking at adjacent skill signals (Automation, Cloud Computing) to break the tie.",
     "must_include": [
-      "remote_share_percentage_per_subregion",
-      "el_paso_and_las_cruces_both_compared",
-      "total_and_remote_counts_stated",
-      "which_market_leans_more_remote_stated_explicitly",
-      "caveat_about_national_remote_listings"
+      "devops_posting_count_stated",
+      "data_engineering_posting_count_stated",
+      "both_skills_compared_with_counts",
+      "observation_that_demand_is_comparable",
+      "related_skills_mentioned_for_context"
     ],
     "must_not_include": [
-      "national_remote_work_statistics_substituted",
-      "single_subregion_only_without_comparison"
+      "confident_claim_one_dominates_when_counts_are_close",
+      "national_devops_or_data_engineering_statistics_substituted",
+      "fabricated_growth_trends_not_in_data"
     ],
     "difficulty": "medium"
   },
   {
     "id": "gq-054",
-    "question": "How does the mix of Tier 1 AI-core roles versus Tier 3 sector-IT roles differ between El Paso and Las Cruces?",
+    "question": "How does Borderplex employer demand for Large Language Models skills compare to Generative AI skills — which AI specialization label appears more frequently in postings?",
     "intent": "comparison",
-    "context": "Workforce director presenting to the board on whether El Paso or Las Cruces is better positioned for an AI-focused training center versus a broad sector-IT upskilling hub. Needs the role-tier mix comparison to justify the investment split between campuses.",
-    "ideal_answer_summary": "Should explicitly define which role classifications map to Tier 1 AI-core (e.g., AI agent developer, prompt engineer, ML engineer, LLM engineer) and Tier 3 sector-IT (e.g., healthcare-IT, fintech, legal-tech, manufacturing-software roles). Should compare counts or shares of each tier between El Paso and Las Cruces. Should note that Tier 1 AI-core postings are likely very sparse in both cities. Should state which city has a higher concentration of each tier. Should caveat if role_classification coverage is incomplete or if unclassified postings are a significant share. Should recommend whether each campus should lead with AI-core or sector-IT tracks based on the mix.",
+    "context": "Workforce director deciding how to brand and market the next AI curriculum module. Needs to know whether employers use 'Large Language Models' or 'Generative AI' terminology more frequently, so course titles and descriptions align with what hiring managers search for.",
+    "ideal_answer_summary": "Should compare posting counts for Large Language Models (approx 41 postings) versus Generative AI (approx 12 postings for 'Generative AI' plus 8 for 'Generative Artificial Intelligence' variant, totaling ~20). LLM should appear in roughly twice as many postings as Generative AI variants combined. Should cite specific counts for each label. Should note that related terms like 'AI Agents' (6), 'Agentic AI' (5), and 'AI Development' (6) also appear. Should recommend using 'Large Language Models' or 'LLM' as the primary curriculum label since it matches more employer postings, while including Generative AI as a secondary descriptor.",
     "must_include": [
-      "tier_definitions_mapped_to_specific_role_classifications",
-      "el_paso_and_las_cruces_both_compared",
-      "counts_or_shares_per_tier_per_subregion",
-      "sparse_data_caveat_for_ai_core_tier",
-      "recommendation_about_campus_focus"
+      "large_language_models_posting_count_stated",
+      "generative_ai_posting_count_stated",
+      "which_label_is_more_frequent_stated_explicitly",
+      "both_terms_compared_numerically",
+      "branding_recommendation_based_on_employer_usage"
     ],
     "must_not_include": [
-      "tier_labels_without_concrete_role_classification_mapping",
-      "national_averages_substituted_for_borderplex"
+      "national_ai_market_statistics_substituted",
+      "single_term_discussed_without_comparison",
+      "fabricated_trend_data_not_in_weekly_snapshot"
     ],
-    "difficulty": "hard"
+    "difficulty": "medium"
   },
   {
     "id": "gq-055",
-    "question": "Compare Borderplex IT posting volume across the four temporal periods — which periods saw the largest quarter-over-quarter growth?",
+    "question": "Compare Borderplex demand for Automation skills versus Infrastructure as Code skills — are DevOps employers asking for both equally?",
     "intent": "comparison",
-    "context": "Workforce director preparing the annual state-of-the-region workforce report for the board. Needs a historical demand trajectory showing how IT hiring in the Borderplex has evolved from pre-ChatGPT through the agentic era, with the specific growth inflection point identified for the narrative.",
-    "ideal_answer_summary": "Should report Borderplex IT posting counts for each of the four temporal periods: pre_chatgpt, early_genai, post_gpt4, and agentic_era. Should identify which period transition showed the largest absolute or percentage growth. Should name the specific periods involved in the peak growth transition. Should note whether growth has been continuous or whether any period saw a decline. Should caveat that the temporal periods have different durations, which affects direct volume comparison. Should end with a narrative-ready statement about the Borderplex IT demand trajectory suitable for a board presentation.",
+    "context": "Workforce director fine-tuning the DevOps curriculum track for the next cohort. Needs to know whether to lead with automation tooling (Ansible, scripting) or infrastructure-as-code frameworks (Terraform, CloudFormation), or whether both deserve equal weight.",
+    "ideal_answer_summary": "Should compare posting counts for Automation (approx 44 postings) versus Infrastructure as Code (approx 44 postings). Should note these are essentially tied in demand — almost identical posting counts. Should cite the specific counts for each skill. Should mention related skills in each cluster (Scripting near Automation; Kubernetes, Terraform near IaC). Should conclude that both deserve equal curriculum weight since employers demand them at identical rates, and recommend covering both as complementary modules rather than choosing one over the other.",
     "must_include": [
-      "all_four_temporal_periods_named_with_counts",
-      "largest_growth_transition_identified",
-      "posting_counts_or_growth_percentages_stated",
-      "caveat_about_unequal_period_durations"
+      "automation_posting_count_stated",
+      "infrastructure_as_code_posting_count_stated",
+      "observation_that_demand_is_nearly_equal",
+      "both_skills_compared_numerically",
+      "curriculum_recommendation"
     ],
     "must_not_include": [
-      "fabricated_calendar_quarters_not_in_data",
-      "non_borderplex_geography_referenced"
+      "confident_claim_one_dominates_when_tied",
+      "national_devops_statistics_substituted",
+      "fabricated_tool_specific_percentages_not_in_data"
     ],
     "difficulty": "hard"
   },
   {
     "id": "gq-056",
-    "question": "How do Borderplex data engineer postings in the early_genai period compare to the agentic_era period in terms of required AI skills?",
+    "question": "How does Borderplex demand for SQL skills compare to ETL skills in recent postings — which data-foundation skill is more commonly required?",
     "intent": "comparison",
-    "context": "Workforce director updating the data engineering curriculum to ensure graduates are competitive in the current market. Needs to understand how AI skill requirements have evolved for data engineers specifically, so the curriculum committee can decide which new AI modules to add for the next cohort.",
-    "ideal_answer_summary": "Should compare the AI-related skills and tools found in Borderplex data engineer postings between the early_genai and agentic_era periods. Should name specific AI skills or tools that appeared in the agentic_era but were absent in early_genai (e.g., LangChain, vector databases, LLM APIs). Should cite approximate counts or shares of postings mentioning AI skills in each period. Should note the overall data engineer posting volume in each period for context. Should end with a curriculum recommendation: which AI skills should be added to the data engineering track based on the observed shift.",
+    "context": "Workforce director designing the data analytics bootcamp intro module. Needs to decide whether to lead with SQL query fundamentals or ETL pipeline tooling based on which skill employers cite more frequently.",
+    "ideal_answer_summary": "Should compare posting counts for SQL (approx 37 postings) versus ETL (approx 40 postings). Should note these are very close — ETL has a slight edge but within noise range. Should cite specific counts for each skill. Should mention that both are foundational data skills and often co-occur in job postings. Should note related skills: Data Modeling (41), Data Analysis (60), and Data Engineering (42) are all in strong demand alongside both SQL and ETL. Should recommend covering both skills as co-requisites in the bootcamp rather than choosing one, since employers treat them as complementary.",
     "must_include": [
-      "early_genai_and_agentic_era_both_compared",
-      "specific_ai_skills_or_tools_named",
-      "data_engineer_role_filter_confirmed",
-      "posting_counts_or_skill_shares_cited",
-      "curriculum_recommendation_based_on_shift"
+      "sql_posting_count_stated",
+      "etl_posting_count_stated",
+      "both_skills_compared_with_counts",
+      "observation_that_demand_is_comparable",
+      "curriculum_recommendation_for_both"
     ],
     "must_not_include": [
-      "all_borderplex_roles_conflated_with_data_engineer",
-      "generic_ai_growth_statement_without_specific_skills"
+      "fabricated_tool_names_not_in_data",
+      "national_data_engineering_statistics_substituted",
+      "confident_claim_one_dominates_when_counts_are_close"
     ],
     "difficulty": "medium"
   },
   {
     "id": "gq-057",
-    "question": "Compare Borderplex healthcare-IT versus fintech-IT hiring volume over the last 12 months — which sector is hiring more aggressively?",
+    "question": "Compare Borderplex demand for REST API skills versus Backend Development skills — which is more frequently cited in IT postings?",
     "intent": "comparison",
-    "context": "Workforce director choosing between launching a healthcare-IT or fintech training track for the next fiscal year. Budget only supports one new track. Needs a clear hiring volume comparison to justify the sector choice to funders and academic partners.",
-    "ideal_answer_summary": "Should compare total posting counts for healthcare-IT and fintech-IT sectors in the Borderplex over the last 12 months. Should clearly state which sector has higher hiring volume. Should cite specific posting counts for each sector. Should name representative employers or role titles in each sector. Should note if the volume gap is large enough to be decisive or if both sectors are similarly sized. Should caveat if sector classification coverage is incomplete. Should end with a recommendation for which track to prioritize based on employer demand evidence.",
+    "context": "Workforce director updating the web development curriculum track. Needs to know whether employers emphasize API-first architecture skills or broader backend development capabilities to decide how to weight the curriculum modules.",
+    "ideal_answer_summary": "Should compare posting counts for REST APIs (approx 52 postings) versus Backend Development (approx 33 postings). REST APIs should lead with roughly 50-60% more postings than Backend Development. Should cite specific counts for each skill. Should note that both skills are strong signals for web development roles, but API skills appear to be the more commonly cited requirement. Should recommend anchoring the web dev track on API design and consumption with backend development as a supporting module.",
     "must_include": [
-      "healthcare_and_fintech_both_compared_with_counts",
-      "last_12_months_time_window_referenced",
-      "which_sector_is_hiring_more_stated_explicitly",
-      "representative_role_titles_or_employers_cited"
+      "rest_api_posting_count_stated",
+      "backend_development_posting_count_stated",
+      "which_skill_is_more_frequently_cited_stated",
+      "both_skills_compared_numerically",
+      "curriculum_weighting_recommendation"
     ],
     "must_not_include": [
-      "national_sector_statistics_substituted_for_borderplex",
-      "vague_hiring_claim_without_posting_counts"
+      "national_web_development_statistics_substituted",
+      "fabricated_framework_specific_counts_not_in_data",
+      "single_skill_discussed_without_comparison"
     ],
     "difficulty": "medium"
   },
@@ -364,40 +371,42 @@
   },
   {
     "id": "gq-059",
-    "question": "Compare Borderplex AI skill adoption between software engineer and data scientist postings in the agentic_era — which role family mentions AI tools more frequently?",
+    "question": "Compare overall Borderplex demand for Artificial Intelligence skills versus Machine Learning skills — which umbrella term appears in more IT postings?",
     "intent": "comparison",
-    "context": "Workforce director evaluating which of two existing training tracks — software engineering or data science — needs AI upskilling modules added more urgently. Needs AI mention rates for each role family to prioritize curriculum updates for the next quarter.",
-    "ideal_answer_summary": "Should compare the share of postings mentioning AI-related keywords or tools (AI, ML, LLM, GPT, Copilot, LangChain, etc.) between software engineer and data scientist postings in the Borderplex during the agentic_era period. Should cite the AI-mention count or share for each role family. Should name specific AI keywords or tools found in each family. Should state which role family has higher AI mention density. Should note the total posting count for each family. Should end with a recommendation about which track needs AI modules more urgently based on current employer demand signals.",
+    "context": "Workforce director deciding whether the next AI-track curriculum should use 'Artificial Intelligence' or 'Machine Learning' as the primary branding to align with employer language in the region.",
+    "ideal_answer_summary": "Should compare posting counts for Artificial Intelligence (approx 100 postings for the core label) versus Machine Learning (approx 87 postings for the core label). AI should lead, but the gap is moderate — roughly 15% more postings reference AI than ML. Should cite specific counts for each term. Should note that related variants exist for both (e.g., 'Generative Artificial Intelligence', 'Applied Artificial Intelligence' for AI; 'Machine Learning Systems', 'Machine Learning Frameworks' for ML). Should observe that both terms are among the top-demanded skills in the Borderplex. Should recommend using 'Artificial Intelligence' as the primary marketing label since it has broader employer adoption, with 'Machine Learning' featured as a core specialization track within the AI program.",
     "must_include": [
-      "agentic_era_temporal_period_referenced",
-      "software_engineer_and_data_scientist_both_compared",
-      "ai_mention_counts_or_shares_per_role",
-      "specific_ai_keywords_or_tools_named",
-      "which_role_has_higher_ai_mention_rate_stated"
+      "artificial_intelligence_posting_count_stated",
+      "machine_learning_posting_count_stated",
+      "which_term_is_more_frequent_stated_explicitly",
+      "both_terms_compared_numerically",
+      "branding_recommendation"
     ],
     "must_not_include": [
-      "national_hiring_statistics_substituted",
-      "ai_claim_without_naming_specific_keywords_or_tools"
+      "national_ai_market_statistics_substituted",
+      "single_term_discussed_without_comparison",
+      "fabricated_trend_data_not_in_snapshot"
     ],
-    "difficulty": "easy"
+    "difficulty": "hard"
   },
   {
     "id": "gq-060",
-    "question": "How do Borderplex DevOps and SRE roles compare to Borderplex data engineer roles in terms of AI-tool adoption in the agentic_era period?",
+    "question": "How does Borderplex demand for Continuous Integration skills compare to CI/CD skills — are employers using these terms interchangeably or is one more prevalent?",
     "intent": "comparison",
-    "context": "Workforce director advising the infrastructure curriculum team on whether the DevOps/SRE track or the data engineering track should integrate AI-tool training first. Needs a side-by-side comparison of AI-tool mention rates to prioritize the limited curriculum development capacity.",
-    "ideal_answer_summary": "Should compare AI-tool adoption (mention of AI tools like Copilot, LangChain, LLM APIs, ChatGPT, etc.) between DevOps/SRE and data engineer postings in the Borderplex during the agentic_era period. Should cite the count or share of postings mentioning AI tools for each role family. Should name specific AI tools found in each family. Should state which family shows higher AI-tool adoption. Should note the total posting count for each family to contextualize. Should caveat if one family has significantly more postings than the other, making share comparisons more meaningful than counts. Should end with a recommendation for which curriculum track should integrate AI-tool training first.",
+    "context": "Workforce director standardizing DevOps curriculum module titles and descriptions. Needs to know which term — 'Continuous Integration' or 'CI/CD' — employers actually use in job postings so course materials match hiring manager expectations and show up in keyword-matched job searches.",
+    "ideal_answer_summary": "Should compare posting counts for Continuous Integration (approx 53 postings) versus CI/CD (approx 34 postings). Continuous Integration should lead with roughly 50% more postings. Should cite specific counts for each term. Should note that the two terms overlap conceptually but Continuous Integration has broader usage. Should mention related DevOps skills appearing alongside both (DevOps at ~39, Automation at ~44, Infrastructure as Code at ~44). Should recommend using 'Continuous Integration' as the primary curriculum term since it matches more employer postings, with 'CI/CD' as a synonym introduced in course content.",
     "must_include": [
-      "agentic_era_temporal_period_referenced",
-      "devops_sre_and_data_engineer_both_compared",
-      "ai_tool_counts_or_shares_cited",
-      "specific_ai_tools_named",
-      "which_family_has_higher_adoption_stated"
+      "continuous_integration_posting_count_stated",
+      "ci_cd_posting_count_stated",
+      "which_term_is_more_prevalent_stated",
+      "both_terms_compared_numerically",
+      "terminology_recommendation_for_curriculum"
     ],
     "must_not_include": [
-      "same_answer_for_both_families_without_contrast",
-      "national_faang_hiring_anecdotes_substituted"
+      "national_devops_adoption_statistics_substituted",
+      "single_term_discussed_without_comparison",
+      "fabricated_tool_specific_counts_not_in_data"
     ],
-    "difficulty": "easy"
+    "difficulty": "hard"
   }
 ]
