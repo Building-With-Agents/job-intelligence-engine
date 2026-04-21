@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -27,6 +27,33 @@ class AnalyticsQueryRequest(BaseModel):
         validation_alias=AliasChoices("question", "query"),
     )
     correlation_id: str | None = Field(default=None, max_length=128)
+    conversation_id: str | None = Field(
+        default=None,
+        max_length=36,
+        description="Optional UUID; when omitted the API assigns a new conversation_id (JIE #225).",
+    )
+
+
+class LaborPulseEvidenceItem(BaseModel):
+    """Citation shape for LaborPulse / wfd-os ``QueryResponse`` (JIE #225)."""
+
+    title: str = ""
+    source: str = ""
+    snippet: str = ""
+    supporting_count: int | None = None
+    time_period: str | None = None
+
+
+class LaborPulseQueryResponse(BaseModel):
+    """Wire JSON for ``POST /analytics/query`` — align with wfd-os ``QueryResponse`` (JIE #225)."""
+
+    conversation_id: str
+    answer: str
+    evidence: list[LaborPulseEvidenceItem]
+    confidence: Literal["low", "medium", "high"]
+    follow_up_questions: list[str]
+    cost_usd: float
+    sql_generated: str
 
 
 class AnalyticsQueryResponse(BaseModel):
