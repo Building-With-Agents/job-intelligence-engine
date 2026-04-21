@@ -114,110 +114,281 @@
     "question": "Which job titles have appeared in Borderplex postings only since the agentic_era period (post-2024) and have zero matching postings in the pre_chatgpt period?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director identifying truly new AI-related occupations in the Borderplex so she can decide whether new training pathways are needed rather than updating an older program.",
+    "ideal_answer_summary": "Should identify Borderplex job titles that first appear only in the agentic_era period and have zero matching postings in pre_chatgpt. The answer should explicitly use the Borderplex regional filter and temporal buckets, name the titles found, and report posting counts or shares for those titles in the current period. It should make clear that these are emergence cases rather than transformed legacy titles, and it should end with an actionable next step such as drilling into the employers or skills associated with the top emerging titles. If no titles meet the condition, the answer should say so clearly instead of forcing examples.",
+    "must_include": [
+      "regional_filter",
+      "temporal_comparison",
+      "agentic_era_reference",
+      "pre_chatgpt_reference",
+      "new_job_titles_named",
+      "posting_counts_or_shares",
+      "explicit_zero_baseline",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_job_titles",
+      "generic_statements_without_data",
+      "national_data_without_regional",
+      "legacy_role_rebranded_without_evidence",
+      "missing_zero_baseline_check",
+      "confident_answer_on_insufficient_data"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-012",
     "question": "Among Borderplex AI-core roles (AI agent developer, prompt engineer, AI safety engineer), which titles first appeared in the post_gpt4 period and how has their posting volume grown?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director deciding whether AI-core roles have enough recent local demand to justify targeted employer outreach or a pilot training offering.",
+    "ideal_answer_summary": "Should evaluate the specific AI-core titles named in the question and determine which of them first appeared in the post_gpt4 period in Borderplex data. The answer should name each qualifying title, show when it first appears, and describe how posting volume changes from post_gpt4 into agentic_era using counts, percentages, or another explicit growth measure. It should stay within the Borderplex corpus and not generalize from national AI hiring trends. A strong answer should distinguish titles that truly emerged in post_gpt4 from titles with any earlier baseline, then close with a next step such as identifying which employers are driving demand for the fastest-growing title.",
+    "must_include": [
+      "regional_filter",
+      "ai_core_role_filter",
+      "post_gpt4_reference",
+      "agentic_era_reference",
+      "titles_named",
+      "first_appearance_identified",
+      "posting_volume_growth",
+      "counts_or_percentages",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_growth_numbers",
+      "national_ai_hiring_claims",
+      "unnamed_titles",
+      "missing_first_appearance_test",
+      "mixing_ai_core_with_non_ai_core_roles",
+      "generic_growth_language_without_data"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-013",
     "question": "What new skills have appeared in Borderplex IT postings for the first time in the last 12 months that were entirely absent from the early_genai period?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director deciding which new skills should be added to upcoming curriculum updates because they are now appearing in local employer demand but were not present earlier in the GenAI transition.",
+    "ideal_answer_summary": "Should identify skills found in Borderplex IT postings in the last 12 months that do not appear at all in the early_genai period. Because newly emerging skills may exist in raw extracted signals before they are fully reflected in aggregate tables, a strong answer may rely on extracted_intelligence JSONB-unnested skills and should still keep the Borderplex and IT-role filters explicit. The answer should name the new skills, indicate current counts or prevalence, and clearly state that they were absent from early_genai. It should avoid inventing exact percentages if they have not been verified. A strong ending would suggest whether these skills belong in a new module, employer advisory discussion, or follow-up drill-down by role family.",
+    "must_include": [
+      "regional_filter",
+      "it_role_filter",
+      "last_12_months_window",
+      "early_genai_reference",
+      "specific_skills_named",
+      "explicit_absence_in_early_genai",
+      "current_counts_or_prevalence",
+      "jsonb_or_raw_signal_grounding",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_skill_names",
+      "hallucinated_percentages",
+      "generic_ai_skills_without_evidence",
+      "national_data_without_regional",
+      "missing_absence_check",
+      "ignoring_raw_signal_path",
+      "confident_answer_on_sparse_data"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-014",
     "question": "Which Borderplex IT roles had fewer than five postings before ChatGPT's release but have grown to 50+ postings in the agentic_era period, and what skills are driving that growth?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director identifying fast-emerging role families that may now justify a dedicated training pathway because they moved from near-nonexistent demand before ChatGPT to meaningful hiring volume in the current market.",
+    "ideal_answer_summary": "Should identify Borderplex IT roles whose baseline before ChatGPT was fewer than five postings and whose posting volume reaches 50 or more in the agentic_era period. The answer should name the qualifying roles, state both the low pre-ChatGPT baseline and the current-period volume, and then explain which skills are most associated with that growth using specific skill names and counts or prevalence. A strong answer should clearly separate role-volume growth from skill-level growth, stay within the Borderplex corpus, and end with an actionable next step such as prioritizing curriculum design or employer outreach for the top emerging role. If no roles meet the threshold, it should say so directly.",
+    "must_include": [
+      "regional_filter",
+      "pre_chatgpt_reference",
+      "agentic_era_reference",
+      "subfive_baseline_check",
+      "fiftyplus_current_check",
+      "roles_named",
+      "specific_skills_named",
+      "counts_or_prevalence",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_role_counts",
+      "hallucinated_skill_growth",
+      "generic_growth_claims_without_data",
+      "national_data_without_regional",
+      "mixing_role_growth_with_skill_growth",
+      "missing_threshold_check",
+      "confident_answer_on_no_matches"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-015",
     "question": "In the Borderplex legal-tech and regtech sectors, which AI-native job titles (e.g., \"AI compliance analyst\", \"legal AI specialist\", \"e-discovery AI analyst\") have emerged, and when did they first appear?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director evaluating whether legal-tech and regtech are beginning to produce enough AI-specific demand to warrant sector-specific program design or partner conversations.",
+    "ideal_answer_summary": "Should focus only on Borderplex legal-tech and regtech postings and identify AI-native job titles that emerge in those sectors. The answer should name the titles found, state when each first appears using the JIE temporal framing or a first-seen date/time window, and make clear that these are sector-specific emergence examples rather than generic AI roles pulled from the broader corpus. A strong answer should mention counts if available, note when evidence is sparse, and conclude with an actionable next step such as checking which employers are posting these roles or whether the titles are concentrated in one sector more than the other.",
+    "must_include": [
+      "regional_filter",
+      "sector_filter",
+      "ai_native_titles_named",
+      "first_appearance_identified",
+      "legaltech_or_regtech_scope",
+      "counts_if_available",
+      "explicit_uncertainty_when_sparse",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_sector_titles",
+      "generic_ai_titles_without_sector_evidence",
+      "national_legaltech_claims",
+      "missing_first_appearance_test",
+      "cross_sector_leakage",
+      "confident_answer_on_sparse_data",
+      "generic_statements_without_data"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-016",
     "question": "Which employer types (academic, federal-contractor, private-sector startup, enterprise) are driving the emergence of AI-agent-developer roles in the Borderplex?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director deciding which kinds of employers to engage first if AI-agent-developer demand is becoming real in the local market.",
+    "ideal_answer_summary": "Should identify Borderplex postings for AI-agent-developer roles and group the demand by employer type, such as academic, federal-contractor, startup, or enterprise, using available employer metadata or a clearly explained approximation. The answer should report which employer types account for the most emergence activity, include counts or shares, and make clear that the focus is on emergence in the Borderplex rather than overall national AI hiring. A strong answer should also note whether the role first appears recently and whether demand is concentrated in one employer type or spread across several. It should end with an actionable next step such as prioritizing outreach to the top employer segment or drilling into named employers within that segment.",
+    "must_include": [
+      "regional_filter",
+      "role_filter",
+      "employer_type_grouping",
+      "counts_or_shares",
+      "emergence_framing",
+      "top_employer_type_identified",
+      "named_employers_if_available",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_employer_types",
+      "hallucinated_employer_names",
+      "national_ai_hiring_claims",
+      "missing_grouping_logic",
+      "generic_market_language_without_data",
+      "confusing_employer_type_with_individual_employer",
+      "unsupported_startup_classification"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-017",
     "question": "What share of Borderplex IT postings in the agentic_era period mention tools that did not exist in the pre_chatgpt period (LangChain, LangGraph, vector databases, LLM orchestration frameworks)?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director deciding whether newly emerged AI-tool usage in local IT hiring is broad enough to justify adding modern AI-tool exposure to training programs.",
+    "ideal_answer_summary": "Should calculate the share of Borderplex IT postings in the agentic_era period that mention post-ChatGPT-era tools or frameworks such as LangChain, LangGraph, vector databases, or LLM orchestration frameworks. The answer should keep the Borderplex and agentic_era filters explicit, name the tool categories or examples found, and report a percentage or count-based share of postings mentioning them. A strong answer should explain that these tools were not part of the pre_chatgpt tool landscape and should avoid overclaiming if the exact tool list is sparse. It should end with an actionable next step such as checking which roles or employers are most associated with these newer tools.",
+    "must_include": [
+      "regional_filter",
+      "it_role_filter",
+      "agentic_era_reference",
+      "pre_chatgpt_reference",
+      "tool_examples_named",
+      "share_or_percentage",
+      "posting_count_basis",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_tool_mentions",
+      "hallucinated_percentages",
+      "generic_ai_tool_claims_without_data",
+      "national_data_without_regional",
+      "missing_share_calculation",
+      "mixing_tools_with_general_skills",
+      "confident_answer_on_sparse_data"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-018",
     "question": "Which \"AI-native\" roles in the Borderplex have more than 25% AI skill-density from their first posting, with no evidence of transitioning from a non-AI predecessor role?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director identifying roles that appear to be genuinely new AI-native occupations, rather than older roles that were gradually re-labeled, so she can decide whether to launch net-new training content.",
+    "ideal_answer_summary": "Should identify Borderplex roles whose first observed postings already show AI skill-density above 25 percent and that do not show evidence of evolving from a non-AI predecessor role. The answer should name the qualifying roles, state the AI-density threshold explicitly, anchor the analysis to the role's first observed posting or earliest posting window, and explain why the role is being treated as AI-native rather than a transformation of an older title. A strong answer should be careful about the transition test and should acknowledge uncertainty when predecessor-role evidence is ambiguous. It should end with an actionable next step such as drilling into the associated skills or employers behind the top AI-native roles.",
+    "must_include": [
+      "regional_filter",
+      "ai_native_roles_named",
+      "first_posting_reference",
+      "ai_density_threshold",
+      "twentyfive_percent_threshold",
+      "non_ai_predecessor_check",
+      "explicit_uncertainty_when_ambiguous",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_ai_density",
+      "legacy_roles_labeled_ai_native_without_evidence",
+      "missing_predecessor_test",
+      "generic_ai_native_claims",
+      "national_data_without_regional",
+      "confident_answer_on_ambiguous_transition",
+      "unnamed_roles"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-019",
     "question": "In Borderplex healthcare-IT and fintech sectors, which emerging AI-adjacent roles show the highest velocity — measured as posting-count growth rate month-over-month?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director comparing two important sectors to see where AI-adjacent hiring is accelerating fastest and where training investment may have the best near-term payoff.",
+    "ideal_answer_summary": "Should compare emerging AI-adjacent roles within Borderplex healthcare-IT and fintech postings and identify which roles have the strongest month-over-month posting growth. The answer should keep both the sector filters and the Borderplex filter explicit, name the roles with the highest velocity, and report the growth measure using posting-count growth rate, counts, or another clear month-over-month metric. A strong answer should distinguish emergence from general sector demand and should mention whether the strongest velocity appears concentrated in one sector or split across both. It should end with an actionable next step such as prioritizing employer outreach or curriculum updates for the fastest-growing role cluster.",
+    "must_include": [
+      "regional_filter",
+      "sector_filter",
+      "ai_adjacent_roles_named",
+      "month_over_month_growth",
+      "velocity_measure",
+      "counts_or_growth_rate",
+      "cross_sector_comparison",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_velocity_numbers",
+      "missing_sector_split",
+      "generic_growth_language_without_data",
+      "national_fintech_or_healthcare_claims",
+      "confusing_emergence_with_total_volume",
+      "unnamed_roles",
+      "missing_time_window"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-020",
     "question": "What new certifications or credentials (e.g., prompt-engineering certificates, AI-safety training, agentic-framework certifications) are appearing as requirements in Borderplex postings for the first time in the agentic_era period?",
     "source": "wfd_archetype",
     "intent": "emergence",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Workforce director deciding whether new credential requirements are appearing in local employer demand that should influence program design, advising, or partnership strategy.",
+    "ideal_answer_summary": "Should identify certifications or credentials that appear in Borderplex postings for the first time in the agentic_era period and were absent from earlier periods. The answer should name the credentials found, state that they are first-seen in agentic_era, and provide counts or prevalence if available. Because credential mentions may be sparse or inconsistently phrased, a strong answer should qualify uncertainty where needed and avoid inventing specific certification names that are not present in the data. It should stay regional, avoid national labor-market generalizations, and close with an actionable next step such as validating whether these credentials are concentrated in a specific role family or employer segment.",
+    "must_include": [
+      "regional_filter",
+      "agentic_era_reference",
+      "first_seen_credential_check",
+      "specific_credentials_named",
+      "absence_in_prior_periods",
+      "counts_if_available",
+      "explicit_uncertainty_when_sparse",
+      "actionable_next_step"
+    ],
+    "must_not_include": [
+      "hallucinated_certifications",
+      "fabricated_requirement_language",
+      "generic_ai_credentials_without_evidence",
+      "national_data_without_regional",
+      "missing_first_seen_test",
+      "confident_answer_on_sparse_data",
+      "legacy_certifications_misclassified_as_new"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-021",
