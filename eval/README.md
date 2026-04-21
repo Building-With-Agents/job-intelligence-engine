@@ -1,45 +1,61 @@
-# Extraction eval (skills + tools vs ground truth)
+# Eval harnesses
 
-## Legacy CLI (stub only, lightweight)
+## Golden-question Q&A eval (`qa_eval.py`)
 
-No `agents.skills_extraction` import chain — safe for environments without full agent deps beyond JSON + core helpers:
+Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`), and optionally records results in Langfuse as a dataset run.
 
-```bash
-python -m eval.extraction_eval
+### Prerequisites
+
+- Repo root, venv activated, `pip install -r requirements.txt`.
+- Database reachable with aggregates populated (see Week 8 runbook) when using the default **in-process** path (`run_analytics_qna`).
+- Azure / LLM env vars as for normal analytics (`LLM_DEFAULT`, `LLM_SYNTHESIS`, etc.).
+- For Langfuse upload + dataset runs: `LANGFUSE_SECRET_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_BASE_URL` in `.env`.
+- Upload the golden corpus once: `python scripts/upload_qa_dataset.py` (dataset **LaborPulse Golden Questions**).
+
+### Full 80-question baseline (dataset run)
+
+Uses the hosted Langfuse dataset (no `--limit`) so each item links to the uploaded dataset and the run name matches `--prompt-version`:
+
+```powershell
+python -m eval.qa_eval --prompt-version v1-baseline
 ```
 
-Uses `extraction_ground_truth.json` next to this README.
+### Smoke (3 questions, no Langfuse)
 
-## New CLI (stub or full pipeline)
+Runs locally without calling Langfuse (no keys required):
 
-Writes **JSON snapshots** under `eval/runs/` and **Markdown prompt backlog** under `eval/prompt_backlog/` (Mountain Time, `America/Denver`). Does **not** modify `prompt_iteration_log.md`.
-
-```bash
-python -m eval.run_extraction_eval --mode stub --label baseline
-python -m eval.run_extraction_eval --mode pipeline --label llm-sample --limit 5
-python -m eval.run_extraction_eval --mode stub --no-artifacts
+```powershell
+python -m eval.qa_eval --prompt-version v1-baseline --limit 3 --dry-run
 ```
 
-- **stub** — keyword heuristic (parity with legacy metrics).
-- **pipeline** — Pass 1 tools (`extract_tools`) + Pass 2 LLM skills (`extract_skills`); requires Azure/OpenAI env vars (see `common/llm_client.py` and `EXTRACTION_*`).
+### Smoke with Langfuse traces (no pre-uploaded dataset)
 
-## Streamlit comparison UI (separate from pipeline dashboard)
+Uses JSON from disk with `run_experiment` (traces + scores; not the same as a full hosted-dataset run):
 
-```bash
-streamlit run eval/streamlit_eval_app.py
+```powershell
+python -m eval.qa_eval --prompt-version v1-smoke --limit 3 --local-experiment-only
 ```
 
-Compare ground truth (path field) against **one** or **two** runs. Each run can be **Run now** (stub/pipeline) or **Load snapshot** (saved JSON or upload). Two-run layout shows aggregate **deltas**.
+### HTTP analytics API
 
-## Artifacts
+Matches deployed `POST /analytics/query` behavior (server must be up):
 
-| Path | Purpose |
-|------|---------|
-| `runs/*.json` | Machine-readable `ExtractionEvalSnapshot` |
-| `prompt_backlog/*.md` | Human-readable run + metrics + prompt exemplar for pasting into `prompt_iteration_log.md` |
+```powershell
+python -m eval.qa_eval --prompt-version v1-baseline --use-http --analytics-base-url http://127.0.0.1:8000
+```
 
-Copy backlog sections into [`prompt_iteration_log.md`](prompt_iteration_log.md) manually when iterating prompts.
+### Environment
 
-## Optional gitignore
+| Variable | Role |
+|----------|------|
+| `QA_EVAL_LATENCY_SLA_SECONDS` | Latency SLA for `latency_sla` score (default 45). |
+| `ANALYTICS_QUERY_BASE_URL` | Base URL when `--use-http` (default `http://127.0.0.1:8000`). |
 
-Teams may add `runs/*.json` and `prompt_backlog/*.md` to a local ignore file if they do not want commits; defaults in-repo keep `.gitkeep` / README only under those dirs.
+### Artifacts
+
+- `--output-json path.json` writes per-item scores (and trace IDs when Langfuse is used).
+- `--json` prints the same run summary as JSON to **stdout** and skips the human-readable console report (use for piping, `Tee-Object`, or redirecting to a file). Combine with `--output-json` to write the file and still emit JSON on stdout; file-write notices go to stderr so stdout stays valid JSON.
+
+### Extraction eval
+
+See [`run_extraction_eval.py`](run_extraction_eval.py) for the skills-extraction harness.
