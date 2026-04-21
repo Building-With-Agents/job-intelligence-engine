@@ -59,8 +59,8 @@ cp .env.example .env
 |----------|-------|
 | `LANGFUSE_SECRET_KEY` | `sk-lf-local-dev-secret` |
 | `LANGFUSE_PUBLIC_KEY` | `pk-lf-local-dev-public` |
-| `LANGFUSE_BASE_URL` | `http://localhost:3000` |
-| `LANGFUSE_HOST` | `http://localhost:3000` |
+| `LANGFUSE_BASE_URL` | `http://localhost:3001` |
+| `LANGFUSE_HOST` | `http://localhost:3001` |
 
 ### Mock Provider (no API keys needed)
 
@@ -75,7 +75,7 @@ docker compose up -d
 This starts:
 - **PostgreSQL** (port 5432) — application database with pgvector
 - **Redis** (port 6379) — inter-agent message bus
-- **Langfuse** (port 3000) — 6 containers for observability
+- **Langfuse** (port 3001) — 6 containers for observability
 
 Verify all containers are healthy:
 
@@ -85,7 +85,7 @@ docker compose ps
 
 ### Langfuse Login
 
-Open http://localhost:3000 and sign in:
+Open http://localhost:3001 and sign in:
 - Email: `dev@localhost.dev`
 - Password: `LocalDev123!`
 - Organization: Computing For All

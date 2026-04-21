@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 sys.stdout.reconfigure(encoding="utf-8")
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-base = os.getenv("LANGFUSE_BASE_URL", "http://localhost:3000")
+base = os.getenv("LANGFUSE_BASE_URL", "http://localhost:3001")
 pk = os.getenv("LANGFUSE_PUBLIC_KEY")
 sk = os.getenv("LANGFUSE_SECRET_KEY")
 
