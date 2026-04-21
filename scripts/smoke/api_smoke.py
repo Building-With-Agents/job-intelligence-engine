@@ -9,6 +9,8 @@ Requires the API to be running first:
 
     python scripts/run_analytics_api.py
 
+Set ``ANALYTICS_QUERY_X_API_KEY`` in the environment when the API enforces ``JIE_API_KEYS`` (JIE #226).
+
 Usage (from any shell, any CWD):
 
     python scripts/smoke/api_smoke.py
@@ -22,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -32,13 +35,16 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 
-def _post(url: str, body: dict) -> tuple[int, dict]:
+def _post(url: str, body: dict, *, extra_headers: dict[str, str] | None = None) -> tuple[int, dict]:
     """POST JSON and return (status_code, response_json)."""
     data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
@@ -85,6 +91,10 @@ def main() -> int:
 
     base = args.base_url.rstrip("/")
     results: list[tuple[str, bool]] = []
+    query_headers: dict[str, str] | None = None
+    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if xk:
+        query_headers = {"X-API-Key": xk}
 
     # --- Step 1: Check API is up ---
     print(f"API base: {base}")
@@ -99,10 +109,14 @@ def main() -> int:
     # --- Step 2: POST /analytics/query ---
     if not args.skip_query:
         label = f"POST /analytics/query  --  \"{args.question}\""
-        s, b = _post(f"{base}/analytics/query", {
-            "question": args.question,
-            "correlation_id": args.correlation_id,
-        })
+        s, b = _post(
+            f"{base}/analytics/query",
+            {
+                "question": args.question,
+                "correlation_id": args.correlation_id,
+            },
+            extra_headers=query_headers,
+        )
         _print_result(label, s, b, preview_keys=[
             "answer", "confidence", "refused", "refusal_message",
             "cost_usd", "total_cost_usd", "cost_breakdown_usd",
