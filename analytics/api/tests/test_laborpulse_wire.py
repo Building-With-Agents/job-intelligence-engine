@@ -10,6 +10,7 @@ from analytics.api.laborpulse_wire import (
     confidence_bucket,
     resolve_laborpulse_conversation_id,
     to_laborpulse_query_response,
+    validate_laborpulse_question,
 )
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 
@@ -34,6 +35,21 @@ def test_confidence_bucket_never_mock_string() -> None:
         b = confidence_bucket(score)
         assert b in ("low", "medium", "high")
         assert b != "mock"
+
+
+def test_validate_question_empty() -> None:
+    with pytest.raises(ValueError, match="empty_question"):
+        validate_laborpulse_question("   ")
+
+
+def test_validate_question_too_short() -> None:
+    with pytest.raises(ValueError, match="question_too_short"):
+        validate_laborpulse_question("ab")
+
+
+def test_validate_question_too_broad() -> None:
+    with pytest.raises(ValueError, match="question_too_broad"):
+        validate_laborpulse_question("show me all data for skills")
 
 
 def test_to_laborpulse_pads_followups_and_cost() -> None:
