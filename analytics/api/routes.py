@@ -16,12 +16,13 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from analytics.api.analytics_api_keys import load_api_keys, validate_api_key_header
+from analytics.api.laborpulse_wire import resolve_laborpulse_conversation_id, to_laborpulse_query_response
 from analytics.api.schemas import (
     AnalyticsQueryRequest,
-    AnalyticsQueryResponse,
     CohortGapAnalysisRequest,
     CustomEmployerComparisonRequest,
     EmergingSkillsScanRequest,
+    LaborPulseQueryResponse,
     RoleBenchmarkRequest,
     TriggerEnvelope,
 )
@@ -309,11 +310,11 @@ def run_custom_employer_comparison(
     return TriggerEnvelope(trigger=ttype, cached=False, computed_at=now.isoformat(), data=gap_data)
 
 
-@router.post("/query", response_model=AnalyticsQueryResponse)
+@router.post("/query", response_model=LaborPulseQueryResponse)
 def post_analytics_query(
     body: AnalyticsQueryRequest,
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
-) -> AnalyticsQueryResponse:
+) -> LaborPulseQueryResponse:
     """Return JSON Q&A payload via :func:`run_analytics_qna` (ORM ``QueryRouter`` path).
 
     **Issue #197 (employer | curriculum | workflow):** before routing, the classification
@@ -333,6 +334,9 @@ def post_analytics_query(
     **Issue #226:** ``X-API-Key`` is validated against ``JIE_API_KEYS`` / ``JIE_API_KEYS_FILE``
     before opening a DB session. Responses: **401** missing/invalid key; **500** if no keys
     are configured unless ``LABORPULSE_ALLOW_NO_API_KEYS=1`` (local dev only).
+
+    **Issue #225:** Response body matches LaborPulse / wfd-os ``QueryResponse`` (conversation_id,
+    string confidence bucket, padded follow-ups, sql_generated, cost_usd).
     """
     allowed = load_api_keys()
     if not allowed:
@@ -350,8 +354,16 @@ def post_analytics_query(
             raise HTTPException(status_code=500, detail=code) from exc
         log.info("analytics_query_authenticated", key_id=rec.key_id)
 
+    try:
+        conversation_id = resolve_laborpulse_conversation_id(body.conversation_id)
+    except ValueError as exc:
+        if str(exc) == "invalid_conversation_id":
+            raise HTTPException(status_code=400, detail="invalid_conversation_id") from exc
+        raise
+
     with session_scope() as session:
-        return run_analytics_qna(session, body.question, body.correlation_id)
+        internal = run_analytics_qna(session, body.question, body.correlation_id)
+    return to_laborpulse_query_response(internal, conversation_id=conversation_id)
 
 
 @router.post("/triggers/cohort_gap_analysis", response_model=TriggerEnvelope)
