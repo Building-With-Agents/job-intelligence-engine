@@ -250,10 +250,10 @@ above — no `scripts/refresh_aggregates.py` behavior is exercised here.
 
 **Repo note (check #3 wording vs schema).** Issue #229 text references a
 `job_title_to_canonical_role` artifact. There is **no** table or module by
-that name in this repository. The implemented mapping is
-`dbo.job_postings.canonical_role_id` → `dbo.canonical_roles.role_id`
-(see `common/data_store/models.py` and `common/data_store/migrations.py`).
-The audit below uses that column and optional join validity only.
+that name in this repository. This audit uses the implemented join path
+`dbo.job_postings.canonical_role_id` -> `dbo.canonical_roles.role_id`
+(see `common/data_store/models.py` and `common/data_store/migrations.py`),
+plus optional join-validity checks on that FK target only.
 
 ### What I Tested
 
