@@ -179,7 +179,9 @@ def _evaluator_factory(sla_seconds: float | None):
             sla_seconds=sla_seconds,
         )
         return [
-            Evaluation(name="intent_accuracy", value=scores.intent_accuracy, comment=scores.comments["intent_accuracy"]),
+            Evaluation(
+                name="intent_accuracy", value=scores.intent_accuracy, comment=scores.comments["intent_accuracy"]
+            ),
             Evaluation(
                 name="evidence_citation",
                 value=scores.evidence_citation,

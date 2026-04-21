@@ -55,7 +55,15 @@ DEFAULT_DATASET_NAME = "LaborPulse Golden Questions"
 DEFAULT_JSON_PATH = _REPO_ROOT / "eval" / "qa_golden_questions.json"
 
 _VALID_DIFFICULTIES = frozenset({"easy", "medium", "hard"})
-_REQUIRED_FIELDS = ("id", "question", "intent", "ideal_answer_summary", "must_include", "must_not_include", "difficulty")
+_REQUIRED_FIELDS = (
+    "id",
+    "question",
+    "intent",
+    "ideal_answer_summary",
+    "must_include",
+    "must_not_include",
+    "difficulty",
+)
 
 log = logging.getLogger(__name__)
 
@@ -69,10 +77,7 @@ def _validate_item(item: dict, idx: int) -> None:
     """Raise ``ValueError`` if a golden-question record is malformed."""
     for field in _REQUIRED_FIELDS:
         if field not in item:
-            raise ValueError(
-                f"Item[{idx}] (id={item.get('id', '<missing>')!r}) "
-                f"is missing required field {field!r}"
-            )
+            raise ValueError(f"Item[{idx}] (id={item.get('id', '<missing>')!r}) is missing required field {field!r}")
     gq_id: str = item["id"]
     if not gq_id.startswith("gq-"):
         raise ValueError(f"Item[{idx}] id must start with 'gq-'; got {gq_id!r}")
@@ -92,9 +97,7 @@ def _validate_no_duplicate_ids(questions: list[dict]) -> None:
     for idx, item in enumerate(questions):
         gq_id = item.get("id", "")
         if gq_id in seen:
-            raise ValueError(
-                f"Duplicate id {gq_id!r} at index {idx} (first seen at index {seen[gq_id]})"
-            )
+            raise ValueError(f"Duplicate id {gq_id!r} at index {idx} (first seen at index {seen[gq_id]})")
         seen[gq_id] = idx
 
 
@@ -229,10 +232,7 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_JSON_PATH,
         metavar="PATH",
-        help=(
-            "Path to the golden questions JSON file "
-            f"(default: {DEFAULT_JSON_PATH.relative_to(_REPO_ROOT)})"
-        ),
+        help=(f"Path to the golden questions JSON file (default: {DEFAULT_JSON_PATH.relative_to(_REPO_ROOT)})"),
     )
     parser.add_argument(
         "--dry-run",
