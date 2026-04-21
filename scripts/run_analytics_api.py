@@ -5,10 +5,11 @@
 
 Then open http://127.0.0.1:8000/docs
 
-Example curl (requires PYTHON_DATABASE_URL and LLM env for full Q&A):
+Example curl (requires PYTHON_DATABASE_URL, LLM env, and a valid ``JIE_API_KEYS`` secret for #226):
 
     curl -sS -X POST http://127.0.0.1:8000/analytics/query \\
       -H "Content-Type: application/json" \\
+      -H "X-API-Key: <secret-from-JIE_API_KEYS>" \\
       -d '{"question":"What are the top skills by posting count?"}'
 
     curl -sS -X POST http://127.0.0.1:8000/analytics/triggers/cohort_gap_analysis \\
