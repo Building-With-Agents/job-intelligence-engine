@@ -38,10 +38,11 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -250,24 +251,16 @@ def _print_summary(results: list[StepResult], total_duration_ms: float, target_w
     print()
     print("=" * 100)
     print(f"refresh_aggregates summary  target_week={target_week}  total_duration_ms={total_duration_ms:.1f}")
-    print(
-        f"success={counts[STATUS_SUCCESS]}  "
-        f"failure={counts[STATUS_FAILURE]}  "
-        f"skipped={counts[STATUS_SKIPPED]}"
-    )
+    print(f"success={counts[STATUS_SUCCESS]}  failure={counts[STATUS_FAILURE]}  skipped={counts[STATUS_SKIPPED]}")
     print("-" * 100)
-    print(
-        f"{'table':26}  {'status':8}  {'before':>10}  {'after':>10}  {'delta':>8}  {'ms':>10}  note"
-    )
+    print(f"{'table':26}  {'status':8}  {'before':>10}  {'after':>10}  {'delta':>8}  {'ms':>10}  note")
     print("-" * 100)
     for r in results:
         before = "-" if r.rows_before is None else str(r.rows_before)
         after = "-" if r.rows_after is None else str(r.rows_after)
         delta = "-" if r.rows_delta is None else f"{r.rows_delta:+d}"
         note = r.error or r.skip_reason or ""
-        print(
-            f"{r.name:26}  {r.status:8}  {before:>10}  {after:>10}  {delta:>8}  {r.duration_ms:>10.2f}  {note}"
-        )
+        print(f"{r.name:26}  {r.status:8}  {before:>10}  {after:>10}  {delta:>8}  {r.duration_ms:>10.2f}  {note}")
     print("=" * 100)
 
 
