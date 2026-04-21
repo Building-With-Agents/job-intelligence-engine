@@ -78,7 +78,11 @@ def test_valid_x_api_key_200(api_key_env: None) -> None:
                 headers={"X-API-Key": "othersecret"},
             )
     assert r.status_code == 200
-    assert r.json()["answer"] == "ok"
+    data = r.json()
+    assert data["answer"] == "ok"
+    assert data["confidence"] == "high"
+    assert 2 <= len(data["follow_up_questions"]) <= 4
+    assert "conversation_id" in data
 
 
 def test_logs_key_id_not_secret(api_key_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,7 +149,7 @@ def test_allow_no_api_keys_dev_escape(monkeypatch: pytest.MonkeyPatch) -> None:
     body = AnalyticsQueryResponse(
         answer="ok",
         evidence=[],
-        confidence=0.5,
+        confidence=0.75,
         follow_up_questions=[],
         sql_generated="",
         cost_usd=0.0,
@@ -155,3 +159,6 @@ def test_allow_no_api_keys_dev_escape(monkeypatch: pytest.MonkeyPatch) -> None:
         with patch("analytics.api.routes.run_analytics_qna", return_value=body):
             r = client.post("/analytics/query", json={"question": "hello"})
     assert r.status_code == 200
+    lp = r.json()
+    assert lp["confidence"] == "medium"
+    assert 2 <= len(lp["follow_up_questions"]) <= 4
