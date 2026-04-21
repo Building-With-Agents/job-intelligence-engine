@@ -255,69 +255,187 @@ that name in this repository. This audit uses the implemented join path
 (see `common/data_store/models.py` and `common/data_store/migrations.py`),
 plus optional join-validity checks on that FK target only.
 
-### What I Tested
+### Check 1 — `dbo.canonical_roles` (cluster inventory + job-family read)
 
-- <!-- TODO: date, DB (redact credentials), tool: `python scripts/db_check.py query "…"` from repo root -->
+**What I tested.**
 
-**Check 1 — `dbo.canonical_roles` (cluster inventory + qualitative job-family read)**
+- Local read-only SQL via `python scripts/db_check.py query "…"` from repo root
+  (same session as IMP-032 above; redact host/user in notes if you copy this doc).
+- Cluster volume:
+  `SELECT COUNT(*) AS cluster_count FROM dbo.canonical_roles;`
+- Ranked sample for label / `representative_titles` signal:
+  `SELECT role_id, label, posting_count, representative_titles, is_llm_generated FROM dbo.canonical_roles ORDER BY posting_count DESC NULLS LAST LIMIT 25;`
 
-- <!-- TODO: paste SQL used -->
+**What I found.**
 
-**Check 2 — `dbo.role_snapshot_weekly` (multiple `week_start` periods)**
+- **`cluster_count`:** 6 — `SELECT COUNT(*) AS cluster_count FROM dbo.canonical_roles;` via `python scripts/db_check.py query` (dev DB `localhost:5432/talent_finder`, run ~2026-04-21 01:23 UTC per terminal log).
+- **Qualitative read (sample query, ~01:24 UTC):** `SELECT role_id, label, posting_count, representative_titles, is_llm_generated FROM dbo.canonical_roles ORDER BY posting_count DESC NULLS LAST LIMIT 25;` returned six rows. The `label` strings read as recognizable engineering families in that slice: Site Reliability Engineer; Automation and Robotics Engineer; RPA Developer (UiPath & Power Automate); two distinct Mobile Application Developer (iOS/Android) clusters; Senior SDET - AI Automation Engineer.
+- **Split / overlap signal:** The two mobile clusters use overlapping skill domains but different `label` text (one includes “(2-4 years of exp) - USC and GC's” in the pasted `label`; the other is shorter). Treat them as separate buckets when citing role names, not interchangeable shorthand for “mobile.”
+- **Heterogeneity in the top-volume row:** For `label` “Site Reliability Engineer” (`posting_count` 542 in the paste), `representative_titles` includes both SRE-flavored strings and titles naming Machine Learning Engineer, AI Engineer, and Infrastructure Administrator — adjacent but not identical families — so a one-line “this cluster is …” summary can misread scope if it ignores those strings.
+- **Provenance / noise cues in the paste:** Five rows show `is_llm_generated` = `True` and one `False` (“Mobile Application Developer … USC and GC's”). At least one pasted representative title contains a trophy emoji; that is verbatim surface text from the DB, not editorial emphasis.
 
-- <!-- TODO: paste SQL used -->
+**Why it matters for Q&A readiness.**
 
-**Check 3 — Posting → canonical role coverage (`job_postings.canonical_role_id`)**
+- Routed “role / evolution” style answers still hit `dbo.canonical_roles` for
+  human-readable labels and skill/tool context. Thin or ambiguous clusters cap
+  how confidently we can narrate **which** job family the data is about, even
+  when downstream SQL is valid.
+- When evidence cites `label` alone while `representative_titles` span neighboring families (visible on the pasted SRE row), synthesis should either quote the stored titles or caveat the cluster boundary — otherwise the answer can sound more precise than the taxonomy slice supports.
 
-- <!-- TODO: paste SQL used (include denominator definition in comment above query if non-obvious) -->
+### Check 2 — `dbo.role_snapshot_weekly` (multi-week coverage)
 
-### What I Found
+**What I tested.**
 
-**Check 1 — cluster count and recognizable job families**
+- Distinct week anchors, span, and total rows in one aggregate query:
+  `SELECT COUNT(DISTINCT week_start) AS distinct_week_start, MIN(week_start) AS min_week_start, MAX(week_start) AS max_week_start, COUNT(*) AS total_rows FROM dbo.role_snapshot_weekly;`
+- Rows per `week_start` (and implied posting volume roll-up):
+  `SELECT week_start, COUNT(*) AS snapshot_rows, SUM(posting_count) AS sum_posting_count FROM dbo.role_snapshot_weekly GROUP BY week_start ORDER BY week_start;`
 
-- **Cluster count:** <!-- TODO: numeric result -->
-- **Qualitative read:** <!-- TODO: 2–4 bullets: do `label` / `representative_titles` read as sensible families vs noise? Any empty or misleading samples? -->
+**What I found.**
 
-**Check 2 — temporal coverage**
+- **Query (dev `localhost:5432/talent_finder`, ~2026-04-21 01:24 UTC):**  
+  `SELECT COUNT(DISTINCT week_start) AS distinct_week_start, MIN(week_start) AS min_week_start, MAX(week_start) AS max_week_start, COUNT(*) AS total_rows FROM dbo.role_snapshot_weekly;` via `python scripts/db_check.py query`.
+- **`total_rows`:** 0.
+- **`distinct_week_start`:** 0.
+- **`min_week_start` / `max_week_start`:** `None` / `None` (verbatim from `db_check.py` output).
+- **Multi-week coverage:** **No** — with `distinct_week_start = 0` and `total_rows = 0`, there are no weeks and therefore no multi-week span in `dbo.role_snapshot_weekly` for this snapshot.
+- **`GROUP BY week_start` check (dev `localhost:5432/talent_finder`, ~2026-04-21 01:26 UTC):**  
+  `SELECT week_start, COUNT(*) AS snapshot_rows, SUM(posting_count) AS sum_posting_count FROM dbo.role_snapshot_weekly GROUP BY week_start ORDER BY week_start;` via `python scripts/db_check.py query` printed **`(no rows)`**.
+- **Spread vs. one-week concentration:** Neither applies to this grouped output — there are **no** `week_start` buckets returned, so the data are not spread across multiple weeks and not concentrated in a single week within that query’s result set.
+- **Sparsity:** The per-week breakdown is **fully empty** (`(no rows)`), consistent with the zero-row full-table counts above.
 
-- **Distinct `week_start` values:** <!-- TODO -->
-- **Min / max `week_start`:** <!-- TODO -->
-- **Per-week row counts (if helpful):** <!-- TODO: table or short bullet list -->
-- **Answer to “multiple periods?”:** <!-- TODO: yes / no + one sentence -->
+**Why it matters for Q&A readiness.**
 
-**Check 3 — coverage and join validity**
+- Anything that cites **weekly role demand or salary bands by canonical role**
+  needs non-empty `dbo.role_snapshot_weekly` rows keyed by `week_start`. Here the
+  table is empty (`total_rows` 0, `distinct_week_start` 0), and the `GROUP BY
+  week_start` follow-up also returned **`(no rows)`** — so there is **no** named
+  week anchor, **no** per-week posting roll-up to cite, and **no** basis to claim
+  either multi-week spread or a single dominant week from this table alone.
 
-- **Denominator used:** <!-- TODO: e.g. `COUNT(*)` on full `dbo.job_postings` -->
-- **`canonical_role_id` non-null %:** <!-- TODO -->
-- **Non-null IDs that resolve to `dbo.canonical_roles`:** <!-- TODO: counts and/or % -->
-- **Orphan or mismatched IDs (if any):** <!-- TODO: note or “none observed” -->
+### Check 3 — Posting → canonical role coverage (`dbo.job_postings`)
+
+**What I tested.**
+
+- Issue #229 wording calls out `job_title_to_canonical_role`; there is **no**
+  such table in-repo — the audit path is explicitly
+  `dbo.job_postings.canonical_role_id` -> `dbo.canonical_roles.role_id` (see
+  repo note above and migrations for the optional FK).
+- Denominator and non-null coverage:
+  `SELECT COUNT(*) AS total_job_postings, COUNT(canonical_role_id) AS with_non_null_canonical_role_id, ROUND(100.0 * COUNT(canonical_role_id) / NULLIF(COUNT(*), 0), 2) AS pct_non_null_canonical_role_id FROM dbo.job_postings;`
+- Join validity on non-null ids:
+  `SELECT COUNT(*) AS postings_with_canonical_role_id, COUNT(cr.role_id) AS postings_joinable_to_canonical_roles FROM dbo.job_postings jp LEFT JOIN dbo.canonical_roles cr ON cr.role_id = jp.canonical_role_id WHERE jp.canonical_role_id IS NOT NULL;`
+
+**What I found.**
+
+- **Query (dev `localhost:5432/talent_finder`, ~2026-04-21 01:26 UTC):**  
+  `SELECT COUNT(*) AS total_job_postings, COUNT(canonical_role_id) AS with_non_null_canonical_role_id, ROUND(100.0 * COUNT(canonical_role_id) / NULLIF(COUNT(*), 0), 2) AS pct_non_null_canonical_role_id FROM dbo.job_postings;` via `python scripts/db_check.py query`.
+- **Issue #229 vs repo shape:** Issue text references `job_title_to_canonical_role`; there is still **no** such table — this check is implemented on **`dbo.job_postings.canonical_role_id` -> `dbo.canonical_roles.role_id`** (same as the addendum repo note above).
+- **`total_job_postings` (denominator):** 2,679 — full-table `COUNT(*)` from that query (not a filtered “active only” slice).
+- **`with_non_null_canonical_role_id`:** 630.
+- **`pct_non_null_canonical_role_id`:** 23.52 (as printed by `db_check.py`).
+- **Join validity (~2026-04-21 01:27 UTC):**  
+  `SELECT COUNT(*) AS postings_with_canonical_role_id, COUNT(cr.role_id) AS postings_joinable_to_canonical_roles FROM dbo.job_postings jp LEFT JOIN dbo.canonical_roles cr ON cr.role_id = jp.canonical_role_id WHERE jp.canonical_role_id IS NOT NULL;` via `python scripts/db_check.py query` returned **`postings_with_canonical_role_id` = 630** and **`postings_joinable_to_canonical_roles` = 630**.
+- **Mismatch check:** `postings_with_canonical_role_id` and `postings_joinable_to_canonical_roles` are both **630** — no delta on this pasted row, so **no** mismatch is visible here (no integrity gap signal from this aggregate alone).
+- **Join rate on the non-null slice (from the pasted pair only):** 630 / 630 → **100%** of rows counted in `postings_with_canonical_role_id` also count in `postings_joinable_to_canonical_roles`.
+
+**Why it matters for Q&A readiness.**
+
+- Postings without `canonical_role_id` drop out of joins that aggregate **by
+  canonical role** (including `role_snapshot_weekly` refresh inputs that filter
+  on `jp.canonical_role_id IS NOT NULL`). Low coverage or orphan ids widen the
+  gap between “jobs in `job_postings`” and “jobs we can honestly bucket into a
+  named canonical role” in an answer.
+- For the **non-null slice** (`630` / `2,679` in the coverage query above), the
+  join-validity pair **`630` / `630`** means taxonomy-backed answers that join
+  `dbo.job_postings` to `dbo.canonical_roles` on `canonical_role_id` → `role_id`
+  can still resolve **labels and JSON facets** for those rows without a missing-key
+  drop on this check alone — the headline coverage gap remains the **null**
+  majority (`2,679 − 630 = 2,049` by arithmetic on the two counts already recorded
+  here), not broken FK targets on assigned ids.
 
 ### Recommendation
 
-- <!-- TODO: e.g. whether clustering / snapshot refresh cadence is acceptable for demo; whether to file follow-up issues; whether Q&A should caveat role labels — keep grounded in results above -->
+- Treat **`dbo.role_snapshot_weekly` as empty for this dev snapshot** (`total_rows` 0, `GROUP BY week_start` → `(no rows)`) — do not cite weekly canonical-role demand, counts, or salary roll-ups from that table until it is populated.
+- Surface **`job_postings.canonical_role_id` coverage** in any role-bucketing narrative: **23.52%** non-null (**630** / **2,679** on the audited counts); the remaining **2,049** rows carry **NULL** `canonical_role_id` and therefore sit outside canonical-role joins on this slice alone.
+- For the **Site Reliability Engineer** cluster (**542** postings in the sample), do not collapse evidence to **`label` alone** — the pasted **`representative_titles`** mix SRE-flavored strings with ML/AI and infrastructure-administrator titles; evidence blocks or caveats should reflect that spread.
+- Keep the **two Mobile Application Developer** clusters (**distinct `label` strings** in the paste) **separate** in narrative and SQL filters — they are not interchangeable shorthand for “mobile” without reading the labels.
+
+### Taxonomy gaps (carry-forward #230)
+
+Structured only from the counts and qualitative notes already recorded above (no Pair B / sector-geo scope).
+
+1. **`dbo.role_snapshot_weekly` · (table-wide empty — no `week_start` rows materialized)**  
+   - **Issue:** `total_rows` **0**, `distinct_week_start` **0**, `min`/`max` **`None`**, and per-week `GROUP BY` returned **`(no rows)`**.  
+   - **Effect on Q&A answers:** Any intent that needs **weekly** canonical-role aggregates has **no** citeable partition or posting roll-up from this table on the audited DB.  
+   - **Classification:** **requires pipeline re-run** (populate snapshots upstream of Q&A; outside `refresh_aggregates.py` scope noted in IMP-032 body).
+
+2. **`dbo.job_postings` · `canonical_role_id`**  
+   - **Issue:** Only **630** of **2,679** postings carry a non-null `canonical_role_id` (**23.52%**); **2,049** are **NULL** by arithmetic on those same audited counts.  
+   - **Effect on Q&A answers:** Queries that **INNER JOIN** on `canonical_role_id` silently exclude the **NULL** majority; population-level “all postings” claims diverge from “canonical-role–assigned postings” unless the answer states the denominator.  
+   - **Classification:** **requires pipeline re-run** (assignment/clustering coverage — not fixable by copy alone).
+
+3. **`dbo.canonical_roles` · `label` vs `representative_titles` (top-volume row in paste)**  
+   - **Issue:** For **`label` = “Site Reliability Engineer”** (`posting_count` **542**), **`representative_titles`** lists strings that include **Machine Learning Engineer**, **AI Engineer**, and **Infrastructure Administrator** alongside SRE variants.  
+   - **Effect on Q&A answers:** Role-family narration that quotes **`label` only** can read **narrower or mis-scoped** relative to the stored title mix the cluster actually holds.  
+   - **Classification:** **fixable in Week 10** (synthesis / evidence templates — cite `representative_titles` or explicit boundary language; re-clustering is a separate, heavier lever).
+
+4. **`dbo.canonical_roles` · `label` (two mobile rows in paste)**  
+   - **Issue:** **Two** clusters share the same broad domain (**Mobile Application Developer**) but **different `label` text** (one includes visa / experience language from the paste; the other is shorter).  
+   - **Effect on Q&A answers:** Treating them as **one** interchangeable “mobile” bucket without naming the distinct **`label`** values risks **double-counting or wrong joins** when filtering on `role_id` / `label`.  
+   - **Classification:** **fixable in Week 10** (router prompts, evidence captions, operator runbook — disambiguate the two `label` strings).
 
 ### Data / Evidence
 
 **Check 1 — raw output**
 
 ```
-<!-- TODO: paste db_check.py / psql output: cluster_count query -->
+2026-04-21 01:23:59 [info     ] db_engine_created              url=localhost:5432/talent_finder
+cluster_count
+------------------------------------------------------------
+6
 ```
 
 ```
-<!-- TODO: paste sample rows (label, representative_titles, posting_count, …) -->
+2026-04-21 01:24:26 [info     ] db_engine_created              url=localhost:5432/talent_finder
+role_id label   posting_count   representative_titles   is_llm_generated
+------------------------------------------------------------
+b68af3b7-2555-5529-be30-43a446e73e56    Site Reliability Engineer       542  ['Site Reliability Engineer (SRE)', 'Machine Learning Engineer', 'Infrastructure Administrator', 'Site Reliability Engineer', 'AI Engineer']   True
+28833c24-1446-52ab-8373-1839e9682bb5    Automation and Robotics Engineer     35       ['Robotics Engineer', 'Industrial Automation Engineer', 'Automation Programmer/SCADA Programmer/PLC Programmer', 'Robotics Software Engineer – Autonomy & Perception', 'Robotics Engineers']        True
+7bf7431f-5856-58cc-9d2e-afa3b962a8b7    RPA Developer (UiPath & Power Automate)       17      ['UI Path-RPA-Power Platform Developer', 'Robotic Process Automation (RPA) Developer', 'RPA Developer (UiPath) — Automate Mission-Critical Tasks', 'RPA Developer UiPath & Power Automate | AI-Driven', 'RPA Developer'] True
+d24c5f17-e08f-5148-9b71-969655020769    Mobile Application Developer (iOS / Android) (2-4 years of exp) - USC and GC's        15      ["Mobile Application Developer (iOS / Android) (2-4 years of exp) - USC and GC's"]    False
+4c87ed2a-40eb-5e4b-bfb6-011bdd424adf    Senior SDET - AI Automation Engineer 11       ['SDET / Automation Engineer (AI / Automation)', 'Senior QA Automation Engineer QA, Test 🏆', 'Software Development Engineer in Test (SDET)', 'Senior SDET - QA Engineer', 'Senior SDET / QA Automation Engineer']  True
+68d872d0-b304-5e90-b6d2-fef7e894bfcc    Mobile Application Developer (iOS & Android)  10      ['Android/iOS Mobile Developer', 'ios/ android developer', 'Mobile Application Developer (iOS & Android)', 'Mobile Developer - Android/IOS', 'Mobile Application Developer (Android & iOS)']        True
 ```
 
 **Check 2 — raw output**
 
 ```
-<!-- TODO: paste distinct week_start / min-max / group-by output -->
+2026-04-21 01:24:54 [info     ] db_engine_created              url=localhost:5432/talent_finder
+distinct_week_start     min_week_start  max_week_start  total_rows
+------------------------------------------------------------
+0       None    None    0
+```
+
+```
+2026-04-21 01:26:01 [info     ] db_engine_created              url=localhost:5432/talent_finder
+(no rows)
 ```
 
 **Check 3 — raw output**
 
 ```
-<!-- TODO: paste coverage + join-validity query output -->
+2026-04-21 01:26:34 [info     ] db_engine_created              url=localhost:5432/talent_finder
+total_job_postings      with_non_null_canonical_role_id pct_non_null_canonical_role_id
+------------------------------------------------------------
+2679    630     23.52
+```
+
+```
+2026-04-21 01:27:15 [info     ] db_engine_created              url=localhost:5432/talent_finder
+postings_with_canonical_role_id postings_joinable_to_canonical_roles
+------------------------------------------------------------
+630     630
 ```
 
 **Reference paths (for reviewers)**
