@@ -34,6 +34,34 @@ from common.observability.langfuse import LangfuseTracer
 log = structlog.get_logger()
 
 
+def _langfuse_extra_metadata() -> dict[str, Any]:
+    """Merge request-scoped structlog context (e.g. ``X-Request-Id``) into Langfuse spans (JIE #222)."""
+    extra: dict[str, Any] = {}
+    try:
+        import structlog.contextvars as scv
+
+        ctx = scv.get_contextvars()
+        rid = (ctx.get("request_id") or "").strip()
+        if rid:
+            extra["request_id"] = rid
+        tid = (ctx.get("tenant_id") or "").strip()
+        if tid:
+            extra["tenant_id"] = tid
+        uid = (ctx.get("user_email") or "").strip()
+        if uid:
+            extra["user_email"] = uid
+        kid = (ctx.get("key_id") or "").strip()
+        if kid:
+            extra["key_id"] = kid
+    except Exception:
+        return {}
+    return extra
+
+
+def _span_metadata(base: dict[str, Any]) -> dict[str, Any]:
+    return {**base, **_langfuse_extra_metadata()}
+
+
 def _parse_output_for_trace(text: str, max_chars: int = 4000) -> str | dict | list:
     """Parse JSON output so Langfuse renders it as a collapsible tree."""
     truncated = text[:max_chars]
@@ -347,7 +375,7 @@ def complete(
                 agent_name,
                 correlation_id=correlation_id,
                 input=prompt,
-                metadata={"agent_name": agent_name, "model": "mock-sonnet-v1"},
+                metadata=_span_metadata({"agent_name": agent_name, "model": "mock-sonnet-v1"}),
             )
             if _tracer
             else nullcontext()
@@ -398,7 +426,7 @@ def complete(
                 agent_name,
                 correlation_id=correlation_id,
                 input=prompt,
-                metadata={"agent_name": agent_name, "model": gemini_model},
+                metadata=_span_metadata({"agent_name": agent_name, "model": gemini_model}),
             )
             if _tracer
             else nullcontext()
@@ -495,7 +523,7 @@ def complete(
         )
 
         correlation_id = correlation_id or str(uuid.uuid4())
-        span_metadata = {"agent_name": agent_name, "model": deployment, "model_tier": model_tier}
+        span_metadata = _span_metadata({"agent_name": agent_name, "model": deployment, "model_tier": model_tier})
         span_ctx = (
             _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt, metadata=span_metadata)
             if _tracer
@@ -647,7 +675,7 @@ def complete(
     client = Anthropic()
 
     correlation_id = correlation_id or str(uuid.uuid4())
-    span_metadata = {"agent_name": agent_name, "model": model, "model_tier": model_tier}
+    span_metadata = _span_metadata({"agent_name": agent_name, "model": model, "model_tier": model_tier})
     span_ctx = (
         _tracer.start_span(agent_name, correlation_id=correlation_id, input=prompt, metadata=span_metadata)
         if _tracer
