@@ -27,23 +27,16 @@ def completeness_score(row: dict[str, Any]) -> int:
     Return a simple populated-field count for survivor selection.
 
     Week 6 issue semantics call for counting completeness, not weighting fields.
-    Recency remains the tie-breaker in ``publish_date_for_tiebreak``.
+    Recency remains the tie-breaker in ``date_posted_for_tiebreak``.
     """
     return sum(1 for field in _COMPLETENESS_FIELDS if _has_value(row.get(field)))
 
 
-def publish_date_for_tiebreak(row: dict[str, Any]) -> datetime | None:
-    """Newer wins when completeness ties.
-
-    Reads the ``publish_date`` row key. Note: the dedup SQL queries select
-    ``jp.date_posted AS publish_date``, so this key carries the canonical
-    ``date_posted`` value at runtime. The function name is preserved for
-    callsite stability — rename in a follow-up when ``publish_date`` is
-    fully dropped from ``job_postings``.
-    """
-    pd = row.get("publish_date")
-    if pd is None:
+def date_posted_for_tiebreak(row: dict[str, Any]) -> datetime | None:
+    """Newer ``date_posted`` wins when completeness ties."""
+    dp = row.get("date_posted")
+    if dp is None:
         return None
-    if isinstance(pd, datetime):
-        return pd
+    if isinstance(dp, datetime):
+        return dp
     return None

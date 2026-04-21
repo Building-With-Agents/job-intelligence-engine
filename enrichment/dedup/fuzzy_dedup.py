@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from enrichment.dedup.completeness import completeness_score, publish_date_for_tiebreak
+from enrichment.dedup.completeness import completeness_score, date_posted_for_tiebreak
 from enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
 from enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
 from enrichment.dedup.types import FuzzyDedupResult
@@ -120,7 +120,7 @@ def _current_row_dict(row: dict[str, Any]) -> dict[str, Any]:
         "zip": row.get("zip"),
         "county": row.get("county"),
         "job_description": row.get("job_description"),
-        "publish_date": row.get("publish_date"),
+        "date_posted": row.get("date_posted"),
     }
 
 
@@ -233,7 +233,7 @@ def run_fuzzy_dedup(
         log.warning("fuzzy_dedup_missing_company_id", job_posting_id=jid)
         return _unique_result()
 
-    anchor_raw = current.get("publish_date")
+    anchor_raw = current.get("date_posted")
     if anchor_raw is None:
         log.info("fuzzy_dedup_missing_date", job_posting_id=jid)
         return _unique_result()
@@ -326,8 +326,8 @@ def run_fuzzy_dedup(
 
     cur_c = completeness_score(_current_row_dict(current))
     sur_c = completeness_score(best_row)
-    cur_pd = publish_date_for_tiebreak(_current_row_dict(current))
-    sur_pd = publish_date_for_tiebreak(best_row)
+    cur_pd = date_posted_for_tiebreak(_current_row_dict(current))
+    sur_pd = date_posted_for_tiebreak(best_row)
 
     current_wins = cur_c > sur_c or (cur_c == sur_c and cur_pd is not None and (sur_pd is None or cur_pd >= sur_pd))
 
