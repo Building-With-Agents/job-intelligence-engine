@@ -37,7 +37,7 @@ After PR #195’s deterministic backfill (~3,496 `dbo.job_postings`), **`N/A Not
 
 ### 3. DB health checker (promote + expand)
 
-- **Rename / promote** `scripts/scratch_verify_local_db_health.py` → durable name (e.g. `scripts/verify_local_db_health.py`).
+- **Rename / promote** `scripts/scratch_verify_local_db_health.py` → `scripts/verify_local_db_health.py` (implemented).
 - **One command, no CLI flags:** `python scripts/verify_local_db_health.py` runs **all** checks; tuning via **constants** at top of file only.
 - **Exit code:** `0` unless any **ERROR**; **WARN** does not fail.
 
@@ -70,7 +70,7 @@ After PR #195’s deterministic backfill (~3,496 `dbo.job_postings`), **`N/A Not
 
 ## Current branch state (for reviewers)
 
-- [x] Initial **scratch** local DB health script added (`scripts/scratch_verify_local_db_health.py`) — to be renamed and extended per above.
+- [x] Local DB health script: `scripts/verify_local_db_health.py` (promoted from scratch; expanded checks).
 - [ ] `classify_role` filtering + stricter sector threshold
 - [ ] Shared helper + backfill path wired
 - [ ] Operator notes (NULL-then-backfill)
