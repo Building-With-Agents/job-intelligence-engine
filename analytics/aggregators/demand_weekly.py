@@ -49,9 +49,7 @@ _SKILLS_EXPANDED = text(
     FROM dbo.extracted_intelligence ei
     INNER JOIN dbo.normalized_jobs nj ON nj.id = ei.normalized_job_id
     INNER JOIN dbo.job_postings jp
-        ON jp.source IS NOT NULL
-        AND jp.external_id IS NOT NULL
-        AND nj.source = jp.source
+        ON nj.source = jp.source
         AND nj.external_id = jp.external_id
     INNER JOIN dbo.companies c ON c.company_id = jp.company_id::text
     CROSS JOIN LATERAL jsonb_array_elements(ei.skills) AS skel(value)
@@ -87,9 +85,7 @@ _TOOLS_EXPANDED = text(
     FROM dbo.extracted_intelligence ei
     INNER JOIN dbo.normalized_jobs nj ON nj.id = ei.normalized_job_id
     INNER JOIN dbo.job_postings jp
-        ON jp.source IS NOT NULL
-        AND jp.external_id IS NOT NULL
-        AND nj.source = jp.source
+        ON nj.source = jp.source
         AND nj.external_id = jp.external_id
     INNER JOIN dbo.companies c ON c.company_id = jp.company_id::text
     CROSS JOIN LATERAL jsonb_array_elements(ei.tools) AS tel(value)
