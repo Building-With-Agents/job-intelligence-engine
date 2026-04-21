@@ -19,6 +19,7 @@ per request until multi-turn persistence (#223) is wired.
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from typing import Literal
 
@@ -27,6 +28,22 @@ from analytics.api.schemas import (
     LaborPulseEvidenceItem,
     LaborPulseQueryResponse,
 )
+
+_TOO_BROAD = re.compile(
+    r"\b(everything|all data|all rows|dump the database|show me all)\b",
+    re.I,
+)
+
+
+def validate_laborpulse_question(question: str) -> None:
+    """Raise ``ValueError`` with stable codes for HTTP 400 mapping (JIE #222)."""
+    q = (question or "").strip()
+    if not q:
+        raise ValueError("empty_question")
+    if len(q) < 3:
+        raise ValueError("question_too_short")
+    if _TOO_BROAD.search(q):
+        raise ValueError("question_too_broad")
 
 
 def resolve_laborpulse_conversation_id(raw: str | None) -> str:

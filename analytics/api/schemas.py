@@ -18,6 +18,8 @@ class EvidenceItem(BaseModel):
 
 
 class AnalyticsQueryRequest(BaseModel):
+    """Legacy Week 8 request shape (dashboard / older clients)."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     question: str = Field(
@@ -27,10 +29,18 @@ class AnalyticsQueryRequest(BaseModel):
         validation_alias=AliasChoices("question", "query"),
     )
     correlation_id: str | None = Field(default=None, max_length=128)
+
+
+class LaborPulseQueryRequest(BaseModel):
+    """LaborPulse / wfd-os ``POST /analytics/query`` JSON body (JIE #222)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    question: str = Field(..., max_length=20_000)
     conversation_id: str | None = Field(
         default=None,
         max_length=36,
-        description="Optional UUID; when omitted the API assigns a new conversation_id (JIE #225).",
+        description="Optional UUID for multi-turn; omitted on first turn.",
     )
 
 
