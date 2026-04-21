@@ -227,8 +227,18 @@ def test_fetch_period_snapshots_empty_period_query_short_circuits(monkeypatch: p
 def test_normalize_period_aggregate_rows_skips_unknown_period_and_bad_counts() -> None:
     rows = [
         {"temporal_period": "post_gpt4", "posting_count": 3, "ai_relevance_avg": None, "responsibility_density": 0.1},
-        {"temporal_period": "unknown_bucket", "posting_count": 99, "ai_relevance_avg": None, "responsibility_density": 0.0},
-        {"temporal_period": "pre_chatgpt", "posting_count": "not-an-int", "ai_relevance_avg": None, "responsibility_density": 0.0},
+        {
+            "temporal_period": "unknown_bucket",
+            "posting_count": 99,
+            "ai_relevance_avg": None,
+            "responsibility_density": 0.0,
+        },
+        {
+            "temporal_period": "pre_chatgpt",
+            "posting_count": "not-an-int",
+            "ai_relevance_avg": None,
+            "responsibility_density": 0.0,
+        },
         {"temporal_period": "early_genai", "posting_count": 0, "ai_relevance_avg": None, "responsibility_density": 0.0},
     ]
     out = _normalize_period_aggregate_rows(rows)

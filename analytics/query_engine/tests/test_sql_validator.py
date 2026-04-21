@@ -31,16 +31,14 @@ def test_rejects_forbidden_table() -> None:
 
 def test_rejects_union_smuggling_forbidden_table() -> None:
     r = validate_sql(
-        "SELECT skill_label FROM dbo.skill_demand_weekly "
-        "UNION ALL SELECT agent_name FROM dbo.llm_audit_log"
+        "SELECT skill_label FROM dbo.skill_demand_weekly UNION ALL SELECT agent_name FROM dbo.llm_audit_log"
     )
     assert not r.ok
 
 
 def test_rejects_nested_subquery_forbidden_table() -> None:
     r = validate_sql(
-        "SELECT * FROM dbo.skill_demand_weekly WHERE skill_label IN "
-        "(SELECT agent_name FROM dbo.llm_audit_log)"
+        "SELECT * FROM dbo.skill_demand_weekly WHERE skill_label IN (SELECT agent_name FROM dbo.llm_audit_log)"
     )
     assert not r.ok
 

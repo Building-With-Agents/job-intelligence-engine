@@ -114,14 +114,21 @@ def insert_job_posting(
     company_id: str,
     location_id: str,
     zip_code: str,
-    publish_date: datetime,
+    date_posted: datetime,
     unpublish_date: datetime,
     job_title: str,
     job_description: str,
     source: str,
     external_id: str,
 ) -> str:
-    """Insert dbo.job_postings row; return job_posting_id text."""
+    """Insert dbo.job_postings row; return job_posting_id text.
+
+    Writes ``date_posted`` as the canonical date column (what dedup SQL reads)
+    and ALSO writes the legacy ``publish_date`` column to the same value —
+    ``publish_date`` is deprecated but still exists on the table (NOT NULL in
+    fresh schema.sql; nullable after migrations). Keeping both populated keeps
+    this helper compatible with both schema states.
+    """
     insp = inspect(engine)
     jp_ts_cols, jp_ts_vals = _job_postings_ts_fragment(insp)
     job_posting_id = str(uuid.uuid4())
@@ -143,6 +150,7 @@ def insert_job_posting(
                     county,
                     zip,
                     publish_date,
+                    date_posted,
                     unpublish_date,
                     source,
                     external_id
@@ -161,7 +169,8 @@ def insert_job_posting(
                     'n/a',
                     'E2E',
                     :zip,
-                    :pd,
+                    :dp,
+                    :dp,
                     :ud,
                     :source,
                     :eid
@@ -176,7 +185,7 @@ def insert_job_posting(
                 "title": job_title,
                 "desc": job_description,
                 "zip": zip_code,
-                "pd": publish_date,
+                "dp": date_posted,
                 "ud": unpublish_date,
                 "source": source,
                 "eid": external_id,
@@ -316,17 +325,23 @@ def fetch_embedding_meta(engine: Engine, job_posting_id: str) -> dict:
         )
 
 
-def update_job_publish_date(engine: Engine, job_posting_id: str, publish_date: datetime) -> None:
+def update_job_date_posted(engine: Engine, job_posting_id: str, date_posted: datetime) -> None:
+    """Update both ``date_posted`` (canonical) and legacy ``publish_date`` to the same value.
+
+    Dedup SQL reads ``date_posted``; ``publish_date`` is deprecated. Keeping both
+    in sync keeps this helper compatible with old and new callsites.
+    """
     with engine.begin() as conn:
         conn.execute(
             text(
                 """
                 UPDATE dbo.job_postings
-                SET publish_date = :pd
+                SET date_posted = :dp,
+                    publish_date = :dp
                 WHERE job_posting_id::text = :jpid
                 """
             ),
-            {"jpid": job_posting_id, "pd": publish_date},
+            {"jpid": job_posting_id, "dp": date_posted},
         )
 
 

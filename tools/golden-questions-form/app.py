@@ -119,10 +119,7 @@ def _load_raw_records() -> tuple[list[dict], list[str]]:
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"{_OUTPUT_FILE} is not valid JSON: {exc}") from exc
     if not isinstance(data, list):
-        raise RuntimeError(
-            f"{_OUTPUT_FILE} is not a JSON array "
-            f"(got {type(data).__name__})."
-        )
+        raise RuntimeError(f"{_OUTPUT_FILE} is not a JSON array (got {type(data).__name__}).")
 
     records: list[dict] = []
     warnings: list[str] = []
@@ -240,8 +237,7 @@ with st.sidebar:
 
     # Record picker: existing records + "+ New question" sentinel
     picker_options = [_NEW_RECORD_SENTINEL] + [
-        f"{r.get('id', '(no id)')} — {(r.get('question') or '')[:60]}"
-        for r in filtered
+        f"{r.get('id', '(no id)')} — {(r.get('question') or '')[:60]}" for r in filtered
     ]
     picked = st.selectbox("Record", options=picker_options)
 
@@ -263,10 +259,13 @@ else:
     mode = "edit"
     # Parse id from the "id — question" picker label
     picked_id = picked.split(" — ", 1)[0]
-    current = next(
-        (r for r in filtered if isinstance(r, dict) and r.get("id") == picked_id),
-        None,
-    ) or filtered[0]  # fallback; shouldn't happen
+    current = (
+        next(
+            (r for r in filtered if isinstance(r, dict) and r.get("id") == picked_id),
+            None,
+        )
+        or filtered[0]
+    )  # fallback; shouldn't happen
 
 
 # --- Main form -------------------------------------------------------------
@@ -397,10 +396,7 @@ if submitted:
         errors.append(f"Schema validation failed: {exc}")
 
     if mode == "new" and preview["id"] in existing_ids:
-        errors.append(
-            f"id {preview['id']!r} already exists in the file. "
-            "Pick a different id."
-        )
+        errors.append(f"id {preview['id']!r} already exists in the file. Pick a different id.")
 
     if errors:
         for msg in errors:
@@ -412,17 +408,11 @@ if submitted:
             current_records, _ = _load_raw_records()
             if mode == "new":
                 if any(r.get("id") == preview["id"] for r in current_records if isinstance(r, dict)):
-                    st.error(
-                        f"id {preview['id']!r} appeared in the file since page load. "
-                        "Refresh and retry."
-                    )
+                    st.error(f"id {preview['id']!r} appeared in the file since page load. Refresh and retry.")
                 else:
                     current_records.append(preview)
                     _atomic_write(current_records)
-                    st.success(
-                        f"Added {preview['id']!r}. "
-                        f"File now contains {len(current_records)} record(s)."
-                    )
+                    st.success(f"Added {preview['id']!r}. File now contains {len(current_records)} record(s).")
             else:  # edit
                 replaced = False
                 for i, r in enumerate(current_records):
@@ -431,16 +421,10 @@ if submitted:
                         replaced = True
                         break
                 if not replaced:
-                    st.error(
-                        f"id {preview['id']!r} no longer exists in the file. "
-                        "Refresh the page."
-                    )
+                    st.error(f"id {preview['id']!r} no longer exists in the file. Refresh the page.")
                 else:
                     _atomic_write(current_records)
-                    st.success(
-                        f"Saved edits to {preview['id']!r}. "
-                        f"File contains {len(current_records)} record(s)."
-                    )
+                    st.success(f"Saved edits to {preview['id']!r}. File contains {len(current_records)} record(s).")
                     records = current_records
 
             st.code(

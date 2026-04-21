@@ -138,9 +138,7 @@ class DisruptionRefreshedEvent(BaseModel):
     @classmethod
     def check_event_type(cls, v: EventEnvelope) -> EventEnvelope:
         if v.payload.get("event_type") != "DisruptionRefreshed":
-            raise ValueError(
-                f"Expected payload event_type 'DisruptionRefreshed', got {v.payload.get('event_type')!r}"
-            )
+            raise ValueError(f"Expected payload event_type 'DisruptionRefreshed', got {v.payload.get('event_type')!r}")
         return v
 
     @property
