@@ -242,6 +242,92 @@ deferred work item #3 below.
 
 ---
 
+## Taxonomy Audit Addendum (Issue #229)
+
+**Scope:** Read-only SQL against the dev Postgres (`PYTHON_DATABASE_URL`).
+This addendum is **orthogonal** to the IMP-032 refresh script validation
+above — no `scripts/refresh_aggregates.py` behavior is exercised here.
+
+**Repo note (check #3 wording vs schema).** Issue #229 text references a
+`job_title_to_canonical_role` artifact. There is **no** table or module by
+that name in this repository. The implemented mapping is
+`dbo.job_postings.canonical_role_id` → `dbo.canonical_roles.role_id`
+(see `common/data_store/models.py` and `common/data_store/migrations.py`).
+The audit below uses that column and optional join validity only.
+
+### What I Tested
+
+- <!-- TODO: date, DB (redact credentials), tool: `python scripts/db_check.py query "…"` from repo root -->
+
+**Check 1 — `dbo.canonical_roles` (cluster inventory + qualitative job-family read)**
+
+- <!-- TODO: paste SQL used -->
+
+**Check 2 — `dbo.role_snapshot_weekly` (multiple `week_start` periods)**
+
+- <!-- TODO: paste SQL used -->
+
+**Check 3 — Posting → canonical role coverage (`job_postings.canonical_role_id`)**
+
+- <!-- TODO: paste SQL used (include denominator definition in comment above query if non-obvious) -->
+
+### What I Found
+
+**Check 1 — cluster count and recognizable job families**
+
+- **Cluster count:** <!-- TODO: numeric result -->
+- **Qualitative read:** <!-- TODO: 2–4 bullets: do `label` / `representative_titles` read as sensible families vs noise? Any empty or misleading samples? -->
+
+**Check 2 — temporal coverage**
+
+- **Distinct `week_start` values:** <!-- TODO -->
+- **Min / max `week_start`:** <!-- TODO -->
+- **Per-week row counts (if helpful):** <!-- TODO: table or short bullet list -->
+- **Answer to “multiple periods?”:** <!-- TODO: yes / no + one sentence -->
+
+**Check 3 — coverage and join validity**
+
+- **Denominator used:** <!-- TODO: e.g. `COUNT(*)` on full `dbo.job_postings` -->
+- **`canonical_role_id` non-null %:** <!-- TODO -->
+- **Non-null IDs that resolve to `dbo.canonical_roles`:** <!-- TODO: counts and/or % -->
+- **Orphan or mismatched IDs (if any):** <!-- TODO: note or “none observed” -->
+
+### Recommendation
+
+- <!-- TODO: e.g. whether clustering / snapshot refresh cadence is acceptable for demo; whether to file follow-up issues; whether Q&A should caveat role labels — keep grounded in results above -->
+
+### Data / Evidence
+
+**Check 1 — raw output**
+
+```
+<!-- TODO: paste db_check.py / psql output: cluster_count query -->
+```
+
+```
+<!-- TODO: paste sample rows (label, representative_titles, posting_count, …) -->
+```
+
+**Check 2 — raw output**
+
+```
+<!-- TODO: paste distinct week_start / min-max / group-by output -->
+```
+
+**Check 3 — raw output**
+
+```
+<!-- TODO: paste coverage + join-validity query output -->
+```
+
+**Reference paths (for reviewers)**
+
+- ORM: [`common/data_store/models.py`](../../common/data_store/models.py) — `CanonicalRole`, `RoleSnapshotWeekly`; header comment on `job_postings.canonical_role_id`
+- Snapshot week logic: [`analytics/canonical_roles/snapshots.py`](../../analytics/canonical_roles/snapshots.py)
+- Ad-hoc queries: [`scripts/db_check.py`](../../scripts/db_check.py)
+
+---
+
 ## Week 12 Deferred Work Log (IMP-032 debt entries)
 
 Each entry has the four required fields: **what**, **why safe to defer**,
