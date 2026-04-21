@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,7 +13,11 @@ from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    monkeypatch.setenv(
+        "JIE_API_KEYS",
+        json.dumps([{"key_id": "contract-test-key", "secret": "contract-test-secret"}]),
+    )
     return TestClient(create_app())
 
 
@@ -28,7 +33,11 @@ def test_post_query_returns_schema(client: TestClient) -> None:
     with patch("analytics.api.routes.session_scope") as sc:
         sc.return_value.__enter__.return_value = MagicMock()
         with patch("analytics.api.routes.run_analytics_qna", return_value=body):
-            r = client.post("/analytics/query", json={"question": "hello"})
+            r = client.post(
+                "/analytics/query",
+                json={"question": "hello"},
+                headers={"X-API-Key": "contract-test-secret"},
+            )
     assert r.status_code == 200
     data = r.json()
     assert data["answer"] == "ok"
