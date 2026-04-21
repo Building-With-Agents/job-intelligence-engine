@@ -7,7 +7,9 @@ from enrichment.classification import (
     classify_job,
     classify_role,
     classify_seniority,
+    filter_industry_sectors_for_role_classification,
     flatten_extraction_json,
+    is_excluded_industry_sector_title,
     tokenize,
 )
 
@@ -43,6 +45,56 @@ def test_classify_role_sector_fallback() -> None:
         [("s1", "Healthcare Technology")],
     )
     assert role == "Healthcare Technology"
+
+
+def test_classify_role_na_placeholder_sector_does_not_beat_real_sector() -> None:
+    """N/A Not an IT role must not win sector fallback when a real sector scores higher."""
+    role = classify_role(
+        "Hospital IT Lead",
+        "hospital healthcare technology patient systems",
+        [],
+        [
+            ("bad", "N/A Not an IT role"),
+            ("s1", "Healthcare Technology"),
+        ],
+    )
+    assert role == "Healthcare Technology"
+
+
+def test_classify_role_only_meta_sectors_yields_unclassified() -> None:
+    """After filtering placeholder sectors, empty list → no sector fallback."""
+    role = classify_role(
+        "Obscure Role",
+        "it department not listed obscure",
+        [],
+        [("na", "N/A Not an IT role")],
+    )
+    assert role == "unclassified"
+
+
+def test_classify_role_sector_fallback_requires_stronger_overlap() -> None:
+    """Single-token sector overlap scores 1; sector bar is 2 when min_score is 1."""
+    role = classify_role(
+        "Store Clerk",
+        "retail sales register",
+        [],
+        [("s1", "Retail")],
+    )
+    assert role == "unclassified"
+
+
+def test_is_excluded_industry_sector_title() -> None:
+    assert is_excluded_industry_sector_title("N/A Not an IT role")
+    assert is_excluded_industry_sector_title("  not classified (misc) ")
+    assert not is_excluded_industry_sector_title("Healthcare Technology")
+
+
+def test_filter_industry_sectors_for_role_classification() -> None:
+    rows = [
+        ("a", "N/A Not an IT role"),
+        ("b", "Healthcare Technology"),
+    ]
+    assert filter_industry_sectors_for_role_classification(rows) == [("b", "Healthcare Technology")]
 
 
 def test_classify_role_unclassified() -> None:
