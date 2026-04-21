@@ -10,6 +10,8 @@ Requires the API to be running first:
 
     python scripts/run_analytics_api.py
 
+Set ``ANALYTICS_QUERY_X_API_KEY`` when the API enforces ``JIE_API_KEYS`` (JIE #226).
+
 Usage (from any shell, any CWD):
 
     python scripts/smoke/audit_log_check.py
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -41,13 +44,16 @@ from common.data_store.database import session_scope  # noqa: E402
 from common.data_store.models import OrchestrationAuditLog  # noqa: E402
 
 
-def _post(url: str, body: dict) -> tuple[int, dict]:
+def _post(url: str, body: dict, *, extra_headers: dict[str, str] | None = None) -> tuple[int, dict]:
     """POST JSON and return (status_code, response_json)."""
     data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
@@ -80,6 +86,10 @@ def main() -> int:
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/")
+    query_headers: dict[str, str] | None = None
+    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if xk:
+        query_headers = {"X-API-Key": xk}
     correlation_ids = ["audit-check-1", "audit-check-2", "audit-check-3"]
     adversarial_cid = "audit-check-adversarial"
     results: list[tuple[str, bool]] = []
@@ -100,10 +110,11 @@ def main() -> int:
     # --- Step 1: Send 3 Q&A requests with distinct correlation IDs ---
     print(f"\n--- Sending 3 Q&A requests ---")
     for cid in correlation_ids:
-        s, b = _post(f"{base}/analytics/query", {
-            "question": args.question,
-            "correlation_id": cid,
-        })
+        s, b = _post(
+            f"{base}/analytics/query",
+            {"question": args.question, "correlation_id": cid},
+            extra_headers=query_headers,
+        )
         status_label = "OK" if s == 200 else f"HTTP {s}"
         print(f"  {cid}: {status_label}")
 
