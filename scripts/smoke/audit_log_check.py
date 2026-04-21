@@ -98,28 +98,34 @@ def main() -> int:
     print(f"API reachable (HTTP {status})")
 
     # --- Step 1: Send 3 Q&A requests with distinct correlation IDs ---
-    print(f"\n--- Sending 3 Q&A requests ---")
+    print("\n--- Sending 3 Q&A requests ---")
     for cid in correlation_ids:
-        s, b = _post(f"{base}/analytics/query", {
-            "question": args.question,
-            "correlation_id": cid,
-        })
+        s, b = _post(
+            f"{base}/analytics/query",
+            {
+                "question": args.question,
+                "correlation_id": cid,
+            },
+        )
         status_label = "OK" if s == 200 else f"HTTP {s}"
         print(f"  {cid}: {status_label}")
 
     # --- Step 2: Send 1 adversarial request ---
-    print(f"\n--- Sending adversarial request ---")
-    s, b = _post(f"{base}/analytics/triggers/role_benchmark", {
-        "canonical_role_id": "bad;role--injection",
-        "correlation_id": adversarial_cid,
-    })
+    print("\n--- Sending adversarial request ---")
+    s, b = _post(
+        f"{base}/analytics/triggers/role_benchmark",
+        {
+            "canonical_role_id": "bad;role--injection",
+            "correlation_id": adversarial_cid,
+        },
+    )
     print(f"  {adversarial_cid}: HTTP {s} (expected 400)")
 
     # Brief pause for async commits
     time.sleep(1)
 
     # --- Step 3: Query audit log for the correlation IDs ---
-    print(f"\n--- Checking dbo.orchestration_audit_log ---")
+    print("\n--- Checking dbo.orchestration_audit_log ---")
     all_cids = correlation_ids + [adversarial_cid]
 
     with session_scope() as session:

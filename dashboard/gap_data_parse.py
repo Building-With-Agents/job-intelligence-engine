@@ -31,13 +31,7 @@ def rows_from_gap_data(gap_data: Any) -> tuple[list[dict[str, Any]], str | None]
         for item in gap_data:
             if not isinstance(item, dict):
                 continue
-            name = (
-                item.get("skill_name")
-                or item.get("skill")
-                or item.get("label")
-                or item.get("name")
-                or ""
-            )
+            name = item.get("skill_name") or item.get("skill") or item.get("label") or item.get("name") or ""
             c = _num(item.get("cohort_pct") or item.get("cohort_share") or item.get("cohort"))
             m = _num(item.get("market_pct") or item.get("market_share") or item.get("market"))
             g = _num(item.get("gap") or item.get("delta"))
