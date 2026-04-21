@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+import structlog
+from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from analytics.api.analytics_api_keys import load_api_keys, validate_api_key_header
 from analytics.api.schemas import (
     AnalyticsQueryRequest,
     AnalyticsQueryResponse,
@@ -30,6 +33,8 @@ from common.data_store.database import session_scope
 from common.data_store.models import CohortGapCache
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+log = structlog.get_logger()
 
 _CACHE_TTL = timedelta(hours=24)
 _SAFE_TOKEN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
@@ -305,7 +310,10 @@ def run_custom_employer_comparison(
 
 
 @router.post("/query", response_model=AnalyticsQueryResponse)
-def post_analytics_query(body: AnalyticsQueryRequest) -> AnalyticsQueryResponse:
+def post_analytics_query(
+    body: AnalyticsQueryRequest,
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> AnalyticsQueryResponse:
     """Return JSON Q&A payload via :func:`run_analytics_qna` (ORM ``QueryRouter`` path).
 
     **Issue #197 (employer | curriculum | workflow):** before routing, the classification
@@ -321,7 +329,27 @@ def post_analytics_query(body: AnalyticsQueryRequest) -> AnalyticsQueryResponse:
 
     (blank line after ``data``). The Labor Pulse Next.js bridge already emits
     these pings while streaming synthetic token events.
+
+    **Issue #226:** ``X-API-Key`` is validated against ``JIE_API_KEYS`` / ``JIE_API_KEYS_FILE``
+    before opening a DB session. Responses: **401** missing/invalid key; **500** if no keys
+    are configured unless ``LABORPULSE_ALLOW_NO_API_KEYS=1`` (local dev only).
     """
+    allowed = load_api_keys()
+    if not allowed:
+        if os.getenv("LABORPULSE_ALLOW_NO_API_KEYS", "").strip() == "1":
+            log.info("analytics_query_request", key_id="none", dev_escape="allow_no_api_keys")
+        else:
+            raise HTTPException(status_code=500, detail="server_misconfigured_no_keys")
+    else:
+        try:
+            rec = validate_api_key_header(provided=x_api_key or "", allowed=allowed)
+        except ValueError as exc:
+            code = str(exc)
+            if code in {"missing_api_key", "invalid_api_key"}:
+                raise HTTPException(status_code=401, detail=code) from exc
+            raise HTTPException(status_code=500, detail=code) from exc
+        log.info("analytics_query_authenticated", key_id=rec.key_id)
+
     with session_scope() as session:
         return run_analytics_qna(session, body.question, body.correlation_id)
 
