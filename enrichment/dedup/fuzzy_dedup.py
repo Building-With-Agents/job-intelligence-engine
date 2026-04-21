@@ -26,7 +26,7 @@ _LOAD_CURRENT_SQL = text(
     SELECT
         jp.job_posting_id::text AS job_posting_id,
         jp.company_id::text AS company_id,
-        jp.date_posted AS publish_date,
+        jp.date_posted AS date_posted,
         jp.job_title AS job_title,
         jp.job_description AS job_description,
         jp.salary_range AS salary_range,
@@ -65,7 +65,7 @@ _LIST_SURVIVORS_SQL = text(
         jp.zip AS zip,
         jp.county AS county,
         jp.job_description AS job_description,
-        jp.date_posted AS publish_date,
+        jp.date_posted AS date_posted,
         jp.job_title AS job_title,
         jp.source AS source,
         jp.external_id AS external_id,
