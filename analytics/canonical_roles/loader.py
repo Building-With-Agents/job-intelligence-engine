@@ -150,7 +150,7 @@ def load_posting_cluster_features(
     CLUSTER_MIN_TOTAL_POSTINGS is enforced downstream in the clustering pipeline.
 
     When ``week_start`` is set (ISO week Monday, UTC boundary), only rows whose
-    ``publish_date`` falls in that calendar week are included.
+    ``date_posted`` falls in that calendar week are included.
 
     ``CLUSTER_MIN_TOTAL_POSTINGS`` (default 500) applies only inside the clustering
     package; the global analytics #179 50-posting guard is not implemented here.
@@ -159,8 +159,8 @@ def load_posting_cluster_features(
     params: dict[str, Any] = {}
     if week_start is not None:
         week_filter = (
-            " AND jp.publish_date IS NOT NULL "
-            "AND (DATE_TRUNC('week', jp.publish_date AT TIME ZONE 'UTC')::date) = :week_start "
+            " AND jp.date_posted IS NOT NULL "
+            "AND (DATE_TRUNC('week', jp.date_posted AT TIME ZONE 'UTC')::date) = :week_start "
         )
         params["week_start"] = week_start
 

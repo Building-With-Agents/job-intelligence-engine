@@ -69,7 +69,8 @@ def compute_salary_percentiles(
 
     Groups with fewer than ``having_threshold`` rows (with non-null salary and group key)
     are omitted from the result.
-    When ``week_start`` is provided, only postings published in that UTC week are included.
+    When ``week_start`` is provided, only postings whose ``date_posted``
+    falls in that UTC week are included.
     """
     if group_col not in _ALLOWED_GROUP_COL_SQL:
         log.warning(
@@ -94,8 +95,8 @@ def compute_salary_percentiles(
     params: dict[str, object] = {"having_threshold": normalized_threshold}
     if week_start is not None:
         week_filter_sql = """
-      AND jp.publish_date IS NOT NULL
-      AND DATE_TRUNC('week', jp.publish_date AT TIME ZONE 'UTC')::date = :week_start
+      AND jp.date_posted IS NOT NULL
+      AND DATE_TRUNC('week', jp.date_posted AT TIME ZONE 'UTC')::date = :week_start
 """
         params["week_start"] = week_start
 
