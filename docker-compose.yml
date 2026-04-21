@@ -160,10 +160,10 @@ services:
     container_name: langfuse-server
     depends_on: *langfuse-depends
     ports:
-      - "${LANGFUSE_PORT:-3000}:3000"
+      - "${LANGFUSE_PORT:-3001}:3000"
     environment:
       <<: *langfuse-env
-      NEXTAUTH_URL: http://localhost:${LANGFUSE_PORT:-3000}
+      NEXTAUTH_URL: http://localhost:${LANGFUSE_PORT:-3001}
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
       # Auto-provision org, project, user, and API keys on first start
       LANGFUSE_INIT_ORG_ID: computing-for-all

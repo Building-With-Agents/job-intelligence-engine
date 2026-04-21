@@ -110,7 +110,7 @@ If these queries return errors like `relation "dbo.skill_demand_weekly" does not
 
 ### Step 3 — Verify Langfuse connectivity
 
-Open http://localhost:3000 in your browser. Sign in with `dev@localhost.dev` / `LocalDev123!`.
+Open http://localhost:3001 in your browser. Sign in with `dev@localhost.dev` / `LocalDev123!`.
 
 If the page does not load, check Docker:
 
@@ -188,8 +188,8 @@ Add these to your `.env` at the repo root (if not already present):
 # Langfuse Observability — Local Docker
 LANGFUSE_SECRET_KEY=sk-lf-local-dev-secret
 LANGFUSE_PUBLIC_KEY=pk-lf-local-dev-public
-LANGFUSE_BASE_URL=http://localhost:3000
-LANGFUSE_HOST=http://localhost:3000
+LANGFUSE_BASE_URL=http://localhost:3001
+LANGFUSE_HOST=http://localhost:3001
 ```
 
 If you are using Langfuse Cloud instead of local Docker, replace the keys and URL with your cloud project credentials from https://us.cloud.langfuse.com.
@@ -208,7 +208,7 @@ This starts all services: PostgreSQL (app database), Redis, and the 6 Langfuse c
 docker compose ps
 ```
 
-All containers should show `running` or `Up (healthy)`. Then open http://localhost:3000 and confirm the login page loads.
+All containers should show `running` or `Up (healthy)`. Then open http://localhost:3001 and confirm the login page loads.
 
 **Pre-provisioned account:**
 - Email: `dev@localhost.dev`
@@ -683,7 +683,7 @@ AZURE_OPENAI_API_KEY=<your-key>
 AZURE_OPENAI_DEPLOYMENT_NAME=chat-gpt41mini
 LANGFUSE_SECRET_KEY=sk-lf-local-dev-secret
 LANGFUSE_PUBLIC_KEY=pk-lf-local-dev-public
-LANGFUSE_BASE_URL=http://localhost:3000
+LANGFUSE_BASE_URL=http://localhost:3001
 ```
 
 The seeded database is fully processed — reset 3 jobs first so the loop has work to do:
@@ -708,7 +708,7 @@ If this line does not appear, the tracer was not initialized. Check `LANGFUSE_SE
 
 ### Step 2 — Find traces in the UI
 
-Open http://localhost:3000 → **Tracing**. You should see at least one trace from the run above.
+Open http://localhost:3001 → **Tracing**. You should see at least one trace from the run above.
 
 **Verification checklist:**
 
@@ -883,7 +883,7 @@ The dashboard uses a read-only SQLAlchemy connection. It should never show a bla
 
 ### Langfuse Issues
 
-**Langfuse UI not loading (http://localhost:3000)**
+**Langfuse UI not loading (http://localhost:3001)**
 
 ```bash
 # Check container status
@@ -916,7 +916,7 @@ All `LANGFUSE_INIT_*` variables should be present. If they are and login still f
    ```bash
    python -c "import os; from dotenv import load_dotenv; load_dotenv(); print('SECRET_KEY set:', bool(os.getenv('LANGFUSE_SECRET_KEY'))); print('BASE_URL:', os.getenv('LANGFUSE_BASE_URL', 'NOT SET'))"
    ```
-3. Check that `LANGFUSE_BASE_URL` points to `http://localhost:3000` (not `https://us.cloud.langfuse.com` if using local Docker).
+3. Check that `LANGFUSE_BASE_URL` points to `http://localhost:3001` (not `https://us.cloud.langfuse.com` if using local Docker).
 4. Check the langfuse-worker container is running — it processes incoming traces:
    ```bash
    docker compose logs langfuse-worker --tail 20
@@ -931,7 +931,7 @@ python scripts/upload_langfuse_dataset.py
 
 If this fails with a connection error:
 - Verify `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` are set correctly
-- Verify the Langfuse server is reachable: `curl http://localhost:3000/api/public/health`
+- Verify the Langfuse server is reachable: `curl http://localhost:3001/api/public/health`
 - Check that the `langfuse` Python package is installed: `pip list | grep langfuse`
 
 If it fails with an authentication error:
