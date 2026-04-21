@@ -43,7 +43,7 @@ def main() -> int:
     args = parser.parse_args()
 
     print(f"SQL:              {args.sql}")
-    print(f"Guardrail:        validate_sql (aggregate tables)")
+    print("Guardrail:        validate_sql (aggregate tables)")
     print()
 
     res = validate_sql(args.sql)

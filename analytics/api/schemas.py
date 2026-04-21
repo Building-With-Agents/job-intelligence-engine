@@ -33,6 +33,8 @@ class AnalyticsQueryResponse(BaseModel):
     answer: str
     evidence: list[EvidenceItem]
     confidence: float
+    classified_intent: str = "other"
+    intent_classification_confidence: float = 0.0
     periods_described: str = ""
     confidence_flagged_low: bool = False
     confidence_explanation: str | None = None

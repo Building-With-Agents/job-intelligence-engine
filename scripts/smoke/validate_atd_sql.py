@@ -38,7 +38,7 @@ def main() -> int:
     args = parser.parse_args()
 
     print(f"SQL:            {args.sql}")
-    print(f"Guardrail:      validate_ask_the_data_sql (operational tables)")
+    print("Guardrail:      validate_ask_the_data_sql (operational tables)")
     print()
 
     ok, reason, normalized = validate_ask_the_data_sql(args.sql)

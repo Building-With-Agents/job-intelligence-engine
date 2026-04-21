@@ -72,7 +72,7 @@ def main() -> int:
     print(f"correlation_id:  {args.correlation_id}")
     print()
     if resp.refused:
-        print(f"refused:         True")
+        print("refused:         True")
         print(f"refusal_message: {resp.refusal_message}")
     else:
         print(f"answer:          {resp.answer_text[:args.answer_preview_chars]}")

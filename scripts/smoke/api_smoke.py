@@ -91,7 +91,7 @@ def main() -> int:
     status, body = _post(f"{base}/analytics/triggers/emerging_skills_scan", {"scan_key": "ping"})
     if status == 0:
         print(f"\nERROR: API not reachable at {base}")
-        print(f"  Start it first: python scripts/run_analytics_api.py")
+        print("  Start it first: python scripts/run_analytics_api.py")
         print(f"  Detail: {body}")
         return 1
     print(f"API reachable (HTTP {status})")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from typing import Any
 
@@ -179,10 +180,8 @@ def render_emergence_alerts() -> None:
         if hasattr(cat, "item"):
             cat = cat.item()
         if isinstance(cat, str):
-            try:
+            with contextlib.suppress(Exception):
                 cat = json.loads(cat)
-            except Exception:
-                pass
         if isinstance(cat, list):
             cat_str = ", ".join(str(c) for c in cat) if cat else "—"
         else:

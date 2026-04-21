@@ -14,7 +14,6 @@ import pytest
 
 from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
 
-
 # ---------------------------------------------------------------------------
 # Aggregate table acceptance
 # ---------------------------------------------------------------------------

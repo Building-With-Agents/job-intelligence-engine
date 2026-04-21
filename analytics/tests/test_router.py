@@ -33,7 +33,6 @@ from sqlalchemy.orm import Session
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
-    RouteResult,
     _parse_weeks_back,
     _resolve_geo_terms,
     _week_floor,

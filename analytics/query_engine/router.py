@@ -45,7 +45,6 @@ from common.data_store.models import (
     SectorSummaryWeekly,
     SkillDemandWeekly,
     SkillVelocity,
-    ToolDemandWeekly,
 )
 
 log = structlog.get_logger()

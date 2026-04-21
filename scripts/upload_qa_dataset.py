@@ -153,7 +153,7 @@ def upload(
     ok = 0
     err = 0
 
-    for idx, item in enumerate(questions):
+    for item in questions:
         gq_id = item["id"]
         preview = item["question"][:70].rstrip()
 

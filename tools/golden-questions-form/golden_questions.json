@@ -569,7 +569,7 @@
       "Invented exact percentages without “from data” / evidence",
       "skill_demand_weekly alone as the only source without explaining it has no geo columns (if JP used for geo split, that’s fine)"
     ],
-    "difficulty": "standard"
+    "difficulty": "medium"
   },
   {
     "id": "gq-052",
@@ -592,7 +592,7 @@
       "Fabricated employer names",
       "Single-city-only answer"
     ],
-    "difficulty": "standard"
+    "difficulty": "hard"
   },
   {
     "id": "gq-053",
@@ -612,7 +612,7 @@
       "Using only geo_demand_weekly for remote share (it has no is_remote)",
       "Conflating remote with regional bucket without explanation"
     ],
-    "difficulty": "standard"
+    "difficulty": "medium"
   },
   {
     "id": "gq-054",
@@ -632,7 +632,7 @@
       "Tier labels without tying them to role_classification / canonical_roles",
       "National averages"
     ],
-    "difficulty": "standard"
+    "difficulty": "hard"
   },
   {
     "id": "gq-055",
@@ -651,7 +651,7 @@
       "Invented calendar quarters not derived from week_start / posting dates",
       "Non-Borderplex geography"
     ],
-    "difficulty": "standard"
+    "difficulty": "hard"
   },
   {
     "id": "gq-056",
@@ -671,7 +671,7 @@
       "Conflating all Borderplex roles with data engineer only",
       "skill_demand_weekly without role linkage if claim is role-specific"
     ],
-    "difficulty": "standard"
+    "difficulty": "medium"
   },
   {
     "id": "gq-057",
@@ -708,7 +708,7 @@
       "Claiming disruption_fingerprints (not on Ask-the-Data allowlist) unless eval scope explicitly allows non–Ask-the-Data SQL",
       "Single-role-only answer"
     ],
-    "difficulty": "standard"
+    "difficulty": "medium"
   },
   {
     "id": "gq-059",
@@ -727,7 +727,7 @@
       "agentic_era as the period (wrong bucket)",
       "Density without definition of numerator/denominator"
     ],
-    "difficulty": "standard"
+    "difficulty": "easy"
   },
   {
     "id": "gq-060",
@@ -746,7 +746,7 @@
       "Same answer for both families with no contrast",
       "National FAANG hiring anecdotes"
     ],
-    "difficulty": "standard"
+    "difficulty": "easy"
   },
   {
     "id": "gq-061",

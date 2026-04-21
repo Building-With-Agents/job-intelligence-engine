@@ -366,7 +366,13 @@ def _sql_generated_line(route_result: Any) -> str:
     return " | ".join(parts) if parts else ""
 
 
-def _synthesis_to_api(sr: SynthesisResponse, *, sql_generated: str) -> AnalyticsQueryResponse:
+def _synthesis_to_api(
+    sr: SynthesisResponse,
+    *,
+    sql_generated: str,
+    intent_label: str,
+    classification_confidence: float,
+) -> AnalyticsQueryResponse:
     answer = (sr.refusal_message or "").strip() if sr.refused else (sr.answer_text or "").strip()
     if not answer and sr.refusal_message:
         answer = sr.refusal_message
@@ -380,10 +386,13 @@ def _synthesis_to_api(sr: SynthesisResponse, *, sql_generated: str) -> Analytics
         )
         for c in sr.citations
     ]
+    ic = max(0.0, min(1.0, float(classification_confidence)))
     return AnalyticsQueryResponse(
         answer=answer or "No answer could be generated for this question.",
         evidence=evidence,
         confidence=float(sr.confidence),
+        classified_intent=str(intent_label or "other"),
+        intent_classification_confidence=ic,
         periods_described=sr.periods_described,
         confidence_flagged_low=bool(sr.confidence_flagged_low),
         confidence_explanation=sr.confidence_explanation,
@@ -427,6 +436,8 @@ def run_analytics_qna(
             answer="Please provide a non-empty question.",
             evidence=[],
             confidence=0.0,
+            classified_intent="other",
+            intent_classification_confidence=0.0,
             follow_up_questions=[],
             sql_generated="",
             cost_usd=0.0,
@@ -484,7 +495,12 @@ def run_analytics_qna(
             },
         )
 
-        return _synthesis_to_api(syn, sql_generated=sql_line)
+        return _synthesis_to_api(
+            syn,
+            sql_generated=sql_line,
+            intent_label=intent_label,
+            classification_confidence=conf,
+        )
 
     except RuntimeError as exc:
         code = str(exc)
@@ -505,10 +521,15 @@ def run_analytics_qna(
             if code == "query_timeout"
             else "The query could not be completed."
         )
+        ei = str(payload_audit.get("intent") or "other")
+        ec = float(payload_audit.get("classification_confidence") or 0.0)
+        ec = max(0.0, min(1.0, ec))
         return AnalyticsQueryResponse(
             answer=msg,
             evidence=[],
             confidence=0.0,
+            classified_intent=ei,
+            intent_classification_confidence=ec,
             follow_up_questions=[],
             sql_generated="",
             cost_usd=0.0,
@@ -526,10 +547,15 @@ def run_analytics_qna(
             error_code="internal_error",
             payload={**payload_audit, "error": type(exc).__name__},
         )
+        ei = str(payload_audit.get("intent") or "other")
+        ec = float(payload_audit.get("classification_confidence") or 0.0)
+        ec = max(0.0, min(1.0, ec))
         return AnalyticsQueryResponse(
             answer="An unexpected error occurred while processing your question.",
             evidence=[],
             confidence=0.0,
+            classified_intent=ei,
+            intent_classification_confidence=ec,
             follow_up_questions=[],
             sql_generated="",
             cost_usd=0.0,
