@@ -40,12 +40,15 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Print the first N fingerprint rows with disruption categories, ai_trend, wrs.",
     )
     parser.add_argument(
-        "--show", type=int, default=3,
+        "--show",
+        type=int,
+        default=3,
         help="Number of fingerprint rows to show in verbose mode (default 3).",
     )
     parser.add_argument(

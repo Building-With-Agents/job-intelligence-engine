@@ -602,16 +602,16 @@ def apply_enrichment_to_job_postings(
 
     # role_classification (#173): also persist directly to job_postings (above only feeds resolve_sector).
     role_classification_param: str | None = (
-        role_classification.strip()
-        if isinstance(role_classification, str) and role_classification.strip()
-        else None
+        role_classification.strip() if isinstance(role_classification, str) and role_classification.strip() else None
     )
 
     # seniority_level: prefer explicit "seniority_level" key; fall back to "seniority"
     # (RecordEnriched single-record contract uses "seniority"; "seniority_level" is
     # the canonical DB column name added in #170).
     raw_seniority = record_enriched_payload.get("seniority_level") or record_enriched_payload.get("seniority")
-    seniority_level_param: str | None = raw_seniority.strip() if isinstance(raw_seniority, str) and raw_seniority.strip() else None
+    seniority_level_param: str | None = (
+        raw_seniority.strip() if isinstance(raw_seniority, str) and raw_seniority.strip() else None
+    )
 
     # date_posted and is_remote come from normalized_jobs (already in resolved dict)
     date_posted_param = resolved.get("date_posted") if resolved else None
@@ -626,15 +626,11 @@ def apply_enrichment_to_job_postings(
     salary_max_param = resolved.get("salary_max") if resolved else None
     salary_currency_raw = resolved.get("salary_currency") if resolved else None
     salary_currency_param: str | None = (
-        salary_currency_raw.strip()
-        if isinstance(salary_currency_raw, str) and salary_currency_raw.strip()
-        else None
+        salary_currency_raw.strip() if isinstance(salary_currency_raw, str) and salary_currency_raw.strip() else None
     )
     salary_period_raw = resolved.get("salary_period") if resolved else None
     salary_period_param: str | None = (
-        salary_period_raw.strip()
-        if isinstance(salary_period_raw, str) and salary_period_raw.strip()
-        else None
+        salary_period_raw.strip() if isinstance(salary_period_raw, str) and salary_period_raw.strip() else None
     )
 
     employer_profile_id_param = None

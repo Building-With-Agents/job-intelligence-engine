@@ -101,14 +101,14 @@ def main() -> int:
     status, body = _post(f"{base}/analytics/triggers/emerging_skills_scan", {"scan_key": "ping"})
     if status == 0:
         print(f"\nERROR: API not reachable at {base}")
-        print(f"  Start it first: python scripts/run_analytics_api.py")
+        print("  Start it first: python scripts/run_analytics_api.py")
         print(f"  Detail: {body}")
         return 1
     print(f"API reachable (HTTP {status})")
 
     # --- Step 2: POST /analytics/query ---
     if not args.skip_query:
-        label = f"POST /analytics/query  --  \"{args.question}\""
+        label = f'POST /analytics/query  --  "{args.question}"'
         s, b = _post(
             f"{base}/analytics/query",
             {
@@ -117,10 +117,20 @@ def main() -> int:
             },
             extra_headers=query_headers,
         )
-        _print_result(label, s, b, preview_keys=[
-            "answer", "confidence", "refused", "refusal_message",
-            "cost_usd", "total_cost_usd", "cost_breakdown_usd",
-        ])
+        _print_result(
+            label,
+            s,
+            b,
+            preview_keys=[
+                "answer",
+                "confidence",
+                "refused",
+                "refusal_message",
+                "cost_usd",
+                "total_cost_usd",
+                "cost_breakdown_usd",
+            ],
+        )
         results.append(("POST /analytics/query", s == 200))
     else:
         print("\n-- Skipping POST /analytics/query (--skip-query) --")
@@ -140,18 +150,25 @@ def main() -> int:
 
     # --- Step 4: Cache verification (re-run cohort_gap_analysis) ---
     label = "Cache check: re-run cohort_gap_analysis (expect cached=true)"
-    s, b = _post(f"{base}/analytics/triggers/cohort_gap_analysis", {
-        "cohort_key": "demo-cohort", "week_start": None,
-    })
+    s, b = _post(
+        f"{base}/analytics/triggers/cohort_gap_analysis",
+        {
+            "cohort_key": "demo-cohort",
+            "week_start": None,
+        },
+    )
     _print_result(label, s, b, preview_keys=["trigger", "cached", "computed_at"])
     cached = b.get("cached", False)
     results.append(("Cache hit on 2nd call", cached is True))
 
     # --- Step 5: Adversarial SQL injection via trigger ---
     label = f"Adversarial: role_benchmark with role_id={args.adversarial_role_id!r}"
-    s, b = _post(f"{base}/analytics/triggers/role_benchmark", {
-        "canonical_role_id": args.adversarial_role_id,
-    })
+    s, b = _post(
+        f"{base}/analytics/triggers/role_benchmark",
+        {
+            "canonical_role_id": args.adversarial_role_id,
+        },
+    )
     _print_result(label, s, b)
     results.append(("Adversarial rejection (expect 400)", s == 400))
 

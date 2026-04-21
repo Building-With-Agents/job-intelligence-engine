@@ -306,20 +306,13 @@ _JOB_INGESTION_RUNS_ALTER_STATEMENTS = [
 # Must be applied AFTER the #170 ADD COLUMN statements so date_posted and
 # seniority_level exist on job_postings before the index is created.
 _QNA_RETRIEVAL_INDEX_STATEMENTS = [
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_created_at "
-    "ON dbo.job_postings (createdat DESC)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_date_posted "
-    "ON dbo.job_postings (date_posted DESC)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_canonical_role "
-    "ON dbo.job_postings (canonical_role_id)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_employer_profile "
-    "ON dbo.job_postings (employer_profile_id)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_seniority "
-    "ON dbo.job_postings (seniority_level)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_role_classification "
-    "ON dbo.job_postings (role_classification)",
-    "CREATE INDEX IF NOT EXISTS ix_job_postings_source_external "
-    "ON dbo.job_postings (source, external_id)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_created_at ON dbo.job_postings (createdat DESC)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_date_posted ON dbo.job_postings (date_posted DESC)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_canonical_role ON dbo.job_postings (canonical_role_id)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_employer_profile ON dbo.job_postings (employer_profile_id)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_seniority ON dbo.job_postings (seniority_level)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_role_classification ON dbo.job_postings (role_classification)",
+    "CREATE INDEX IF NOT EXISTS ix_job_postings_source_external ON dbo.job_postings (source, external_id)",
     # NOTE: ix_extracted_intelligence_src_ext was removed — extracted_intelligence has
     # no source/external_id columns (it links via normalized_job_id FK). The join path
     # is already covered by ix_normalized_jobs_source_eid on dbo.normalized_jobs.

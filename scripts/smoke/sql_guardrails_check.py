@@ -43,7 +43,7 @@ def main() -> int:
         "SELECT job_title, location, salary_range "
         "FROM dbo.job_postings "
         "WHERE borderplex_subregion = 'el_paso' "
-        "ORDER BY publish_date DESC LIMIT 20"
+        "ORDER BY date_posted DESC LIMIT 20"
     )
     print()
     print("Test 1: validate_ask_the_data_sql (operational path)")
@@ -56,9 +56,7 @@ def main() -> int:
 
     # --- Test 2: Ask-the-Data path — aggregate table should be REJECTED ---
     sql_atd_reject = (
-        "SELECT skill_label, posting_count "
-        "FROM dbo.skill_demand_weekly "
-        "ORDER BY posting_count DESC LIMIT 50"
+        "SELECT skill_label, posting_count FROM dbo.skill_demand_weekly ORDER BY posting_count DESC LIMIT 50"
     )
     print()
     print("Test 2: validate_ask_the_data_sql (aggregate table — should REJECT)")
@@ -66,7 +64,9 @@ def main() -> int:
     ok2, reason2, _ = validate_ask_the_data_sql(sql_atd_reject)
     print(f"  ok:     {ok2}")
     print(f"  reason: {reason2}")
-    print(f"  -> {'PASS' if not ok2 else 'FAIL'}: skill_demand_weekly is NOT in the Ask-the-Data allowlist (it's an aggregate table)")
+    print(
+        f"  -> {'PASS' if not ok2 else 'FAIL'}: skill_demand_weekly is NOT in the Ask-the-Data allowlist (it's an aggregate table)"
+    )
 
     # --- Test 3: Aggregate path — valid query, LIMIT over cap ---
     sql_agg = "SELECT skill_label, posting_count FROM dbo.skill_demand_weekly LIMIT 500"
