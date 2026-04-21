@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -41,8 +42,45 @@ def test_post_query_returns_schema(client: TestClient) -> None:
     assert r.status_code == 200
     data = r.json()
     assert data["answer"] == "ok"
-    assert data["confidence"] == 0.9
+    assert data["confidence"] == "high"
     assert len(data["evidence"]) == 1
+    assert data["evidence"][0]["title"] == "t"
+    uuid.UUID(data["conversation_id"])
+    assert 2 <= len(data["follow_up_questions"]) <= 4
+    assert data["sql_generated"] == "SELECT 1"
+    assert data["cost_usd"] == 0.01
+
+
+def test_post_query_invalid_conversation_id_400(client: TestClient) -> None:
+    r = client.post(
+        "/analytics/query",
+        json={"question": "hello", "conversation_id": "not-a-uuid"},
+        headers={"X-API-Key": "contract-test-secret"},
+    )
+    assert r.status_code == 400
+    assert r.json().get("detail") == "invalid_conversation_id"
+
+
+def test_post_query_echoes_valid_conversation_id(client: TestClient) -> None:
+    cid = str(uuid.uuid4())
+    body = AnalyticsQueryResponse(
+        answer="ok",
+        evidence=[],
+        confidence=0.7,
+        follow_up_questions=["a", "b"],
+        sql_generated="",
+        cost_usd=0.0,
+    )
+    with patch("analytics.api.routes.session_scope") as sc:
+        sc.return_value.__enter__.return_value = MagicMock()
+        with patch("analytics.api.routes.run_analytics_qna", return_value=body):
+            r = client.post(
+                "/analytics/query",
+                json={"question": "hello", "conversation_id": cid},
+                headers={"X-API-Key": "contract-test-secret"},
+            )
+    assert r.status_code == 200
+    assert r.json()["conversation_id"] == cid
 
 
 def test_openapi_docs_available(client: TestClient) -> None:
