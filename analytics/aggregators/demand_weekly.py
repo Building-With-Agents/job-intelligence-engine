@@ -7,11 +7,10 @@ Source rows: ``extracted_intelligence`` JSONB (skills/tools), joined to
 distinct ``company_id`` (IMP-021 uses ``company_name`` in examples; we use
 ``company_id`` for stable deduplication).
 
-Week bucketing uses ``COALESCE(jp.publish_date, jp.date_posted)`` — the
-``date_posted`` column on ``job_postings`` was promoted from
-``normalized_jobs`` in Issue #172 and has been backfilled for all existing
-rows, so we no longer need to reach into ``nj.date_posted`` for the fallback.
-Matches the pattern used in ``analytics.aggregators.geo_demand`` (PR #237).
+Week bucketing uses ``jp.date_posted`` — the canonical date column on
+``job_postings`` (promoted from ``normalized_jobs`` via Issue #172, fully
+backfilled). The legacy ``publish_date`` field is deprecated (see
+``docs/planning/QA_DATA_CONTRACT.md``) and must not appear in generated SQL.
 
 Aggregation uses SQLAlchemy ``func.count`` / ``func.distinct`` + ``GROUP BY``
 on a DB-side unnest subquery — no Python/Pandas counting.
@@ -38,7 +37,7 @@ log = structlog.get_logger()
 _SKILLS_EXPANDED = text(
     """
     SELECT
-        (date_trunc('week', COALESCE(jp.publish_date, jp.date_posted)))::date AS week_start,
+        (date_trunc('week', jp.date_posted))::date AS week_start,
         NULLIF(
             trim(COALESCE(skel.value->>'skill_name', skel.value->>'label')),
             ''
@@ -59,7 +58,7 @@ _SKILLS_EXPANDED = text(
         AND jp.is_spam IS NOT TRUE
         AND (jp.spam_score IS NULL OR jp.spam_score <= :reject_threshold)
         AND jp.is_duplicate IS NOT TRUE
-        AND (date_trunc('week', COALESCE(jp.publish_date, jp.date_posted)))::date = :week_start
+        AND (date_trunc('week', jp.date_posted))::date = :week_start
         AND NULLIF(
             trim(COALESCE(skel.value->>'skill_name', skel.value->>'label')),
             ''
@@ -76,7 +75,7 @@ _SKILLS_EXPANDED = text(
 _TOOLS_EXPANDED = text(
     """
     SELECT
-        (date_trunc('week', COALESCE(jp.publish_date, jp.date_posted)))::date AS week_start,
+        (date_trunc('week', jp.date_posted))::date AS week_start,
         NULLIF(
             trim(COALESCE(tel.value->>'tool_name', tel.value->>'label')),
             ''
@@ -95,7 +94,7 @@ _TOOLS_EXPANDED = text(
         AND jp.is_spam IS NOT TRUE
         AND (jp.spam_score IS NULL OR jp.spam_score <= :reject_threshold)
         AND jp.is_duplicate IS NOT TRUE
-        AND (date_trunc('week', COALESCE(jp.publish_date, jp.date_posted)))::date = :week_start
+        AND (date_trunc('week', jp.date_posted))::date = :week_start
         AND NULLIF(
             trim(COALESCE(tel.value->>'tool_name', tel.value->>'label')),
             ''

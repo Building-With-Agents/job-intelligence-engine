@@ -11,11 +11,12 @@ DEFAULT_DEDUP_COSINE_THRESHOLD = 0.92
 # Rolling comparison window (days before anchor date).
 DEDUP_ROLLING_WINDOW_DAYS = 30
 
-# Anchor date expression on dbo.job_postings for the window.
-# Uses COALESCE to prefer publish_date when present, falling back to the
-# promoted date_posted column (Issue #172) so rows with NULL publish_date
-# are still included in the dedup window.
-JOB_POSTING_DATE_COLUMN = "COALESCE(publish_date, date_posted)"
+# Anchor date column on dbo.job_postings for the window.
+# Uses date_posted (the canonical date column on job_postings, promoted from
+# normalized_jobs in Issue #172 and fully backfilled). The legacy publish_date
+# field is deprecated (see docs/planning/QA_DATA_CONTRACT.md) and must not
+# appear in generated SQL.
+JOB_POSTING_DATE_COLUMN = "date_posted"
 
 
 def dedup_cosine_threshold() -> float:

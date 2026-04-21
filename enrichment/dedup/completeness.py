@@ -35,12 +35,13 @@ def completeness_score(row: dict[str, Any]) -> int:
 def publish_date_for_tiebreak(row: dict[str, Any]) -> datetime | None:
     """Newer wins when completeness ties.
 
-    Falls back to ``date_posted`` when ``publish_date`` is absent, mirroring the
-    ``COALESCE(publish_date, date_posted)`` pattern used in SQL queries.
+    Reads the ``publish_date`` row key. Note: the dedup SQL queries select
+    ``jp.date_posted AS publish_date``, so this key carries the canonical
+    ``date_posted`` value at runtime. The function name is preserved for
+    callsite stability — rename in a follow-up when ``publish_date`` is
+    fully dropped from ``job_postings``.
     """
     pd = row.get("publish_date")
-    if pd is None:
-        pd = row.get("date_posted")
     if pd is None:
         return None
     if isinstance(pd, datetime):

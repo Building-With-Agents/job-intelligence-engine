@@ -23,9 +23,8 @@ log = structlog.get_logger()
 
 def compute_sector_summary_weekly(session: Session, week_start: date) -> list[SectorSummaryWeekly]:
     """
-    Aggregate ``dbo.job_postings`` for ``week_start`` (UTC,
-    ``COALESCE(publish_date, date_posted)`` in ``[week_start, week_start + 7 days)``)
-    by industry sector title.
+    Aggregate ``dbo.job_postings`` for ``week_start`` (UTC, ``date_posted``
+    in ``[week_start, week_start + 7 days)``) by industry sector title.
 
     * ``posting_count`` — rows per sector-week
     * ``employer_count`` — distinct ``companies.company_name`` (non-empty)
@@ -71,9 +70,9 @@ def compute_sector_summary_weekly(session: Session, week_start: date) -> list[Se
                 ON jp.sector_id::text = isec.industry_sector_id
             LEFT JOIN dbo.companies c
                 ON jp.company_id::text = c.company_id
-            WHERE COALESCE(jp.publish_date, jp.date_posted) IS NOT NULL
-              AND COALESCE(jp.publish_date, jp.date_posted) >= :week_start_ts
-              AND COALESCE(jp.publish_date, jp.date_posted) < :week_end_ts
+            WHERE jp.date_posted IS NOT NULL
+              AND jp.date_posted >= :week_start_ts
+              AND jp.date_posted < :week_end_ts
               AND jp.source IS NOT NULL
               AND jp.external_id IS NOT NULL
         ),

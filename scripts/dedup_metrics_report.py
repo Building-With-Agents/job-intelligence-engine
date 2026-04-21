@@ -124,8 +124,8 @@ def gather_metrics(engine: Engine, *, top_n: int) -> dict:
                 duplicate_cluster_id::text AS duplicate_cluster_id,
                 SUBSTRING(dedup_text_hash FROM 1 FOR 12) AS dedup_hash_prefix
             FROM dbo.job_postings
-            WHERE COALESCE(publish_date, date_posted) >= NOW() - INTERVAL '7 days'
-            ORDER BY COALESCE(publish_date, date_posted) DESC NULLS LAST
+            WHERE date_posted >= NOW() - INTERVAL '7 days'
+            ORDER BY date_posted DESC NULLS LAST
             LIMIT 100
             """,
         )

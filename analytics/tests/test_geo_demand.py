@@ -67,12 +67,13 @@ def test_compute_geo_demand_weekly_empty() -> None:
     assert rows == []
 
 
-def test_compute_geo_demand_weekly_sql_uses_coalesce_fallback() -> None:
-    """SQL must use COALESCE(publish_date, date_posted) — not publish_date alone.
+def test_compute_geo_demand_weekly_sql_uses_date_posted() -> None:
+    """SQL must filter on jp.date_posted — not publish_date.
 
-    Postings promoted via Issue #172 carry date_posted but NULL publish_date.
-    A filter on publish_date IS NOT NULL would silently drop the vast majority
-    of the corpus.  This test guards against regression to the old behaviour.
+    publish_date is deprecated (99.26% NULL, see docs/planning/QA_DATA_CONTRACT.md)
+    and must not appear in generated SQL. date_posted is the canonical date column
+    on job_postings (promoted from normalized_jobs in Issue #172, fully backfilled).
+    This test guards against regression to publish_date.
     """
     session = _pg_session()
     mappings = MagicMock()
@@ -82,8 +83,9 @@ def test_compute_geo_demand_weekly_sql_uses_coalesce_fallback() -> None:
     compute_geo_demand_weekly(session, date(2026, 4, 13))
 
     sql = _executed_sql(session).upper()
-    assert "COALESCE" in sql, "SQL must use COALESCE to fall back to date_posted"
-    assert "DATE_POSTED" in sql, "SQL must reference date_posted as the COALESCE fallback"
+    assert "DATE_POSTED" in sql, "SQL must reference jp.date_posted for week bucketing"
+    assert "PUBLISH_DATE" not in sql, "SQL must not reference deprecated publish_date column"
+    assert "COALESCE" not in sql or "PUBLISH_DATE" not in sql, "publish_date must not appear inside COALESCE either"
 
 
 def test_compute_geo_demand_weekly_date_window_binds() -> None:
