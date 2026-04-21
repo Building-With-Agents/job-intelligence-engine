@@ -8,9 +8,13 @@ from typing import Any
 import httpx
 
 MOCK_ANALYTICS_QUERY_RESPONSE: dict[str, Any] = {
+    "conversation_id": "00000000-0000-4000-8000-000000000001",
     "answer": "Mock answer for testing",
-    "evidence": ["Source 1", "Source 2"],
-    "confidence": 0.87,
+    "evidence": [
+        {"title": "Mock", "source": "fixture", "snippet": "Source 1", "supporting_count": None, "time_period": None},
+        {"title": "Mock", "source": "fixture", "snippet": "Source 2", "supporting_count": None, "time_period": None},
+    ],
+    "confidence": "high",
     "follow_up_questions": ["What skills are trending?", "Which roles are emerging?"],
     "sql_generated": "SELECT TOP 100 * FROM analytics_aggregates",
     "cost_usd": 0.002,
