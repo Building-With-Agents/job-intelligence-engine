@@ -157,7 +157,7 @@ def _skill_per_row_mismatch_count(session, target_week: date, reject_threshold: 
               AND jp.is_spam IS NOT TRUE
               AND (jp.spam_score IS NULL OR jp.spam_score <= :reject_threshold)
               AND jp.is_duplicate IS NOT TRUE
-              AND (date_trunc('week', COALESCE(jp.publish_date, nj.date_posted)))::date = :week_start
+              AND (date_trunc('week', jp.date_posted))::date = :week_start
               AND NULLIF(trim(COALESCE(skel.value->>'skill_name', skel.value->>'label')), '') IS NOT NULL
         ),
         manual AS (
@@ -194,7 +194,7 @@ def _tool_per_row_mismatch_count(session, target_week: date, reject_threshold: f
               AND jp.is_spam IS NOT TRUE
               AND (jp.spam_score IS NULL OR jp.spam_score <= :reject_threshold)
               AND jp.is_duplicate IS NOT TRUE
-              AND (date_trunc('week', COALESCE(jp.publish_date, nj.date_posted)))::date = :week_start
+              AND (date_trunc('week', jp.date_posted))::date = :week_start
               AND NULLIF(trim(COALESCE(tel.value->>'tool_name', tel.value->>'label')), '') IS NOT NULL
         ),
         manual AS (
@@ -297,7 +297,7 @@ def _cooccurrence_top200_mismatch_count(session, target_week: date, reject_thres
               AND jp.is_spam IS NOT TRUE
               AND (jp.spam_score IS NULL OR jp.spam_score <= :reject_threshold)
               AND jp.is_duplicate IS NOT TRUE
-              AND (date_trunc('week', COALESCE(jp.publish_date, nj.date_posted)))::date = :week_start
+              AND (date_trunc('week', jp.date_posted))::date = :week_start
               AND NULLIF(trim(COALESCE(skel.value->>'skill_name', skel.value->>'label')), '') IS NOT NULL
         ),
         dedup AS (

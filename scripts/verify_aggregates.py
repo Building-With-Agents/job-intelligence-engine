@@ -76,7 +76,7 @@ log = structlog.get_logger()
 _LIST_WEEKS_SQL = text(
     """
     SELECT
-        (date_trunc('week', COALESCE(jp.publish_date, nj.date_posted)))::date AS week_start,
+        (date_trunc('week', jp.date_posted))::date AS week_start,
         COUNT(*)::bigint AS expanded_skill_rows,
         COUNT(DISTINCT jp.job_posting_id)::bigint AS distinct_postings
     FROM dbo.extracted_intelligence ei

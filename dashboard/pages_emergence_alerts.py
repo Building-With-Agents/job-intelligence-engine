@@ -56,12 +56,7 @@ def _ai_skill_density(skill_velocity: Any, disruption_intensity: Any) -> str:
             if not isinstance(item, dict):
                 continue
             total += 1
-            lab = str(
-                item.get("skill")
-                or item.get("skill_name")
-                or item.get("label")
-                or ""
-            ).lower()
+            lab = str(item.get("skill") or item.get("skill_name") or item.get("label") or "").lower()
             if any(k in lab for k in ("ai", "ml", "llm", "genai", "machine learning")):
                 ai_hits += 1
         if total > 0:
@@ -138,9 +133,7 @@ def _has_pre_chatgpt_baseline(period_comparison: Any) -> bool:
 
 def render_emergence_alerts() -> None:
     st.title("Emergence Alerts")
-    st.caption(
-        "Roles whose disruption fingerprint includes **Emergence** — new or rapidly shifting demand."
-    )
+    st.caption("Roles whose disruption fingerprint includes **Emergence** — new or rapidly shifting demand.")
 
     try:
         df, hint = _load_emergence_fingerprints()

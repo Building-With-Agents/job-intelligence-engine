@@ -55,7 +55,7 @@ AND jp.job_title IS NOT NULL
 AND TRIM(jp.job_title) <> ''
 AND jp.job_description IS NOT NULL
 AND LENGTH(TRIM(jp.job_description)) >= 20
-ORDER BY jp.publish_date DESC NULLS LAST, jp.job_posting_id
+ORDER BY jp.date_posted DESC NULLS LAST, jp.job_posting_id
 LIMIT :lim
 """
 

@@ -108,9 +108,7 @@ def _assert_sql_guardrails(sql: str) -> None:
     """Assert the core SQL guardrails on a compiled SQL string."""
     assert _SELECT_RE.search(sql), f"SQL does not contain SELECT:\n{sql}"
     assert _LIMIT_100_RE.search(sql), f"SQL does not contain LIMIT 100:\n{sql}"
-    assert not _MUTATING_RE.search(sql), (
-        f"SQL contains a mutating keyword ({_MUTATING_RE.pattern}):\n{sql}"
-    )
+    assert not _MUTATING_RE.search(sql), f"SQL contains a mutating keyword ({_MUTATING_RE.pattern}):\n{sql}"
 
 
 # ---------------------------------------------------------------------------
@@ -222,9 +220,7 @@ class TestIntentRouting:
         assert "employer_profiles" in sql.lower()
         assert "companies" in sql.lower()
         # Must JOIN companies
-        assert re.search(r"\bJOIN\b", sql, re.IGNORECASE), (
-            "employer query must JOIN companies table"
-        )
+        assert re.search(r"\bJOIN\b", sql, re.IGNORECASE), "employer query must JOIN companies table"
 
     def test_route_workflow(self) -> None:
         session = _make_session()
@@ -287,6 +283,7 @@ class TestIntentRouting:
 # Guardrail sweep — all 4 checks in a single parametrized test
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "intent,extra_entities",
     [
@@ -346,9 +343,7 @@ class TestEdgeCases:
     def test_comparison_without_skills_routes_to_sector(self) -> None:
         """comparison with no skill_names must branch to sector_summary_weekly."""
         session = _make_session()
-        result = QueryRouter().route(
-            _mk_classification("comparison", role_names=["Tech", "Healthcare"]), session
-        )
+        result = QueryRouter().route(_mk_classification("comparison", role_names=["Tech", "Healthcare"]), session)
         assert result.tables_used == ["sector_summary_weekly"]
         assert "sector_summary_weekly" in _compiled_sql(session).lower()
 
@@ -393,5 +388,5 @@ class TestHelpers:
 
     def test_resolve_geo_terms_mixed(self) -> None:
         resolved = _resolve_geo_terms(["Juarez", "Seattle"])
-        assert resolved[0] == ("ciudad_juarez", True)   # canonical → exact match
-        assert resolved[1] == ("Seattle", False)         # unknown → ILIKE
+        assert resolved[0] == ("ciudad_juarez", True)  # canonical → exact match
+        assert resolved[1] == ("Seattle", False)  # unknown → ILIKE

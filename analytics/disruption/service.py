@@ -280,7 +280,9 @@ def _tool_transition_for_pair(left: TemporalPeriodSnapshot, right: TemporalPerio
 def _compute_tool_transition(snapshots: tuple[TemporalPeriodSnapshot, ...]) -> list[dict[str, Any]]:
     if len(snapshots) < 2:
         return []
-    transitions = [_tool_transition_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:], strict=False)]
+    transitions = [
+        _tool_transition_for_pair(left, right) for left, right in zip(snapshots, snapshots[1:], strict=False)
+    ]
     return [t for t in transitions if t["adopted_tools"] or t["abandoned_tools"]]
 
 
@@ -340,7 +342,9 @@ def _compute_workflow_restructuring_score(
     task_shift: list[dict[str, Any]],
     responsibility_expansion: float,
 ) -> float:
-    skill_change_component = fmean([cmp.skill_composition_change_ratio for cmp in period_comparison]) if period_comparison else 0.0
+    skill_change_component = (
+        fmean([cmp.skill_composition_change_ratio for cmp in period_comparison]) if period_comparison else 0.0
+    )
     tool_change_component = fmean([t["transition_magnitude"] for t in tool_transition]) if tool_transition else 0.0
     task_change_component = fmean([t["task_change_ratio"] for t in task_shift]) if task_shift else 0.0
     responsibility_component = min(1.0, abs(responsibility_expansion))
