@@ -20,7 +20,7 @@ This starts 6 containers:
 - `langfuse-minio` (minio) -- blob storage for events
 - `langfuse-redis` (redis:7-alpine) -- queue for worker
 - `langfuse-worker` (langfuse-worker:3) -- background processing
-- `langfuse-server` (langfuse:3 on port 3000) -- web UI and API
+- `langfuse-server` (langfuse:3 on port 3001) -- web UI and API
 
 Wait ~30 seconds for all services to initialize.
 
@@ -32,7 +32,7 @@ The docker-compose auto-provisions:
 - **User**: dev@localhost.dev / LocalDev123!
 - **API Keys**: `sk-lf-local-dev-secret` / `pk-lf-local-dev-public`
 
-Sign in at http://localhost:3000 with the credentials above.
+Sign in at http://localhost:3001 with the credentials above.
 
 ## 3. Configure .env
 
@@ -41,8 +41,8 @@ The `.env` file should already have the local Langfuse keys:
 ```bash
 LANGFUSE_SECRET_KEY=sk-lf-local-dev-secret
 LANGFUSE_PUBLIC_KEY=pk-lf-local-dev-public
-LANGFUSE_BASE_URL=http://localhost:3000
-LANGFUSE_HOST=http://localhost:3000
+LANGFUSE_BASE_URL=http://localhost:3001
+LANGFUSE_HOST=http://localhost:3001
 ```
 
 To switch to cloud Langfuse, uncomment the cloud keys and comment out the local ones.
@@ -80,7 +80,7 @@ This will:
 
 ## 7. View Traces in Langfuse
 
-Open http://localhost:3000 and navigate to **Tracing**. You should see:
+Open http://localhost:3001 and navigate to **Tracing**. You should see:
 
 - `processing-loop/skills-extraction` -- skills extraction LLM calls
 - `processing-loop/tasks-extraction` -- task extraction LLM calls
@@ -123,15 +123,15 @@ Toggle `LLM_PROVIDER` in `.env`:
 
 ## Troubleshooting
 
-### Port 3000 in use
-The Next.js app also uses port 3000. Set `LANGFUSE_PORT=3001` in `.env` and update `LANGFUSE_BASE_URL` accordingly.
+### Port 3001 in use
+Langfuse defaults to port 3001 (port 3000 is reserved for the wfd-os Next.js frontend). If 3001 is also in use, set `LANGFUSE_PORT=<free port>` in `.env` and update `LANGFUSE_BASE_URL` accordingly.
 
 ### Langfuse not starting
 Check logs: `docker compose logs langfuse` and `docker compose logs langfuse-worker`
 
 ### No traces appearing
 - Verify `LANGFUSE_SECRET_KEY` and `LANGFUSE_PUBLIC_KEY` match the auto-provisioned keys
-- Verify `LANGFUSE_BASE_URL` points to `http://localhost:3000`
+- Verify `LANGFUSE_BASE_URL` points to `http://localhost:3001`
 - Check that the pipeline script ran without errors
 
 ### Reset Langfuse data
