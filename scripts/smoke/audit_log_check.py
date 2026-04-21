@@ -10,7 +10,9 @@ Requires the API to be running first:
 
     python scripts/run_analytics_api.py
 
-Set ``ANALYTICS_QUERY_X_API_KEY`` when the API enforces ``JIE_API_KEYS`` (JIE #226).
+Set ``ANALYTICS_QUERY_X_API_KEY`` when the API enforces ``JIE_API_KEYS`` (JIE #226). Optional
+``ANALYTICS_QUERY_X_TENANT_ID``, ``ANALYTICS_QUERY_X_USER_EMAIL`` tune LaborPulse headers for
+``POST /analytics/query`` (JIE #222); each audit request sends a distinct ``X-Request-Id``.
 
 Usage (from any shell, any CWD):
 
@@ -28,6 +30,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 # Ensure repo root is on sys.path so common.* imports resolve
@@ -69,6 +72,22 @@ def _post(url: str, body: dict, *, extra_headers: dict[str, str] | None = None) 
         return 0, {"error": str(e.reason)}
 
 
+def _laborpulse_query_headers(*, request_id: str | None = None) -> dict[str, str]:
+    """Headers for ``POST /analytics/query`` (JIE #222); ``Content-Type`` is set in ``_post``."""
+    h: dict[str, str] = {
+        "X-Tenant-Id": os.environ.get("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
+        "X-User-Email": os.environ.get("ANALYTICS_QUERY_X_USER_EMAIL", "smoke@thewaifinder.com").strip()
+        or "smoke@thewaifinder.com",
+        "X-Request-Id": request_id
+        or os.environ.get("ANALYTICS_QUERY_X_REQUEST_ID", "").strip()
+        or str(uuid.uuid4()),
+    }
+    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if xk:
+        h["X-API-Key"] = xk
+    return h
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Verify orchestration audit log writes after Q&A requests.",
@@ -86,10 +105,6 @@ def main() -> int:
     args = parser.parse_args()
 
     base = args.base_url.rstrip("/")
-    query_headers: dict[str, str] | None = None
-    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
-    if xk:
-        query_headers = {"X-API-Key": xk}
     correlation_ids = ["audit-check-1", "audit-check-2", "audit-check-3"]
     adversarial_cid = "audit-check-adversarial"
     results: list[tuple[str, bool]] = []
@@ -98,7 +113,7 @@ def main() -> int:
     print(f"API base: {base}")
     status, body = _post(
         f"{base}/analytics/triggers/emerging_skills_scan",
-        {"scan_key": "ping"},
+        {},
     )
     if status == 0:
         print(f"\nERROR: API not reachable at {base}")
@@ -112,11 +127,8 @@ def main() -> int:
     for cid in correlation_ids:
         s, b = _post(
             f"{base}/analytics/query",
-            {
-                "question": args.question,
-                "correlation_id": cid,
-            },
-            extra_headers=query_headers,
+            {"question": args.question},
+            extra_headers=_laborpulse_query_headers(request_id=cid),
         )
         status_label = "OK" if s == 200 else f"HTTP {s}"
         print(f"  {cid}: {status_label}")
@@ -127,7 +139,6 @@ def main() -> int:
         f"{base}/analytics/triggers/role_benchmark",
         {
             "canonical_role_id": "bad;role--injection",
-            "correlation_id": adversarial_cid,
         },
     )
     print(f"  {adversarial_cid}: HTTP {s} (expected 400)")
