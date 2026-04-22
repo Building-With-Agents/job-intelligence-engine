@@ -6,7 +6,7 @@
 **Collaboration.**
 
 - Pair A is drafted from Angel’s taxonomy audit (#229).
-- Pair B is pending merge from Fatima’s temporal/employer audit.
+- Pair B: Fatima’s Week 9 temporal/employer audit is **draft-merged** in **§ Pair B** below (replace with canonical link when the source doc is filed).
 - **Final top-3 prioritization** will be agreed jointly after both halves are present in this doc.
 
 **Intro.** This file currently lists **all candidate data gaps** supported by evidence already written in the canonical findings doc. Per Gary’s direction, we **catalog first**; the **final “true top 3”** will be chosen later after Pair B content is merged and the team triages. **Do not treat this list as prioritized yet.**
@@ -87,10 +87,35 @@
 
 ---
 
-## Pair B — Fatima (temporal / employer)
+## <mark>Pair B — Fatima (temporal / employer)</mark>
 
-**Placeholder — findings to be merged from Fatima’s audit.**  
-This section will summarize temporal and employer-related data gaps using Fatima’s source doc(s) and evidence. Do not copy Pair A counts here until her content is merged.
+> **Week 9 audit (Fatima / Pair B)** — Draft merged into this section. Tone and structure aligned with **Pair A** above (table/scope → defect → Q&A impact → classification → evidence pointer).
+
+> **Executive summary — three main gaps:** (1) **Healthcare sector latency:** telehealth-adjacent skills lag in coverage and timeliness despite roughly **15%** posting-volume growth in healthcare, so skill trends under-react to real demand. (2) **Midwest geo-data thinness:** Illinois and Ohio cluster rollups show about a **20%** discrepancy between posting-level counts and what is available as **scorable** trend series, which weakens regional narratives. (3) **Cross-sector skill drift:** AI-assistant tooling (illustrated by golden-question **gq-026**) is **mis-bucketed** under **General Tech** rather than sector-specific contexts (**Finance** / **Legal**), which skews cross-sector skill-mix and “rise of AI tools” answers.
+
+### Gap B1 — Healthcare sector latency (telehealth vs posting growth)
+
+- **Table / scope:** Healthcare-sector postings and time-bucketed skill demand (telehealth-adjacent and digital-care signals vs headline sector growth).
+- **What is wrong:** Telehealth-related skills **lag** in the audited slice even as healthcare job postings show sustained growth (order of **~15%** in the Week 9 audit narrative), producing a **temporal / coverage gap** between volume trend and skill-trend capture.
+- **Effect on Q&A answers:** Healthcare trend questions can show **posting growth without matching skill momentum**, or imply flat digital-care demand when employers are actually shifting requirements.
+- **Classification:** `requires pipeline re-run` (ingest/enrichment/taxonomy refresh) with follow-up `fixable in Week 10` for sector–skill attribution rules once counts stabilize.
+- **Evidence source:** Fatima — Week 9 temporal/employer audit (Pair B working notes); *link canonical write-up when filed.*
+
+### Gap B2 — Midwest geo-data thinness (IL / OH clusters)
+
+- **Table / scope:** Geo-clustered postings vs trend-eligible / scorable aggregates for **Illinois** and **Ohio** (Midwest corridor).
+- **What is wrong:** Roughly **20%** **discrepancy** between posting-level cluster counts and the subset that supports reliable **scorable** week-over-week or multi-week trends in the audit material.
+- **Effect on Q&A answers:** Regional “Midwest” or state-specific answers risk **wrong denominators** or **over-confident** trend language where the trend table is thin relative to postings.
+- **Classification:** `requires pipeline re-run` (aggregates / geo rollups) plus `fixable in Week 10` for Q&A guardrails (explicit scoping + null handling).
+- **Evidence source:** Fatima — Week 9 temporal/employer audit (Pair B working notes); *link canonical write-up when filed.*
+
+### Gap B3 — Cross-sector skill drift (AI tools mis-bucketed)
+
+- **Table / scope:** Skill taxonomy / sector tagging paths used when classifying **AI-assistant** and adjacent tools across industries.
+- **What is wrong:** Tools appropriate to **Finance** or **Legal** contexts are routed to **General Tech** buckets (example from golden-question set: **gq-026**), so **cross-sector skill drift** inflates generic tech stacks and understates sector-specific adoption.
+- **Effect on Q&A answers:** Cross-sector comparisons and “AI tool adoption” narratives can **mis-state** which industries are leading adoption unless filters and taxonomy labels are corrected.
+- **Classification:** `fixable in Week 10` (taxonomy / sector rules, golden-question rubric alignment); may require `requires pipeline re-run` if re-embedding or backfill is chosen.
+- **Evidence source:** Fatima — Week 9 temporal/employer audit (Pair B working notes); golden-question **gq-026** as concrete mis-bucketing example; *link canonical write-up when filed.*
 
 ---
 
