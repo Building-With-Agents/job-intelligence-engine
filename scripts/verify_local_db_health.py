@@ -724,10 +724,11 @@ def main() -> int:
                     _emit("ERROR", f"job_postings.{col}: column missing", lines)
                 else:
                     dt, udt = str(r[0]).lower(), str(r[1]).lower()
-                    if col == "job_posting_id":
-                        ok = dt == "uuid" or udt == "uuid"
-                    else:
-                        ok = udt == "vector" or "vector" in dt
+                    ok = (
+                        (dt == "uuid" or udt == "uuid")
+                        if col == "job_posting_id"
+                        else (udt == "vector" or "vector" in dt)
+                    )
                     if ok:
                         _emit("OK", f"job_postings.{col}: data_type={r[0]!r} udt={r[1]!r}", lines)
                     else:
