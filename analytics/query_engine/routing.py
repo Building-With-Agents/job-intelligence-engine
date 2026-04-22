@@ -25,6 +25,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
+from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
 from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
@@ -478,12 +479,41 @@ def run_analytics_qna(
     session: Session,
     question: str,
     correlation_id: str | None,
+    *,
+    laborpulse_conversation_id: str | None = None,
+    tenant_id: str | None = None,
+    user_email: str | None = None,
 ) -> AnalyticsQueryResponse:
-    """Run Q&A inside an open SQLAlchemy session (same transaction as caller)."""
+    """Run Q&A inside an open SQLAlchemy session (same transaction as caller).
+
+    JIE #223: pass ``laborpulse_conversation_id`` + ``tenant_id`` + ``user_email`` to load/save
+    multi-turn Q&A in ``dbo.laborpulse_analytics_*`` (LaborPulse /analytics/query).
+    """
     cid = correlation_id or str(uuid.uuid4())
     endpoint = "POST /analytics/query"
     q = (question or "").strip()
     payload_audit: dict[str, Any] = {}
+    tid = (tenant_id or "").strip()
+    uem = (user_email or "").strip()
+    prior_for_llm = ""
+    if (
+        laborpulse_conversation_id
+        and laborpulse_conversation_id.strip()
+        and tid
+        and uem
+    ):
+        prior_for_llm = load_prior_context_for_llm(
+            session,
+            conversation_id=laborpulse_conversation_id.strip(),
+            tenant_id=tid,
+            user_email=uem,
+        )
+        if prior_for_llm:
+            log.info(
+                "laborpulse_prior_context_loaded",
+                request_id=cid,
+                conversation_id=laborpulse_conversation_id.strip(),
+            )
 
     if not q:
         audit_log.insert_orchestration_audit(
@@ -508,7 +538,13 @@ def run_analytics_qna(
 
     try:
         ledger = CostLedger()
-        classification = classify_workforce_question(q, correlation_id=cid, cost_ledger=ledger)
+        pctx = (prior_for_llm or "").strip() or None
+        classification = classify_workforce_question(
+            q,
+            correlation_id=cid,
+            cost_ledger=ledger,
+            conversation_context=pctx,
+        )
         intent_label = str(classification.get("intent") or "other")
         conf = float(classification.get("confidence") or 0.0)
         payload_audit = {
@@ -539,7 +575,7 @@ def run_analytics_qna(
         sql_line = _sql_generated_line(route_result)
 
         q_payload = QueryResultPayload(
-            request=QueryRequest(query=q),
+            request=QueryRequest(query=q, prior_turns_context=pctx),
             intent_label=intent_label,
             classification_confidence=conf,
             executed_sql=None,
@@ -571,7 +607,23 @@ def run_analytics_qna(
             },
         )
 
-        return _synthesis_to_api(syn, sql_generated=sql_line)
+        api = _synthesis_to_api(syn, sql_generated=sql_line)
+        if (
+            laborpulse_conversation_id
+            and laborpulse_conversation_id.strip()
+            and tid
+            and uem
+        ):
+            append_conversation_turn(
+                session,
+                conversation_id=laborpulse_conversation_id.strip(),
+                tenant_id=tid,
+                user_email=uem,
+                question=q,
+                answer=api.answer,
+                intent_label=intent_label,
+            )
+        return api
 
     except RuntimeError as exc:
         code = str(exc)
