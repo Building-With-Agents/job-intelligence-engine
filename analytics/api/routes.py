@@ -338,6 +338,9 @@ async def post_analytics_query(
 
     **Issue #225:** Response matches ``LaborPulseQueryResponse`` (seven fields).
 
+    **Issue #223:** ``conversation_id`` is scoped by ``X-Tenant-Id`` / ``X-User-Email``; prior turns
+    load from ``dbo.laborpulse_analytics_*`` and are injected into intent + synthesis.
+
     **Issue #226:** API key allowlist before DB access.
     """
     try:
@@ -405,8 +408,17 @@ async def post_analytics_query(
             raise
 
         correlation = (x_request_id or "").strip()
+        tenant = (x_tenant_id or "").strip()
+        user_em = (x_user_email or "").strip()
         with session_scope() as session:
-            internal = run_analytics_qna(session, body.question, correlation)
+            internal = run_analytics_qna(
+                session,
+                body.question,
+                correlation,
+                laborpulse_conversation_id=conversation_id,
+                tenant_id=tenant,
+                user_email=user_em,
+            )
         return to_laborpulse_query_response(internal, conversation_id=conversation_id)
     finally:
         scv.clear_contextvars()
