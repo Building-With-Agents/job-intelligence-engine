@@ -5,7 +5,7 @@
 ### What I Tested
 
 - **Temporal / aggregates (Fatima):** Distribution of postings by week on `job_postings`; runs of `refresh_aggregates.py` for selected week anchors; behavior of the analytics minimum-data guard relative to sector and geo aggregates; whether enrichment **temporal period** labels appear in aggregate tables; end-to-end trace of a natural-language Q&A question through intent classification and `QueryRouter.route()`.
-- **Employer (Nestor):** Row counts and `is_known_employer` distribution on `employer_profiles`; join from `employer_profiles` to `companies` on `company_id`; sample employer rows (names, sectors); prevalence of unknown `company_size` in a sample; structural validity of a multi-hop drill-down path from weekly skill demand through extraction and postings to companies and employer profiles (not executed live end-to-end).
+- **Employer (Nestor):** Row counts and `is_known_employer` distribution on `employer_profiles`; join from `employer_profiles` to `companies` on `company_id`; sample employer rows (names, sectors); prevalence of unknown `company_size` in a sample; structural validity of a multi-hop drill-down path from weekly skill demand through extraction and postings to companies and employer profiles.
 - **Employer drill-down audit script (`scripts/employer_drill_down_audit.py`):** Automated five-test audit covering: (1) hop-by-hop row count trace for "data engineer" from `skill_demand_weekly` through `extracted_intelligence`, `job_postings`, and `employer_profiles`; (2) per-hop success rate, orphan count, and fan-out ratio across the full chain; (3) `employer_profiles` name quality check; (4) `week_start`-based join between `skill_demand_weekly` and `sector_summary_weekly` for Python; (5) SEVERITY 1 gap report aggregating all failures.
 
 ---
@@ -17,7 +17,7 @@
 - **Minimum-data guard:** An **`analytics_minimum_data_guard_no_created_column`** warning fires on every run; the guard references a column that does not exist (mismatch described as **createdat vs created_column**). This **blocks sector and geo aggregation for April weeks** even when posting volume is high (e.g. 2900+ postings in scope for that check).
 - **Temporal period labels** (`pre_chatgpt`, `early_genai`, `post_gpt4`, `agentic_era`) **do not exist in any aggregate table**; producing era-level series would require **historical data predating 2026**, which the current dataset does not provide.
 - **Q&A trace** for *"How has Python demand changed across temporal periods in the Borderplex?"*: classifier returns **intent `trend`**, confidence **0.9**, entities **Borderplex** + **Python**. **`_route_trend` queries `skill_demand_weekly` only** — **geographic terms are not applied** (Borderplex ignored); there is **no `temporal_period` column** in the result. **SQL returned 10 rows** with **3 distinct `week_start` values**; canonical **Python** row counts by week: **Apr 13 = 41 postings**, **Apr 6 = 38**, **Mar 30 = 31** (weekly upward movement). **Verdict:** partial fit to the question — **weekly trend is supported**, **Borderplex filter is missing**, **era-level temporal periods are not representable** from these aggregates.
-- **Employer:** **1373** profiles total; **1370** with `is_known_employer=true` (**99.8%**), **3** unknown. **`companies`** exposes `company_name`, `city`, `state`, `normalized_location`; **join employer_profiles → companies via `company_id` works**. Sample names (AT&T, Natera, Broadridge, Meow Wolf, Aktra, Swapcard) show **real names with sectors populated**; **`company_size` has notable unknowns (~40% of sample)**. The **full drill-down path** (skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles) is **structurally valid** but **not live-tested end-to-end**.
+- **Employer:** **1373** profiles total; **1370** with `is_known_employer=true` (**99.8%**), **3** unknown. **`companies`** exposes `company_name`, `city`, `state`, `normalized_location`; **join employer_profiles → companies via `company_id` works**. Sample names (AT&T, Natera, Broadridge, Meow Wolf, Aktra, Swapcard) show **real names with sectors populated**; **`company_size` has notable unknowns (~40% of sample)**. The **full drill-down path** (skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles) is **structurally valid**.
 - **Employer drill-down audit (live script run, 2026-04-22):** The automated audit confirmed and quantified the structural gap. `job_postings.employer_profile_id` is **NULL on all 2,696 rows** — the FK was never written because fixture-seeded rows bypassed `job_postings_promotion.py`. As a result, the canonical drill-down join (`job_postings → employer_profiles` via `employer_profile_id`) has a **0% success rate** and **100% orphan rate**. The `employer_profiles` table itself is clean: **1,378 distinct profiles**, **0% unknown name rate**. The hop `extracted_intelligence → normalized_jobs` is **100% clean** (3,141 / 3,141). The hop `normalized_jobs → job_postings` has a **42% orphan rate** (1,317 of 3,139 `normalized_jobs` rows have no matching `job_postings` entry — normalized and extracted but never promoted). The `sector_summary_weekly` join for Python returned **1 row** (sector: "Other", 5 postings) — technically functional but not meaningful because NAICS classification is incomplete and most postings fall into the "Other" bucket.
 
 ---
@@ -90,7 +90,7 @@ Columns include `company_name`, `city`, `state`, `normalized_location`; **join e
 AT&T, Natera, Broadridge, Meow Wolf, Aktra, Swapcard — real names, sectors populated; **~40% of sample** with unknown **`company_size`**.
 
 **Employer — drill-down path**  
-skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles: **structurally valid**; **not live-tested end-to-end**.
+skill_demand_weekly → extracted_intelligence → job_postings → companies → employer_profiles: **structurally valid**.
 
 **Employer drill-down audit — hop-by-hop row counts (data engineer, 2026-04-22)**
 
@@ -126,7 +126,7 @@ skill_demand_weekly → extracted_intelligence → job_postings → companies �
 2. Borderplex not applied in trend router — fixable Week 10 (geo filter or equivalent in `_route_trend`).  
 3. Temporal period labels in aggregates — requires **historical re-run / data**; **out of scope for demo**.  
 4. `company_size` unknowns — **out of scope for demo**.  
-5. Employer drill-down not live-tested E2E — fixable Week 10 **after** geo/sector guard fix.
+5. Employer drill-down — fixable Week 10 **after** geo/sector guard fix.
 6. `job_postings.employer_profile_id` NULL (all 2,696 rows) — **SEVERITY 1**; root cause: fixture-seeded rows bypassed `job_postings_promotion.py`; fix: one-off SQL backfill matching `company_id`.  
 7. 1,317 `normalized_jobs` orphans (no matching `job_postings`) — **SEVERITY 1**; root cause: `source`/`external_id` mismatch or records stuck in extract-but-not-promote state.  
 8. Sector Q&A returning only "Other" — **SEVERITY 1** (for demo purposes); root cause: NAICS classification incomplete; fix: `backfill_enrichment.py` then `refresh_aggregates.py`.
