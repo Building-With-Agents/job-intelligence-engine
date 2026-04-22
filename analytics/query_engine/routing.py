@@ -36,6 +36,12 @@ from analytics.query_engine.sql_guardrails import (
     inject_role_classification_issue197_guard,
     validate_ask_the_data_sql,
 )
+from analytics.tenant_scope import (
+    RegionNotEntitledError,
+    TenantAccess,
+    check_region_entitled,
+    get_tenant_access_for_pipeline,
+)
 from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
@@ -483,11 +489,15 @@ def run_analytics_qna(
     laborpulse_conversation_id: str | None = None,
     tenant_id: str | None = None,
     user_email: str | None = None,
+    tenant_access: TenantAccess | None = None,
 ) -> AnalyticsQueryResponse:
     """Run Q&A inside an open SQLAlchemy session (same transaction as caller).
 
     JIE #223: pass ``laborpulse_conversation_id`` + ``tenant_id`` + ``user_email`` to load/save
     multi-turn Q&A in ``dbo.laborpulse_analytics_*`` (LaborPulse /analytics/query).
+
+    JIE #224: pass ``tenant_access`` from the LaborPulse API (or omit to default to Borderplex for
+    local callers); enforces subregion SQL filters and region entitlement.
     """
     cid = correlation_id or str(uuid.uuid4())
     endpoint = "POST /analytics/query"
@@ -495,6 +505,7 @@ def run_analytics_qna(
     payload_audit: dict[str, Any] = {}
     tid = (tenant_id or "").strip()
     uem = (user_email or "").strip()
+    taccess = tenant_access or get_tenant_access_for_pipeline(tid or None)
     prior_for_llm = ""
     if (
         laborpulse_conversation_id
@@ -526,6 +537,7 @@ def run_analytics_qna(
             success=False,
             error_code="empty_question",
             payload={},
+            tenant_id=taccess.tenant_id,
         )
         return AnalyticsQueryResponse(
             answer="Please provide a non-empty question.",
@@ -564,8 +576,14 @@ def run_analytics_qna(
                 correlation_id=cid,
             )
 
+        ent = classification.get("extracted_entities")
+        if isinstance(ent, dict):
+            check_region_entitled(taccess, q, ent)
+        else:
+            check_region_entitled(taccess, q, {})
+
         router = QueryRouter()
-        route_result = router.route(classification, session)
+        route_result = router.route(classification, session, tenant=taccess)
 
         rows = _json_safe_rows(route_result.rows)
         if intent_label in _ISSUE197_INTENTS:
@@ -605,6 +623,7 @@ def run_analytics_qna(
                 "citations": len(syn.citations),
                 "refused": syn.refused,
             },
+            tenant_id=taccess.tenant_id,
         )
 
         api = _synthesis_to_api(syn, sql_generated=sql_line)
@@ -625,6 +644,23 @@ def run_analytics_qna(
             )
         return api
 
+    except RegionNotEntitledError as rne:
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=q,
+            sql_generated=None,
+            confidence=0.0,
+            success=False,
+            error_code="region_not_entitled",
+            payload={
+                **payload_audit,
+                "requested_region": rne.requested_region,
+            },
+            tenant_id=taccess.tenant_id,
+        )
+        raise
     except RuntimeError as exc:
         code = str(exc)
         log.warning("analytics_query_runtime_error", error=code, correlation_id=cid)
@@ -638,6 +674,7 @@ def run_analytics_qna(
             success=False,
             error_code=code,
             payload=payload_audit,
+            tenant_id=taccess.tenant_id,
         )
         msg = (
             "The query took too long and was stopped."
@@ -664,6 +701,7 @@ def run_analytics_qna(
             success=False,
             error_code="internal_error",
             payload={**payload_audit, "error": type(exc).__name__},
+            tenant_id=taccess.tenant_id,
         )
         return AnalyticsQueryResponse(
             answer="An unexpected error occurred while processing your question.",
