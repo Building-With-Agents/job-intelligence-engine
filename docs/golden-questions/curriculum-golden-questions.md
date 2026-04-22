@@ -1,29 +1,42 @@
 # Curriculum Golden Questions
 
-**Data verified:** 2026-04-22. The live schema does **not** use a `job_posting_skills` / `canonical_role_skills` join table in the pipeline export. Skill demand is verified via:
+These questions are **skill-frequency** curriculum checks: “what should someone learn to qualify for this work?” is answered from **which extracted skills appear most often** in Borderplex IT postings for that theme—not from a separate role-blueprint table.
 
-- `job_postings` (Borderplex filter: `borderplex_subregion` and/or `location`/`county` text) plus theme match on `job_title` / `job_description` / `role_classification`;
-- `normalized_jobs` on (`source`, `external_id`) → `extracted_intelligence` (JSONB `skills` with `skill_name`, optional `skill_id`);
-- `skills` taxonomy: match `skill_id` or normalized `skill_name` to `dbo.skills`.
+**Source tables:** `job_postings` → `normalized_jobs` (`source`, `external_id`) → `extracted_intelligence` (JSONB `skills`: `skill_name`, optional `skill_id`) → optional join to `skills` for taxonomy. **`canonical_roles` is not used** (fixtures have no role-cluster rows; frequency over postings is enough for demos).
 
-`canonical_roles` is **empty in the current seed** (`scripts/pg-seed-data/fixtures/canonical_roles.json`); after analytics clustering, use `job_postings.canonical_role_id` and `dbo.canonical_roles` (`label`, `top_skills` JSONB).
+**Guards:** `role_classification != 'N/A Not an IT role'` on all posting rows (**#197**). Borderplex filter: `borderplex_subregion` and/or `location` / `county` text patterns.
 
-Re-run: `python scripts/verify_curriculum_golden_questions_data.py` (with `PYTHON_DATABASE_URL` for live SQL probe). Counts below are from the same logic on seed fixtures.
+**Verify:** `python scripts/verify_curriculum_golden_questions_data.py` (seed fixtures below; set `PYTHON_DATABASE_URL` for live SQL probe).
+
+### Verification (seed fixtures) — 10/10 PASS
+
+| Q | Status | Postings | EI rows | Skill lines | Taxonomy hits≈ |
+|---|--------|----------|---------|-------------|----------------|
+| 1 | **PASS** | 410 | 358 | 4712 | 2265 |
+| 2 | **PASS** | 391 | 309 | 4264 | 1711 |
+| 3 | **PASS** | 364 | 289 | 4287 | 1863 |
+| 4 | **PASS** | 575 | 438 | 6111 | 2763 |
+| 5 | **PASS** | 412 | 297 | 3345 | 1603 |
+| 6 | **PASS** | 122 | 97 | 1628 | 686 |
+| 7 | **PASS** | 595 | 450 | 6500 | 3177 |
+| 8 | **PASS** | 724 | 591 | 8198 | 3231 |
+| 9 | **PASS** | 345 | 276 | 3478 | 1512 |
+| 10 | **PASS** | 666 | 564 | 7629 | 3004 |
 
 | # | Question | Data verified | Notes |
 |---|----------|---------------|-------|
-| 1 | What should a data engineering training program cover given current Borderplex data-engineer postings — which languages, tools, cloud platforms, and AI-assistant skills should form the core? | **PARTIAL** | `job_postings`+`extracted_intelligence`+`skills` sufficient (e.g. **488** themed postings, **414** EI rows, **~5.6k** skill lines, **~2.6k** taxonomy hits). **Thin table:** `canonical_roles` = 0 rows in seed. |
-| 2 | What should an AI agent developer training program cover given current Borderplex postings — which LLM frameworks (LangChain, LangGraph), orchestration patterns, and integration skills are in demand? | **PARTIAL** | Strong EI+skills; **524** / **404** / **~5.8k** / **~2.3k**. **Thin:** `canonical_roles`. |
-| 3 | What should a cybersecurity training program cover given current Borderplex cybersecurity postings — which certifications, tools, and AI-augmentation skills should be included? | **PARTIAL** | **515** / **388** / **~6.0k** / **~2.5k**. **Thin:** `canonical_roles`. |
-| 4 | What should a cloud-architect training program cover given current Borderplex cloud-architect postings — which cloud providers, certifications, and AI-integration skills should be prioritized? | **PARTIAL** | **738** / **540** / **~7.9k** / **~3.5k**. **Thin:** `canonical_roles`. |
-| 5 | What should a frontend web development training program cover given current Borderplex frontend postings — which frameworks, testing tools, and AI-assisted development skills are most in demand? | **PARTIAL** | **470** / **333** / **~3.8k** / **~1.8k**. **Thin:** `canonical_roles`. |
-| 6 | What should an MLOps training program cover given current Borderplex MLOps and ML-infrastructure postings — which deployment patterns, monitoring tools, and model-ops skills should be included? | **PARTIAL** | **152** / **120** / **~2.1k** / **~855** (smallest themed slice but still ≥10 for postings and EI). **Thin:** `canonical_roles`. |
-| 7 | What should a DevOps and site-reliability training program cover given current Borderplex DevOps and SRE postings — which IaC tools, observability platforms, and AI-assisted operations skills are essential? | **PARTIAL** | **745** / **546** / **~8.1k** / **~3.9k**. **Thin:** `canonical_roles`. |
-| 8 | What should an IT support training program cover given current Borderplex help-desk, systems-admin, and network-engineer postings — which skills go beyond the CompTIA A+ / Network+ baseline? | **PARTIAL** | **1097** / **882** / **~12.7k** / **~4.8k**. **Thin:** `canonical_roles`. |
-| 9 | What should a fintech developer training program cover given current Borderplex fintech and payments-technology postings — which languages, compliance frameworks, and AI-adjacent skills should be included? | **PARTIAL** | Theme + optional `naics_code` 52*; **519** / **418** / **~5.6k** / **~2.3k**. **Thin:** `canonical_roles`. |
-| 10 | What should a healthcare-IT training program cover given current Borderplex EHR-analyst, clinical-data-analyst, and health-informatics postings — which platforms, regulatory knowledge, and AI-adjacent skills should form the core? | **PARTIAL** | **977** / **813** / **~11.6k** / **~4.4k**. **Thin:** `canonical_roles`. |
+| 1 | What **skills** (languages, data tools, cloud, AI-assistant–related) appear **most frequently** in **data engineering** job postings in the Borderplex? | **PASS** | Theme match on title/description/`role_classification`; aggregate `skill_name` from EI. |
+| 2 | What **LLM frameworks, integration-style skills, and related capabilities** appear **most often** in Borderplex postings that look like **AI / agentic** software work? | **PASS** | Same pattern: frequency over themed postings. |
+| 3 | What **certifications, tools, and security skills** appear **most often** in Borderplex **cybersecurity** job postings? | **PASS** | |
+| 4 | What **cloud platforms, certification-related signals, and cloud skills** appear **most frequently** in Borderplex **cloud architect / cloud engineer** postings? | **PASS** | |
+| 5 | What **frameworks, testing tools, and front-end skills** appear **most often** in Borderplex **frontend / web** development postings? | **PASS** | |
+| 6 | What **deployment, monitoring, and MLOps-related skills** appear **most frequently** in Borderplex **MLOps and ML-infrastructure** postings? | **PASS** | |
+| 7 | What **IaC, observability, and platform skills** appear **most often** in Borderplex **DevOps and SRE** postings? | **PASS** | |
+| 8 | What **skills** appear **most often** in Borderplex **help desk, systems administration, and network** IT support postings (useful for curriculum beyond common cert baselines)? | **PASS** | |
+| 9 | What **languages, compliance-related terms, and fintech-relevant skills** appear **most frequently** in Borderplex **fintech and payments** postings? | **PASS** | Theme + optional `naics_code` 52* in verifier. |
+| 10 | What **platforms, health-informatics / regulatory terms, and skills** appear **most often** in Borderplex **healthcare IT and clinical data** postings? | **PASS** | |
 
-**Example SQL (PostgreSQL) — top extracted skill names for a Borderplex+theme slice** (adjust `~*` pattern per track):
+**Example SQL — top extracted skills for a themed slice** (add #197 to `WHERE` as in the verification script):
 
 ```sql
 WITH themed AS (
@@ -34,7 +47,8 @@ WITH themed AS (
   WHERE
     (jp.borderplex_subregion IS NOT NULL
      OR LOWER(COALESCE(jp.location, '')) ~* 'el[[:space:]]*paso|las[[:space:]]*cruces|juarez|santa[[:space:]]*teresa|border|sunland')
-  AND (jp.job_title || ' ' || COALESCE(jp.job_description, '')) ~* 'data engineer|etl|snowflake|dbt|spark'  -- example: data eng
+    AND TRIM(COALESCE(jp.role_classification, '')) IS DISTINCT FROM 'N/A Not an IT role'  /* #197 */
+    AND (jp.job_title || ' ' || COALESCE(jp.job_description, '')) ~* 'data engineer|etl|snowflake|dbt'  /* example: data eng */
 )
 SELECT sk.elem->>'skill_name' AS skill_name, COUNT(*) AS n
 FROM themed t
@@ -47,15 +61,15 @@ ORDER BY n DESC
 LIMIT 25;
 ```
 
-To align extractions with the taxonomy, join `sk.elem->>'skill_id'` to `dbo.skills.skill_id` when the extractor populated IDs.
+Join `sk.elem->>'skill_id'` to `dbo.skills` when the extractor populated IDs.
 
-1. What should a data engineering training program cover given current Borderplex data-engineer postings — which languages, tools, cloud platforms, and AI-assistant skills should form the core?
-2. What should an AI agent developer training program cover given current Borderplex postings — which LLM frameworks (LangChain, LangGraph), orchestration patterns, and integration skills are in demand?
-3. What should a cybersecurity training program cover given current Borderplex cybersecurity postings — which certifications, tools, and AI-augmentation skills should be included?
-4. What should a cloud-architect training program cover given current Borderplex cloud-architect postings — which cloud providers, certifications, and AI-integration skills should be prioritized?
-5. What should a frontend web development training program cover given current Borderplex frontend postings — which frameworks, testing tools, and AI-assisted development skills are most in demand?
-6. What should an MLOps training program cover given current Borderplex MLOps and ML-infrastructure postings — which deployment patterns, monitoring tools, and model-ops skills should be included?
-7. What should a DevOps and site-reliability training program cover given current Borderplex DevOps and SRE postings — which IaC tools, observability platforms, and AI-assisted operations skills are essential?
-8. What should an IT support training program cover given current Borderplex help-desk, systems-admin, and network-engineer postings — which skills go beyond the CompTIA A+ / Network+ baseline?
-9. What should a fintech developer training program cover given current Borderplex fintech and payments-technology postings — which languages, compliance frameworks, and AI-adjacent skills should be included?
-10. What should a healthcare-IT training program cover given current Borderplex EHR-analyst, clinical-data-analyst, and health-informatics postings — which platforms, regulatory knowledge, and AI-adjacent skills should form the core?
+1. What **skills** (languages, data tools, cloud, AI-assistant–related) appear **most frequently** in **data engineering** job postings in the Borderplex?
+2. What **LLM frameworks, integration-style skills, and related capabilities** appear **most often** in Borderplex postings that look like **AI / agentic** software work?
+3. What **certifications, tools, and security skills** appear **most often** in Borderplex **cybersecurity** job postings?
+4. What **cloud platforms, certification-related signals, and cloud skills** appear **most frequently** in Borderplex **cloud architect / cloud engineer** postings?
+5. What **frameworks, testing tools, and front-end skills** appear **most often** in Borderplex **frontend / web** development postings?
+6. What **deployment, monitoring, and MLOps-related skills** appear **most frequently** in Borderplex **MLOps and ML-infrastructure** postings?
+7. What **IaC, observability, and platform skills** appear **most often** in Borderplex **DevOps and SRE** postings?
+8. What **skills** appear **most often** in Borderplex **help desk, systems administration, and network** IT support postings (useful for curriculum beyond common cert baselines)?
+9. What **languages, compliance-related terms, and fintech-relevant skills** appear **most frequently** in Borderplex **fintech and payments** postings?
+10. What **platforms, health-informatics / regulatory terms, and skills** appear **most often** in Borderplex **healthcare IT and clinical data** postings?
