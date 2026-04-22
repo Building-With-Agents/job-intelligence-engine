@@ -12,8 +12,8 @@ filled from ``_sql_generated_line`` / router execution metadata in
 than ``cost_usd`` (both originate from the same Langfuse-aware cost path in
 ``routing._synthesis_to_api``).
 
-**conversation_id:** valid client UUID is echoed; otherwise a new UUID is issued
-per request until multi-turn persistence (#223) is wired.
+**conversation_id:** valid client UUID is echoed, else a new UUID; multi-turn rows live in
+``dbo.laborpulse_analytics_*`` (JIE #223) scoped by ``X-Tenant-Id`` and user email.
 """
 
 from __future__ import annotations
