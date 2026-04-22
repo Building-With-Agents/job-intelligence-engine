@@ -33,3 +33,7 @@ class QueryRequest(BaseModel):
         description="Optional coarse intent label from UI or orchestrator.",
     )
     max_results: int = Field(default=10, ge=1, le=500)
+    prior_turns_context: str | None = Field(
+        default=None,
+        description="JIE #223: compact prior Q/A for multi-turn LaborPulse; ignored when absent.",
+    )
