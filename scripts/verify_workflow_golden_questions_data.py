@@ -86,9 +86,7 @@ def _ei_workflow_ok(ei: dict) -> bool:
         return False
     tasks = ei.get("tasks") or []
     resp = ei.get("responsibilities") or []
-    return (isinstance(tasks, list) and len(tasks) > 0) or (
-        isinstance(resp, list) and len(resp) > 0
-    )
+    return (isinstance(tasks, list) and len(tasks) > 0) or (isinstance(resp, list) and len(resp) > 0)
 
 
 def from_fixtures() -> list[Out]:
@@ -187,10 +185,10 @@ def from_fixtures() -> list[Out]:
             "Q4: DevOps / SRE / incident & on-call.",
         ),
         (
-            lambda j: bool(
-                re.search(r"clearance|dod|secret|federal|government", txt(j))
-            )
-            and bool(re.search(r"security|cyber|engineer|developer|network|systems", txt(j))),
+            lambda j: (
+                bool(re.search(r"clearance|dod|secret|federal|government", txt(j)))
+                and bool(re.search(r"security|cyber|engineer|developer|network|systems", txt(j)))
+            ),
             "Q5: Clearance + federal / defense hiring pipeline (IT).",
         ),
         (
