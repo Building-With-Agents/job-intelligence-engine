@@ -293,21 +293,19 @@
   },
   {
     "id": "gq-055",
-    "question": "Compare Borderplex demand for Automation skills versus Infrastructure as Code skills — are DevOps employers asking for both equally?",
+    "question": "Compare Borderplex IT posting volume across the four temporal periods — which periods saw the largest quarter-over-quarter growth?",
     "intent": "comparison",
-    "context": "Workforce director fine-tuning the DevOps curriculum track for the next cohort. Needs to know whether to lead with automation tooling (Ansible, scripting) or infrastructure-as-code frameworks (Terraform, CloudFormation), or whether both deserve equal weight.",
-    "ideal_answer_summary": "Should compare posting counts for Automation (approx 44 postings) versus Infrastructure as Code (approx 44 postings). Should note these are essentially tied in demand — almost identical posting counts. Should cite the specific counts for each skill. Should mention related skills in each cluster (Scripting near Automation; Kubernetes, Terraform near IaC). Should conclude that both deserve equal curriculum weight since employers demand them at identical rates, and recommend covering both as complementary modules rather than choosing one over the other.",
+    "context": "Workforce director preparing the annual state-of-the-region workforce report for the board. Needs a historical demand trajectory showing how IT hiring in the Borderplex has evolved from pre-ChatGPT through the agentic era, with the specific growth inflection point identified for the narrative.",
+    "ideal_answer_summary": "Should report Borderplex IT posting counts for each of the four temporal periods: pre_chatgpt, early_genai, post_gpt4, and agentic_era. Should identify which period transition showed the largest absolute or percentage growth. Should name the specific periods involved in the peak growth transition. Should note whether growth has been continuous or whether any period saw a decline. Should caveat that the temporal periods have different durations, which affects direct volume comparison. Should end with a narrative-ready statement about the Borderplex IT demand trajectory suitable for a board presentation.",
     "must_include": [
-      "automation_posting_count_stated",
-      "infrastructure_as_code_posting_count_stated",
-      "observation_that_demand_is_nearly_equal",
-      "both_skills_compared_numerically",
-      "curriculum_recommendation"
+      "all_four_temporal_periods_named_with_counts",
+      "largest_growth_transition_identified",
+      "posting_counts_or_growth_percentages_stated",
+      "caveat_about_unequal_period_durations"
     ],
     "must_not_include": [
-      "confident_claim_one_dominates_when_tied",
-      "national_devops_statistics_substituted",
-      "fabricated_tool_specific_percentages_not_in_data"
+      "fabricated_calendar_quarters_not_in_data",
+      "non_borderplex_geography_referenced"
     ],
     "difficulty": "hard"
   },
@@ -333,21 +331,19 @@
   },
   {
     "id": "gq-057",
-    "question": "Compare Borderplex demand for REST API skills versus Backend Development skills — which is more frequently cited in IT postings?",
+    "question": "Compare Borderplex healthcare-IT versus fintech-IT hiring volume over the last 12 months — which sector is hiring more aggressively?",
     "intent": "comparison",
-    "context": "Workforce director updating the web development curriculum track. Needs to know whether employers emphasize API-first architecture skills or broader backend development capabilities to decide how to weight the curriculum modules.",
-    "ideal_answer_summary": "Should compare posting counts for REST APIs (approx 52 postings) versus Backend Development (approx 33 postings). REST APIs should lead with roughly 50-60% more postings than Backend Development. Should cite specific counts for each skill. Should note that both skills are strong signals for web development roles, but API skills appear to be the more commonly cited requirement. Should recommend anchoring the web dev track on API design and consumption with backend development as a supporting module.",
+    "context": "Workforce director choosing between launching a healthcare-IT or fintech training track for the next fiscal year. Budget only supports one new track. Needs a clear hiring volume comparison to justify the sector choice to funders and academic partners.",
+    "ideal_answer_summary": "Should compare total posting counts for healthcare-IT and fintech-IT sectors in the Borderplex over the last 12 months. Should clearly state which sector has higher hiring volume. Should cite specific posting counts for each sector. Should name representative employers or role titles in each sector. Should note if the volume gap is large enough to be decisive or if both sectors are similarly sized. Should caveat if sector classification coverage is incomplete. Should end with a recommendation for which track to prioritize based on employer demand evidence.",
     "must_include": [
-      "rest_api_posting_count_stated",
-      "backend_development_posting_count_stated",
-      "which_skill_is_more_frequently_cited_stated",
-      "both_skills_compared_numerically",
-      "curriculum_weighting_recommendation"
+      "healthcare_and_fintech_both_compared_with_counts",
+      "last_12_months_time_window_referenced",
+      "which_sector_is_hiring_more_stated_explicitly",
+      "representative_role_titles_or_employers_cited"
     ],
     "must_not_include": [
-      "national_web_development_statistics_substituted",
-      "fabricated_framework_specific_counts_not_in_data",
-      "single_skill_discussed_without_comparison"
+      "national_sector_statistics_substituted_for_borderplex",
+      "vague_hiring_claim_without_posting_counts"
     ],
     "difficulty": "medium"
   },
