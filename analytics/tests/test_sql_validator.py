@@ -21,10 +21,7 @@ def test_allowed_select_passes() -> None:
 
 
 def test_unions_must_not_reference_disallowed_table() -> None:
-    sql = (
-        "SELECT id FROM dbo.skill_demand_weekly "
-        "UNION ALL SELECT job_posting_id::text FROM dbo.job_postings"
-    )
+    sql = "SELECT id FROM dbo.skill_demand_weekly UNION ALL SELECT job_posting_id::text FROM dbo.job_postings"
     r = validate_analytics_sql(sql)
     assert not r.ok
     assert r.error

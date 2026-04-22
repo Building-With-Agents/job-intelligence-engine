@@ -33,8 +33,8 @@ _WEEK_ROWS_SQL = text(
         AND nj.external_id = jp.external_id
     LEFT JOIN dbo.canonical_roles cr ON cr.role_id = jp.canonical_role_id
     WHERE jp.canonical_role_id IS NOT NULL
-        AND jp.publish_date IS NOT NULL
-        AND DATE_TRUNC('week', jp.publish_date AT TIME ZONE 'UTC')::date = :week_start
+        AND jp.date_posted IS NOT NULL
+        AND DATE_TRUNC('week', jp.date_posted AT TIME ZONE 'UTC')::date = :week_start
     """
 )
 
@@ -68,7 +68,7 @@ def _annualized_numeric_salary(
 def refresh_role_snapshot_weekly(session: Session, *, week_start: date) -> int:
     """Replace all ``role_snapshot_weekly`` rows for ``week_start``.
 
-    Aggregates postings whose ``publish_date`` falls in that ISO week (UTC).
+    Aggregates postings whose ``date_posted`` falls in that ISO week (UTC).
     Populates ``salary_p25``–``salary_p95`` via :func:`percentile` (interim).
     Copies ``top_skills`` / ``top_tools`` from ``canonical_roles`` when present.
     """

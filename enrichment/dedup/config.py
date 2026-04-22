@@ -8,11 +8,15 @@ import os
 ENV_DEDUP_COSINE_THRESHOLD = "DEDUP_COSINE_THRESHOLD"
 DEFAULT_DEDUP_COSINE_THRESHOLD = 0.92
 
-# Rolling comparison window (days before anchor publish_date).
+# Rolling comparison window (days before anchor date).
 DEDUP_ROLLING_WINDOW_DAYS = 30
 
-# Anchor column on dbo.job_postings for the window (see prisma job_postings.publish_date).
-JOB_POSTING_DATE_COLUMN = "publish_date"
+# Anchor date column on dbo.job_postings for the window.
+# Uses date_posted (the canonical date column on job_postings, promoted from
+# normalized_jobs in Issue #172 and fully backfilled). The legacy publish_date
+# field is deprecated (see docs/planning/QA_DATA_CONTRACT.md) and must not
+# appear in generated SQL.
+JOB_POSTING_DATE_COLUMN = "date_posted"
 
 
 def dedup_cosine_threshold() -> float:

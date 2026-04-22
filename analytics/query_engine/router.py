@@ -78,9 +78,7 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
 # ---------------------------------------------------------------------------
 
 # Canonical borderplex subregion tokens (locked values from integration-schema.mdc)
-_BORDERPLEX_CANONICAL: frozenset[str] = frozenset(
-    {"el_paso", "las_cruces", "ciudad_juarez", "regional"}
-)
+_BORDERPLEX_CANONICAL: frozenset[str] = frozenset({"el_paso", "las_cruces", "ciudad_juarez", "regional"})
 
 _BORDERPLEX_ALIASES: dict[str, str] = {
     "el paso": "el_paso",
@@ -408,19 +406,16 @@ class QueryRouter:
     ) -> RouteResult:
         """role_evolution → ``canonical_roles`` ordered by posting volume."""
         cr = CanonicalRole
-        stmt = (
-            select(
-                cr.role_id,
-                cr.label,
-                cr.description,
-                cr.posting_count,
-                cr.representative_titles,
-                cr.top_skills,
-                cr.top_tools,
-                cr.computed_at,
-            )
-            .order_by(cr.posting_count.desc(), cr.computed_at.desc())
-        )
+        stmt = select(
+            cr.role_id,
+            cr.label,
+            cr.description,
+            cr.posting_count,
+            cr.representative_titles,
+            cr.top_skills,
+            cr.top_tools,
+            cr.computed_at,
+        ).order_by(cr.posting_count.desc(), cr.computed_at.desc())
 
         role_filter = self._ilike_or(cr.label, role_names)
         if role_filter is not None:
@@ -636,18 +631,15 @@ class QueryRouter:
     ) -> RouteResult:
         """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
         cr = CanonicalRole
-        stmt = (
-            select(
-                cr.role_id,
-                cr.label,
-                cr.description,
-                cr.top_skills,
-                cr.top_tools,
-                cr.posting_count,
-                cr.representative_titles,
-            )
-            .order_by(cr.posting_count.desc())
-        )
+        stmt = select(
+            cr.role_id,
+            cr.label,
+            cr.description,
+            cr.top_skills,
+            cr.top_tools,
+            cr.posting_count,
+            cr.representative_titles,
+        ).order_by(cr.posting_count.desc())
 
         if role_names:
             role_filter = self._ilike_or(cr.label, role_names)
@@ -656,9 +648,7 @@ class QueryRouter:
             label = f"role workflow — {', '.join(role_names[:3])}"
         elif skill_names:
             # Best-effort: cast JSONB top_skills to text and ILIKE-search skill names
-            skill_clauses = [
-                cast(cr.top_skills, Text).ilike(f"%{s}%") for s in skill_names[:3]
-            ]
+            skill_clauses = [cast(cr.top_skills, Text).ilike(f"%{s}%") for s in skill_names[:3]]
             stmt = stmt.where(or_(*skill_clauses) if len(skill_clauses) > 1 else skill_clauses[0])
             label = f"roles using {', '.join(skill_names[:3])}"
         else:
@@ -699,9 +689,7 @@ class QueryRouter:
         resolved = _resolve_geo_terms(geo_terms)
         if resolved:
             geo_clauses = [
-                gd.borderplex_subregion == value
-                if is_exact
-                else gd.borderplex_subregion.ilike(f"%{value}%")
+                gd.borderplex_subregion == value if is_exact else gd.borderplex_subregion.ilike(f"%{value}%")
                 for value, is_exact in resolved
             ]
             stmt = stmt.where(or_(*geo_clauses) if len(geo_clauses) > 1 else geo_clauses[0])

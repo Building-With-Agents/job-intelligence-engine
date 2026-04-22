@@ -157,14 +157,7 @@ def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
                 "model": "m",
             }
         return {
-            "content": json.dumps(
-                {
-                    "sql": (
-                        "SELECT bad_col FROM dbo.job_postings "
-                        "WHERE 1=1 LIMIT 100"
-                    )
-                }
-            ),
+            "content": json.dumps({"sql": ("SELECT bad_col FROM dbo.job_postings WHERE 1=1 LIMIT 100")}),
             "success": True,
             "extraction_failed": False,
             "cost_usd": 0.002,

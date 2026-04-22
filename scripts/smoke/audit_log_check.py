@@ -100,19 +100,32 @@ def main() -> int:
     # --- Step 1: Send 3 Q&A requests with distinct correlation IDs ---
     print("\n--- Sending 3 Q&A requests ---")
     for cid in correlation_ids:
-        s, b = _post(f"{base}/analytics/query", {
-            "question": args.question,
-            "correlation_id": cid,
-        })
+        s, b = _post(
+            f"{base}/analytics/query",
+            {
+                "question": args.question,
+                "correlation_id": cid,
+            },
+        )
         status_label = "OK" if s == 200 else f"HTTP {s}"
         print(f"  {cid}: {status_label}")
 
     # --- Step 2: Send 1 adversarial request ---
     print("\n--- Sending adversarial request ---")
+<<<<<<< HEAD
     s, b = _post(f"{base}/analytics/triggers/role_benchmark", {
         "canonical_role_id": "bad;role--injection",
         "correlation_id": adversarial_cid,
     })
+=======
+    s, b = _post(
+        f"{base}/analytics/triggers/role_benchmark",
+        {
+            "canonical_role_id": "bad;role--injection",
+            "correlation_id": adversarial_cid,
+        },
+    )
+>>>>>>> origin
     print(f"  {adversarial_cid}: HTTP {s} (expected 400)")
 
     # Brief pause for async commits

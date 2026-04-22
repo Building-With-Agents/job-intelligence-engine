@@ -249,8 +249,18 @@ def test_hash_determinism_end_to_end_same_snapshots_same_fingerprint() -> None:
 
     r1 = _DeterministicRepo()
     r2 = _DeterministicRepo()
-    fp1 = DisruptionFingerprintService(repository=r1).refresh_disruption_fingerprints().fingerprints[0].content_fingerprint
-    fp2 = DisruptionFingerprintService(repository=r2).refresh_disruption_fingerprints().fingerprints[0].content_fingerprint
+    fp1 = (
+        DisruptionFingerprintService(repository=r1)
+        .refresh_disruption_fingerprints()
+        .fingerprints[0]
+        .content_fingerprint
+    )
+    fp2 = (
+        DisruptionFingerprintService(repository=r2)
+        .refresh_disruption_fingerprints()
+        .fingerprints[0]
+        .content_fingerprint
+    )
     assert fp1 == fp2
 
 

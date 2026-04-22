@@ -62,9 +62,7 @@ def test_job_postings_upsert_includes_all_eight_qna_columns() -> None:
 
 def test_agent_clause_table_not_in_map_returns_do_nothing() -> None:
     """Tables without an override entry must use DO NOTHING (backward compat)."""
-    clause = seed_agent_data._build_on_conflict_clause(
-        "companies", ["company_id"], ["company_id", "company_name"]
-    )
+    clause = seed_agent_data._build_on_conflict_clause("companies", ["company_id"], ["company_id", "company_name"])
     assert "DO NOTHING" in clause
     assert "DO UPDATE" not in clause
 
@@ -79,9 +77,7 @@ def test_agent_clause_table_in_map_with_matching_columns_returns_do_update() -> 
         "is_remote",
         "role_classification",
     ]
-    clause = seed_agent_data._build_on_conflict_clause(
-        "job_postings", ["job_posting_id"], fixture_cols
-    )
+    clause = seed_agent_data._build_on_conflict_clause("job_postings", ["job_posting_id"], fixture_cols)
     assert "DO UPDATE SET" in clause
     # Every overlapping column should appear in the SET clause as COALESCE
     for col in ("date_posted", "is_remote", "role_classification"):
@@ -93,13 +89,18 @@ def test_agent_clause_filters_to_columns_present_in_fixture() -> None:
     (backward compat with old fixtures)."""
     # Fixture only has date_posted, not the other 7
     fixture_cols = ["job_posting_id", "date_posted"]
-    clause = seed_agent_data._build_on_conflict_clause(
-        "job_postings", ["job_posting_id"], fixture_cols
-    )
+    clause = seed_agent_data._build_on_conflict_clause("job_postings", ["job_posting_id"], fixture_cols)
     assert '"date_posted" = COALESCE("dbo"."job_postings"."date_posted", EXCLUDED."date_posted")' in clause
     # None of the other 7 should appear
-    for col in ("seniority_level", "is_remote", "role_classification", "salary_min",
-                "salary_max", "salary_currency", "salary_period"):
+    for col in (
+        "seniority_level",
+        "is_remote",
+        "role_classification",
+        "salary_min",
+        "salary_max",
+        "salary_currency",
+        "salary_period",
+    ):
         assert col not in clause
 
 
@@ -107,9 +108,7 @@ def test_agent_clause_no_overlap_falls_back_to_do_nothing() -> None:
     """If none of the update-map columns are in the fixture, DO NOTHING is used."""
     # Fixture has only legacy columns
     fixture_cols = ["job_posting_id", "company_id", "job_title"]
-    clause = seed_agent_data._build_on_conflict_clause(
-        "job_postings", ["job_posting_id"], fixture_cols
-    )
+    clause = seed_agent_data._build_on_conflict_clause("job_postings", ["job_posting_id"], fixture_cols)
     assert "DO NOTHING" in clause
 
 
@@ -136,18 +135,14 @@ def test_agent_clause_qualifies_target_columns_with_schema_and_table() -> None:
 
 
 def test_pg_clause_table_not_in_map_returns_do_nothing() -> None:
-    clause = seed_pg_database._build_on_conflict_clause(
-        "companies", ["company_id"], ["company_id", "company_name"]
-    )
+    clause = seed_pg_database._build_on_conflict_clause("companies", ["company_id"], ["company_id", "company_name"])
     assert "DO NOTHING" in clause
     assert "DO UPDATE" not in clause
 
 
 def test_pg_clause_table_in_map_with_matching_columns_returns_do_update() -> None:
     fixture_cols = ["job_posting_id", "date_posted", "is_remote"]
-    clause = seed_pg_database._build_on_conflict_clause(
-        "job_postings", ["job_posting_id"], fixture_cols
-    )
+    clause = seed_pg_database._build_on_conflict_clause("job_postings", ["job_posting_id"], fixture_cols)
     assert "DO UPDATE SET" in clause
     assert '"date_posted" = COALESCE("dbo"."job_postings"."date_posted", EXCLUDED."date_posted")' in clause
     assert '"is_remote" = COALESCE("dbo"."job_postings"."is_remote", EXCLUDED."is_remote")' in clause
@@ -155,9 +150,7 @@ def test_pg_clause_table_in_map_with_matching_columns_returns_do_update() -> Non
 
 def test_pg_clause_no_overlap_falls_back_to_do_nothing() -> None:
     fixture_cols = ["job_posting_id", "company_id", "job_title"]
-    clause = seed_pg_database._build_on_conflict_clause(
-        "job_postings", ["job_posting_id"], fixture_cols
-    )
+    clause = seed_pg_database._build_on_conflict_clause("job_postings", ["job_posting_id"], fixture_cols)
     assert "DO NOTHING" in clause
 
 
@@ -178,8 +171,11 @@ def test_pg_clause_qualifies_target_columns_with_schema_and_table() -> None:
     [
         ("companies", ["company_id"], ["company_id", "company_name"]),  # not in map
         ("job_postings", ["job_posting_id"], ["job_posting_id", "date_posted", "is_remote"]),
-        ("job_postings", ["source", "external_id"],
-         ["source", "external_id", "salary_min", "salary_max", "salary_currency", "salary_period"]),
+        (
+            "job_postings",
+            ["source", "external_id"],
+            ["source", "external_id", "salary_min", "salary_max", "salary_currency", "salary_period"],
+        ),
     ],
 )
 def test_clauses_match_between_scripts(table: str, pk: list[str], fixture_cols: list[str]) -> None:

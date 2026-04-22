@@ -75,7 +75,7 @@ def main() -> int:
         print("refused:         True")
         print(f"refusal_message: {resp.refusal_message}")
     else:
-        print(f"answer:          {resp.answer_text[:args.answer_preview_chars]}")
+        print(f"answer:          {resp.answer_text[: args.answer_preview_chars]}")
     print(f"citations:       {len(resp.citations)}")
     print(f"confidence:      {resp.confidence:.3f}  (flagged_low={resp.confidence_flagged_low})")
     print(f"volume_low:      {resp.volume_flagged_low}")

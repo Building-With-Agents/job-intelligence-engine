@@ -104,9 +104,7 @@ def test_schema_hint_contains_seniority_level_for_job_postings() -> None:
 def test_schema_hint_contains_is_remote_for_job_postings() -> None:
     """is_remote must appear in the job_postings column list after #170."""
     jp_section = _extract_job_postings_line(_SCHEMA_HINT)
-    assert "is_remote" in jp_section, (
-        "is_remote is missing from the job_postings column list in _SCHEMA_HINT."
-    )
+    assert "is_remote" in jp_section, "is_remote is missing from the job_postings column list in _SCHEMA_HINT."
 
 
 def test_schema_hint_contains_role_classification_for_job_postings() -> None:
@@ -206,8 +204,7 @@ def _extract_column_names(sql: str) -> list[str]:
     [
         (
             "What are the most recent job postings?",
-            "SELECT job_posting_id, job_title, date_posted FROM dbo.job_postings "
-            "ORDER BY date_posted DESC LIMIT 10",
+            "SELECT job_posting_id, job_title, date_posted FROM dbo.job_postings ORDER BY date_posted DESC LIMIT 10",
         ),
         (
             "Show me senior roles posted this month",
@@ -216,8 +213,7 @@ def _extract_column_names(sql: str) -> list[str]:
         ),
         (
             "How many remote jobs were posted in Texas?",
-            "SELECT COUNT(*) AS remote_count FROM dbo.job_postings "
-            "WHERE is_remote = TRUE AND location ILIKE '%Texas%'",
+            "SELECT COUNT(*) AS remote_count FROM dbo.job_postings WHERE is_remote = TRUE AND location ILIKE '%Texas%'",
         ),
         (
             "How many software engineering postings does each role have? (#173 role_classification)",
@@ -245,14 +241,13 @@ def test_mock_llm_sql_references_valid_job_postings_columns(question: str, mock_
     from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
 
     ok, reason, normalized = validate_ask_the_data_sql(mock_sql)
-    assert ok, (
-        f"SQL for question {question!r} was rejected by guardrail. "
-        f"Reason: {reason!r}. SQL: {mock_sql!r}"
-    )
+    assert ok, f"SQL for question {question!r} was rejected by guardrail. Reason: {reason!r}. SQL: {mock_sql!r}"
 
     col_names = _extract_column_names(mock_sql)
     unknown = [
-        c for c in col_names if c not in JOB_POSTINGS_KNOWN_COLUMNS
+        c
+        for c in col_names
+        if c not in JOB_POSTINGS_KNOWN_COLUMNS
         and c not in {"remote_count", "posting_count", "avg_salary_max", "avg_floor"}
     ]
     assert not unknown, (
@@ -317,16 +312,13 @@ def test_schema_hint_contains_jsonb_array_elements_pattern() -> None:
     )
     # Each of the 3 no-aggregate dimensions should have an unnest example
     for dim in ("tasks", "responsibilities", "context"):
-        assert f"jsonb_array_elements(ei.{dim})" in _SCHEMA_HINT, (
-            f"Missing unnest example for ei.{dim} in _SCHEMA_HINT"
-        )
+        assert f"jsonb_array_elements(ei.{dim})" in _SCHEMA_HINT, f"Missing unnest example for ei.{dim} in _SCHEMA_HINT"
 
 
 def test_schema_hint_documents_two_hop_join_to_extracted_intelligence() -> None:
     """The hint must document the (jp -> nj -> ei) two-hop join path."""
     assert "ei.normalized_job_id = nj.id" in _SCHEMA_HINT, (
-        "_SCHEMA_HINT must document the join path: "
-        "extracted_intelligence.normalized_job_id = normalized_jobs.id"
+        "_SCHEMA_HINT must document the join path: extracted_intelligence.normalized_job_id = normalized_jobs.id"
     )
 
 
@@ -374,10 +366,7 @@ def test_mock_llm_jsonb_unnest_sql_passes_guardrail(question: str, mock_sql: str
     from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
 
     ok, reason, _ = validate_ask_the_data_sql(mock_sql)
-    assert ok, (
-        f"JSONB unnest SQL for {question!r} was rejected by guardrail. "
-        f"Reason: {reason!r}. SQL: {mock_sql!r}"
-    )
+    assert ok, f"JSONB unnest SQL for {question!r} was rejected by guardrail. Reason: {reason!r}. SQL: {mock_sql!r}"
 
 
 def test_mock_llm_hallucinated_task_column_on_job_postings_passes_guardrail_but_would_fail_at_execute() -> None:
@@ -392,4 +381,6 @@ def test_mock_llm_hallucinated_task_column_on_job_postings_passes_guardrail_but_
     # Guardrail is structure-only; this check is to document the layered defense:
     # _SCHEMA_HINT prevents generation, guardrail catches table-level violations,
     # actual execute_safe catches column-level violations.
-    assert ok, "Sanity check: the guardrail itself is structure-only and accepts this; the schema hint and actual SQL execution are the layers that catch hallucinated columns."
+    assert ok, (
+        "Sanity check: the guardrail itself is structure-only and accepts this; the schema hint and actual SQL execution are the layers that catch hallucinated columns."
+    )

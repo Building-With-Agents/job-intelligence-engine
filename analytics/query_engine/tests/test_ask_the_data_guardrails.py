@@ -40,31 +40,20 @@ def test_aggregate_tables_are_accepted(table: str) -> None:
 
 
 def test_canonical_roles_accepted() -> None:
-    sql = (
-        "SELECT role_id, label, posting_count "
-        "FROM dbo.canonical_roles "
-        "ORDER BY posting_count DESC LIMIT 10"
-    )
+    sql = "SELECT role_id, label, posting_count FROM dbo.canonical_roles ORDER BY posting_count DESC LIMIT 10"
     ok, reason, normalized = validate_ask_the_data_sql(sql)
     assert ok, f"canonical_roles rejected: {reason}"
     assert normalized is not None
 
 
 def test_employer_profiles_accepted() -> None:
-    sql = (
-        "SELECT company_size, COUNT(*) AS cnt "
-        "FROM dbo.employer_profiles "
-        "GROUP BY company_size LIMIT 10"
-    )
+    sql = "SELECT company_size, COUNT(*) AS cnt FROM dbo.employer_profiles GROUP BY company_size LIMIT 10"
     ok, reason, normalized = validate_ask_the_data_sql(sql)
     assert ok, f"employer_profiles rejected: {reason}"
 
 
 def test_extracted_intelligence_accepted() -> None:
-    sql = (
-        "SELECT COUNT(*) FROM dbo.extracted_intelligence "
-        "WHERE extraction_failed = FALSE LIMIT 10"
-    )
+    sql = "SELECT COUNT(*) FROM dbo.extracted_intelligence WHERE extraction_failed = FALSE LIMIT 10"
     ok, reason, normalized = validate_ask_the_data_sql(sql)
     assert ok, f"extracted_intelligence rejected: {reason}"
 
@@ -173,17 +162,13 @@ def test_excluded_internal_tables_are_rejected(table: str) -> None:
 
 
 def test_rejects_insert() -> None:
-    ok, reason, _ = validate_ask_the_data_sql(
-        "INSERT INTO dbo.job_postings (job_title) VALUES ('x')"
-    )
+    ok, reason, _ = validate_ask_the_data_sql("INSERT INTO dbo.job_postings (job_title) VALUES ('x')")
     assert not ok
     assert reason == "forbidden_keyword"
 
 
 def test_rejects_update() -> None:
-    ok, reason, _ = validate_ask_the_data_sql(
-        "UPDATE dbo.job_postings SET status = 'closed' WHERE 1=1"
-    )
+    ok, reason, _ = validate_ask_the_data_sql("UPDATE dbo.job_postings SET status = 'closed' WHERE 1=1")
     assert not ok
 
 
@@ -200,9 +185,7 @@ def test_rejects_multi_statement() -> None:
 
 
 def test_rejects_comment_smuggled_forbidden_table() -> None:
-    ok, reason, _ = validate_ask_the_data_sql(
-        "/* bypass */ SELECT * FROM dbo.llm_audit_log LIMIT 10"
-    )
+    ok, reason, _ = validate_ask_the_data_sql("/* bypass */ SELECT * FROM dbo.llm_audit_log LIMIT 10")
     assert not ok
 
 
@@ -252,7 +235,5 @@ def test_whitespace_only_rejected() -> None:
 
 
 def test_non_select_rejected() -> None:
-    ok, reason, _ = validate_ask_the_data_sql(
-        "EXPLAIN SELECT * FROM dbo.skill_demand_weekly"
-    )
+    ok, reason, _ = validate_ask_the_data_sql("EXPLAIN SELECT * FROM dbo.skill_demand_weekly")
     assert not ok

@@ -146,9 +146,7 @@ def _build_on_conflict_clause(table: str, pk_cols: list[str], columns: list[str]
     update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table, []) if c in columns]
     if not update_cols:
         return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
-    set_clauses = ", ".join(
-        f'"{c}" = COALESCE("dbo"."{table}"."{c}", EXCLUDED."{c}")' for c in update_cols
-    )
+    set_clauses = ", ".join(f'"{c}" = COALESCE("dbo"."{table}"."{c}", EXCLUDED."{c}")' for c in update_cols)
     return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
 
 
@@ -198,11 +196,7 @@ def upsert_records(
         print(f"    BATCH ERROR: {str(exc)[:300]}")
         # Fall back to row-by-row to identify problematic rows
         placeholders = ", ".join(["%s"] * len(columns))
-        row_sql = (
-            f'INSERT INTO "dbo"."{table}" ({col_names}) '
-            f"VALUES ({placeholders}) "
-            f"{on_conflict}"
-        )
+        row_sql = f'INSERT INTO "dbo"."{table}" ({col_names}) VALUES ({placeholders}) {on_conflict}'
         touched = 0
         for i, vals in enumerate(values_list):
             try:

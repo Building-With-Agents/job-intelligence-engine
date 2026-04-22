@@ -919,4 +919,3 @@ def test_apply_enrichment_binds_salary_period_strips_whitespace() -> None:
         {},
     )
     assert params["salary_period"] is None
-

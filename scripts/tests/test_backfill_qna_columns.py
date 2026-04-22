@@ -137,9 +137,7 @@ def _mapping_first(row: dict) -> MagicMock:
 def test_backfill_bulk_columns_dry_run_does_not_execute_update() -> None:
     """Dry run must call only the count-SQL, never the UPDATE."""
     session = MagicMock()
-    session.execute.return_value = _mapping_first(
-        {col: 100 for col in BULK_COLUMNS_FROM_NORMALIZED}
-    )
+    session.execute.return_value = _mapping_first({col: 100 for col in BULK_COLUMNS_FROM_NORMALIZED})
     counts = backfill_bulk_columns(session, dry_run=True)
 
     assert counts == {col: 100 for col in BULK_COLUMNS_FROM_NORMALIZED}
