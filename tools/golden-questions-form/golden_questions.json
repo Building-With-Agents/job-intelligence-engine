@@ -988,5 +988,115 @@
     "must_include": [],
     "must_not_include": [],
     "difficulty": "standard"
+  },
+  {
+    "id": "gq-091",
+    "question": "What is the typical software delivery pipeline (build, test, deploy) that Borderplex IT employers describe in active postings—e.g. CI/CD, release automation, and infrastructure-as-code—and how do extracted_intelligence tasks surface those steps?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-092",
+    "question": "How do Agile / Scrum process expectations (sprints, backlog, stand-ups) show up across Borderplex IT roles, and what sequence of responsibilities appear in hiring posts for the same employers?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-093",
+    "question": "For data engineering roles, what end-to-end data pipeline and orchestration patterns (ETL, schedulers, workflow tools) do employers emphasize, and how are they ordered in tasks / responsibilities?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-094",
+    "question": "What is the incident and on-call operating model (DevOps / SRE) that large Borderplex employers describe—e.g. paging, runbooks, observability—and how does that map to role tasks in the corpus?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-095",
+    "question": "What does the federal / defense IT hiring path look like for roles mentioning clearance and government employers—e.g. prerequisite steps and security process language—and how is that reflected in posting text plus employer_profiles sector context?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-096",
+    "question": "For healthcare IT and EHR work, what implementation and clinical workflow sequence do employers expect (EHR, HIPAA, clinical systems), and how do extractions capture related responsibilities?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-097",
+    "question": "What MLOps and model-lifecycle steps (training → deploy → monitor) appear in Borderplex IT postings, and which tasks in extracted_intelligence support answering \"what happens in what order\"?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-098",
+    "question": "How do employers describe cloud migration and platform programs (phases, landing zones, infrastructure) for IT roles, and what ordered activities can be read from combined posting + extraction data?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-099",
+    "question": "What IT support and escalation path (help desk, tiers, service desk) do employers document, and how does that compare across employer_profiles in the Borderplex?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
+  },
+  {
+    "id": "gq-100",
+    "question": "How often do postings require cross-functional coordination (stakeholders, matrixed teams) as an explicit part of the job—can we rank employers by volume and describe the process handoffs from tasks / responsibilities?",
+    "source": "wfd_archetype",
+    "intent": "workflow",
+    "context": "",
+    "ideal_answer_summary": "",
+    "must_include": [],
+    "must_not_include": [],
+    "difficulty": "standard"
   }
 ]
