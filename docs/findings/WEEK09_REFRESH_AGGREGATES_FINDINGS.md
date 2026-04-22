@@ -354,6 +354,28 @@ Non-null slice join-validity is recorded under **Data / Evidence** (Check 3).
   recorded here), not broken FK targets on assigned ids for the counts pasted
   above.
 
+### Q&A trace — "How has the software developer role evolved?"
+
+**What I tested.**
+
+- **Intent-only:** `python scripts/smoke/qa_intent_only.py --question "How has the software developer role evolved?"` (repo root, venv, `PYTHON_DATABASE_URL` + LLM env from repo `.env`).
+- **Path B (REST):** Analytics API `POST /analytics/query` with the same `question` and a stable `correlation_id`, after starting `python scripts/run_analytics_api.py` so repo-root `.env` loads (same DB as the checks above).
+- **Observability:** Captured `AnalyticsQueryResponse` JSON and structlog lines for `query_router_dispatch` / `query_router_result` on the API process.
+
+**What I found.**
+
+- **Intent classifier:** `intent` = **`role_evolution`**, `confidence` = **0.95**, `needs_clarification` = **false**; `extracted_entities.role_names` = **`["software developer"]`** (other entity lists empty).
+- **Router:** `query_router_dispatch` shows **`intent=role_evolution`**, same confidence, **`role_names=['software developer']`**, `weeks_back=12` (default window when no time phrase is extracted).
+- **Execution:** `query_router_result` shows **`tables_used=['canonical_roles']`**, **`query_label='canonical role evolution — software developer'`**, **`row_count=0`**, `is_partial=False`.
+- **API surface:** `sql_generated` = **`tables: canonical_roles | canonical role evolution — software developer`** (Path B exposes tables + route label, not raw SQL). **`refused`: true**, **`refusal_message`**: “No data in scope for the selected filters.”, empty **`evidence`**, synthesis spend absent from **`cost_breakdown_usd`** (only **`intent_classification`** billed on this trace).
+- **Interpretation for #229:** The **full Path B chain ran** (classify → `QueryRouter` → ORM query → evidence policy → refusal). Outcome is **not** a 5xx or a routing bug: the **`role_evolution`** handler filtered **`dbo.canonical_roles`** using the extracted role phrase and returned **zero rows** — consistent with this dev inventory (Check 1 paste: six clusters whose **`label`** values are SRE, automation/RPA, mobile variants, SDET, etc.) **not** containing the substring **“software developer”** as the user asked it.
+
+**Why it matters for Q&A readiness.**
+
+- **Pipeline proof:** Issue #229’s “trace the full query path” bar is met for **Path B**: intent label, router dispatch, target table, and API contract fields (`sql_generated`, refusal + explanation) all align with code in `analytics/query_engine/intent.py`, `router.py`, and `routing.run_analytics_qna`.
+- **Gap (separate from “did the code run?”):** **Vocabulary / label mismatch** between natural **role_names** (“software developer”) and **cluster `label` text** in `canonical_roles` drives **empty scoped reads** even when the taxonomy has rich engineering families. That is a **product + data** readiness issue (copy, router heuristics, synonym map, or broader unfiltered read for evolution questions), not evidence that **`role_evolution`** is misclassified.
+- **Coupling to earlier checks:** This trace does **not** depend on **`role_snapshot_weekly`** (still empty in Check 2) — the router used **`canonical_roles` only** — but it reinforces that **evolution** narratives will stay thin until weekly snapshots exist **and** filters return non-empty role slices.
+
 ### Recommendation
 
 - Treat **`dbo.role_snapshot_weekly` as empty for this dev snapshot** (`total_rows` 0, `GROUP BY week_start` → `(no rows)`) — do not cite weekly canonical-role demand, counts, or salary roll-ups from that table until it is populated.
