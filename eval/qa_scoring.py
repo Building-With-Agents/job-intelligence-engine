@@ -19,6 +19,18 @@ _DEFAULT_LATENCY_SLA_SECONDS = 45.0
 
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
 
+RELATED_INTENTS: dict[str, set[str]] = {
+    "geographic": {"comparison", "employer", "workflow"},
+    "comparison": {"geographic", "trend"},
+    "trend": {"role_evolution", "comparison", "disruption", "emergence", "curriculum"},
+    "role_evolution": {"trend", "disruption", "curriculum"},
+    "disruption": {"emergence", "role_evolution", "trend"},
+    "emergence": {"disruption", "trend"},
+    "employer": {"geographic", "workflow"},
+    "curriculum": {"trend", "role_evolution"},
+    "workflow": {"employer", "geographic"},
+}
+
 
 def _norm_intent(s: str | None) -> str:
     return (s or "").strip().lower()
@@ -46,7 +58,8 @@ def score_intent_accuracy(
         return 0.0, "missing expected_intent in metadata"
     if got == exp:
         return 1.0, "intent matches"
-    _ = difficulty  # reserved for IMP-030 multi-intent / hard-question overrides
+    if got in RELATED_INTENTS.get(exp, set()):
+        return 0.5, f"related: expected {exp!r}, got {got!r}"
     return 0.0, f"mismatch: expected {exp!r}, got {got!r}"
 
 
@@ -95,9 +108,7 @@ def score_evidence_citation(
         return 0.0, "no evidence items while not refused"
 
     # Citation coverage: overlap between answer and evidence text (multiple patterns).
-    ev_blob = " ".join(
-        f"{e.get('title', '')} {e.get('source', '')} {e.get('snippet', '')}".lower() for e in evidence
-    )
+    ev_blob = " ".join(f"{e.get('title', '')} {e.get('source', '')} {e.get('snippet', '')}".lower() for e in evidence)
     ans_words = {w for w in re.findall(r"[a-z0-9]{4,}", ans)}
     ev_words = {w for w in re.findall(r"[a-z0-9]{4,}", ev_blob)}
     if ans_words and ev_words:
