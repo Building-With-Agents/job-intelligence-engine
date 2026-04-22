@@ -197,9 +197,10 @@ def main() -> int:
             _emit("ERROR", f"could not inspect job_postings columns: {exc}", lines)
 
         try:
-            row = conn.execute(
-                text(
-                    """
+            row = (
+                conn.execute(
+                    text(
+                        """
                     SELECT
                       COUNT(*) AS total_postings,
                       COUNT(date_posted) AS date_posted,
@@ -212,8 +213,11 @@ def main() -> int:
                       COUNT(salary_period) AS salary_period
                     FROM dbo.job_postings
                     """
+                    )
                 )
-            ).mappings().one()
+                .mappings()
+                .one()
+            )
             total = row["total_postings"]
             print(f"     total job_postings: {total:,}")
             for col in qna_cols:
@@ -328,15 +332,18 @@ def main() -> int:
         # ----- 3b Referential -----
         print("3b) Referential integrity")
         try:
-            orphan_n = conn.execute(
-                text(
-                    """
+            orphan_n = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COUNT(*) FROM dbo.extracted_intelligence ei
                     LEFT JOIN dbo.normalized_jobs nj ON ei.normalized_job_id = nj.id
                     WHERE nj.id IS NULL
                     """
-                )
-            ).scalar() or 0
+                    )
+                ).scalar()
+                or 0
+            )
             if orphan_n > 0:
                 _emit(
                     "ERROR",
@@ -350,22 +357,28 @@ def main() -> int:
 
         for tbl in ("normalized_jobs", "raw_ingested_jobs"):
             try:
-                orphan_ids = conn.execute(
-                    text(
-                        f"""
+                orphan_ids = (
+                    conn.execute(
+                        text(
+                            f"""
                         SELECT COUNT(DISTINCT ingestion_run_id) FROM dbo.{tbl}
                         WHERE ingestion_run_id NOT IN (SELECT run_id FROM dbo.job_ingestion_runs)
                         """
-                    )
-                ).scalar() or 0
-                bad_rows = conn.execute(
-                    text(
-                        f"""
+                        )
+                    ).scalar()
+                    or 0
+                )
+                bad_rows = (
+                    conn.execute(
+                        text(
+                            f"""
                         SELECT COUNT(*) FROM dbo.{tbl}
                         WHERE ingestion_run_id NOT IN (SELECT run_id FROM dbo.job_ingestion_runs)
                         """
-                    )
-                ).scalar() or 0
+                        )
+                    ).scalar()
+                    or 0
+                )
                 if orphan_ids > 0:
                     _emit(
                         "WARN",
@@ -379,15 +392,18 @@ def main() -> int:
                 _emit("ERROR", f"{tbl} run linkage: {exc}", lines)
 
         try:
-            dangle = conn.execute(
-                text(
-                    """
+            dangle = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COUNT(*) FROM dbo.job_postings jp
                     LEFT JOIN dbo.employer_profiles ep ON jp.employer_profile_id = ep.id
                     WHERE jp.employer_profile_id IS NOT NULL AND ep.id IS NULL
                     """
-                )
-            ).scalar() or 0
+                    )
+                ).scalar()
+                or 0
+            )
             if dangle > 0:
                 _emit(
                     "ERROR",
@@ -468,9 +484,10 @@ def main() -> int:
         # ----- 3d Duplicates -----
         print("3d) Duplicates")
         try:
-            dup_groups = conn.execute(
-                text(
-                    """
+            dup_groups = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COUNT(*) FROM (
                       SELECT source, external_id
                       FROM dbo.job_postings
@@ -479,11 +496,14 @@ def main() -> int:
                       HAVING COUNT(*) > 1
                     ) s
                     """
-                )
-            ).scalar() or 0
-            dup_rows = conn.execute(
-                text(
-                    """
+                    )
+                ).scalar()
+                or 0
+            )
+            dup_rows = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COALESCE(SUM(c - 1), 0) FROM (
                       SELECT COUNT(*) AS c
                       FROM dbo.job_postings
@@ -492,8 +512,10 @@ def main() -> int:
                       HAVING COUNT(*) > 1
                     ) x
                     """
-                )
-            ).scalar() or 0
+                    )
+                ).scalar()
+                or 0
+            )
             if dup_groups > 0:
                 _emit(
                     "ERROR",
@@ -506,17 +528,20 @@ def main() -> int:
             _emit("ERROR", f"job_postings duplicate check: {exc}", lines)
 
         try:
-            hash_dupes = conn.execute(
-                text(
-                    """
+            hash_dupes = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COUNT(*) FROM (
                       SELECT raw_payload_hash FROM dbo.raw_ingested_jobs
                       GROUP BY raw_payload_hash
                       HAVING COUNT(*) > 1
                     ) s
                     """
-                )
-            ).scalar() or 0
+                    )
+                ).scalar()
+                or 0
+            )
             if hash_dupes > 0:
                 _emit(
                     "ERROR",
@@ -544,9 +569,10 @@ def main() -> int:
                     """
                 )
             ).first()
-            nn = conn.execute(
-                text("SELECT COUNT(*) FROM dbo.job_postings WHERE seniority_level IS NOT NULL")
-            ).scalar() or 0
+            nn = (
+                conn.execute(text("SELECT COUNT(*) FROM dbo.job_postings WHERE seniority_level IS NOT NULL")).scalar()
+                or 0
+            )
             if r and nn > 0:
                 top_share = fraction(int(r[1]), nn)
                 if top_share > SENIORITY_TOP_BUCKET_MAX_FRACTION:
@@ -564,9 +590,10 @@ def main() -> int:
             _emit("ERROR", f"seniority_level dominance: {exc}", lines)
 
         try:
-            row = conn.execute(
-                text(
-                    """
+            row = (
+                conn.execute(
+                    text(
+                        """
                     SELECT
                       COUNT(*) AS total_jp,
                       COUNT(date_posted) AS nn,
@@ -576,8 +603,11 @@ def main() -> int:
                       ) AS future_nn
                     FROM dbo.job_postings
                     """
+                    )
                 )
-            ).mappings().one()
+                .mappings()
+                .one()
+            )
             total_jp = int(row["total_jp"])
             nn = int(row["nn"])
             future_nn = int(row["future_nn"])
@@ -629,15 +659,18 @@ def main() -> int:
             _emit("ERROR", f"date_posted checks: {exc}", lines)
 
         try:
-            inv_n = conn.execute(
-                text(
-                    """
+            inv_n = (
+                conn.execute(
+                    text(
+                        """
                     SELECT COUNT(*) FROM dbo.job_postings
                     WHERE salary_min IS NOT NULL AND salary_max IS NOT NULL
                       AND salary_min > salary_max
                     """
-                )
-            ).scalar() or 0
+                    )
+                ).scalar()
+                or 0
+            )
             if inv_n > 0:
                 _emit("ERROR", f"salary inversion (salary_min > salary_max): {inv_n:,} row(s)", lines)
             else:
@@ -647,7 +680,9 @@ def main() -> int:
 
         try:
             total_jp = conn.execute(text("SELECT COUNT(*) FROM dbo.job_postings")).scalar() or 0
-            ir_nn = conn.execute(text("SELECT COUNT(*) FROM dbo.job_postings WHERE is_remote IS NOT NULL")).scalar() or 0
+            ir_nn = (
+                conn.execute(text("SELECT COUNT(*) FROM dbo.job_postings WHERE is_remote IS NOT NULL")).scalar() or 0
+            )
             cov = fraction(ir_nn, total_jp) if total_jp else 0.0
             if total_jp and cov < IS_REMOTE_MIN_COVERAGE_FRACTION:
                 _emit(
@@ -667,10 +702,7 @@ def main() -> int:
             have = {
                 r[0]
                 for r in conn.execute(
-                    text(
-                        "SELECT extname FROM pg_extension "
-                        "WHERE extname IN ('vector', 'uuid-ossp')"
-                    )
+                    text("SELECT extname FROM pg_extension WHERE extname IN ('vector', 'uuid-ossp')")
                 ).fetchall()
             }
             for ext in EXPECTED_EXTENSIONS:
