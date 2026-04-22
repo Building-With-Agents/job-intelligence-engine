@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from analytics.api.app import create_app
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
+from analytics.tenant_scope import RegionNotEntitledError
 
 from .laborpulse_headers import laborpulse_query_headers
 
@@ -140,6 +141,30 @@ def test_post_query_missing_tenant_400(client: TestClient) -> None:
     r = client.post("/analytics/query", json={"question": "hello"}, headers=h)
     assert r.status_code == 400
     assert r.json().get("detail") == "missing_tenant_id"
+
+
+def test_post_query_invalid_tenant_400(client: TestClient) -> None:
+    h = laborpulse_query_headers("contract-test-secret", **{"X-Tenant-Id": "acme_corp_not_allowed"})
+    r = client.post("/analytics/query", json={"question": "hello"}, headers=h)
+    assert r.status_code == 400
+    assert r.json().get("detail") == "invalid_tenant_id"
+
+
+def test_post_query_out_of_region_403(client: TestClient) -> None:
+    with patch("analytics.api.routes.session_scope") as sc:
+        sc.return_value.__enter__.return_value = MagicMock()
+        with patch("analytics.api.routes.run_analytics_qna", side_effect=RegionNotEntitledError("seattle_metro")):
+            r = client.post(
+                "/analytics/query",
+                json={"question": "How is hiring in Seattle?"},
+                headers=laborpulse_query_headers("contract-test-secret"),
+            )
+    assert r.status_code == 403
+    d = r.json().get("detail")
+    assert isinstance(d, dict)
+    assert d.get("reason") == "region_not_entitled"
+    assert d.get("tenant_id") == "borderplex"
+    assert d.get("requested_region") == "seattle_metro"
 
 
 def test_post_query_missing_request_id_400(client: TestClient) -> None:

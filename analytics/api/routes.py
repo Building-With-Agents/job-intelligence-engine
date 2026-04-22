@@ -36,6 +36,11 @@ from analytics.query_engine import audit_log
 from analytics.query_engine.execute_safe import execute_validated_query
 from analytics.query_engine.routing import run_analytics_qna
 from analytics.query_engine.sql_guardrails import validate_sql
+from analytics.tenant_scope import (
+    RegionNotEntitledError,
+    UnknownTenantIdError,
+    get_tenant_access,
+)
 from common.data_store.database import session_scope
 from common.data_store.models import CohortGapCache
 
@@ -410,15 +415,30 @@ async def post_analytics_query(
         correlation = (x_request_id or "").strip()
         tenant = (x_tenant_id or "").strip()
         user_em = (x_user_email or "").strip()
-        with session_scope() as session:
-            internal = run_analytics_qna(
-                session,
-                body.question,
-                correlation,
-                laborpulse_conversation_id=conversation_id,
-                tenant_id=tenant,
-                user_email=user_em,
-            )
+        try:
+            tenant_access = get_tenant_access(tenant)
+        except UnknownTenantIdError as exc:
+            raise HTTPException(status_code=400, detail="invalid_tenant_id") from exc
+        try:
+            with session_scope() as session:
+                internal = run_analytics_qna(
+                    session,
+                    body.question,
+                    correlation,
+                    laborpulse_conversation_id=conversation_id,
+                    tenant_id=tenant,
+                    user_email=user_em,
+                    tenant_access=tenant_access,
+                )
+        except RegionNotEntitledError as exc:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "reason": "region_not_entitled",
+                    "requested_region": exc.requested_region,
+                    "tenant_id": tenant_access.tenant_id,
+                },
+            ) from exc
         return to_laborpulse_query_response(internal, conversation_id=conversation_id)
     finally:
         scv.clear_contextvars()
