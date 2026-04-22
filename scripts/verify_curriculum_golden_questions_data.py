@@ -17,9 +17,10 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
 FIX = REPO / "scripts" / "pg-seed-data" / "fixtures"
@@ -105,9 +106,7 @@ def from_fixtures() -> list[Out]:
                 if name:
                     sm += 1
                 sid = str(s.get("skill_id") or "").lower().replace("-", "")
-                if sid and sid in sk_ids:
-                    tax += 1
-                elif name and name.lower() in sk_names_lower:
+                if (sid and sid in sk_ids) or (name and name.lower() in sk_names_lower):
                     tax += 1
         st = _status(n_posts, n_ei)
         if st == "FAIL":
