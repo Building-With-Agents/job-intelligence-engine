@@ -78,9 +78,7 @@ def _laborpulse_query_headers(*, request_id: str | None = None) -> dict[str, str
         "X-Tenant-Id": os.environ.get("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
         "X-User-Email": os.environ.get("ANALYTICS_QUERY_X_USER_EMAIL", "smoke@thewaifinder.com").strip()
         or "smoke@thewaifinder.com",
-        "X-Request-Id": request_id
-        or os.environ.get("ANALYTICS_QUERY_X_REQUEST_ID", "").strip()
-        or str(uuid.uuid4()),
+        "X-Request-Id": request_id or os.environ.get("ANALYTICS_QUERY_X_REQUEST_ID", "").strip() or str(uuid.uuid4()),
     }
     xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
     if xk:

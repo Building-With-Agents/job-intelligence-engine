@@ -265,9 +265,7 @@ def test_issue197_injects_predicate_when_intent_employer_and_job_postings() -> N
 
 
 def test_issue197_noop_for_non_guard_intent() -> None:
-    sql = (
-        "SELECT jp.role_classification FROM dbo.job_postings jp LIMIT 100"
-    )
+    sql = "SELECT jp.role_classification FROM dbo.job_postings jp LIMIT 100"
     ok, _, normalized = validate_ask_the_data_sql(sql)
     assert ok and normalized
     guarded = inject_role_classification_issue197_guard(
@@ -288,10 +286,7 @@ def test_issue197_noop_when_role_classification_absent() -> None:
 
 
 def test_issue197_skips_duplicate_if_na_label_already_present() -> None:
-    sql = (
-        "SELECT role_classification FROM dbo.job_postings "
-        "WHERE role_classification != 'N/A Not an IT role' LIMIT 100"
-    )
+    sql = "SELECT role_classification FROM dbo.job_postings WHERE role_classification != 'N/A Not an IT role' LIMIT 100"
     ok, _, normalized = validate_ask_the_data_sql(sql)
     guarded = inject_role_classification_issue197_guard(
         normalized,

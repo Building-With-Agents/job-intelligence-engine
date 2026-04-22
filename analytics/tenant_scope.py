@@ -30,7 +30,9 @@ PUGET_ENTITLED_SUBREGIONS: frozenset[str] = frozenset(
 # Optional env: comma-separated extra tenant:region pairs (future) — not parsed in v1.
 
 _DEFAULT_ALLOWLIST: frozenset[str] = frozenset(
-    s.strip().lower() for s in (os.getenv("JIE_TENANT_ALLOWLIST", "borderplex,puget_sound") or "").split(",") if s.strip()
+    s.strip().lower()
+    for s in (os.getenv("JIE_TENANT_ALLOWLIST", "borderplex,puget_sound") or "").split(",")
+    if s.strip()
 )
 
 # Borderplex tenant: explicit out-of-tenant (Pacific NW); JIE #224 403 when user names that market.

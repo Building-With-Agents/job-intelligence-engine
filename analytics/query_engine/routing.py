@@ -79,6 +79,7 @@ def _filter_issue197_misbucket_rows(rows: list[dict[str, Any]]) -> list[dict[str
         out.append(row)
     return out
 
+
 AGENT_INTENT = "analytics-qna-intent"
 AGENT_SQL = "analytics-qna-sql"
 
@@ -225,11 +226,7 @@ def _intent_prompt(user_query: str) -> str:
 
 def _sql_prompt(user_query: str, intent_label: str) -> str:
     il = (intent_label or "").strip().lower()
-    role_guard = (
-        _SQL_INTENTS_ROLE_CLASS_GUARD
-        if il in ("employer", "curriculum", "workflow")
-        else ""
-    )
+    role_guard = _SQL_INTENTS_ROLE_CLASS_GUARD if il in ("employer", "curriculum", "workflow") else ""
     return (
         f"{_SCHEMA_HINT}\n"
         f"{role_guard}"
@@ -507,12 +504,7 @@ def run_analytics_qna(
     uem = (user_email or "").strip()
     taccess = tenant_access or get_tenant_access_for_pipeline(tid or None)
     prior_for_llm = ""
-    if (
-        laborpulse_conversation_id
-        and laborpulse_conversation_id.strip()
-        and tid
-        and uem
-    ):
+    if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
         prior_for_llm = load_prior_context_for_llm(
             session,
             conversation_id=laborpulse_conversation_id.strip(),
@@ -627,12 +619,7 @@ def run_analytics_qna(
         )
 
         api = _synthesis_to_api(syn, sql_generated=sql_line)
-        if (
-            laborpulse_conversation_id
-            and laborpulse_conversation_id.strip()
-            and tid
-            and uem
-        ):
+        if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
             append_conversation_turn(
                 session,
                 conversation_id=laborpulse_conversation_id.strip(),

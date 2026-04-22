@@ -30,7 +30,6 @@ import pytest
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
-from analytics.tenant_scope import get_tenant_access
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
@@ -38,6 +37,7 @@ from analytics.query_engine.router import (
     _resolve_geo_terms,
     _week_floor,
 )
+from analytics.tenant_scope import get_tenant_access
 
 # ---------------------------------------------------------------------------
 # Shared helpers

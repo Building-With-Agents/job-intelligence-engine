@@ -88,9 +88,9 @@ def _status(n: int, t: int = 10) -> str:
 
 
 def from_fixtures() -> list[Row]:
-    companies = { _norm_cid(c.get("company_id")): c for c in _load("companies.json") }
+    companies = {_norm_cid(c.get("company_id")): c for c in _load("companies.json")}
     eps = _load("employer_profiles.json")
-    ep_by_cid = { _norm_cid(e.get("company_id")): e for e in eps }
+    ep_by_cid = {_norm_cid(e.get("company_id")): e for e in eps}
     ep_by_pid: dict[str, dict] = {}
     for e in eps:
         ep_by_pid[_norm_cid(e.get("id"))] = e

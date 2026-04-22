@@ -119,20 +119,21 @@ def from_fixtures() -> list[Out]:
                 thin.append(f"`extracted_intelligence`={n_ei}(<10)")
             nnote = "Sparse: " + "; ".join(thin)
         else:
-            nnote = (
-                "Skill-frequency curriculum signal: group `skill_name` from EI; join to `skills` for taxonomy. "
-            )
+            nnote = "Skill-frequency curriculum signal: group `skill_name` from EI; join to `skills` for taxonomy. "
         nnote += f"Counts: postings={n_posts}, EI={n_ei}, skill lines={sm}, `skills` hits≈{tax}."
         return Out(st, n_posts, n_ei, sm, tax, nnote)
 
     def fin_pred(j: dict) -> bool:
-        return bool(
-            re.search(
-                r"fintech|payment(s| processing)?|bank(ing| tech)?|stripe|merchant|pci-?dss|"
-                r"financial services( tech)?|swift (payment)?|visa( direct)?|payment gateway",
-                txt(j),
+        return (
+            bool(
+                re.search(
+                    r"fintech|payment(s| processing)?|bank(ing| tech)?|stripe|merchant|pci-?dss|"
+                    r"financial services( tech)?|swift (payment)?|visa( direct)?|payment gateway",
+                    txt(j),
+                )
             )
-        ) or (str(j.get("naics_code") or ""))[:2] == "52"
+            or (str(j.get("naics_code") or ""))[:2] == "52"
+        )
 
     themes: list[Callable[[dict], bool]] = [
         lambda j: bool(
@@ -220,7 +221,10 @@ def _sql_probe() -> list[tuple[str, int, int]] | None:
         (r"frontend|react|vue|angular|typescript|web (developer|engineer)", "Q5 frontend"),
         (r"mlops|kubeflow|sagemaker|ml platform|model (serving|deployment)", "Q6 MLOps"),
         (r"devops|sre|site reliability|grafana|prometheus|infrastructure as code|ci\/cd|jenkins", "Q7 DevOps"),
-        (r"help desk|it support|system(s)? admin|network (engineer|admin|technician)|comptia|service desk", "Q8 support"),
+        (
+            r"help desk|it support|system(s)? admin|network (engineer|admin|technician)|comptia|service desk",
+            "Q8 support",
+        ),
         (r"fintech|payment|bank(ing)?|stripe|merchant|pci|financial", "Q9 fintech"),
         (r"EHR|EMR|epic|cerner|hipaa|clinical|health( care)?( IT|informatics)?|fhir", "Q10 health"),
     ]
@@ -251,7 +255,9 @@ def _sql_probe() -> list[tuple[str, int, int]] | None:
                 WHERE {bpx} {it_guard}
                 AND (COALESCE(jp.job_title,'') || COALESCE(jp.job_description,'') || COALESCE(jp.role_classification,'')) ~* :re
             )"""
-            q = base + """
+            q = (
+                base
+                + """
             SELECT
                 (SELECT COUNT(DISTINCT norm_id) FROM m),
                 (SELECT COUNT(*)
@@ -259,6 +265,7 @@ def _sql_probe() -> list[tuple[str, int, int]] | None:
                     ON ei.normalized_job_id = m.norm_id AND (ei.extraction_failed IS NULL OR ei.extraction_failed = FALSE)
                 );
             """
+            )
             a, b = c.execute(
                 text(q),
                 {"re": pat},

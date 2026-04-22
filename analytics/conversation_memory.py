@@ -118,9 +118,7 @@ def append_conversation_turn(
         )
 
     max_ix = session.execute(
-        select(func.max(LaborPulseAnalyticsTurn.turn_index)).where(
-            LaborPulseAnalyticsTurn.conversation_id == cid
-        )
+        select(func.max(LaborPulseAnalyticsTurn.turn_index)).where(LaborPulseAnalyticsTurn.conversation_id == cid)
     ).scalar()
     next_ix = int(max_ix) + 1 if max_ix is not None else 0
     session.add(

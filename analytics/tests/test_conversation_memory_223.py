@@ -53,7 +53,10 @@ def test_append_rejects_tenant_mismatch() -> None:
 @patch("analytics.query_engine.routing.append_conversation_turn")
 @patch("analytics.query_engine.routing.qna.run_analytics_qna")
 @patch("analytics.query_engine.routing.QueryRouter")
-@patch("analytics.query_engine.routing.classify_workforce_question", return_value={"intent": "trend", "confidence": 0.9, "needs_clarification": False, "extracted_entities": {}})
+@patch(
+    "analytics.query_engine.routing.classify_workforce_question",
+    return_value={"intent": "trend", "confidence": 0.9, "needs_clarification": False, "extracted_entities": {}},
+)
 def test_routing_passes_conversation_context_to_classify(
     mock_classify: MagicMock,
     _router_cls: MagicMock,

@@ -137,9 +137,7 @@ def _build_main_prompt_retry(
     *,
     prior_turns_context: str | None = None,
 ) -> str:
-    base = _build_main_prompt(
-        user_query, intent_label, bundle, prior_turns_context=prior_turns_context
-    )
+    base = _build_main_prompt(user_query, intent_label, bundle, prior_turns_context=prior_turns_context)
     bad = ", ".join(unsupported_tokens[:12])
     fix = (
         "\n\nYour previous draft used numbers not found in citeable_facts_json or period_coverage: "
@@ -243,9 +241,7 @@ def synthesize_answer(
             cost_breakdown_usd=_cost_breakdown_usd(ledger),
         )
 
-    main_prompt = _build_main_prompt(
-        user_query, intent_label, bundle, prior_turns_context=prior_turns_context
-    )
+    main_prompt = _build_main_prompt(user_query, intent_label, bundle, prior_turns_context=prior_turns_context)
     main_result = complete(
         main_prompt,
         agent_name=AGENT_SYNTHESIS,

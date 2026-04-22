@@ -25,9 +25,7 @@ log = structlog.get_logger()
 # Issue #197 — role_classification mis-bucket guard (employer / curriculum / workflow)
 # ---------------------------------------------------------------------------
 
-ROLE_CLASSIFICATION_GUARD_INTENTS: Final[frozenset[str]] = frozenset(
-    {"employer", "curriculum", "workflow"}
-)
+ROLE_CLASSIFICATION_GUARD_INTENTS: Final[frozenset[str]] = frozenset({"employer", "curriculum", "workflow"})
 _ISSUE197_NA_LABEL = "N/A Not an IT role"
 
 # ---------------------------------------------------------------------------
