@@ -10,7 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from enrichment.dedup.completeness import completeness_score, publish_date_for_tiebreak
+from enrichment.dedup.completeness import completeness_score, date_posted_for_tiebreak
 from enrichment.dedup.config import DEDUP_ROLLING_WINDOW_DAYS, dedup_cosine_threshold
 from enrichment.dedup.text import build_dedup_text, dedup_text_hash, row_requirements_fallback
 from enrichment.dedup.types import FuzzyDedupResult
@@ -26,7 +26,7 @@ _LOAD_CURRENT_SQL = text(
     SELECT
         jp.job_posting_id::text AS job_posting_id,
         jp.company_id::text AS company_id,
-        jp.publish_date AS publish_date,
+        jp.date_posted AS date_posted,
         jp.job_title AS job_title,
         jp.job_description AS job_description,
         jp.salary_range AS salary_range,
@@ -65,7 +65,7 @@ _LIST_SURVIVORS_SQL = text(
         jp.zip AS zip,
         jp.county AS county,
         jp.job_description AS job_description,
-        jp.publish_date AS publish_date,
+        jp.date_posted AS date_posted,
         jp.job_title AS job_title,
         jp.source AS source,
         jp.external_id AS external_id,
@@ -80,8 +80,8 @@ _LIST_SURVIVORS_SQL = text(
         AND nj.external_id = jp.external_id
     WHERE jp.company_id::text = :company_id
         AND (jp.is_duplicate IS NOT TRUE)
-        AND jp.publish_date >= :window_start
-        AND jp.publish_date < :anchor
+        AND jp.date_posted >= :window_start
+        AND jp.date_posted < :anchor
         AND jp.job_posting_id::text <> :job_posting_id
     """
 )
@@ -120,7 +120,7 @@ def _current_row_dict(row: dict[str, Any]) -> dict[str, Any]:
         "zip": row.get("zip"),
         "county": row.get("county"),
         "job_description": row.get("job_description"),
-        "publish_date": row.get("publish_date"),
+        "date_posted": row.get("date_posted"),
     }
 
 
@@ -233,12 +233,12 @@ def run_fuzzy_dedup(
         log.warning("fuzzy_dedup_missing_company_id", job_posting_id=jid)
         return _unique_result()
 
-    anchor_raw = current.get("publish_date")
+    anchor_raw = current.get("date_posted")
     if anchor_raw is None:
-        log.info("fuzzy_dedup_missing_publish_date", job_posting_id=jid)
+        log.info("fuzzy_dedup_missing_date", job_posting_id=jid)
         return _unique_result()
     if not isinstance(anchor_raw, datetime):
-        log.info("fuzzy_dedup_publish_date_unexpected_type", job_posting_id=jid)
+        log.info("fuzzy_dedup_date_unexpected_type", job_posting_id=jid)
         return _unique_result()
 
     anchor = _ensure_utc(anchor_raw)
@@ -326,8 +326,8 @@ def run_fuzzy_dedup(
 
     cur_c = completeness_score(_current_row_dict(current))
     sur_c = completeness_score(best_row)
-    cur_pd = publish_date_for_tiebreak(_current_row_dict(current))
-    sur_pd = publish_date_for_tiebreak(best_row)
+    cur_pd = date_posted_for_tiebreak(_current_row_dict(current))
+    sur_pd = date_posted_for_tiebreak(best_row)
 
     current_wins = cur_c > sur_c or (cur_c == sur_c and cur_pd is not None and (sur_pd is None or cur_pd >= sur_pd))
 

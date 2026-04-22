@@ -18,8 +18,13 @@ def compute_geo_demand_weekly(session: Session, week_start: date) -> list[GeoDem
     Count ``dbo.job_postings`` rows per ``borderplex_subregion`` for the week beginning
     ``week_start`` (inclusive) through ``week_start + 7 days`` (exclusive), in UTC.
 
-    Returns ORM instances without primary keys set, ready for ``session.add_all`` / bulk insert.
+    Week bucketing uses ``jp.date_posted`` — the canonical date column on
+    ``job_postings`` (promoted from ``normalized_jobs`` via Issue #172, fully
+    backfilled). The legacy ``publish_date`` field is deprecated (see
+    ``docs/planning/QA_DATA_CONTRACT.md``) and must not appear in generated SQL.
     Rows with NULL ``borderplex_subregion`` are excluded.
+
+    Returns ORM instances without primary keys set, ready for ``session.add_all`` / bulk insert.
     """
     bind = session.get_bind()
     if bind is None or bind.dialect.name != "postgresql":
@@ -45,9 +50,9 @@ def compute_geo_demand_weekly(session: Session, week_start: date) -> list[GeoDem
             TRIM(BOTH FROM jp.borderplex_subregion::text) AS region,
             COUNT(*)::bigint AS cnt
         FROM dbo.job_postings jp
-        WHERE jp.publish_date IS NOT NULL
-          AND jp.publish_date >= :week_start_ts
-          AND jp.publish_date < :week_end_ts
+        WHERE jp.date_posted IS NOT NULL
+          AND jp.date_posted >= :week_start_ts
+          AND jp.date_posted < :week_end_ts
           AND jp.borderplex_subregion IS NOT NULL
           AND TRIM(BOTH FROM jp.borderplex_subregion::text) <> ''
         GROUP BY TRIM(BOTH FROM jp.borderplex_subregion::text)

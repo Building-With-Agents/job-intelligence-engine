@@ -299,9 +299,10 @@ def backfill_seniority(
 
     # Pass A — bulk SQL UPDATE from experience_level mapping.
     if dry_run:
-        preview = session.execute(
-            text(
-                """
+        preview = (
+            session.execute(
+                text(
+                    """
                 SELECT COUNT(*) AS n
                 FROM dbo.job_postings jp
                 JOIN LATERAL (
@@ -317,8 +318,11 @@ def backfill_seniority(
                     'LEAD','PRINCIPAL','STAFF','EXECUTIVE','DIRECTOR','VP','C_SUITE','CEO','CTO'
                   )
                 """
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         counts["experience_level_mapped"] = int(preview["n"] or 0)
     else:
         result = session.execute(_SENIORITY_FROM_EXPERIENCE_LEVEL_SQL)
@@ -364,9 +368,11 @@ def backfill_seniority(
         session.commit()
 
     # Final remaining count
-    remaining = session.execute(
-        text("SELECT COUNT(*) AS n FROM dbo.job_postings WHERE seniority_level IS NULL")
-    ).mappings().first()
+    remaining = (
+        session.execute(text("SELECT COUNT(*) AS n FROM dbo.job_postings WHERE seniority_level IS NULL"))
+        .mappings()
+        .first()
+    )
     counts["still_null"] = int(remaining["n"] or 0)
     return counts
 
@@ -420,9 +426,9 @@ def backfill_role_classification(
     # Load reference taxonomies once.
     technology_areas = [
         (str(r["id"]), r["title"])
-        for r in session.execute(
-            text("SELECT id::text AS id, title FROM dbo.technology_areas WHERE title IS NOT NULL")
-        ).mappings().all()
+        for r in session.execute(text("SELECT id::text AS id, title FROM dbo.technology_areas WHERE title IS NOT NULL"))
+        .mappings()
+        .all()
     ]
     industry_sectors = [
         (str(r["id"]), r["title"])
@@ -431,11 +437,14 @@ def backfill_role_classification(
                 "SELECT industry_sector_id::text AS id, sector_title AS title "
                 "FROM dbo.industry_sectors WHERE sector_title IS NOT NULL"
             )
-        ).mappings().all()
+        )
+        .mappings()
+        .all()
     ]
     log.info(
         "role_classification taxonomies loaded: %d technology_areas, %d industry_sectors",
-        len(technology_areas), len(industry_sectors),
+        len(technology_areas),
+        len(industry_sectors),
     )
 
     counts: dict[str, int] = {"classified": 0, "unclassified_written": 0, "still_null": 0}
@@ -480,16 +489,19 @@ def backfill_role_classification(
             session.commit()
             log.info(
                 "role pass committed batch (%d classified, %d unclassified so far)",
-                counts["classified"], counts["unclassified_written"],
+                counts["classified"],
+                counts["unclassified_written"],
             )
             pending_updates = 0
 
     if pending_updates and not dry_run:
         session.commit()
 
-    remaining = session.execute(
-        text("SELECT COUNT(*) AS n FROM dbo.job_postings WHERE role_classification IS NULL")
-    ).mappings().first()
+    remaining = (
+        session.execute(text("SELECT COUNT(*) AS n FROM dbo.job_postings WHERE role_classification IS NULL"))
+        .mappings()
+        .first()
+    )
     counts["still_null"] = int(remaining["n"] or 0)
     return counts
 
@@ -539,9 +551,11 @@ def main() -> int:
         # Snapshot NULL counts BEFORE any writes so the report shows real deltas.
         before = {}
         for col in ALL_COLUMNS:
-            row = session.execute(
-                text(f"SELECT COUNT(*) AS n FROM dbo.job_postings WHERE {col} IS NULL")
-            ).mappings().first()
+            row = (
+                session.execute(text(f"SELECT COUNT(*) AS n FROM dbo.job_postings WHERE {col} IS NULL"))
+                .mappings()
+                .first()
+            )
             before[col] = int(row["n"] or 0)
         log.info("NULL counts BEFORE: %s", before)
 
@@ -568,9 +582,11 @@ def main() -> int:
         # Snapshot NULL counts AFTER.
         after = {}
         for col in ALL_COLUMNS:
-            row = session.execute(
-                text(f"SELECT COUNT(*) AS n FROM dbo.job_postings WHERE {col} IS NULL")
-            ).mappings().first()
+            row = (
+                session.execute(text(f"SELECT COUNT(*) AS n FROM dbo.job_postings WHERE {col} IS NULL"))
+                .mappings()
+                .first()
+            )
             after[col] = int(row["n"] or 0)
         log.info("NULL counts AFTER: %s", after)
 
