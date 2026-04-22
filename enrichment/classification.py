@@ -18,6 +18,7 @@ otherwise *unknown*.
 from __future__ import annotations
 
 import asyncio
+import math
 import re
 from collections.abc import Callable
 from typing import Any
@@ -34,6 +35,18 @@ from enrichment.classifiers.soc_classifier import classify_soc
 MIN_TOKEN_LEN = 2
 MIN_FUZZY_TOKEN_LEN = 3
 MIN_ROLE_OVERLAP_SCORE = 1
+# Sector fallback uses a higher overlap bar than technology_areas (weak sector
+# matches are less trustworthy than tech-area matches).
+SECTOR_FALLBACK_SCORE_MULTIPLIER = 1.5
+
+# Meta / placeholder ``industry_sectors.sector_title`` values — excluded from
+# role classification fallback (they must not win via generic token overlap).
+_META_INDUSTRY_SECTOR_PREFIXES: tuple[str, ...] = (
+    "n/a",
+    "not an",
+    "not classified",
+    "unknown",
+)
 
 # Substring hints checked against ``title.lower()`` first (longer phrases first).
 _TITLE_ROLE_HINTS: tuple[tuple[str, str], ...] = (
@@ -186,6 +199,23 @@ def _hint_role(title: str) -> str | None:
     return None
 
 
+def is_excluded_industry_sector_title(title: str) -> bool:
+    """True if *title* is a meta/placeholder sector label (prefix match, case-insensitive)."""
+    t = (title or "").strip().lower()
+    return any(t.startswith(p) for p in _META_INDUSTRY_SECTOR_PREFIXES)
+
+
+def filter_industry_sectors_for_role_classification(
+    industry_sectors: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Drop excluded placeholder rows before scoring sector fallback."""
+    return [(i, t) for i, t in industry_sectors if not is_excluded_industry_sector_title(t)]
+
+
+def _sector_fallback_min_score(min_score: int) -> int:
+    return max(min_score, math.ceil(min_score * SECTOR_FALLBACK_SCORE_MULTIPLIER))
+
+
 def flatten_extraction_json(
     skills: list[Any] | None,
     tools: list[Any] | None,
@@ -263,6 +293,11 @@ def classify_role(
     Return best ``technology_areas.title``, or a title hint, or ``unclassified``.
 
     *technology_areas* / *industry_sectors* are ``(id, title)`` rows from the DB.
+
+    Sector fallback is stricter than technology-area matching: placeholder sector
+    titles are filtered out, and the overlap score must be at least
+    ``max(min_score, ceil(min_score * SECTOR_FALLBACK_SCORE_MULTIPLIER))``, not merely
+    *min_score*.
     """
     hinted = _hint_role(job_title)
     if hinted:
@@ -270,12 +305,14 @@ def classify_role(
 
     corpus_tokens = tokenize(corpus)
     best_tech, tech_score = _pick_best_role(list(technology_areas), corpus_tokens)
-    best_sec, sec_score = _pick_best_role(list(industry_sectors), corpus_tokens)
+    sectors_use = filter_industry_sectors_for_role_classification(list(industry_sectors))
+    best_sec, sec_score = _pick_best_role(sectors_use, corpus_tokens)
+    sector_min = _sector_fallback_min_score(min_score)
 
     if tech_score >= min_score:
         return best_tech or "unclassified"
-    if sec_score >= min_score:
-        return best_sec or "unclassified"
+    if best_sec is not None and sec_score >= sector_min:
+        return best_sec
     return "unclassified"
 
 

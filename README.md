@@ -55,6 +55,7 @@ python scripts/pg-seed-data/seed_pg_database.py
 
 # Verify
 python scripts/db_check.py counts
+python scripts/verify_local_db_health.py   # full local health pass (Q&A, schema drift, referential checks)
 ```
 
 ## Run the Pipeline
