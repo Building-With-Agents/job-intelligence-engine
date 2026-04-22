@@ -30,6 +30,7 @@ import pytest
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
+from analytics.tenant_scope import get_tenant_access
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
@@ -251,6 +252,8 @@ class TestIntentRouting:
         assert "geo_demand_weekly" in sql.lower()
         # Canonical alias — "El Paso" → "el_paso" exact match (no ILIKE)
         assert "el_paso" in sql.lower()
+        # JIE #224: tenant-entitled subregions
+        assert "dona_ana" in sql.lower() or "ciudad_juarez" in sql.lower()
 
     def test_route_comparison_with_skills(self) -> None:
         session = _make_session()
@@ -365,6 +368,15 @@ class TestEdgeCases:
         assert result.routed is False
         session.execute.assert_not_called()
 
+    def test_puget_tenant_does_not_query_market_aggregates(self) -> None:
+        """JIE #224: Puget is geo-only; skill/sector/role tables must not be queried."""
+        session = _make_session()
+        ps = get_tenant_access("puget_sound")
+        result = QueryRouter().route(_mk_classification("trend"), session, tenant=ps)
+        assert result.row_count == 0
+        assert result.tables_used == []
+        session.execute.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # Helper unit tests (no DB required)
@@ -387,6 +399,11 @@ class TestHelpers:
         assert _week_floor(0).weekday() == 0  # Monday = 0
 
     def test_resolve_geo_terms_mixed(self) -> None:
-        resolved = _resolve_geo_terms(["Juarez", "Seattle"])
+        bp = get_tenant_access("borderplex")
+        resolved = _resolve_geo_terms(["Juarez", "Seattle"], bp)
         assert resolved[0] == ("ciudad_juarez", True)  # canonical → exact match
         assert resolved[1] == ("Seattle", False)  # unknown → ILIKE
+
+    def test_resolve_geo_terms_puget_seattle(self) -> None:
+        ps = get_tenant_access("puget_sound")
+        assert _resolve_geo_terms(["Seattle"], ps) == [("seattle_metro", True)]

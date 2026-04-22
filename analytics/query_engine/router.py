@@ -15,11 +15,13 @@ Guardrails (always enforced — see ``.cursor/rules/sql-guardrails.mdc``):
 Usage::
 
     from analytics.query_engine.intent import classify_workforce_question
+    from analytics.tenant_scope import get_tenant_access
     from analytics.query_engine.router import QueryRouter
 
     classification = classify_workforce_question("What skills are trending?")
+    t = get_tenant_access("borderplex")
     with Session(engine) as session:
-        result = QueryRouter().route(classification, session)
+        result = QueryRouter().route(classification, session, tenant=t)
         for row in result.rows:
             print(row)
 """
@@ -37,6 +39,7 @@ import structlog
 from sqlalchemy import Text, cast, or_, select
 from sqlalchemy.orm import Session
 
+from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
 from common.data_store.models import (
     CanonicalRole,
     Company,
@@ -78,7 +81,9 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
 # ---------------------------------------------------------------------------
 
 # Canonical borderplex subregion tokens (locked values from integration-schema.mdc)
-_BORDERPLEX_CANONICAL: frozenset[str] = frozenset({"el_paso", "las_cruces", "ciudad_juarez", "regional"})
+_BORDERPLEX_CANONICAL: frozenset[str] = frozenset(
+    {"el_paso", "las_cruces", "ciudad_juarez", "dona_ana", "regional"},
+)
 
 _BORDERPLEX_ALIASES: dict[str, str] = {
     "el paso": "el_paso",
@@ -86,10 +91,24 @@ _BORDERPLEX_ALIASES: dict[str, str] = {
     "el_paso": "el_paso",
     "las cruces": "las_cruces",
     "las_cruces": "las_cruces",
+    "dona ana": "dona_ana",
+    "doña ana": "dona_ana",
+    "dona_ana": "dona_ana",
     "ciudad juarez": "ciudad_juarez",
     "ciudad_juarez": "ciudad_juarez",
     "juarez": "ciudad_juarez",
     "regional": "regional",
+}
+
+# Puget Sound demo tenant: tokens aligned with ``tenant_scope.PUGET_ENTITLED_SUBREGIONS`` / geo rows.
+_PUGET_GEO_ALIASES: dict[str, str] = {
+    "tacoma": "tacoma",
+    "seattle": "seattle_metro",
+    "seattle metro": "seattle_metro",
+    "seattle_metro": "seattle_metro",
+    "bremerton": "bremerton",
+    "puget sound": "tacoma",
+    "puget": "tacoma",
 }
 
 # Ordered heuristic patterns for time-reference → weeks-back translation.
@@ -135,17 +154,19 @@ def _week_floor(weeks_back: int) -> date:
     return current_monday - timedelta(weeks=weeks_back)
 
 
-def _resolve_geo_terms(geo_terms: list[str]) -> list[tuple[str, bool]]:
-    """Map geo terms to ``(value, is_exact)`` pairs.
-
-    Canonical borderplex values are returned with ``is_exact=True`` so the
-    query uses ``==`` instead of ``ILIKE``.
-    """
+def _resolve_geo_terms(geo_terms: list[str], tenant: TenantAccess) -> list[tuple[str, bool]]:
+    """Map geo terms to ``(value, is_exact)`` pairs, honoring the tenant’s entitled subregions."""
+    if tenant.tenant_id == "puget_sound":
+        alias_map: dict[str, str] = _PUGET_GEO_ALIASES
+    else:
+        alias_map = _BORDERPLEX_ALIASES
     out: list[tuple[str, bool]] = []
     for term in geo_terms:
         key = term.lower().strip()
-        canonical = _BORDERPLEX_ALIASES.get(key)
+        canonical = alias_map.get(key)
         if canonical:
+            if canonical not in tenant.allowed_subregions:
+                continue
             out.append((canonical, True))
         else:
             out.append((term, False))
@@ -207,6 +228,8 @@ class QueryRouter:
         self,
         classification: dict[str, Any],
         session: Session,
+        *,
+        tenant: TenantAccess | None = None,
     ) -> RouteResult:
         """Dispatch a classification dict to the appropriate query handler.
 
@@ -216,10 +239,12 @@ class QueryRouter:
                 ``extracted_entities`` (dict).
             session: Open SQLAlchemy ``Session`` (read path; the router never
                 issues write statements).
+            tenant: Entitled subregions + aggregate exposure (JIE #224 / ``X-Tenant-Id``).
 
         Returns:
             :class:`RouteResult` with result rows or structured error details.
         """
+        taccess: TenantAccess = tenant or get_tenant_access_for_pipeline(None)
         intent: str = str(classification.get("intent") or "other")
         confidence: float = float(classification.get("confidence") or 0.0)
         entities: dict[str, list[str]] = classification.get("extracted_entities") or {}
@@ -260,6 +285,7 @@ class QueryRouter:
                 geo_terms=geo_terms,
                 week_floor=wfloor,
                 session=session,
+                tenant=taccess,
             )
 
         try:
@@ -272,6 +298,7 @@ class QueryRouter:
                 geo_terms=geo_terms,
                 week_floor=wfloor,
                 session=session,
+                tenant=taccess,
             )
         except Exception as exc:
             log.error(
@@ -356,6 +383,18 @@ class QueryRouter:
         clauses = [column.ilike(f"%{n}%") for n in names[:max_terms]]
         return or_(*clauses) if len(clauses) > 1 else clauses[0]
 
+    @staticmethod
+    def _no_borderplex_market_aggregates(intent: str, confidence: float) -> RouteResult:
+        """Subregion-only tenant: no Borderplex-wide skill/role/sector tables (JIE #224)."""
+        return RouteResult(
+            intent=intent,
+            tables_used=[],
+            query_label="no market-wide aggregate for this tenant (subregion geo only)",
+            rows=[],
+            row_count=0,
+            confidence=confidence,
+        )
+
     # Intent handlers ----------------------------------------------------------
 
     def _route_trend(
@@ -368,8 +407,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """trend → ``skill_demand_weekly`` ordered by demand, optionally filtered by skill."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         t = SkillDemandWeekly
         stmt = (
             select(
@@ -411,8 +453,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """role_evolution → ``canonical_roles`` ordered by posting volume."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         cr = CanonicalRole
         stmt = select(
             cr.role_id,
@@ -452,8 +497,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """disruption → ``skill_velocity`` rows with declining or volatile trends."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         sv = SkillVelocity
         stmt = (
             select(
@@ -499,8 +547,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """emergence → ``skill_velocity`` rows with emerging or accelerating trends."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         sv = SkillVelocity
         stmt = (
             select(
@@ -546,8 +597,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """curriculum → top demanded skills from ``skill_demand_weekly`` for upskilling."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         t = SkillDemandWeekly
         stmt = (
             select(
@@ -589,8 +643,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """employer → ``employer_profiles`` JOIN ``companies``."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         ep = EmployerProfile
         co = Company
         stmt = (
@@ -636,8 +693,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         cr = CanonicalRole
         stmt = select(
             cr.role_id,
@@ -681,8 +741,19 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """geographic → ``geo_demand_weekly`` filtered by borderplex_subregion."""
+        allowed = list(tenant.allowed_subregions)
+        if not allowed:
+            return RouteResult(
+                intent=intent,
+                tables_used=[],
+                query_label="geographic — no subregions configured for tenant",
+                rows=[],
+                row_count=0,
+                confidence=confidence,
+            )
         gd = GeoDemandWeekly
         stmt = (
             select(
@@ -690,11 +761,14 @@ class QueryRouter:
                 gd.borderplex_subregion,
                 gd.posting_count,
             )
-            .where(gd.week_start >= week_floor)
+            .where(
+                gd.week_start >= week_floor,
+                gd.borderplex_subregion.in_(allowed),
+            )
             .order_by(gd.week_start.desc(), gd.posting_count.desc())
         )
 
-        resolved = _resolve_geo_terms(geo_terms)
+        resolved = _resolve_geo_terms(geo_terms, tenant)
         if resolved:
             geo_clauses = [
                 gd.borderplex_subregion == value if is_exact else gd.borderplex_subregion.ilike(f"%{value}%")
@@ -725,8 +799,11 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """comparison → ``skill_demand_weekly`` for skill vs skill; ``sector_summary_weekly`` otherwise."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
         if skill_names:
             t = SkillDemandWeekly
             skill_filter = self._ilike_or(t.skill_label, skill_names)
@@ -789,6 +866,7 @@ class QueryRouter:
         geo_terms: list[str],
         week_floor: date,
         session: Session,
+        tenant: TenantAccess,
     ) -> RouteResult:
         """other / unrecognised intent — return an unrouted result without executing SQL."""
         log.info(
