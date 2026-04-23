@@ -1611,7 +1611,6 @@
   {
     "id": "gq-061",
     "question": "Show open AI-core roles (AI agent developer, prompt engineer, ML engineer) at UTEP, NMSU, or EPCC in the last 12 months.",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must join `employer_profiles` to `companies` and `job_postings`, apply the Borderplex geo filter, and enforce the issue #197 IT guard so `role_classification` is never `N/A Not an IT role`. It must filter to AI-core role families (AI agent developer, prompt engineer, ML engineer) and to employer names matching UTEP, NMSU, or EPCC, with posting dates in the last 12 months. The result should enumerate concrete postings (or row-level job records) with each company name cited, not a market-wide aggregate with no employer breakdown.",
@@ -1637,7 +1636,6 @@
   {
     "id": "gq-062",
     "question": "Which Borderplex employers have the highest share of postings mentioning AI tools (Copilot, LangChain, LLM APIs) in the agentic_era period?",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must attribute rows to named employers by joining `companies` and `employer_profiles` to `job_postings`, restrict to the Borderplex filter and `temporal_period` = `agentic_era`, and apply the issue #197 role guard on IT roles. It should compute per employer the share of postings whose text matches the AI-tool family (e.g. Copilot, LangChain, LLM API phrasing) over that employer's IT posting count in that period, then rank employers (top-N or full ordered list) by that share, citing company names. It must not report a single Borderplex-wide percentage with no per-employer breakdown.",
@@ -1664,7 +1662,6 @@
   {
     "id": "gq-063",
     "question": "List all IT postings from Borderplex federal-contractor employers (defense, aerospace, government-tech) that require a security clearance.",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must use `employer_profiles` (sector / federal-contractor style signals) with `companies` and `job_postings`, apply the Borderplex filter, and restrict to IT postings via the issue #197 role guard. It should identify employers in defense, aerospace, or government-tech style groups (sector_grouping) and select postings where clearance requirement language appears in title or description. The output should list individual postings with each federal-style employer name cited, not a sector-level count without row-level or employer-attributed listings.",
@@ -1690,7 +1687,6 @@
   {
     "id": "gq-064",
     "question": "Which Borderplex healthcare-IT employers are hiring for clinical-data-analyst or health-informatics roles with AI-adjacent skill requirements?",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must join `employer_profiles` and `companies` to `job_postings` with the Borderplex filter and issue #197 IT guard. It should scope healthcare-IT employers (sector_grouping) and filter postings to clinical data analyst, health informatics, or equivalent title/description patterns, then require evidence of AI-adjacent skills (e.g. ML, LLM, GenAI) in text or structured skills. The answer should name specific employers and their relevant postings, ranking or listing by activity rather than a nameless sector aggregate.",
@@ -1716,7 +1712,6 @@
   {
     "id": "gq-065",
     "question": "Show all Borderplex fintech and payments-technology employer postings from the post_gpt4 and agentic_era periods.",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must use `employer_profiles` and `companies` joined to `job_postings`, with Borderplex and issue #197 IT filters, and limit `temporal_period` to `post_gpt4` and `agentic_era` only. Fintech and payments-technology employers should be identified via sector/NAICS-style sector_grouping consistent with the corpus. The result should list postings (or clearly attributed rows) with employer names cited, not a time-series of the whole market without employer or period dimensions.",
@@ -1741,7 +1736,6 @@
   {
     "id": "gq-066",
     "question": "Which Borderplex employers posted the most data-engineer or data-scientist roles in the last 12 months, and what share of their postings require AI-adjacent skills?",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must join `employer_profiles`, `companies`, and `job_postings` with Borderplex and issue #197 filters, limit to the last 12 months on posting dates, and scope to data engineer or data scientist role families via `role_classification` and/or title text. It should rank employers by posting count (top_n_named) and, for each named employer, report the share of those postings that signal AI-adjacent skills. It must keep counts and shares tied to named employers, not market totals only.",
@@ -1768,7 +1762,6 @@
   {
     "id": "gq-067",
     "question": "Compare hiring activity between Borderplex academic employers (UTEP, NMSU, EPCC) and private-sector IT employers over the last 18 months.",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must split employers into an academic bucket (name patterns for UTEP, NMSU, EPCC) versus private-sector IT employers using `companies` and `employer_profiles` joined to `job_postings`, with Borderplex and issue #197 IT constraints and an 18-month date window. It should compare total IT posting volume (or equivalent activity) between the two groups, citing named academic institutions and summarizing the private side as an aggregate or with representative named employers as the data allows. The comparison must be two-way (academic vs private), not a single aggregate for the whole region.",
@@ -1794,7 +1787,6 @@
   {
     "id": "gq-068",
     "question": "Which Borderplex employers have introduced AI-native roles (AI agent developer, prompt engineer) for the first time in the agentic_era period, signaling a shift in hiring strategy?",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must use `employer_profiles`, `companies`, and `job_postings` with Borderplex and issue #197 filters, focus `temporal_period` on `agentic_era` for the AI-native `role_classification` or title matches, and contrast with the same employer's prior periods (or absence of those role families pre-agentic) to support a first-time claim. It should name employers that qualify and avoid inferring strategy from `posting_freshness` or repost flags alone. Rank or list named employers; do not substitute a generic emergence story without employer attribution.",
@@ -1820,7 +1812,6 @@
   {
     "id": "gq-069",
     "question": "Show all Borderplex legal-tech and e-discovery employer postings, grouped by employer, in the last 12 months.",
-    "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must join `employer_profiles` and `companies` to `job_postings` with the Borderplex filter, issue #197 IT guard, and a last-12-month window on posting dates. Legal-tech and e-discovery postings should be identified via title/description (and sector_grouping where available). Results must be grouped by employer with each group listing attributed rows and the company name cited, not a single ungrouped list or a region-only total.",
@@ -1844,8 +1835,7 @@
   },
   {
     "id": "gq-070",
-    "question": "Which Borderplex employers have the highest repeat-posting rate for the same role family — suggesting either high turnover or aggressive expansion?",
-    "source": "wfd_archetype",
+    "question": "Which Borderplex employers have the highest repeat-posting rate for the same role family \u2014 suggesting either high turnover or aggressive expansion?",
     "intent": "employer",
     "context": "",
     "ideal_answer_summary": "A correct answer must compute a repeat-rate or repost-intensity metric per named employer from `job_postings` joined through `companies` and `employer_profiles`, with Borderplex and issue #197 IT filters, bucketing by `role_classification` (or consistent title family) to define the same role family. It should rank employers (top_n_named) by that rate and cite company names. The metric must be derived from posting/role fields, not from misusing `posting_freshness` as a substitute for a defined repeat formula.",
@@ -1871,11 +1861,10 @@
   },
   {
     "id": "gq-071",
-    "question": "What should a data engineering training program cover given current Borderplex data-engineer postings — which languages, tools, cloud platforms, and AI-assistant skills should form the core?",
-    "source": "wfd_archetype",
+    "question": "What should a data engineering training program cover given current Borderplex data-engineer postings \u2014 which languages, tools, cloud platforms, and AI-assistant skills should form the core?",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "A correct answer must ground recommendations in `job_postings` scoped to the Borderplex filter, data-engineer-style roles via `role_title_filter` and `role_classification_filter`, and the issue #197 IT guard. It should aggregate linked `skills` with `skill_frequency_count` (or equivalent joins) and use `extracted_intelligence` for tasks, tools, and responsibilities, naming `top_n_skills_named` languages, orchestration, cloud platforms, and AI-assistant or GenAI-adjacent mentions. The answer should cite `posting_volume_cited` for the role slice, flag any `skill_gap_identified` relative to the curriculum baseline, and structure the syllabus by role-relevant groupings with `skill_category_referenced`—not a generic data-skills list detached from the corpus.",
+    "ideal_answer_summary": "A correct answer must ground recommendations in `job_postings` scoped to the Borderplex filter, data-engineer-style roles via `role_title_filter` and `role_classification_filter`, and the issue #197 IT guard. It should aggregate linked `skills` with `skill_frequency_count` (or equivalent joins) and use `extracted_intelligence` for tasks, tools, and responsibilities, naming `top_n_skills_named` languages, orchestration, cloud platforms, and AI-assistant or GenAI-adjacent mentions. The answer should cite `posting_volume_cited` for the role slice, flag any `skill_gap_identified` relative to the curriculum baseline, and structure the syllabus by role-relevant groupings with `skill_category_referenced`\u2014not a generic data-skills list detached from the corpus.",
     "must_include": [
       "job_postings_table",
       "skills_table",
@@ -1902,8 +1891,7 @@
   },
   {
     "id": "gq-072",
-    "question": "What should an AI agent developer training program cover given current Borderplex postings — which LLM frameworks (LangChain, LangGraph), orchestration patterns, and integration skills are in demand?",
-    "source": "wfd_archetype",
+    "question": "What should an AI agent developer training program cover given current Borderplex postings \u2014 which LLM frameworks (LangChain, LangGraph), orchestration patterns, and integration skills are in demand?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must restrict `job_postings` to Borderplex, AI-core or AI-agent style roles with `role_title_filter` and `role_classification_filter` under the issue #197 IT guard, then align skills and narrative structure from `extracted_intelligence` (orchestration, API integration, RAG) with `skills` frequency. It should rank in-demand LLM and agent frameworks (e.g. LangChain, LangGraph) via `top_n_skills_named` and `skill_frequency_count`, and note `posting_volume_cited` for the AI-developer slice. The curriculum map must name concrete integration and orchestration patterns with evidence, not a catalog of model names with no frequency or role linkage.",
@@ -1932,8 +1920,7 @@
   },
   {
     "id": "gq-073",
-    "question": "What should a cybersecurity training program cover given current Borderplex cybersecurity postings — which certifications, tools, and AI-augmentation skills should be included?",
-    "source": "wfd_archetype",
+    "question": "What should a cybersecurity training program cover given current Borderplex cybersecurity postings \u2014 which certifications, tools, and AI-augmentation skills should be included?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must pull Borderplex, IT-guarded cybersecurity-relevant `job_postings` via `role_title_filter` and `role_classification_filter`, join `skills` to surface certification and tool strings with `skill_frequency_count`, and use `extracted_intelligence` for control- and process-oriented responsibilities plus AI-assist or SOC-augmentation language. It should prioritize `top_n_skills_named` cert and tool families, optionally layer `seniority_filter` when comparing analyst versus architect expectations, and cite `posting_volume_cited` so depth matches market size. The answer should separate named credential demand from tool demand using `skill_category_referenced`, not a undifferentiated security keyword dump.",
@@ -1963,11 +1950,10 @@
   },
   {
     "id": "gq-074",
-    "question": "What should a cloud-architect training program cover given current Borderplex cloud-architect postings — which cloud providers, certifications, and AI-integration skills should be prioritized?",
-    "source": "wfd_archetype",
+    "question": "What should a cloud-architect training program cover given current Borderplex cloud-architect postings \u2014 which cloud providers, certifications, and AI-integration skills should be prioritized?",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex cloud-architect-style roles with `role_title_filter`, `role_classification_filter`, and the issue #197 IT guard, then join `skills` to expose provider (AWS, Azure, GCP) and cert demand via `skill_frequency_count` and `top_n_skills_named`. `extracted_intelligence` should inform architecture, landing-zone, and governance task patterns, including AI-on-cloud or copilot-on-platform mentions as integration skills. The output should pair `posting_volume_cited` with prioritized modules (providers, certifications, GenAI or AI-integration skills) and use `skill_category_referenced` to keep provider versus certification versus AI strands distinct—without collapsing into a single unsourced cloud skills paragraph.",
+    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex cloud-architect-style roles with `role_title_filter`, `role_classification_filter`, and the issue #197 IT guard, then join `skills` to expose provider (AWS, Azure, GCP) and cert demand via `skill_frequency_count` and `top_n_skills_named`. `extracted_intelligence` should inform architecture, landing-zone, and governance task patterns, including AI-on-cloud or copilot-on-platform mentions as integration skills. The output should pair `posting_volume_cited` with prioritized modules (providers, certifications, GenAI or AI-integration skills) and use `skill_category_referenced` to keep provider versus certification versus AI strands distinct\u2014without collapsing into a single unsourced cloud skills paragraph.",
     "must_include": [
       "job_postings_table",
       "skills_table",
@@ -1994,8 +1980,7 @@
   },
   {
     "id": "gq-075",
-    "question": "What should a frontend web development training program cover given current Borderplex frontend postings — which frameworks, testing tools, and AI-assisted development skills are most in demand?",
-    "source": "wfd_archetype",
+    "question": "What should a frontend web development training program cover given current Borderplex frontend postings \u2014 which frameworks, testing tools, and AI-assisted development skills are most in demand?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must filter `job_postings` to Borderplex front-end and web UI roles with `role_title_filter` and `role_classification_filter` and apply the issue #197 IT guard. It should join `skills` to rank front-end frameworks and test tooling by `skill_frequency_count`, naming `top_n_skills_named` (e.g. React, TypeScript, testing stacks), and mine `extracted_intelligence` for build, CI, and AI-coding-tool expectations. The curriculum outline should connect `posting_volume_cited` to emphasis (core versus elective), flag any `skill_gap_identified` (e.g. underrepresented accessibility or e2e testing), and avoid a framework list with no frequency tie to the posting corpus.",
@@ -2025,8 +2010,7 @@
   },
   {
     "id": "gq-076",
-    "question": "What should an MLOps training program cover given current Borderplex MLOps and ML-infrastructure postings — which deployment patterns, monitoring tools, and model-ops skills should be included?",
-    "source": "wfd_archetype",
+    "question": "What should an MLOps training program cover given current Borderplex MLOps and ML-infrastructure postings \u2014 which deployment patterns, monitoring tools, and model-ops skills should be included?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must take Borderplex `job_postings` for MLOps and ML-infrastructure style roles with `role_title_filter`, `role_classification_filter`, and issue #197, then use `extracted_intelligence` for end-to-end ML lifecycle and deployment-task ordering and `skills` for monitoring, serving, and orchestration tool frequency. It should report `top_n_skills_named` and `skill_frequency_count` for deployment, observability, and model-serving tools, and cite `posting_volume_cited` to calibrate depth. `skill_category_referenced` should separate data pipeline, training, and production operations strands; answers must not conflate MLOps with general data engineering without a role-broken-down evidence chain.",
@@ -2056,8 +2040,7 @@
   },
   {
     "id": "gq-077",
-    "question": "What should a DevOps and site-reliability training program cover given current Borderplex DevOps and SRE postings — which IaC tools, observability platforms, and AI-assisted operations skills are essential?",
-    "source": "wfd_archetype",
+    "question": "What should a DevOps and site-reliability training program cover given current Borderplex DevOps and SRE postings \u2014 which IaC tools, observability platforms, and AI-assisted operations skills are essential?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must focus Borderplex `job_postings` on DevOps and SRE families via `role_title_filter` and `role_classification_filter` with the issue #197 IT guard, then use `extracted_intelligence` for on-call, incident, and SRE process language alongside IaC and observability pulls from `skills` with `skill_frequency_count`. It should name `top_n_skills_named` IaC and APM or logging stacks, and treat AI-for-ops or AIOps-style mentions as a track sized by `posting_volume_cited`. Optional `seniority_filter` can separate junior platform from senior SRE expectations. The syllabus must separate observability, IaC, and AI-for-ops strands with role-attributed evidence, not a single undifferentiated toolchain list.",
@@ -2087,11 +2070,10 @@
   },
   {
     "id": "gq-078",
-    "question": "What should an IT support training program cover given current Borderplex help-desk, systems-admin, and network-engineer postings — which skills go beyond the CompTIA A+ / Network+ baseline?",
-    "source": "wfd_archetype",
+    "question": "What should an IT support training program cover given current Borderplex help-desk, systems-admin, and network-engineer postings \u2014 which skills go beyond the CompTIA A+ / Network+ baseline?",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "A correct answer must filter Borderplex `job_postings` to help desk, systems admin, and network-style roles with `role_title_filter` and `role_classification_filter` under issue #197, and use `seniority_filter` to separate entry and mid support expectations where present. `skills` joins should yield `skill_frequency_count` and `top_n_skills_named` for tools and platforms that appear above baseline A+/Network+ signals, and `extracted_intelligence` should document escalation, endpoint, and identity workflows. The answer should cite `posting_volume_cited` for the support slice, identify `skill_gap_identified` versus the stated CompTIA baseline, and use `skill_category_referenced` to group OS, network, and cloud-adjacent support—without a generic IT skills list lacking corpus-backed frequency.",
+    "ideal_answer_summary": "A correct answer must filter Borderplex `job_postings` to help desk, systems admin, and network-style roles with `role_title_filter` and `role_classification_filter` under issue #197, and use `seniority_filter` to separate entry and mid support expectations where present. `skills` joins should yield `skill_frequency_count` and `top_n_skills_named` for tools and platforms that appear above baseline A+/Network+ signals, and `extracted_intelligence` should document escalation, endpoint, and identity workflows. The answer should cite `posting_volume_cited` for the support slice, identify `skill_gap_identified` versus the stated CompTIA baseline, and use `skill_category_referenced` to group OS, network, and cloud-adjacent support\u2014without a generic IT skills list lacking corpus-backed frequency.",
     "must_include": [
       "job_postings_table",
       "skills_table",
@@ -2119,8 +2101,7 @@
   },
   {
     "id": "gq-079",
-    "question": "What should a fintech developer training program cover given current Borderplex fintech and payments-technology postings — which languages, compliance frameworks, and AI-adjacent skills should be included?",
-    "source": "wfd_archetype",
+    "question": "What should a fintech developer training program cover given current Borderplex fintech and payments-technology postings \u2014 which languages, compliance frameworks, and AI-adjacent skills should be included?",
     "intent": "curriculum",
     "context": "",
     "ideal_answer_summary": "A correct answer must restrict to Borderplex fintech or payments-technology `job_postings` (industry, sector, or `role_title_filter` heuristics) with `role_classification_filter` and issue #197, then align programming languages and platform stacks from `skills` via `skill_frequency_count` and `top_n_skills_named`. `extracted_intelligence` should surface compliance, risk, and security-process expectations as distinct from pure coding skills, with `skill_category_referenced` for compliance versus language versus AI-adjacent demand. Cite `posting_volume_cited` for the vertical slice, flag `skill_gap_identified` (e.g. underrepresented KYC/AML phrasing) when evidence supports it, and avoid a finance-themed skill list with no borderplex- or frequency-grounded support.",
@@ -2151,11 +2132,10 @@
   },
   {
     "id": "gq-080",
-    "question": "What should a healthcare-IT training program cover given current Borderplex EHR-analyst, clinical-data-analyst, and health-informatics postings — which platforms, regulatory knowledge, and AI-adjacent skills should form the core?",
-    "source": "wfd_archetype",
+    "question": "What should a healthcare-IT training program cover given current Borderplex EHR-analyst, clinical-data-analyst, and health-informatics postings \u2014 which platforms, regulatory knowledge, and AI-adjacent skills should form the core?",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex EHR, clinical data, and health-informatics-style roles with `role_title_filter` and `role_classification_filter` and the issue #197 IT guard, then use `extracted_intelligence` for EHR, HIPAA, and clinical workflow responsibilities alongside `skills` for platform and interoperability tools via `skill_frequency_count` and `top_n_skills_named`. `skill_category_referenced` should separate EHR and clinical systems from privacy or regulatory phrasing and from AI/ML-for-health demand. Cite `posting_volume_cited` to weight modules, and note any `skill_gap_identified` between platform demand and stated regulatory literacy—without inventing EHR product names that do not appear in the joined data or extractions.",
+    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex EHR, clinical data, and health-informatics-style roles with `role_title_filter` and `role_classification_filter` and the issue #197 IT guard, then use `extracted_intelligence` for EHR, HIPAA, and clinical workflow responsibilities alongside `skills` for platform and interoperability tools via `skill_frequency_count` and `top_n_skills_named`. `skill_category_referenced` should separate EHR and clinical systems from privacy or regulatory phrasing and from AI/ML-for-health demand. Cite `posting_volume_cited` to weight modules, and note any `skill_gap_identified` between platform demand and stated regulatory literacy\u2014without inventing EHR product names that do not appear in the joined data or extractions.",
     "must_include": [
       "job_postings_table",
       "skills_table",
