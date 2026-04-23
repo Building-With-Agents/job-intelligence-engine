@@ -665,9 +665,24 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must join `employer_profiles` to `companies` and `job_postings`, apply the Borderplex geo filter, and enforce the issue #197 IT guard so `role_classification` is never `N/A Not an IT role`. It must filter to AI-core role families (AI agent developer, prompt engineer, ML engineer) and to employer names matching UTEP, NMSU, or EPCC, with posting dates in the last 12 months. The result should enumerate concrete postings (or row-level job records) with each company name cited, not a market-wide aggregate with no employer breakdown.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "company_name_cited",
+      "it_roles_only"
+    ],
+    "must_not_include": [
+      "no_borderplex_filter",
+      "aggregated_without_employer_breakdown",
+      "hallucinated_company_names",
+      "role_classification_N/A_included",
+      "counts_without_named_employers"
+    ],
     "difficulty": "standard"
   },
   {
@@ -676,9 +691,25 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must attribute rows to named employers by joining `companies` and `employer_profiles` to `job_postings`, restrict to the Borderplex filter and `temporal_period` = `agentic_era`, and apply the issue #197 role guard on IT roles. It should compute per employer the share of postings whose text matches the AI-tool family (e.g. Copilot, LangChain, LLM API phrasing) over that employer's IT posting count in that period, then rank employers (top-N or full ordered list) by that share, citing company names. It must not report a single Borderplex-wide percentage with no per-employer breakdown.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "posting_count_per_employer",
+      "top_n_named",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "aggregated_without_employer_breakdown",
+      "counts_without_named_employers",
+      "no_borderplex_filter",
+      "hallucinated_company_names",
+      "role_classification_N/A_included"
+    ],
     "difficulty": "standard"
   },
   {
@@ -687,9 +718,24 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must use `employer_profiles` (sector / federal-contractor style signals) with `companies` and `job_postings`, apply the Borderplex filter, and restrict to IT postings via the issue #197 role guard. It should identify employers in defense, aerospace, or government-tech style groups (sector_grouping) and select postings where clearance requirement language appears in title or description. The output should list individual postings with each federal-style employer name cited, not a sector-level count without row-level or employer-attributed listings.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "issue_197_guard",
+      "sector_grouping",
+      "company_name_cited",
+      "it_roles_only"
+    ],
+    "must_not_include": [
+      "no_borderplex_filter",
+      "aggregated_without_employer_breakdown",
+      "hallucinated_company_names",
+      "counts_without_named_employers",
+      "role_classification_N/A_included"
+    ],
     "difficulty": "standard"
   },
   {
@@ -698,9 +744,24 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must join `employer_profiles` and `companies` to `job_postings` with the Borderplex filter and issue #197 IT guard. It should scope healthcare-IT employers (sector_grouping) and filter postings to clinical data analyst, health informatics, or equivalent title/description patterns, then require evidence of AI-adjacent skills (e.g. ML, LLM, GenAI) in text or structured skills. The answer should name specific employers and their relevant postings, ranking or listing by activity rather than a nameless sector aggregate.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "sector_grouping",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "aggregated_without_employer_breakdown",
+      "counts_without_named_employers",
+      "no_borderplex_filter",
+      "hallucinated_company_names",
+      "canonical_roles_dependency"
+    ],
     "difficulty": "standard"
   },
   {
@@ -709,9 +770,23 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must use `employer_profiles` and `companies` joined to `job_postings`, with Borderplex and issue #197 IT filters, and limit `temporal_period` to `post_gpt4` and `agentic_era` only. Fintech and payments-technology employers should be identified via sector/NAICS-style sector_grouping consistent with the corpus. The result should list postings (or clearly attributed rows) with employer names cited, not a time-series of the whole market without employer or period dimensions.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "sector_grouping",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "no_borderplex_filter",
+      "aggregated_without_employer_breakdown",
+      "hallucinated_company_names",
+      "role_classification_N/A_included"
+    ],
     "difficulty": "standard"
   },
   {
@@ -720,9 +795,25 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must join `employer_profiles`, `companies`, and `job_postings` with Borderplex and issue #197 filters, limit to the last 12 months on posting dates, and scope to data engineer or data scientist role families via `role_classification` and/or title text. It should rank employers by posting count (top_n_named) and, for each named employer, report the share of those postings that signal AI-adjacent skills. It must keep counts and shares tied to named employers, not market totals only.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "posting_count_per_employer",
+      "top_n_named",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "aggregated_without_employer_breakdown",
+      "counts_without_named_employers",
+      "no_borderplex_filter",
+      "hallucinated_company_names",
+      "role_classification_N/A_included"
+    ],
     "difficulty": "standard"
   },
   {
@@ -731,9 +822,24 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must split employers into an academic bucket (name patterns for UTEP, NMSU, EPCC) versus private-sector IT employers using `companies` and `employer_profiles` joined to `job_postings`, with Borderplex and issue #197 IT constraints and an 18-month date window. It should compare total IT posting volume (or equivalent activity) between the two groups, citing named academic institutions and summarizing the private side as an aggregate or with representative named employers as the data allows. The comparison must be two-way (academic vs private), not a single aggregate for the whole region.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "issue_197_guard",
+      "posting_count_per_employer",
+      "company_name_cited",
+      "it_roles_only"
+    ],
+    "must_not_include": [
+      "aggregated_without_employer_breakdown",
+      "no_borderplex_filter",
+      "hallucinated_company_names",
+      "role_classification_N/A_included",
+      "counts_without_named_employers"
+    ],
     "difficulty": "standard"
   },
   {
@@ -742,9 +848,24 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must use `employer_profiles`, `companies`, and `job_postings` with Borderplex and issue #197 filters, focus `temporal_period` on `agentic_era` for the AI-native `role_classification` or title matches, and contrast with the same employer's prior periods (or absence of those role families pre-agentic) to support a first-time claim. It should name employers that qualify and avoid inferring strategy from `posting_freshness` or repost flags alone. Rank or list named employers; do not substitute a generic emergence story without employer attribution.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "top_n_named",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "posting_freshness_dependency",
+      "aggregated_without_employer_breakdown",
+      "hallucinated_company_names",
+      "no_borderplex_filter",
+      "role_classification_N/A_included"
+    ],
     "difficulty": "standard"
   },
   {
@@ -753,9 +874,23 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must join `employer_profiles` and `companies` to `job_postings` with the Borderplex filter, issue #197 IT guard, and a last-12-month window on posting dates. Legal-tech and e-discovery postings should be identified via title/description (and sector_grouping where available). Results must be grouped by employer with each group listing attributed rows and the company name cited, not a single ungrouped list or a region-only total.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "issue_197_guard",
+      "sector_grouping",
+      "posting_count_per_employer",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "aggregated_without_employer_breakdown",
+      "counts_without_named_employers",
+      "no_borderplex_filter",
+      "hallucinated_company_names"
+    ],
     "difficulty": "standard"
   },
   {
@@ -764,9 +899,25 @@
     "source": "wfd_archetype",
     "intent": "employer",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must compute a repeat-rate or repost-intensity metric per named employer from `job_postings` joined through `companies` and `employer_profiles`, with Borderplex and issue #197 IT filters, bucketing by `role_classification` (or consistent title family) to define the same role family. It should rank employers (top_n_named) by that rate and cite company names. The metric must be derived from posting/role fields, not from misusing `posting_freshness` as a substitute for a defined repeat formula.",
+    "must_include": [
+      "employer_profiles_table",
+      "companies_table",
+      "job_postings",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "posting_count_per_employer",
+      "top_n_named",
+      "company_name_cited"
+    ],
+    "must_not_include": [
+      "posting_freshness_dependency",
+      "aggregated_without_employer_breakdown",
+      "counts_without_named_employers",
+      "no_borderplex_filter",
+      "hallucinated_company_names"
+    ],
     "difficulty": "standard"
   },
   {
