@@ -36,7 +36,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-002",
@@ -120,7 +120,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-004",
@@ -166,7 +166,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-005",
@@ -257,7 +257,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-007",
@@ -307,7 +307,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-008",
@@ -408,7 +408,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-010",
@@ -466,7 +466,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-011",
@@ -547,7 +547,7 @@
       "ignoring_raw_signal_path",
       "confident_answer_on_sparse_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-014",
@@ -602,7 +602,7 @@
       "confident_answer_on_sparse_data",
       "generic_statements_without_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-016",
@@ -683,7 +683,7 @@
       "confident_answer_on_ambiguous_transition",
       "unnamed_roles"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-019",
@@ -737,7 +737,7 @@
       "confident_answer_on_sparse_data",
       "legacy_certifications_misclassified_as_new"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-021",
@@ -1052,7 +1052,7 @@
       "vague answers with no data backup",
       "fabricated title counts"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-035",
@@ -1221,7 +1221,7 @@
       "confident_answer_on_fewer_than_5_postings_without_caveat",
       "role_classification_conflated_with_title_match"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-042",
@@ -1242,7 +1242,7 @@
       "skill_demand_weekly_table_referenced_when_empty",
       "generic_statement_without_specific_titles"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-043",
@@ -1348,7 +1348,7 @@
       "national_entry_level_salary_benchmarks_substituted",
       "skill_demand_weekly_or_role_snapshot_weekly_referenced_when_empty"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-048",
@@ -1390,7 +1390,7 @@
       "hallucinated_law_firm_employer_names",
       "national_legal_tech_market_data_substituted_for_el_paso"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-050",
@@ -1412,7 +1412,7 @@
       "inflated_posting_count_beyond_5_to_8",
       "national_ai_research_hiring_statistics_substituted"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-051",
@@ -1432,7 +1432,7 @@
       "fabricated_percentages_without_evidence",
       "only_one_skill_discussed_without_comparison"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-052",
@@ -1452,7 +1452,7 @@
       "single_domain_discussed_without_comparison",
       "fabricated_employer_names_not_in_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "gq-053",
@@ -1510,7 +1510,7 @@
       "fabricated_calendar_quarters_not_in_data",
       "non_borderplex_geography_referenced"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-056",
@@ -1586,7 +1586,7 @@
       "single_term_discussed_without_comparison",
       "fabricated_trend_data_not_in_snapshot"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-060",
@@ -1606,7 +1606,7 @@
       "single_term_discussed_without_comparison",
       "fabricated_tool_specific_counts_not_in_data"
     ],
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
     "id": "gq-061",
