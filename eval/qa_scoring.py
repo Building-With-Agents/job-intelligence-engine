@@ -23,6 +23,13 @@ _CONFIDENCE_TRANSPARENCY_THRESHOLD = 0.6
 # Default SLA in seconds (override with QA_EVAL_LATENCY_SLA_SECONDS).
 _DEFAULT_LATENCY_SLA_SECONDS = 45.0
 
+# ``POST /analytics/query`` (LaborPulse) returns ``confidence`` as low|medium|high; eval maps to floats.
+_LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
+    "low": 0.0,
+    "medium": 0.5,
+    "high": 1.0,
+}
+
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
 
 # Whether the golden *expected* intent is evaluated for answerability (SQL rows).
@@ -189,6 +196,30 @@ def score_confidence_flags(
     return max(0.0, min(1.0, raw)), "calibration vs 0.6 + explanations"
 
 
+def coerce_eval_response_confidence(raw: Any) -> float:
+    """Turn ``response['confidence']`` into a 0.0-1.0 float.
+
+    - In-process ``AnalyticsQueryResponse`` uses a numeric ``confidence`` (unchanged, clamped).
+    - HTTP LaborPulse uses ``"low"`` / ``"medium"`` / ``"high"``; mapped to 0.0 / 0.5 / 1.0 for scoring.
+    """
+    if raw is None or raw == "":
+        return 0.0
+    if isinstance(raw, (int, float)):
+        return max(0.0, min(1.0, float(raw)))
+    if isinstance(raw, str):
+        key = raw.strip().lower()
+        if key in _LABORPULSE_CONFIDENCE_BUCKET:
+            return _LABORPULSE_CONFIDENCE_BUCKET[key]
+        try:
+            return max(0.0, min(1.0, float(key)))
+        except ValueError:
+            return 0.0
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float, str]:
     """Normalized score: 1.0 at or below SLA, decays above."""
     sla = float(sla_seconds or os.getenv("QA_EVAL_LATENCY_SLA_SECONDS") or _DEFAULT_LATENCY_SLA_SECONDS)
@@ -285,7 +316,7 @@ def compute_item_scores(
     )
 
     cf, cf_c = score_confidence_flags(
-        confidence=float(response.get("confidence") or 0.0),
+        confidence=coerce_eval_response_confidence(response.get("confidence")),
         confidence_flagged_low=bool(response.get("confidence_flagged_low")),
         confidence_explanation=response.get("confidence_explanation"),
         volume_flagged_low=bool(response.get("volume_flagged_low")),

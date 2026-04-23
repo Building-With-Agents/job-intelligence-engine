@@ -38,6 +38,7 @@ load_dotenv(_REPO_ROOT / ".env")
 
 from analytics.query_engine.routing import run_analytics_qna  # noqa: E402
 from common.data_store.database import session_scope  # noqa: E402
+from eval.qa_eval_laborpulse_headers import laborpulse_analytics_query_headers  # noqa: E402
 from eval.qa_scoring import (  # noqa: E402
     QAItemScores,
     composite_score,
@@ -108,8 +109,13 @@ def execute_qa_item(
     try:
         if use_http:
             url = f"{analytics_base_url.rstrip('/')}/analytics/query"
+            headers = laborpulse_analytics_query_headers(x_request_id=correlation_id)
             with httpx.Client(timeout=120.0) as client:
-                r = client.post(url, json={"question": question, "correlation_id": correlation_id})
+                r = client.post(
+                    url,
+                    json={"question": question, "correlation_id": correlation_id},
+                    headers=headers,
+                )
             if r.status_code >= 400:
                 return None, f"http_{r.status_code}"
             data = r.json()

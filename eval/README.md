@@ -72,6 +72,11 @@ python -m eval.qa_eval --prompt-version v1-baseline --use-http --analytics-base-
 |----------|------|
 | `QA_EVAL_LATENCY_SLA_SECONDS` | Latency SLA for `latency_sla` score (default 45). |
 | `ANALYTICS_QUERY_BASE_URL` | Base URL when `--use-http` (default `http://127.0.0.1:8000`). |
+| `ANALYTICS_QUERY_X_TENANT_ID` | `X-Tenant-Id` for `POST /analytics/query` (default `borderplex`). Same as `scripts/smoke/smoke_issue197.py`. |
+| `ANALYTICS_QUERY_X_USER_EMAIL` | `X-User-Email` (default `smoke@thewaifinder.com`). |
+| `ANALYTICS_QUERY_X_API_KEY` | When set, sent as `X-API-Key`. Required when the API is configured with `JIE_API_KEYS` (see `scripts/run_analytics_api.py` curl). |
+
+Per-item `X-Request-Id` is the harness `correlation_id` (not env-configured).
 
 ### Artifacts
 
