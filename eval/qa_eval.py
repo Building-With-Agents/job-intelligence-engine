@@ -319,9 +319,7 @@ def print_console_summary(
             f"over n={a_sum['n_data_backed']}  intent-only skipped: {a_sum['n_intent_only_skipped']}"
         )
     else:
-        print(
-            f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}"
-        )
+        print(f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}")
 
     ranked = sorted(rows, key=lambda r: composite_score(r[1]))
     print(f"\n=== Worst {worst_n} by composite (mean of four scores) ===")

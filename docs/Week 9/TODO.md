@@ -9,25 +9,34 @@
 
 ## Implementation status
 
-> **Branch:** `week-09/qa-eval-harness` — merged up from `development` as of 2026-04-21.
+> **Branch:** `week-09/qa-eval-harness` — 80/90 golden rows authored; waiting on Fatima for `gq-081`–`gq-090` (workflow). Answerability (5th score) added per **JIE #247**.
 
 ### Delivered artifacts
 
 | Artifact | Owner | Status | Notes |
 |----------|-------|--------|-------|
-| `eval/qa_golden_questions.json` | Bryan (gq-041–050) + Emilio (gq-051–060) | **Done — 20/20 rows** | 10 geographic + 10 comparison; all validated via `upload_qa_dataset.py --dry-run`. Bryan's reviewed and strengthened Emilio's comparison questions for production quality (decision-grounded context, concrete ideal answers, semantic `must_include` tokens, no unfilled placeholders). |
+| `eval/qa_golden_questions.json` | Pair A (gq-001–020), Pair B (gq-021–040), Pair C (gq-041–060), Pair D (gq-061–080), Fatima (gq-081–090) | **80/90 rows authored** | Pair C (Bryan/Emilio) own `gq-041`–`gq-060`; other blocks are coordinated and landed on this branch. `gq-081`–`gq-090` (workflow) are skeleton rows only — blocker for full-corpus baseline. |
 | `scripts/upload_qa_dataset.py` | Bryan | **Done** | Reads JSON → creates/upserts Langfuse dataset "LaborPulse Golden Questions". Stable `id` upsert key, full schema validation, duplicate-ID check, `--dry-run` mode, `flush()` on exit. |
-| `eval/qa_eval.py` | Emilio | **Done** | Required `--prompt-version`, dual-mode (Langfuse hosted dataset run vs local experiment), `--dry-run` / `--json` / `--limit` / `--use-http` / `--local-experiment-only` flags. Errors score 0.0 with comment (not skipped). `flush()` + `shutdown()` on exit. Console summary: means, worst-N by composite, intent confusion matrix. |
-| `eval/qa_scoring.py` | Emilio + Bryan review fixes | **Done** | Four automated scores: `intent_accuracy` (with `RELATED_INTENTS` partial-credit matrix), `evidence_citation` (keyword overlap + must_include heuristics), `confidence_flags` (weighted calibration + explanation quality), `latency_sla` (continuous SLA decay, default 45s). |
-| `eval/tests/test_qa_eval_scoring.py` | Emilio + Bryan | **Done — 11 tests passing** | Covers exact/related/mismatch intent, evidence edge cases, confidence calibration, latency boundaries, pipeline failure, happy path, confusion matrix. |
-| `eval/README.md` | Emilio | **Done** | Documents all CLI modes, environment variables, and usage examples. |
+| `eval/qa_eval.py` | Emilio | **Done** | Required `--prompt-version`, dual-mode (Langfuse hosted dataset run vs local experiment), `--dry-run` / `--json` / `--limit` / `--use-http` / `--local-experiment-only` flags. Errors score 0.0 with comment (not skipped). `flush()` + `shutdown()` on exit. Console summary: means, worst-N by composite, intent confusion matrix. Emits 5th `answerability` score (JIE #247) when the expected intent is data-backed in `INTENT_TO_DATA_BACKED`. |
+| `eval/qa_scoring.py` | Emilio + Bryan review fixes | **Done** | Four baseline scores: `intent_accuracy` (with `RELATED_INTENTS` partial-credit matrix), `evidence_citation` (keyword overlap + must_include heuristics), `confidence_flags` (weighted calibration + explanation quality), `latency_sla` (continuous SLA decay, default 45s). Plus `score_answerability` + `INTENT_TO_DATA_BACKED` map (JIE #247); composite still excludes answerability. |
+| `analytics/api/schemas.py` + `analytics/query_engine/routing.py` | Emilio (JIE #247) | **Done** | New `AnalyticsQueryResponse.row_count_returned: int` (default 0, `ge=0`); populated on the HTTP/ORM path in `run_analytics_qna`. Backward-compatible — existing tests/callers unaffected. |
+| `eval/tests/test_qa_eval_scoring.py` | Emilio + Bryan | **Done — 15 tests passing** | Covers exact/related/mismatch intent, evidence edge cases, confidence calibration, latency boundaries, pipeline failure, happy path, confusion matrix, and four new answerability cases (data-backed rows / zero rows / intent-only skipped / composite excludes answerability). |
+| `eval/README.md` | Emilio | **Done** | Documents CLI modes, env variables, usage examples, and a dedicated "Answerability (5th metric, JIE #247)" subsection. |
 
-### Review fixes applied (Bryan, 2026-04-21)
+### Open blockers before `v1-baseline` run
+
+- **Workflow rubrics missing** — `gq-081`–`gq-090` (Fatima) have empty `ideal_answer_summary` / `must_include`. Running the baseline against empty rubrics would distort `evidence_citation` (falls back to `0.75` default). Decision pending from team lead: (a) wait for Fatima, (b) skip-empty-rubrics flag, (c) run at 80 rows with a documented carve-out.
+- **`difficulty: "standard"` on `gq-061`–`gq-080`** — `scripts/upload_qa_dataset.py` enforces `{easy, medium, hard}` (line 57); 20 Pair D rows fail upload validation. Blocker for Langfuse dataset upload. Out of Pair C's lane; escalated to team lead.
+- **Schema drift on `gq-061`–`gq-080`** — extra `"source": "wfd_archetype"` field not propagated through `_build_dataset_item`; Langfuse metadata will lose provenance. Out of Pair C's lane; escalated to team lead.
+
+### Review fixes applied (Bryan, 2026-04-21 → 2026-04-23)
 
 - **Added `RELATED_INTENTS` matrix** to `eval/qa_scoring.py` — IMP-030 spec requires partial credit (0.5) for related intents; original code was binary only. Matrix covers all 9 intent categories.
 - **Rewrote Emilio's 10 comparison questions** (gq-051–060) — context fields expanded from task labels (~90 chars) to decision-grounded wfd_archetype context (~230 chars); `ideal_answer_summary` changed from SQL execution plans to expected answer content; `must_include` changed from raw column names to semantic verification tokens; removed `[to be filled from data]` placeholders.
-- **Deleted duplicate `eval/golden_questions.json`** — 90-question skeleton file (80 empty) from the golden-questions form; only `eval/qa_golden_questions.json` (20 authored rows) is the canonical source.
+- **Deleted duplicate `eval/golden_questions.json`** — 90-question skeleton file (80 empty) from the golden-questions form; only `eval/qa_golden_questions.json` is the canonical source.
 - **Fixed `pyproject.toml` duplicate keys** — merge from development introduced duplicate `run_soc_demo.py` and `seed_agent_data.py` entries that broke pytest.
+- **Answerability (JIE #247) landed** — new `AnalyticsQueryResponse.row_count_returned`, `score_answerability` + `INTENT_TO_DATA_BACKED` map, per-item + run-level summary reporting (separate from composite), 4 new tests.
+- **Hygiene cleanup (2026-04-23)** — removed `scripts/scratch_verify_local_db_health.py` (scratch debug script) and `eval/runs/qa-baseline-dry.json` (pre-fix dry-run output that pre-empted the real `v1-baseline` audit trail) from the branch.
 
 ---
 
@@ -151,12 +160,13 @@ Rough balance: **Bryan** carries dataset upload + Langfuse verification + golden
 
 ### Done when (runbook)
 
-- [ ] 80/80 questions ran with four automated scores each (failures scored, not skipped) — **currently 20/80 authored; awaiting pairs A, B, D**
-- [ ] Each trace has `evidence_citation`, `confidence_flags`, `intent_accuracy`, `latency_sla` — **scoring logic implemented and tested (11 tests passing)**
-- [ ] Dataset run **`v1-baseline`** shows all items linked — **pending full run**
+- [ ] 90/90 (or 80/90 with documented carve-out) questions ran with four automated scores each (failures scored, not skipped) — **80/90 authored on branch; workflow block (gq-081–gq-090) pending Fatima**
+- [ ] Each trace has `evidence_citation`, `confidence_flags`, `intent_accuracy`, `latency_sla` + optional `answerability` on data-backed intents — **scoring logic implemented and tested (15 tests passing, includes 4 answerability cases)**
+- [ ] Dataset upload unblocked — **`difficulty: "standard"` on gq-061–gq-080 rejected by `upload_qa_dataset.py`; escalated to team lead**
+- [ ] Dataset run **`v1-baseline`** shows all items linked — **pending upload unblock + Fatima**
 - [ ] Baseline documented in `qa_prompt_iteration_log.md` — **pending full run**
 - [x] Repeatability: a new `--prompt-version` creates a **new** run for comparison — **confirmed: `--prompt-version` is required arg; each run creates a separate dataset run**
-- [x] Pair C: **10 + 10** golden questions present; **10 + 10** Layer 2 manual scores entered (no duplicate IDs) — **20 questions authored and validated; Layer 2 manual scoring pending**
+- [x] Pair C: **10 + 10** golden questions present; no duplicate IDs — **20 questions authored and validated**; Layer 2 manual scoring pending v1-baseline run.
 
 ---
 
