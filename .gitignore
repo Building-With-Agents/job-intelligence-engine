@@ -9,6 +9,9 @@
 /coverage
 /reports
 
+# local DB rollback snapshots (e.g. pr197-rollback-*.csv)
+/snapshots/
+
 # next.js
 /.next/
 /out/
