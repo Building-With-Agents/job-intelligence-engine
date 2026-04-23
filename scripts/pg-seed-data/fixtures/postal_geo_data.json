@@ -55341,15 +55341,6 @@
     "lng": -95.09405
   },
   {
-    "zip": "74436",
-    "city": "Haskell",
-    "county": "Muskogee",
-    "state_code": "OK",
-    "state": "Oklahoma",
-    "lat": 35.80034,
-    "lng": -95.70175
-  },
-  {
     "zip": "74437",
     "city": "Henryetta",
     "county": "Okmulgee",
@@ -76932,15 +76923,6 @@
     "lng": -81.98026
   },
   {
-    "zip": "31554",
-    "city": "Nicholls",
-    "county": "Coffee",
-    "state_code": "GA",
-    "state": "Georgia",
-    "lat": 31.48265,
-    "lng": -82.61861
-  },
-  {
     "zip": "31555",
     "city": "Odum",
     "county": "Wayne",
@@ -86832,15 +86814,6 @@
     "lng": -89.62181
   },
   {
-    "zip": "61559",
-    "city": "Princeville",
-    "county": "Peoria",
-    "state_code": "IL",
-    "state": "Illinois",
-    "lat": 40.92101,
-    "lng": -89.77438
-  },
-  {
     "zip": "61560",
     "city": "Putnam",
     "county": "Putnam",
@@ -96586,15 +96559,6 @@
     "state": "Texas",
     "lat": 29.34644,
     "lng": -98.56327
-  },
-  {
-    "zip": "78212",
-    "city": "San Antonio",
-    "county": "Bexar",
-    "state_code": "TX",
-    "state": "Texas",
-    "lat": 29.46447,
-    "lng": -98.49222
   },
   {
     "zip": "78213",
@@ -111474,15 +111438,6 @@
     "lng": -84.49628
   },
   {
-    "zip": "40508",
-    "city": "Lexington",
-    "county": "Fayette",
-    "state_code": "KY",
-    "state": "Kentucky",
-    "lat": 38.05004,
-    "lng": -84.50018
-  },
-  {
     "zip": "40509",
     "city": "Lexington",
     "county": "Fayette",
@@ -117646,15 +117601,6 @@
     "state": "Minnesota",
     "lat": 43.82647,
     "lng": -94.45031
-  },
-  {
-    "zip": "56089",
-    "city": "Twin Lakes",
-    "county": "Freeborn",
-    "state_code": "MN",
-    "state": "Minnesota",
-    "lat": 43.55631,
-    "lng": -93.4508
   },
   {
     "zip": "56090",
@@ -190413,15 +190359,6 @@
     "lng": -93.70704
   },
   {
-    "zip": "64670",
-    "city": "Pattonsburg",
-    "county": "Daviess",
-    "state_code": "MO",
-    "state": "Missouri",
-    "lat": 40.04986,
-    "lng": -94.13833
-  },
-  {
     "zip": "64671",
     "city": "Polo",
     "county": "Caldwell",
@@ -215557,15 +215494,6 @@
     "state": "Alabama",
     "lat": 30.25278,
     "lng": -87.65405
-  },
-  {
-    "zip": "36548",
-    "city": "Leroy",
-    "county": "Washington",
-    "state_code": "AL",
-    "state": "Alabama",
-    "lat": 31.48326,
-    "lng": -87.97226
   },
   {
     "zip": "36549",
@@ -245617,15 +245545,6 @@
     "state": "New York",
     "lat": 41.19981,
     "lng": -73.72028
-  },
-  {
-    "zip": "10550",
-    "city": "Mount Vernon",
-    "county": "Westchester",
-    "state_code": "NY",
-    "state": "New York",
-    "lat": 40.90627,
-    "lng": -73.8351
   },
   {
     "zip": "10552",

@@ -92,22 +92,38 @@ def _facts_payload(bundle: EvidenceBundle) -> list[dict[str, Any]]:
     return rows
 
 
-def _build_main_prompt(user_query: str, intent_label: str, bundle: EvidenceBundle) -> str:
+def _build_main_prompt(
+    user_query: str,
+    intent_label: str,
+    bundle: EvidenceBundle,
+    *,
+    prior_turns_context: str | None = None,
+) -> str:
     facts_json = json.dumps(_facts_payload(bundle), ensure_ascii=False)
-    payload = {
+    payload: dict[str, Any] = {
         "user_query": user_query,
         "intent_label": intent_label,
         "period_coverage": bundle.period_coverage,
         "data_sufficiency": str(bundle.sufficiency.value),
         "citeable_facts_json": facts_json,
     }
+    ctx = (prior_turns_context or "").strip()
+    if ctx:
+        payload["prior_conversation"] = (
+            "Earlier turns in this session (for continuity only; do not treat as new evidence): " + ctx
+        )
     instructions = (
         "You are an analytics assistant. Write a concise, professional answer for workforce stakeholders.\n"
         "Rules:\n"
         "- Use ONLY information supported by citeable_facts_json and period_coverage. "
         "Do not invent statistics, employers, or time ranges.\n"
+        "- If prior_conversation is present, you may use it only to connect this answer to the thread "
+        '(e.g. "as we discussed" / same geography); still ground all numbers in citeable_facts_json.\n'
         "- You may paraphrase the summary lines; do not add numbers absent from the facts.\n"
         "- If facts are thin, keep the answer short and explicitly cautious.\n"
+        "- Salary facts: if citeable_facts_json shows salary amounts without an explicit currency "
+        "code on that line (for example `salary=50,000–70,000` with no trailing ISO code), "
+        "state the amounts as plain numbers only — do not assume USD or any other currency.\n"
         "- Do not include markdown code fences.\n"
     )
     return instructions + "Context JSON (for grounding):\n" + json.dumps(payload, ensure_ascii=False)
@@ -118,8 +134,10 @@ def _build_main_prompt_retry(
     intent_label: str,
     bundle: EvidenceBundle,
     unsupported_tokens: tuple[str, ...],
+    *,
+    prior_turns_context: str | None = None,
 ) -> str:
-    base = _build_main_prompt(user_query, intent_label, bundle)
+    base = _build_main_prompt(user_query, intent_label, bundle, prior_turns_context=prior_turns_context)
     bad = ", ".join(unsupported_tokens[:12])
     fix = (
         "\n\nYour previous draft used numbers not found in citeable_facts_json or period_coverage: "
@@ -133,14 +151,19 @@ def _build_followup_prompt(
     intent_label: str,
     bundle: EvidenceBundle,
     answer_text: str,
+    *,
+    prior_turns_context: str | None = None,
 ) -> str:
     facts_json = json.dumps(_facts_payload(bundle), ensure_ascii=False)
+    prior = (prior_turns_context or "").strip()
+    block = f"prior_conversation: {prior}\n" if prior else ""
     return (
         "Propose 2 to 3 short follow-up questions the user might ask next. "
         "They must be specific to the intent, facts, and answer below—not generic chat.\n"
         'Return ONLY a JSON array of strings, e.g. ["...","..."]. No markdown.\n\n'
         f"intent_label: {intent_label}\n"
         f"user_query: {user_query}\n"
+        f"{block}"
         f"period_coverage: {bundle.period_coverage}\n"
         f"citeable_facts_json: {facts_json}\n"
         f"answer_text: {answer_text}\n"
@@ -174,6 +197,7 @@ def synthesize_answer(
     user_query: str,
     intent_label: str,
     cost_ledger: CostLedger | None = None,
+    prior_turns_context: str | None = None,
 ) -> SynthesisResponse:
     """Produce grounded answer text, follow-ups, and cost rollups.
 
@@ -217,7 +241,7 @@ def synthesize_answer(
             cost_breakdown_usd=_cost_breakdown_usd(ledger),
         )
 
-    main_prompt = _build_main_prompt(user_query, intent_label, bundle)
+    main_prompt = _build_main_prompt(user_query, intent_label, bundle, prior_turns_context=prior_turns_context)
     main_result = complete(
         main_prompt,
         agent_name=AGENT_SYNTHESIS,
@@ -259,7 +283,13 @@ def synthesize_answer(
             unsupported_count=len(gr.unsupported_tokens),
             reason_code=gr.reason_code,
         )
-        retry_prompt = _build_main_prompt_retry(user_query, intent_label, bundle, gr.unsupported_tokens)
+        retry_prompt = _build_main_prompt_retry(
+            user_query,
+            intent_label,
+            bundle,
+            gr.unsupported_tokens,
+            prior_turns_context=prior_turns_context,
+        )
         retry_result = complete(
             retry_prompt,
             agent_name=AGENT_SYNTHESIS,
@@ -277,7 +307,13 @@ def synthesize_answer(
 
     answer_text = prefix_period_coverage(answer_text, bundle.period_coverage)
 
-    follow_prompt = _build_followup_prompt(user_query, intent_label, bundle, answer_text)
+    follow_prompt = _build_followup_prompt(
+        user_query,
+        intent_label,
+        bundle,
+        answer_text,
+        prior_turns_context=prior_turns_context,
+    )
     fu_result = complete(
         follow_prompt,
         agent_name=AGENT_FOLLOWUP,

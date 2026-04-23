@@ -22,6 +22,13 @@ from sqlglot import exp
 log = structlog.get_logger()
 
 # ---------------------------------------------------------------------------
+# Issue #197 — role_classification mis-bucket guard (employer / curriculum / workflow)
+# ---------------------------------------------------------------------------
+
+ROLE_CLASSIFICATION_GUARD_INTENTS: Final[frozenset[str]] = frozenset({"employer", "curriculum", "workflow"})
+_ISSUE197_NA_LABEL = "N/A Not an IT role"
+
+# ---------------------------------------------------------------------------
 # Ask the Data — regex validator (operational / dbo schema)
 # ---------------------------------------------------------------------------
 
@@ -155,6 +162,83 @@ def extract_tables_referenced(sql: str) -> list[str]:
         if tbl in ASK_THE_DATA_ALLOWED_TABLES:
             found.add(tbl)
     return sorted(found)
+
+
+def inject_role_classification_issue197_guard(
+    normalized_sql: str,
+    *,
+    intent_label: str,
+) -> str:
+    """Append ``role_classification != N/A Not an IT role`` for job_postings when required.
+
+    For NL→SQL intents **employer**, **curriculum**, and **workflow**, if the validated
+    query references ``role_classification`` and ``dbo.job_postings``, injects an
+    ``AND <alias>.role_classification != 'N/A Not an IT role'`` predicate on each
+    qualifying ``SELECT`` that already references both (GitHub #197 classifier bug).
+
+    If parsing fails or no injection applies, returns the input unchanged.
+    """
+    il = (intent_label or "").strip().lower()
+    if il not in ROLE_CLASSIFICATION_GUARD_INTENTS:
+        return normalized_sql
+    if not re.search(r"\brole_classification\b", normalized_sql, re.IGNORECASE):
+        return normalized_sql
+    tables = extract_tables_referenced(normalized_sql)
+    if "job_postings" not in tables:
+        return normalized_sql
+    if _ISSUE197_NA_LABEL in normalized_sql:
+        return normalized_sql
+
+    try:
+        parsed = sqlglot.parse_one(normalized_sql, dialect="postgres")
+    except Exception:
+        log.warning("issue197_role_class_guard_parse_skipped")
+        return normalized_sql
+
+    changed = False
+    for sel in list(parsed.find_all(exp.Select)):
+        frag = sel.sql(dialect="postgres")
+        low = frag.lower()
+        if "role_classification" not in low:
+            continue
+        if "job_postings" not in low:
+            continue
+        if _ISSUE197_NA_LABEL in frag:
+            continue
+
+        m = re.search(
+            r"(?is)\bfrom\s+(?:dbo\.)?job_postings\s+(?:as\s+)?(\w+)\b",
+            frag,
+        )
+        alias: str | None = m.group(1) if m else None
+        if alias is None and re.search(
+            r"(?is)\bfrom\s+(?:dbo\.)?job_postings\b(?!\s+\w)",
+            frag,
+        ):
+            alias = "job_postings"
+        if not alias:
+            continue
+
+        pred = f"{alias}.role_classification != '{_ISSUE197_NA_LABEL}'"
+        try:
+            new_sel = sel.where(pred, append=True, dialect="postgres")
+        except Exception:
+            continue
+        if new_sel is sel:
+            continue
+        if sel.parent is None:
+            parsed = new_sel
+        else:
+            sel.replace(new_sel)
+        changed = True
+
+    if not changed:
+        return normalized_sql
+    try:
+        return parsed.sql(dialect="postgres")
+    except Exception:
+        log.warning("issue197_role_class_guard_serialize_failed")
+        return normalized_sql
 
 
 # ---------------------------------------------------------------------------

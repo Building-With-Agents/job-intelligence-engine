@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from common.event_envelope import EventEnvelope
 from ingestion.agent import IngestionAgent
@@ -24,15 +24,19 @@ class TestIngestionAgent:
         assert result["agent"] == "ingestion-agent"
         assert "metrics" in result
 
+    @patch("ingestion.agent.get_adapter")
     @patch("ingestion.agent.session_scope")
     @patch("ingestion.agent.check_db_connection", return_value=True)
     @patch("ingestion.agent.deduplicate_batch")
-    def test_process_emits_ingest_batch(self, mock_dedup, mock_db, mock_session) -> None:
+    def test_process_emits_ingest_batch(self, mock_dedup, mock_db, mock_session, mock_get_adapter) -> None:
         """Output event_type is IngestBatch."""
         from ingestion.deduplicator import DedupResult
 
         # Mock dedup to return empty result (no DB needed)
         mock_dedup.return_value = DedupResult(new_records=[], duplicates_skipped=0)
+        # Do not call real Crawl4AI/Playwright — env may set SCRAPING_TARGETS.
+        mock_ad = mock_get_adapter.return_value
+        mock_ad.fetch = AsyncMock(return_value=[])
 
         agent = IngestionAgent()
         trigger = EventEnvelope(
@@ -44,14 +48,17 @@ class TestIngestionAgent:
         assert out.payload["event_type"] == "IngestBatch"
         assert out.agent_id == "ingestion-agent"
 
+    @patch("ingestion.agent.get_adapter")
     @patch("ingestion.agent.session_scope")
     @patch("ingestion.agent.check_db_connection", return_value=True)
     @patch("ingestion.agent.deduplicate_batch")
-    def test_process_preserves_correlation_id(self, mock_dedup, mock_db, mock_session) -> None:
+    def test_process_preserves_correlation_id(self, mock_dedup, mock_db, mock_session, mock_get_adapter) -> None:
         """Correlation ID passes through unchanged."""
         from ingestion.deduplicator import DedupResult
 
         mock_dedup.return_value = DedupResult(new_records=[], duplicates_skipped=0)
+        mock_ad = mock_get_adapter.return_value
+        mock_ad.fetch = AsyncMock(return_value=[])
 
         agent = IngestionAgent()
         trigger = EventEnvelope(

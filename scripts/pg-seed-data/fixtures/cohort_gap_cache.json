@@ -1,0 +1,70 @@
+[
+  {
+    "id": 1,
+    "trigger_type": "emerging_skills_scan",
+    "request_hash": "2197b84a8e5d033a93ff57295a26391e53d062cd708caa0d20b9470d87acbbaf",
+    "cohort_key": null,
+    "params": {
+      "week_start": null,
+      "min_posting_count": 1
+    },
+    "gap_data": {
+      "skills": [],
+      "week_start": null
+    },
+    "computed_at": "2026-04-16T19:26:44.860444+00:00",
+    "expires_at": "2026-04-17T19:26:44.860444+00:00"
+  },
+  {
+    "id": 2,
+    "trigger_type": "cohort_gap_analysis",
+    "request_hash": "15ae41bd673fc63a70c1951bcea6939e42c73a732b00da914e831a2593563d84",
+    "cohort_key": "demo-cohort",
+    "params": {
+      "cohort_key": "demo-cohort",
+      "week_start": null
+    },
+    "gap_data": {
+      "cohort_key": "demo-cohort",
+      "week_start": null,
+      "market_skill_demand": []
+    },
+    "computed_at": "2026-04-17T01:34:59.204849+00:00",
+    "expires_at": "2026-04-18T01:34:59.204849+00:00"
+  },
+  {
+    "id": 3,
+    "trigger_type": "role_benchmark",
+    "request_hash": "9f059d71a2a5ecec498e07c9503ddf72ad0067c7928fcafc3d24a77f0be4a46d",
+    "cohort_key": null,
+    "params": {
+      "week_start": null,
+      "canonical_role_id": "role_1"
+    },
+    "gap_data": {
+      "snapshots": [],
+      "week_start": null,
+      "canonical_role_id": "role_1"
+    },
+    "computed_at": "2026-04-17T01:34:59.228196+00:00",
+    "expires_at": "2026-04-18T01:34:59.228196+00:00"
+  },
+  {
+    "id": 4,
+    "trigger_type": "custom_employer_comparison",
+    "request_hash": "ff4d68d795eac7ec8019ba6f9715a8ed1ec049a8e081346979cad3213d421f03",
+    "cohort_key": "company_42",
+    "params": {
+      "company_id": "company_42",
+      "week_start": null
+    },
+    "gap_data": {
+      "note": "Employer-specific job rows require validated company scope in a future iteration.",
+      "company_id": "company_42",
+      "week_start": null,
+      "market_sector_context": []
+    },
+    "computed_at": "2026-04-17T01:34:59.252799+00:00",
+    "expires_at": "2026-04-18T01:34:59.252799+00:00"
+  }
+]
