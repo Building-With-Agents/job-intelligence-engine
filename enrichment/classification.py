@@ -18,6 +18,7 @@ otherwise *unknown*.
 from __future__ import annotations
 
 import asyncio
+import math
 import re
 from collections.abc import Callable
 from typing import Any
@@ -34,6 +35,24 @@ from enrichment.classifiers.soc_classifier import classify_soc
 MIN_TOKEN_LEN = 2
 MIN_FUZZY_TOKEN_LEN = 3
 MIN_ROLE_OVERLAP_SCORE = 1
+# Sector fallback uses a higher overlap bar than technology_areas (weak sector
+# matches are less trustworthy than tech-area matches).
+SECTOR_FALLBACK_SCORE_MULTIPLIER = 1.5
+
+# Meta / placeholder taxonomy titles — excluded from role classification
+# scoring (they must not win via generic token overlap). Applies to BOTH
+# ``technology_areas.title`` and ``industry_sectors.sector_title`` rows,
+# because both taxonomies have historically carried rows like
+# "N/A Not an IT role" or "Unknown" that pollute scoring.
+_META_TAXONOMY_PREFIXES: tuple[str, ...] = (
+    "n/a",
+    "not an",
+    "not classified",
+    "unknown",
+)
+
+# Back-compat alias — some external callers may still import this name.
+_META_INDUSTRY_SECTOR_PREFIXES = _META_TAXONOMY_PREFIXES
 
 # Substring hints checked against ``title.lower()`` first (longer phrases first).
 _TITLE_ROLE_HINTS: tuple[tuple[str, str], ...] = (
@@ -186,6 +205,42 @@ def _hint_role(title: str) -> str | None:
     return None
 
 
+def is_excluded_taxonomy_title(title: str) -> bool:
+    """True if *title* is a meta/placeholder taxonomy label (prefix match, case-insensitive).
+
+    Applies to both ``technology_areas.title`` and ``industry_sectors.sector_title``
+    — either table may carry entries like ``"N/A Not an IT role"`` or ``"Unknown"``
+    that would otherwise win token overlap against generic corpus text.
+    """
+    t = (title or "").strip().lower()
+    return any(t.startswith(p) for p in _META_TAXONOMY_PREFIXES)
+
+
+def filter_taxonomy_for_role_classification(
+    entries: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Drop meta/placeholder rows from any (id, title) taxonomy before scoring."""
+    return [(i, t) for i, t in entries if not is_excluded_taxonomy_title(t)]
+
+
+# Back-compat aliases — preserve the names introduced by PR #236 so any
+# external importers don't break. These delegate to the generalized helpers.
+def is_excluded_industry_sector_title(title: str) -> bool:
+    """Deprecated alias — use :func:`is_excluded_taxonomy_title`."""
+    return is_excluded_taxonomy_title(title)
+
+
+def filter_industry_sectors_for_role_classification(
+    industry_sectors: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Deprecated alias — use :func:`filter_taxonomy_for_role_classification`."""
+    return filter_taxonomy_for_role_classification(industry_sectors)
+
+
+def _sector_fallback_min_score(min_score: int) -> int:
+    return max(min_score, math.ceil(min_score * SECTOR_FALLBACK_SCORE_MULTIPLIER))
+
+
 def flatten_extraction_json(
     skills: list[Any] | None,
     tools: list[Any] | None,
@@ -263,19 +318,30 @@ def classify_role(
     Return best ``technology_areas.title``, or a title hint, or ``unclassified``.
 
     *technology_areas* / *industry_sectors* are ``(id, title)`` rows from the DB.
+
+    Both taxonomies are filtered with :func:`filter_taxonomy_for_role_classification`
+    to drop meta/placeholder rows (e.g. ``"N/A Not an IT role"``, ``"Unknown"``)
+    before scoring — they must not win via generic token overlap (#197).
+
+    Sector fallback is stricter than technology-area matching: the overlap score
+    must be at least ``max(min_score, ceil(min_score * SECTOR_FALLBACK_SCORE_MULTIPLIER))``,
+    not merely *min_score*.
     """
     hinted = _hint_role(job_title)
     if hinted:
         return hinted
 
     corpus_tokens = tokenize(corpus)
-    best_tech, tech_score = _pick_best_role(list(technology_areas), corpus_tokens)
-    best_sec, sec_score = _pick_best_role(list(industry_sectors), corpus_tokens)
+    tech_use = filter_taxonomy_for_role_classification(list(technology_areas))
+    best_tech, tech_score = _pick_best_role(tech_use, corpus_tokens)
+    sectors_use = filter_taxonomy_for_role_classification(list(industry_sectors))
+    best_sec, sec_score = _pick_best_role(sectors_use, corpus_tokens)
+    sector_min = _sector_fallback_min_score(min_score)
 
-    if tech_score >= min_score:
-        return best_tech or "unclassified"
-    if sec_score >= min_score:
-        return best_sec or "unclassified"
+    if best_tech is not None and tech_score >= min_score:
+        return best_tech
+    if best_sec is not None and sec_score >= sector_min:
+        return best_sec
     return "unclassified"
 
 

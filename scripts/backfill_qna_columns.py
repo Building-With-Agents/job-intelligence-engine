@@ -46,6 +46,21 @@ Usage
 
     # Limit batch size for the per-row passes (default 500)
     python scripts/backfill_qna_columns.py --batch-size 200
+
+Repairing misclassified ``role_classification`` (e.g. after taxonomy/classifier fixes)
+---------------------------------------------------------------------------------------
+This script only **fills NULLs**; it does not overwrite existing non-NULL values.
+To re-apply classification for rows already labeled (for example
+``N/A Not an IT role`` from an older ``classify_role`` sector fallback):
+
+1. Optionally narrow the set with a stricter ``WHERE`` clause.
+2. Reset labels to NULL, e.g.
+   ``UPDATE dbo.job_postings SET role_classification = NULL WHERE role_classification = 'N/A Not an IT role';``
+3. Preview: ``python scripts/backfill_qna_columns.py --dry-run --columns role_classification``
+4. Apply: ``python scripts/backfill_qna_columns.py --columns role_classification``
+
+Re-running the backfill after a NULL reset is **idempotent** for those rows (same NULL-only
+rules). You do **not** need ``docker compose down -v`` or any volume wipe for this repair.
 """
 
 from __future__ import annotations

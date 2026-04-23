@@ -157,6 +157,11 @@ def test_window_29d_in_merges(monkeypatch: pytest.MonkeyPatch, e2e_engine: Engin
         teardown_enrichment_e2e(e2e_engine, seed)
 
 
+@pytest.mark.live_llm
+@pytest.mark.skipif(
+    os.getenv("LLM_PROVIDER") == "mock",
+    reason="requires real LLM provider (not mock)",
+)
 def test_live_embedding_call_writes_llm_audit_log(e2e_engine: Engine) -> None:
     seed = _seed_or_skip(e2e_engine)
     before = fetch_audit_count(e2e_engine, agent_name="enrichment-dedup")

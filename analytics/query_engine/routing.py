@@ -25,18 +25,60 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
+from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
 from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
-from analytics.query_engine.sql_guardrails import extract_tables_referenced, validate_ask_the_data_sql
+from analytics.query_engine.sql_guardrails import (
+    extract_tables_referenced,
+    inject_role_classification_issue197_guard,
+    validate_ask_the_data_sql,
+)
+from analytics.tenant_scope import (
+    RegionNotEntitledError,
+    TenantAccess,
+    check_region_entitled,
+    get_tenant_access_for_pipeline,
+)
 from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
 
 _SQL_EXEC_ERR_DETAIL_MAX = 400
+
+# Issue #197 — ORM / QueryRouter path parity with guardrailed ``inject_role_classification_issue197_guard``
+_ISSUE197_INTENTS: frozenset[str] = frozenset({"employer", "curriculum", "workflow"})
+_ISSUE197_SQL_GUARD_HINT = (
+    "Always include WHERE role_classification != 'N/A Not an IT role' "
+    "in any query that references the role_classification column. "
+    "This guards against a known classifier bug (issue #197) where "
+    "real IT roles are misbucketed."
+)
+_NA_IT_ROLE_PLACEHOLDER = "N/A Not an IT role"
+
+
+def _get_role_classification_value(row: dict[str, Any]) -> str | None:
+    if "role_classification" in row and row["role_classification"] is not None:
+        return str(row["role_classification"]).strip()
+    for key, val in row.items():
+        if str(key).lower() == "role_classification" and val is not None:
+            return str(val).strip()
+    return None
+
+
+def _filter_issue197_misbucket_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Exclude rows whose ``role_classification`` is the known non-IT mis-bucket (#197)."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        rc = _get_role_classification_value(row)
+        if rc == _NA_IT_ROLE_PLACEHOLDER:
+            continue
+        out.append(row)
+    return out
+
 
 AGENT_INTENT = "analytics-qna-intent"
 AGENT_SQL = "analytics-qna-sql"
@@ -67,6 +109,7 @@ def _truncate_sql_execution_error(exc: BaseException, *, max_len: int = _SQL_EXE
 # columns promoted to job_postings by #170; CRITICAL block updated accordingly).
 # Extended: #173 (role_classification promoted), #174 (structured salary columns promoted),
 # #199 (JSONB unnest patterns for tasks/responsibilities/context — no-aggregate dimensions).
+# #197 (role_classification mis-bucket guard for employer / curriculum / workflow NL→SQL).
 _SCHEMA_HINT = """\
 Allowed tables (PostgreSQL dbo schema only; always reference as dbo.table_name):
 
@@ -87,7 +130,8 @@ Operational tables (use when aggregates cannot answer):
   job_postings(job_posting_id, company_id, job_title, employment_type, location,
                salary_range, salary_min, salary_max, salary_currency, salary_period,
                status, source, external_id, createdat, ingestion_run_id,
-               date_posted, seniority_level, is_remote, role_classification,
+               date_posted, seniority_level, is_remote, role_classification
+                 (enrichment classifier; ~657 IT postings mislabeled as 'N/A Not an IT role' — see issue #197),
                borderplex_subregion, temporal_period, spam_tier, quality_score, is_spam,
                soc_code, naics_code, canonical_role_id, employer_profile_id,
                is_duplicate, zip_code)
@@ -148,8 +192,23 @@ CRITICAL — columns that do NOT exist (never generate SQL referencing these):
   - job_postings has NO tasks, responsibilities, or context column.
     Those live as JSONB arrays on dbo.extracted_intelligence — see unnest patterns above.
   - Never reference: publish_date, employer_id, tech_area_id, start_date, end_date, location_id.
-    These columns are deprecated (99-100% NULL) and must not appear in any query.\
+    These columns are deprecated (99-100% NULL) and must not appear in any query.
+
+INTENT employer | curriculum | workflow — role_classification guard (issue #197):
+  Whenever generated SQL references dbo.job_postings.role_classification (including JOINs and
+  subqueries on job_postings), you MUST restrict out the known mis-bucketed placeholder:
+    AND <alias>.role_classification <> 'N/A Not an IT role'
+  Use the real alias for dbo.job_postings (e.g. jp.role_classification if FROM dbo.job_postings AS jp).
+  Apply on every SELECT that reads role_classification from job_postings so results are not
+  polluted by ~657 real IT roles misclassified as non-IT.\
 """
+
+_SQL_INTENTS_ROLE_CLASS_GUARD = (
+    "INTENT-SPECIFIC (employer | curriculum | workflow): If your SELECT references "
+    "dbo.job_postings.role_classification, always add AND <jp>.role_classification <> "
+    "'N/A Not an IT role' (use the correct job_postings alias). Issue #197 — classifier "
+    "mislabels many IT postings; never return that bucket as if it were a reliable IT slice.\n"
+)
 
 
 def _query_fingerprint(q: str) -> str:
@@ -166,8 +225,11 @@ def _intent_prompt(user_query: str) -> str:
 
 
 def _sql_prompt(user_query: str, intent_label: str) -> str:
+    il = (intent_label or "").strip().lower()
+    role_guard = _SQL_INTENTS_ROLE_CLASS_GUARD if il in ("employer", "curriculum", "workflow") else ""
     return (
         f"{_SCHEMA_HINT}\n"
+        f"{role_guard}"
         "Write exactly one read-only SELECT query (WITH ... SELECT is allowed). "
         "No DDL/DML, no multiple statements, no tables outside the allowlist.\n"
         "Return ONLY JSON with a single key sql whose value is the SQL string, e.g. "
@@ -276,6 +338,22 @@ def run_guardrailed_analytics_query(
         return qna.run_analytics_qna(payload, cost_ledger=ledger)
 
     ok, reason, normalized_sql = validate_ask_the_data_sql(raw_sql)
+    if ok and normalized_sql:
+        guarded = inject_role_classification_issue197_guard(
+            normalized_sql,
+            intent_label=intent_label,
+        )
+        if guarded != normalized_sql:
+            ok2, reason2, normalized_sql2 = validate_ask_the_data_sql(guarded)
+            if ok2 and normalized_sql2:
+                normalized_sql = normalized_sql2
+            else:
+                log.warning(
+                    "issue197_role_class_guard_validation_failed",
+                    reason=reason2,
+                    intent_label=intent_label,
+                )
+
     audit_sql = normalized_sql if ok and normalized_sql else raw_sql.strip()
     audit_log.log_sql_validation_to_llm_audit(
         sql_text=audit_sql,
@@ -404,12 +482,41 @@ def run_analytics_qna(
     session: Session,
     question: str,
     correlation_id: str | None,
+    *,
+    laborpulse_conversation_id: str | None = None,
+    tenant_id: str | None = None,
+    user_email: str | None = None,
+    tenant_access: TenantAccess | None = None,
 ) -> AnalyticsQueryResponse:
-    """Run Q&A inside an open SQLAlchemy session (same transaction as caller)."""
+    """Run Q&A inside an open SQLAlchemy session (same transaction as caller).
+
+    JIE #223: pass ``laborpulse_conversation_id`` + ``tenant_id`` + ``user_email`` to load/save
+    multi-turn Q&A in ``dbo.laborpulse_analytics_*`` (LaborPulse /analytics/query).
+
+    JIE #224: pass ``tenant_access`` from the LaborPulse API (or omit to default to Borderplex for
+    local callers); enforces subregion SQL filters and region entitlement.
+    """
     cid = correlation_id or str(uuid.uuid4())
     endpoint = "POST /analytics/query"
     q = (question or "").strip()
     payload_audit: dict[str, Any] = {}
+    tid = (tenant_id or "").strip()
+    uem = (user_email or "").strip()
+    taccess = tenant_access or get_tenant_access_for_pipeline(tid or None)
+    prior_for_llm = ""
+    if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
+        prior_for_llm = load_prior_context_for_llm(
+            session,
+            conversation_id=laborpulse_conversation_id.strip(),
+            tenant_id=tid,
+            user_email=uem,
+        )
+        if prior_for_llm:
+            log.info(
+                "laborpulse_prior_context_loaded",
+                request_id=cid,
+                conversation_id=laborpulse_conversation_id.strip(),
+            )
 
     if not q:
         audit_log.insert_orchestration_audit(
@@ -422,6 +529,7 @@ def run_analytics_qna(
             success=False,
             error_code="empty_question",
             payload={},
+            tenant_id=taccess.tenant_id,
         )
         return AnalyticsQueryResponse(
             answer="Please provide a non-empty question.",
@@ -434,7 +542,13 @@ def run_analytics_qna(
 
     try:
         ledger = CostLedger()
-        classification = classify_workforce_question(q, correlation_id=cid, cost_ledger=ledger)
+        pctx = (prior_for_llm or "").strip() or None
+        classification = classify_workforce_question(
+            q,
+            correlation_id=cid,
+            cost_ledger=ledger,
+            conversation_context=pctx,
+        )
         intent_label = str(classification.get("intent") or "other")
         conf = float(classification.get("confidence") or 0.0)
         payload_audit = {
@@ -443,22 +557,41 @@ def run_analytics_qna(
             "needs_clarification": classification.get("needs_clarification"),
         }
 
+        if intent_label in _ISSUE197_INTENTS:
+            classification = {
+                **classification,
+                "issue197_sql_guard_hint": _ISSUE197_SQL_GUARD_HINT,
+            }
+            log.info(
+                "issue197_orm_guard_hint_attached",
+                intent=intent_label,
+                correlation_id=cid,
+            )
+
+        ent = classification.get("extracted_entities")
+        if isinstance(ent, dict):
+            check_region_entitled(taccess, q, ent)
+        else:
+            check_region_entitled(taccess, q, {})
+
         router = QueryRouter()
-        route_result = router.route(classification, session)
+        route_result = router.route(classification, session, tenant=taccess)
 
         rows = _json_safe_rows(route_result.rows)
+        if intent_label in _ISSUE197_INTENTS:
+            rows = _filter_issue197_misbucket_rows(rows)
         col_names = list(rows[0].keys()) if rows else []
         router_error = _router_error_message(route_result)
         sql_line = _sql_generated_line(route_result)
 
         q_payload = QueryResultPayload(
-            request=QueryRequest(query=q),
+            request=QueryRequest(query=q, prior_turns_context=pctx),
             intent_label=intent_label,
             classification_confidence=conf,
             executed_sql=None,
             columns=col_names,
             rows=rows,
-            row_count_returned=int(route_result.row_count),
+            row_count_returned=len(rows),
             result_truncated=bool(route_result.is_partial),
             tables_referenced=list(route_result.tables_used),
             router_error=router_error,
@@ -482,10 +615,39 @@ def run_analytics_qna(
                 "citations": len(syn.citations),
                 "refused": syn.refused,
             },
+            tenant_id=taccess.tenant_id,
         )
 
-        return _synthesis_to_api(syn, sql_generated=sql_line)
+        api = _synthesis_to_api(syn, sql_generated=sql_line)
+        if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
+            append_conversation_turn(
+                session,
+                conversation_id=laborpulse_conversation_id.strip(),
+                tenant_id=tid,
+                user_email=uem,
+                question=q,
+                answer=api.answer,
+                intent_label=intent_label,
+            )
+        return api
 
+    except RegionNotEntitledError as rne:
+        audit_log.insert_orchestration_audit(
+            session,
+            correlation_id=cid,
+            endpoint=endpoint,
+            question=q,
+            sql_generated=None,
+            confidence=0.0,
+            success=False,
+            error_code="region_not_entitled",
+            payload={
+                **payload_audit,
+                "requested_region": rne.requested_region,
+            },
+            tenant_id=taccess.tenant_id,
+        )
+        raise
     except RuntimeError as exc:
         code = str(exc)
         log.warning("analytics_query_runtime_error", error=code, correlation_id=cid)
@@ -499,6 +661,7 @@ def run_analytics_qna(
             success=False,
             error_code=code,
             payload=payload_audit,
+            tenant_id=taccess.tenant_id,
         )
         msg = (
             "The query took too long and was stopped."
@@ -525,6 +688,7 @@ def run_analytics_qna(
             success=False,
             error_code="internal_error",
             payload={**payload_audit, "error": type(exc).__name__},
+            tenant_id=taccess.tenant_id,
         )
         return AnalyticsQueryResponse(
             answer="An unexpected error occurred while processing your question.",

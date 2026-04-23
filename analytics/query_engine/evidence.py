@@ -48,6 +48,8 @@ _PERIOD_START_KEYS = ("period_start", "start_date", "date_from", "from_date")
 _PERIOD_END_KEYS = ("period_end", "end_date", "date_to", "to_date")
 _MAX_FACT_FIELDS = 5
 _SALARY_TOKENS = ("salary", "wage", "compensation", "p25", "p50", "p75", "p95")
+# When present, consolidated into one `salary=…` segment (see `_structured_salary_summary_line`).
+_SALARY_STRUCT_SKIP_NORM = frozenset({"salary_min", "salary_max", "salary_currency", "salary_range"})
 
 
 def _normalize_key(value: str) -> str:
@@ -82,6 +84,57 @@ def _format_value(value: Any) -> str:
 
 def _pretty_key(key: str) -> str:
     return _normalize_key(key).replace("_", " ")
+
+
+def _get_cell_by_norm(row: dict[str, Any], norm_key: str) -> Any:
+    for key, value in row.items():
+        if _normalize_key(key) == norm_key:
+            return value
+    return None
+
+
+def _clean_currency_code(value: Any) -> str | None:
+    """Return a non-empty currency token or None (never the literal 'null' / whitespace)."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    token = value.strip()
+    if not token:
+        return None
+    if token.lower() in ("null", "none", "undefined", "n/a", "na"):
+        return None
+    return token
+
+
+def _structured_salary_summary_line(row: dict[str, Any]) -> str | None:
+    """Format salary_min / salary_max with optional currency; numbers only when currency is unknown."""
+    smin = _get_cell_by_norm(row, "salary_min")
+    smax = _get_cell_by_norm(row, "salary_max")
+    if smin is None and smax is None:
+        return None
+
+    def fmt_num(v: Any) -> str | None:
+        return _format_value(v) if _is_number(v) else None
+
+    a = fmt_num(smin) if smin is not None else None
+    b = fmt_num(smax) if smax is not None else None
+    if a is None and b is None:
+        return None
+
+    if a is not None and b is not None:
+        body = f"{a}–{b}"
+    elif a is not None:
+        body = a
+    elif b is not None:
+        body = b
+    else:
+        return None
+
+    cur = _clean_currency_code(_get_cell_by_norm(row, "salary_currency"))
+    if cur:
+        return f"{body} {cur}"
+    return body
 
 
 def _ordered_row_keys(payload: QueryResultPayload, row: dict[str, Any]) -> list[str]:
@@ -249,11 +302,26 @@ def _source_table(payload: QueryResultPayload) -> str | None:
 
 def _row_summary(payload: QueryResultPayload, row: dict[str, Any]) -> str:
     parts: list[str] = []
-    for key in _ordered_row_keys(payload, row)[:_MAX_FACT_FIELDS]:
+    sal_line = _structured_salary_summary_line(row)
+    if sal_line:
+        parts.append(f"salary={sal_line}")
+
+    skip_norm: set[str] = set()
+    if sal_line:
+        skip_norm.update(_SALARY_STRUCT_SKIP_NORM)
+
+    count = 0
+    for key in _ordered_row_keys(payload, row):
+        nk = _normalize_key(key)
+        if nk in skip_norm:
+            continue
         value = row.get(key)
         if _is_empty(value):
             continue
         parts.append(f"{_pretty_key(key)}={_format_value(value)}")
+        count += 1
+        if count >= _MAX_FACT_FIELDS:
+            break
     return "; ".join(parts) + "." if parts else "Returned row contained no usable values."
 
 

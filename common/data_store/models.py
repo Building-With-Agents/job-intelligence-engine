@@ -9,7 +9,8 @@ Agent-created tables: raw_ingested_jobs, job_ingestion_runs, normalized_jobs,
     employer_profiles, canonical_roles, role_snapshot_weekly, disruption_fingerprints,
     analytics_pipeline_state, sector_summary_weekly, geo_demand_weekly,
     skill_demand_weekly, tool_demand_weekly, skill_velocity, skill_co_occurrence,
-    cohort_gap_cache, orchestration_audit_log.
+    cohort_gap_cache, orchestration_audit_log, qa_feedback, conversation_log,
+    laborpulse_analytics_conversation, laborpulse_analytics_turn.
 Reference tables (seeded, agent-owned): companies, industry_sectors,
     technology_areas, skills, socc, naics, job_postings.
 
@@ -877,3 +878,120 @@ class OrchestrationAuditLog(Base):
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# Labor Pulse — Q&A feedback (Next.js API upsert)
+# ---------------------------------------------------------------------------
+
+
+class QaFeedback(Base):
+    """Thumbs / feedback on a Q&A turn; upsert key is (session_id, message_id)."""
+
+    __tablename__ = "qa_feedback"
+    __table_args__ = {"schema": "dbo"}
+
+    session_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    message_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    feedback: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Labor Pulse — conversation log (Next.js API; idempotent on session + message)
+# ---------------------------------------------------------------------------
+
+
+class ConversationLog(Base):
+    """Completed Q&A turn for session analytics; unique (session_id, message_id)."""
+
+    __tablename__ = "conversation_log"
+    __table_args__ = (
+        UniqueConstraint("session_id", "message_id", name="conversation_log_session_message_unique"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    session_id: Mapped[str] = mapped_column(Text, nullable=False)
+    message_id: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+# ---------------------------------------------------------------------------
+# LaborPulse — JIE #223 multi-turn Q&A memory (Postgres; survives restarts)
+# ---------------------------------------------------------------------------
+
+
+class LaborPulseAnalyticsConversation(Base):
+    """One LaborPulse thread: ``conversation_id`` UUID + scoping to tenant and user email."""
+
+    __tablename__ = "laborpulse_analytics_conversation"
+    __table_args__ = (
+        Index("ix_laborpulse_ac_tenant_user", "tenant_id", "user_email"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    user_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class LaborPulseAnalyticsTurn(Base):
+    """Q/A turn row for follow-up context (JIE #223)."""
+
+    __tablename__ = "laborpulse_analytics_turn"
+    __table_args__ = (
+        Index("ix_laborpulse_at_conv", "conversation_id", "turn_index"),
+        UniqueConstraint("conversation_id", "turn_index", name="uq_laborpulse_turn_conv_idx"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("dbo.laborpulse_analytics_conversation.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    turn_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    intent_label: Mapped[str] = mapped_column(String(64), nullable=False, default="other")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )

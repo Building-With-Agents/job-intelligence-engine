@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any
 
 import httpx
 
 MOCK_ANALYTICS_QUERY_RESPONSE: dict[str, Any] = {
+    "conversation_id": "00000000-0000-4000-8000-000000000001",
     "answer": "Mock answer for testing",
-    "evidence": ["Source 1", "Source 2"],
-    "confidence": 0.87,
+    "evidence": [
+        {"title": "Mock", "source": "fixture", "snippet": "Source 1", "supporting_count": None, "time_period": None},
+        {"title": "Mock", "source": "fixture", "snippet": "Source 2", "supporting_count": None, "time_period": None},
+    ],
+    "confidence": "high",
     "follow_up_questions": ["What skills are trending?", "Which roles are emerging?"],
     "sql_generated": "SELECT TOP 100 * FROM analytics_aggregates",
     "cost_usd": 0.002,
@@ -49,9 +54,19 @@ def post_analytics_query(
         return {"ok": True, **out}
 
     url = f"{analytics_query_base_url()}/analytics/query"
+    headers: dict[str, str] = {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": os.getenv("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
+        "X-User-Email": os.getenv("ANALYTICS_QUERY_X_USER_EMAIL", "dashboard@thewaifinder.com").strip()
+        or "dashboard@thewaifinder.com",
+        "X-Request-Id": os.getenv("ANALYTICS_QUERY_X_REQUEST_ID", "").strip() or str(uuid.uuid4()),
+    }
+    api_key = os.getenv("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if api_key:
+        headers["X-API-Key"] = api_key
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
-            resp = client.post(url, json={"query": q})
+            resp = client.post(url, json={"question": q}, headers=headers)
     except httpx.TimeoutException:
         return {
             "ok": False,
@@ -70,6 +85,16 @@ def post_analytics_query(
         }
 
     if resp.status_code >= 400:
+        if resp.status_code == 401:
+            return {
+                "ok": False,
+                "error": (
+                    "The analytics API rejected the request (HTTP 401). "
+                    "Set ANALYTICS_QUERY_X_API_KEY to a secret that matches JIE_API_KEYS on the API "
+                    "server (JIE #226), and ensure X-Tenant-Id / X-User-Email / X-Request-Id are sent "
+                    "(defaults come from ANALYTICS_QUERY_X_* env vars; JIE #222)."
+                ),
+            }
         return {
             "ok": False,
             "error": f"The analytics API returned an error (HTTP {resp.status_code}).",

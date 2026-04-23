@@ -48,7 +48,11 @@ def insert_orchestration_audit(
     success: bool,
     error_code: str | None,
     payload: dict[str, Any] | None,
+    tenant_id: str | None = None,
 ) -> None:
+    merged: dict[str, Any] = dict(payload) if payload is not None else {}
+    if tenant_id is not None and tenant_id.strip():
+        merged["tenant_id"] = (tenant_id or "").strip()
     session.add(
         OrchestrationAuditLog(
             correlation_id=correlation_id,
@@ -58,6 +62,6 @@ def insert_orchestration_audit(
             confidence=confidence,
             success=success,
             error_code=error_code,
-            payload=payload,
+            payload=merged or None,
         )
     )

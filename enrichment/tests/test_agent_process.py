@@ -56,11 +56,13 @@ def test_process_is_spam_none_flagged_for_review() -> None:
     assert out.payload["flagged_for_review_count"] == 1
 
 
+@patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=False)
 @patch("enrichment.agent.resolve_sector", return_value=None)
 @patch.object(EnrichmentAgent, "enrich_record")
 def test_process_is_spam_false_calls_enrich_once(
     mock_enrich: MagicMock,
     mock_sector: MagicMock,
+    mock_parallel_disabled: MagicMock,
 ) -> None:
     mock_enrich.return_value = {"ok": True}
     agent = EnrichmentAgent()
@@ -77,11 +79,13 @@ def test_process_is_spam_false_calls_enrich_once(
     assert out.payload["flagged_for_review_count"] == 0
 
 
+@patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=False)
 @patch("enrichment.agent.resolve_sector", return_value=None)
 @patch.object(EnrichmentAgent, "enrich_record")
 def test_process_degraded_on_enrich_raises(
     mock_enrich: MagicMock,
     mock_sector: MagicMock,
+    mock_parallel_disabled: MagicMock,
 ) -> None:
     mock_enrich.side_effect = RuntimeError("boom")
     agent = EnrichmentAgent()
