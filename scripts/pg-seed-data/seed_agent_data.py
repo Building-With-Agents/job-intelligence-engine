@@ -67,17 +67,20 @@ UPSERT_UPDATE_COLUMNS: dict[str, list[str]] = {
 # Tables ordered so that FK dependencies are satisfied:
 # companies has no FK deps — must be before job_postings (company_id FK)
 # naics has no FK deps — reference table for NAICS codes
+# canonical_roles has no FK deps on other agent tables — must be before
+#   job_postings (canonical_role_id FK, referenced by ~55% of rows)
 # raw_ingested_jobs has no FK deps on other agent tables
 # job_ingestion_runs has no FK deps on other agent tables
 # normalized_jobs → raw_ingested_jobs (via raw_ingested_job_id)
 # extracted_intelligence → normalized_jobs (via normalized_job_id)
 # employer_profiles has no FK deps on other agent tables
-# job_postings → companies (via company_id)
+# job_postings → companies (via company_id), canonical_roles (via canonical_role_id)
 # llm_audit_log has no FK deps on other agent tables
 
 INSERT_ORDER = [
     "companies",
     "naics",
+    "canonical_roles",
     "raw_ingested_jobs",
     "job_ingestion_runs",
     "normalized_jobs",
