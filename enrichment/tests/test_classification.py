@@ -7,7 +7,11 @@ from enrichment.classification import (
     classify_job,
     classify_role,
     classify_seniority,
+    filter_industry_sectors_for_role_classification,
+    filter_taxonomy_for_role_classification,
     flatten_extraction_json,
+    is_excluded_industry_sector_title,
+    is_excluded_taxonomy_title,
     tokenize,
 )
 
@@ -43,6 +47,115 @@ def test_classify_role_sector_fallback() -> None:
         [("s1", "Healthcare Technology")],
     )
     assert role == "Healthcare Technology"
+
+
+def test_classify_role_na_placeholder_sector_does_not_beat_real_sector() -> None:
+    """N/A Not an IT role must not win sector fallback when a real sector scores higher."""
+    role = classify_role(
+        "Hospital IT Lead",
+        "hospital healthcare technology patient systems",
+        [],
+        [
+            ("bad", "N/A Not an IT role"),
+            ("s1", "Healthcare Technology"),
+        ],
+    )
+    assert role == "Healthcare Technology"
+
+
+def test_classify_role_only_meta_sectors_yields_unclassified() -> None:
+    """After filtering placeholder sectors, empty list → no sector fallback."""
+    role = classify_role(
+        "Obscure Role",
+        "it department not listed obscure",
+        [],
+        [("na", "N/A Not an IT role")],
+    )
+    assert role == "unclassified"
+
+
+def test_classify_role_sector_fallback_requires_stronger_overlap() -> None:
+    """Single-token sector overlap scores 1; sector bar is 2 when min_score is 1."""
+    role = classify_role(
+        "Store Clerk",
+        "retail sales register",
+        [],
+        [("s1", "Retail")],
+    )
+    assert role == "unclassified"
+
+
+def test_classify_role_na_placeholder_tech_area_does_not_beat_real_tech_area() -> None:
+    """N/A Not an IT role in technology_areas (not sectors!) must not win.
+
+    Regression test for the real-world bug: `dbo.technology_areas` has historically
+    carried an ``N/A Not an IT role`` row which was winning ``classify_role``'s
+    first branch before any sector fallback was even considered (#197).
+
+    Uses title that doesn't trigger ``_hint_role`` so we exercise the taxonomy-scoring path.
+    """
+    role = classify_role(
+        "Hospital IT Lead",
+        "hospital patient health records clinical systems",
+        [
+            ("bad", "N/A Not an IT role"),
+            ("t1", "Healthcare Technology"),
+        ],
+        [],
+    )
+    assert role == "Healthcare Technology"
+
+
+def test_classify_role_only_meta_tech_areas_yields_unclassified() -> None:
+    """When technology_areas contains only meta-labels, classifier must fall through.
+
+    Uses title/corpus that neither triggers ``_hint_role`` nor matches any real sector.
+    """
+    role = classify_role(
+        "Obscure Role",
+        "it department not listed obscure",
+        [("bad", "N/A Not an IT role")],
+        [],
+    )
+    assert role == "unclassified"
+
+
+def test_is_excluded_taxonomy_title() -> None:
+    assert is_excluded_taxonomy_title("N/A Not an IT role")
+    assert is_excluded_taxonomy_title("  not classified (misc) ")
+    assert is_excluded_taxonomy_title("unknown")
+    assert is_excluded_taxonomy_title("UNKNOWN")
+    assert not is_excluded_taxonomy_title("Healthcare Technology")
+    assert not is_excluded_taxonomy_title("Software Development")
+
+
+def test_is_excluded_industry_sector_title_backcompat() -> None:
+    """Back-compat alias — same behavior as is_excluded_taxonomy_title."""
+    assert is_excluded_industry_sector_title("N/A Not an IT role")
+    assert is_excluded_industry_sector_title("  not classified (misc) ")
+    assert not is_excluded_industry_sector_title("Healthcare Technology")
+
+
+def test_filter_taxonomy_for_role_classification() -> None:
+    rows = [
+        ("a", "N/A Not an IT role"),
+        ("b", "Healthcare Technology"),
+        ("c", "Unknown"),
+        ("d", "Software Development"),
+    ]
+    assert filter_taxonomy_for_role_classification(rows) == [
+        ("b", "Healthcare Technology"),
+        ("d", "Software Development"),
+    ]
+
+
+def test_filter_industry_sectors_for_role_classification_backcompat() -> None:
+    """Back-compat alias — same behavior as filter_taxonomy_for_role_classification."""
+    rows = [
+        ("a", "N/A Not an IT role"),
+        ("b", "Healthcare Technology"),
+    ]
+    assert filter_industry_sectors_for_role_classification(rows) == [("b", "Healthcare Technology")]
 
 
 def test_classify_role_unclassified() -> None:

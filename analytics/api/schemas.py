@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -18,6 +18,8 @@ class EvidenceItem(BaseModel):
 
 
 class AnalyticsQueryRequest(BaseModel):
+    """Legacy Week 8 request shape (dashboard / older clients)."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     question: str = Field(
@@ -27,6 +29,41 @@ class AnalyticsQueryRequest(BaseModel):
         validation_alias=AliasChoices("question", "query"),
     )
     correlation_id: str | None = Field(default=None, max_length=128)
+
+
+class LaborPulseQueryRequest(BaseModel):
+    """LaborPulse / wfd-os ``POST /analytics/query`` JSON body (JIE #222)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    question: str = Field(..., max_length=20_000)
+    conversation_id: str | None = Field(
+        default=None,
+        max_length=36,
+        description="Optional UUID for multi-turn; omitted on first turn.",
+    )
+
+
+class LaborPulseEvidenceItem(BaseModel):
+    """Citation shape for LaborPulse / wfd-os ``QueryResponse`` (JIE #225)."""
+
+    title: str = ""
+    source: str = ""
+    snippet: str = ""
+    supporting_count: int | None = None
+    time_period: str | None = None
+
+
+class LaborPulseQueryResponse(BaseModel):
+    """Wire JSON for ``POST /analytics/query`` — align with wfd-os ``QueryResponse`` (JIE #225)."""
+
+    conversation_id: str
+    answer: str
+    evidence: list[LaborPulseEvidenceItem]
+    confidence: Literal["low", "medium", "high"]
+    follow_up_questions: list[str]
+    cost_usd: float
+    sql_generated: str
 
 
 class AnalyticsQueryResponse(BaseModel):

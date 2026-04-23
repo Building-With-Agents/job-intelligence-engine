@@ -31,9 +31,11 @@ def run_analytics_qna(
     References: GitHub #117, ``.cursor/rules/analytics-qna-synthesis.mdc``.
     """
     bundle = build_evidence_bundle(query_result)
+    prior = (getattr(query_result.request, "prior_turns_context", None) or "").strip() or None
     return synthesize_answer(
         bundle,
         user_query=query_result.request.query,
         intent_label=query_result.intent_label,
         cost_ledger=cost_ledger,
+        prior_turns_context=prior,
     )

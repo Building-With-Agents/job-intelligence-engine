@@ -177,6 +177,7 @@ def classify_workforce_question(
     correlation_id: str | None = None,
     max_tokens: int = 500,
     cost_ledger: CostLedger | None = None,
+    conversation_context: str | None = None,
 ) -> dict[str, Any]:
     """Classify a free-text workforce question and extract entities.
 
@@ -193,7 +194,16 @@ def classify_workforce_question(
     if not q:
         return _fallback_other("empty_question")
 
-    prompt = f"User question:\n{q}\n"
+    ctx = (conversation_context or "").strip()
+    if ctx:
+        prompt = (
+            "The user is continuing a conversation. Use the prior Q&A below to resolve "
+            "pronouns, “the same region”, and short follow-up questions that refer to earlier context.\n\n"
+            f"{ctx}\n\n"
+            f"Current user question (this turn only):\n{q}\n"
+        )
+    else:
+        prompt = f"User question:\n{q}\n"
 
     try:
         result = complete(

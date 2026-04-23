@@ -4,21 +4,31 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+import structlog
+import structlog.contextvars as scv
+from fastapi import APIRouter, Header, HTTPException, Request
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from analytics.api.analytics_api_keys import load_api_keys, validate_api_key_header
+from analytics.api.laborpulse_wire import (
+    resolve_laborpulse_conversation_id,
+    to_laborpulse_query_response,
+    validate_laborpulse_question,
+)
 from analytics.api.schemas import (
-    AnalyticsQueryRequest,
-    AnalyticsQueryResponse,
     CohortGapAnalysisRequest,
     CustomEmployerComparisonRequest,
     EmergingSkillsScanRequest,
+    LaborPulseQueryRequest,
+    LaborPulseQueryResponse,
     RoleBenchmarkRequest,
     TriggerEnvelope,
 )
@@ -26,10 +36,17 @@ from analytics.query_engine import audit_log
 from analytics.query_engine.execute_safe import execute_validated_query
 from analytics.query_engine.routing import run_analytics_qna
 from analytics.query_engine.sql_guardrails import validate_sql
+from analytics.tenant_scope import (
+    RegionNotEntitledError,
+    UnknownTenantIdError,
+    get_tenant_access,
+)
 from common.data_store.database import session_scope
 from common.data_store.models import CohortGapCache
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+log = structlog.get_logger()
 
 _CACHE_TTL = timedelta(hours=24)
 _SAFE_TOKEN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
@@ -304,10 +321,127 @@ def run_custom_employer_comparison(
     return TriggerEnvelope(trigger=ttype, cached=False, computed_at=now.isoformat(), data=gap_data)
 
 
-@router.post("/query", response_model=AnalyticsQueryResponse)
-def post_analytics_query(body: AnalyticsQueryRequest) -> AnalyticsQueryResponse:
-    with session_scope() as session:
-        return run_analytics_qna(session, body.question, body.correlation_id)
+@router.post("/query", response_model=LaborPulseQueryResponse)
+async def post_analytics_query(
+    request: Request,
+    *,
+    content_type: str | None = Header(default=None, alias="Content-Type"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    x_user_email: str | None = Header(default=None, alias="X-User-Email"),
+    x_request_id: str | None = Header(default=None, alias="X-Request-Id"),
+) -> LaborPulseQueryResponse:
+    """LaborPulse ``POST /analytics/query`` — JSON body, required headers, Q&A pipeline (JIE #222).
+
+    **Body:** ``{ "question": str, "conversation_id": str | null }`` (``LaborPulseQueryRequest``).
+
+    **Headers:** ``Content-Type: application/json``, ``X-Tenant-Id``, ``X-User-Email``,
+    ``X-Request-Id``, ``X-API-Key`` (#226). ``X-Request-Id`` is propagated as ``request_id`` in
+    structured logs and Langfuse span metadata (``common/llm_adapter``).
+
+    **Issue #197:** ``QueryRouter`` / synthesis path unchanged.
+
+    **Issue #225:** Response matches ``LaborPulseQueryResponse`` (seven fields).
+
+    **Issue #223:** ``conversation_id`` is scoped by ``X-Tenant-Id`` / ``X-User-Email``; prior turns
+    load from ``dbo.laborpulse_analytics_*`` and are injected into intent + synthesis.
+
+    **Issue #226:** API key allowlist before DB access.
+    """
+    try:
+        ct = (content_type or "").lower().split(";", 1)[0].strip()
+        if ct != "application/json":
+            raise HTTPException(status_code=400, detail="invalid_content_type")
+
+        raw = await request.body()
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=400, detail="invalid_json") from exc
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="invalid_json")
+
+        try:
+            body = LaborPulseQueryRequest.model_validate(payload)
+        except ValidationError as exc:
+            raise HTTPException(status_code=400, detail="invalid_request_body") from exc
+
+        if not (x_tenant_id or "").strip():
+            raise HTTPException(status_code=400, detail="missing_tenant_id")
+        if not (x_user_email or "").strip():
+            raise HTTPException(status_code=400, detail="missing_user_email")
+        if not (x_request_id or "").strip():
+            raise HTTPException(status_code=400, detail="missing_request_id")
+
+        scv.bind_contextvars(
+            request_id=(x_request_id or "").strip(),
+            tenant_id=(x_tenant_id or "").strip(),
+            user_email=(x_user_email or "").strip(),
+        )
+
+        try:
+            validate_laborpulse_question(body.question)
+        except ValueError as exc:
+            code = str(exc)
+            if code in {"empty_question", "question_too_short", "question_too_broad"}:
+                raise HTTPException(status_code=400, detail=code) from exc
+            raise
+
+        allowed = load_api_keys()
+        if not allowed:
+            if os.getenv("LABORPULSE_ALLOW_NO_API_KEYS", "").strip() == "1":
+                scv.bind_contextvars(key_id="none")
+                log.info("analytics_query_request", key_id="none", dev_escape="allow_no_api_keys")
+            else:
+                raise HTTPException(status_code=500, detail="server_misconfigured_no_keys")
+        else:
+            try:
+                rec = validate_api_key_header(provided=x_api_key or "", allowed=allowed)
+            except ValueError as exc:
+                code = str(exc)
+                if code in {"missing_api_key", "invalid_api_key"}:
+                    raise HTTPException(status_code=401, detail=code) from exc
+                raise HTTPException(status_code=500, detail=code) from exc
+            scv.bind_contextvars(key_id=rec.key_id)
+            log.info("analytics_query_authenticated", key_id=rec.key_id)
+
+        try:
+            conversation_id = resolve_laborpulse_conversation_id(body.conversation_id)
+        except ValueError as exc:
+            if str(exc) == "invalid_conversation_id":
+                raise HTTPException(status_code=400, detail="invalid_conversation_id") from exc
+            raise
+
+        correlation = (x_request_id or "").strip()
+        tenant = (x_tenant_id or "").strip()
+        user_em = (x_user_email or "").strip()
+        try:
+            tenant_access = get_tenant_access(tenant)
+        except UnknownTenantIdError as exc:
+            raise HTTPException(status_code=400, detail="invalid_tenant_id") from exc
+        try:
+            with session_scope() as session:
+                internal = run_analytics_qna(
+                    session,
+                    body.question,
+                    correlation,
+                    laborpulse_conversation_id=conversation_id,
+                    tenant_id=tenant,
+                    user_email=user_em,
+                    tenant_access=tenant_access,
+                )
+        except RegionNotEntitledError as exc:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "reason": "region_not_entitled",
+                    "requested_region": exc.requested_region,
+                    "tenant_id": tenant_access.tenant_id,
+                },
+            ) from exc
+        return to_laborpulse_query_response(internal, conversation_id=conversation_id)
+    finally:
+        scv.clear_contextvars()
 
 
 @router.post("/triggers/cohort_gap_analysis", response_model=TriggerEnvelope)

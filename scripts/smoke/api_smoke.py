@@ -9,6 +9,10 @@ Requires the API to be running first:
 
     python scripts/run_analytics_api.py
 
+Set ``ANALYTICS_QUERY_X_API_KEY`` when the API enforces ``JIE_API_KEYS`` (JIE #226). Optional
+``ANALYTICS_QUERY_X_TENANT_ID``, ``ANALYTICS_QUERY_X_USER_EMAIL``, and ``ANALYTICS_QUERY_X_REQUEST_ID``
+override LaborPulse headers for ``POST /analytics/query`` (JIE #222).
+
 Usage (from any shell, any CWD):
 
     python scripts/smoke/api_smoke.py
@@ -22,9 +26,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -32,13 +38,30 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 
-def _post(url: str, body: dict) -> tuple[int, dict]:
+def _laborpulse_query_headers(*, request_id: str | None = None) -> dict[str, str]:
+    """Headers required by ``POST /analytics/query`` (JIE #222); ``Content-Type`` is set in ``_post``."""
+    h: dict[str, str] = {
+        "X-Tenant-Id": os.environ.get("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
+        "X-User-Email": os.environ.get("ANALYTICS_QUERY_X_USER_EMAIL", "smoke@thewaifinder.com").strip()
+        or "smoke@thewaifinder.com",
+        "X-Request-Id": request_id or os.environ.get("ANALYTICS_QUERY_X_REQUEST_ID", "").strip() or str(uuid.uuid4()),
+    }
+    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if xk:
+        h["X-API-Key"] = xk
+    return h
+
+
+def _post(url: str, body: dict, *, extra_headers: dict[str, str] | None = None) -> tuple[int, dict]:
     """POST JSON and return (status_code, response_json)."""
     data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
@@ -88,7 +111,7 @@ def main() -> int:
 
     # --- Step 1: Check API is up ---
     print(f"API base: {base}")
-    status, body = _post(f"{base}/analytics/triggers/emerging_skills_scan", {"scan_key": "ping"})
+    status, body = _post(f"{base}/analytics/triggers/emerging_skills_scan", {})
     if status == 0:
         print(f"\nERROR: API not reachable at {base}")
         print("  Start it first: python scripts/run_analytics_api.py")
@@ -101,23 +124,21 @@ def main() -> int:
         label = f'POST /analytics/query  --  "{args.question}"'
         s, b = _post(
             f"{base}/analytics/query",
-            {
-                "question": args.question,
-                "correlation_id": args.correlation_id,
-            },
+            {"question": args.question},
+            extra_headers=_laborpulse_query_headers(request_id=args.correlation_id),
         )
         _print_result(
             label,
             s,
             b,
             preview_keys=[
+                "conversation_id",
                 "answer",
                 "confidence",
-                "refused",
-                "refusal_message",
+                "evidence",
+                "follow_up_questions",
                 "cost_usd",
-                "total_cost_usd",
-                "cost_breakdown_usd",
+                "sql_generated",
             ],
         )
         results.append(("POST /analytics/query", s == 200))
@@ -128,7 +149,7 @@ def main() -> int:
     triggers = [
         ("cohort_gap_analysis", {"cohort_key": "demo-cohort", "week_start": None}),
         ("role_benchmark", {"canonical_role_id": args.role_id, "week_start": None}),
-        ("emerging_skills_scan", {"scan_key": "smoke-test"}),
+        ("emerging_skills_scan", {"min_posting_count": 1}),
         ("custom_employer_comparison", {"company_id": "company_42", "week_start": None}),
     ]
     for name, payload in triggers:

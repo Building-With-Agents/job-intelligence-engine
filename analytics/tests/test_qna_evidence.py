@@ -215,3 +215,56 @@ def test_build_evidence_bundle_builds_citation_for_sample_payload() -> None:
     assert bundle.volume_posting_count == 84
     assert len(bundle.facts) == 1
     assert bundle.facts[0].summary == "median salary=72,000; posting count=84; time period=2025-Q1."
+
+
+def test_citation_summary_structured_salary_omits_currency_when_null() -> None:
+    """salary_min/max without salary_currency must not produce 'null USD' or bare 'null'."""
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="employer",
+        classification_confidence=0.9,
+        columns=[
+            "job_title",
+            "salary_min",
+            "salary_max",
+            "salary_currency",
+            "posting_count",
+        ],
+        rows=[
+            {
+                "job_title": "Software Engineer",
+                "salary_min": 50000,
+                "salary_max": 90000,
+                "salary_currency": None,
+                "posting_count": 1,
+            }
+        ],
+        row_count_returned=1,
+        tables_referenced=["job_postings"],
+    )
+    bundle = build_evidence_bundle(payload)
+    summary = bundle.facts[0].summary
+    assert "salary=50,000–90,000" in summary
+    assert "null" not in summary.lower()
+    assert "USD" not in summary
+
+
+def test_citation_summary_structured_salary_includes_iso_currency_when_set() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="employer",
+        classification_confidence=0.9,
+        columns=["salary_min", "salary_max", "salary_currency", "posting_count"],
+        rows=[
+            {
+                "salary_min": 120000,
+                "salary_max": 160000,
+                "salary_currency": "USD",
+                "posting_count": 3,
+            }
+        ],
+        row_count_returned=1,
+        tables_referenced=["job_postings"],
+    )
+    bundle = build_evidence_bundle(payload)
+    assert bundle.facts[0].summary.startswith("salary=120,000–160,000 USD")
