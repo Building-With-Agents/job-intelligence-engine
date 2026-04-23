@@ -926,9 +926,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must ground recommendations in `job_postings` scoped to the Borderplex filter, data-engineer-style roles via `role_title_filter` and `role_classification_filter`, and the issue #197 IT guard. It should aggregate linked `skills` with `skill_frequency_count` (or equivalent joins) and use `extracted_intelligence` for tasks, tools, and responsibilities, naming `top_n_skills_named` languages, orchestration, cloud platforms, and AI-assistant or GenAI-adjacent mentions. The answer should cite `posting_volume_cited` for the role slice, flag any `skill_gap_identified` relative to the curriculum baseline, and structure the syllabus by role-relevant groupings with `skill_category_referenced`—not a generic data-skills list detached from the corpus.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited",
+      "skill_gap_identified"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -937,9 +957,28 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must restrict `job_postings` to Borderplex, AI-core or AI-agent style roles with `role_title_filter` and `role_classification_filter` under the issue #197 IT guard, then align skills and narrative structure from `extracted_intelligence` (orchestration, API integration, RAG) with `skills` frequency. It should rank in-demand LLM and agent frameworks (e.g. LangChain, LangGraph) via `top_n_skills_named` and `skill_frequency_count`, and note `posting_volume_cited` for the AI-developer slice. The curriculum map must name concrete integration and orchestration patterns with evidence, not a catalog of model names with no frequency or role linkage.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -948,9 +987,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must pull Borderplex, IT-guarded cybersecurity-relevant `job_postings` via `role_title_filter` and `role_classification_filter`, join `skills` to surface certification and tool strings with `skill_frequency_count`, and use `extracted_intelligence` for control- and process-oriented responsibilities plus AI-assist or SOC-augmentation language. It should prioritize `top_n_skills_named` cert and tool families, optionally layer `seniority_filter` when comparing analyst versus architect expectations, and cite `posting_volume_cited` so depth matches market size. The answer should separate named credential demand from tool demand using `skill_category_referenced`, not a undifferentiated security keyword dump.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -959,9 +1018,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex cloud-architect-style roles with `role_title_filter`, `role_classification_filter`, and the issue #197 IT guard, then join `skills` to expose provider (AWS, Azure, GCP) and cert demand via `skill_frequency_count` and `top_n_skills_named`. `extracted_intelligence` should inform architecture, landing-zone, and governance task patterns, including AI-on-cloud or copilot-on-platform mentions as integration skills. The output should pair `posting_volume_cited` with prioritized modules (providers, certifications, GenAI or AI-integration skills) and use `skill_category_referenced` to keep provider versus certification versus AI strands distinct—without collapsing into a single unsourced cloud skills paragraph.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -970,9 +1049,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must filter `job_postings` to Borderplex front-end and web UI roles with `role_title_filter` and `role_classification_filter` and apply the issue #197 IT guard. It should join `skills` to rank front-end frameworks and test tooling by `skill_frequency_count`, naming `top_n_skills_named` (e.g. React, TypeScript, testing stacks), and mine `extracted_intelligence` for build, CI, and AI-coding-tool expectations. The curriculum outline should connect `posting_volume_cited` to emphasis (core versus elective), flag any `skill_gap_identified` (e.g. underrepresented accessibility or e2e testing), and avoid a framework list with no frequency tie to the posting corpus.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited",
+      "skill_gap_identified"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -981,9 +1080,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must take Borderplex `job_postings` for MLOps and ML-infrastructure style roles with `role_title_filter`, `role_classification_filter`, and issue #197, then use `extracted_intelligence` for end-to-end ML lifecycle and deployment-task ordering and `skills` for monitoring, serving, and orchestration tool frequency. It should report `top_n_skills_named` and `skill_frequency_count` for deployment, observability, and model-serving tools, and cite `posting_volume_cited` to calibrate depth. `skill_category_referenced` should separate data pipeline, training, and production operations strands; answers must not conflate MLOps with general data engineering without a role-broken-down evidence chain.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -992,9 +1111,29 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must focus Borderplex `job_postings` on DevOps and SRE families via `role_title_filter` and `role_classification_filter` with the issue #197 IT guard, then use `extracted_intelligence` for on-call, incident, and SRE process language alongside IaC and observability pulls from `skills` with `skill_frequency_count`. It should name `top_n_skills_named` IaC and APM or logging stacks, and treat AI-for-ops or AIOps-style mentions as a track sized by `posting_volume_cited`. Optional `seniority_filter` can separate junior platform from senior SRE expectations. The syllabus must separate observability, IaC, and AI-for-ops strands with role-attributed evidence, not a single undifferentiated toolchain list.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "seniority_filter",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -1003,9 +1142,30 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must filter Borderplex `job_postings` to help desk, systems admin, and network-style roles with `role_title_filter` and `role_classification_filter` under issue #197, and use `seniority_filter` to separate entry and mid support expectations where present. `skills` joins should yield `skill_frequency_count` and `top_n_skills_named` for tools and platforms that appear above baseline A+/Network+ signals, and `extracted_intelligence` should document escalation, endpoint, and identity workflows. The answer should cite `posting_volume_cited` for the support slice, identify `skill_gap_identified` versus the stated CompTIA baseline, and use `skill_category_referenced` to group OS, network, and cloud-adjacent support—without a generic IT skills list lacking corpus-backed frequency.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "seniority_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -1014,9 +1174,30 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must restrict to Borderplex fintech or payments-technology `job_postings` (industry, sector, or `role_title_filter` heuristics) with `role_classification_filter` and issue #197, then align programming languages and platform stacks from `skills` via `skill_frequency_count` and `top_n_skills_named`. `extracted_intelligence` should surface compliance, risk, and security-process expectations as distinct from pure coding skills, with `skill_category_referenced` for compliance versus language versus AI-adjacent demand. Cite `posting_volume_cited` for the vertical slice, flag `skill_gap_identified` (e.g. underrepresented KYC/AML phrasing) when evidence supports it, and avoid a finance-themed skill list with no borderplex- or frequency-grounded support.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited",
+      "skill_gap_identified"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
@@ -1025,9 +1206,30 @@
     "source": "wfd_archetype",
     "intent": "curriculum",
     "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "ideal_answer_summary": "A correct answer must scope `job_postings` to Borderplex EHR, clinical data, and health-informatics-style roles with `role_title_filter` and `role_classification_filter` and the issue #197 IT guard, then use `extracted_intelligence` for EHR, HIPAA, and clinical workflow responsibilities alongside `skills` for platform and interoperability tools via `skill_frequency_count` and `top_n_skills_named`. `skill_category_referenced` should separate EHR and clinical systems from privacy or regulatory phrasing and from AI/ML-for-health demand. Cite `posting_volume_cited` to weight modules, and note any `skill_gap_identified` between platform demand and stated regulatory literacy—without inventing EHR product names that do not appear in the joined data or extractions.",
+    "must_include": [
+      "job_postings_table",
+      "skills_table",
+      "extracted_intelligence_table",
+      "borderplex_filter",
+      "role_classification_filter",
+      "issue_197_guard",
+      "role_title_filter",
+      "skill_category_referenced",
+      "skill_frequency_count",
+      "top_n_skills_named",
+      "posting_volume_cited",
+      "skill_gap_identified"
+    ],
+    "must_not_include": [
+      "canonical_roles_dependency",
+      "no_borderplex_filter",
+      "role_classification_N/A_included",
+      "skills_without_frequency",
+      "aggregated_without_role_breakdown",
+      "generic_skill_list_no_data",
+      "hallucinated_skills"
+    ],
     "difficulty": "standard"
   },
   {
