@@ -61,23 +61,43 @@ UPSERT_UPDATE_COLUMNS: dict[str, list[str]] = {
         "salary_currency",
         "salary_period",
     ],
+    # Week 9 (#253): canonical_roles upsert so partial/stale rows get refreshed
+    # from the fixture without clobbering locally-populated state. COALESCE
+    # semantics: if the existing column is NULL, take fixture value; otherwise
+    # keep existing. PK columns (id, role_id) are conflict targets, not updated.
+    # created_at omitted deliberately — immutable on existing rows.
+    "canonical_roles": [
+        "label",
+        "description",
+        "posting_count",
+        "cluster_centroid",
+        "representative_titles",
+        "top_skills",
+        "top_tools",
+        "is_llm_generated",
+        "computed_at",
+        "updated_at",
+    ],
 }
 
 # ── FK-safe insert order ──────────────────────────────────────────────
 # Tables ordered so that FK dependencies are satisfied:
 # companies has no FK deps — must be before job_postings (company_id FK)
 # naics has no FK deps — reference table for NAICS codes
+# canonical_roles has no FK deps on other agent tables — must be before
+#   job_postings (canonical_role_id FK, referenced by ~55% of rows)
 # raw_ingested_jobs has no FK deps on other agent tables
 # job_ingestion_runs has no FK deps on other agent tables
 # normalized_jobs → raw_ingested_jobs (via raw_ingested_job_id)
 # extracted_intelligence → normalized_jobs (via normalized_job_id)
 # employer_profiles has no FK deps on other agent tables
-# job_postings → companies (via company_id)
+# job_postings → companies (via company_id), canonical_roles (via canonical_role_id)
 # llm_audit_log has no FK deps on other agent tables
 
 INSERT_ORDER = [
     "companies",
     "naics",
+    "canonical_roles",
     "raw_ingested_jobs",
     "job_ingestion_runs",
     "normalized_jobs",
