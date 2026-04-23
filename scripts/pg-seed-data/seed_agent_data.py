@@ -61,6 +61,23 @@ UPSERT_UPDATE_COLUMNS: dict[str, list[str]] = {
         "salary_currency",
         "salary_period",
     ],
+    # Week 9 (#253): canonical_roles upsert so partial/stale rows get refreshed
+    # from the fixture without clobbering locally-populated state. COALESCE
+    # semantics: if the existing column is NULL, take fixture value; otherwise
+    # keep existing. PK columns (id, role_id) are conflict targets, not updated.
+    # created_at omitted deliberately — immutable on existing rows.
+    "canonical_roles": [
+        "label",
+        "description",
+        "posting_count",
+        "cluster_centroid",
+        "representative_titles",
+        "top_skills",
+        "top_tools",
+        "is_llm_generated",
+        "computed_at",
+        "updated_at",
+    ],
 }
 
 # ── FK-safe insert order ──────────────────────────────────────────────
