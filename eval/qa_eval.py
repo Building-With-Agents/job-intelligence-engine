@@ -1,5 +1,12 @@
 # ruff: noqa: T201
-"""Golden-question Q&A eval: analytics pipeline + four automated scores + Langfuse dataset runs.
+"""Golden-question Q&A eval: analytics + automated scores + optional Langfuse dataset runs.
+
+The baseline composite (``v1-baseline``) is the mean of four per-item metrics:
+``intent_accuracy``, ``evidence_citation``, ``confidence_flags``, ``latency_sla``.
+
+When applicable, a fifth per-item score ``answerability`` is also emitted
+(data-backed expected intents only; not part of the composite). Run-level
+``mean_*`` includes ``mean_answerability`` only for items that were scored.
 
 Usage (repo root, venv active)::
 
@@ -150,8 +157,28 @@ def _task_factory(
     return task
 
 
+def _answerability_run_summary(
+    item_results: list,
+) -> tuple[int, int, float | None]:
+    """Count items with answerability eval, intent-only (no eval), and mean (if any)."""
+    ab: list[float] = []
+    skipped = 0
+    for ir in item_results:
+        has_ab = False
+        for ev in getattr(ir, "evaluations", []) or []:
+            name = getattr(ev, "name", None) or (ev.get("name") if isinstance(ev, dict) else None)
+            val = getattr(ev, "value", None) if not isinstance(ev, dict) else ev.get("value")
+            if name == "answerability" and isinstance(val, (int, float)):
+                ab.append(float(val))
+                has_ab = True
+        if not has_ab:
+            skipped += 1
+    mean = sum(ab) / len(ab) if ab else None
+    return len(ab), skipped, mean
+
+
 def _evaluator_factory(sla_seconds: float | None):
-    """Build Langfuse evaluator returning four Evaluation objects."""
+    """Build Langfuse evaluator: four core Evaluations, plus answerability when scored."""
 
     def combined_evaluator(
         *,
@@ -164,6 +191,7 @@ def _evaluator_factory(sla_seconds: float | None):
         from langfuse import Evaluation
 
         if not isinstance(output, dict):
+            # No golden on malformed output — emit four scores only.
             return [
                 Evaluation(name="intent_accuracy", value=0.0, comment="malformed task output"),
                 Evaluation(name="evidence_citation", value=0.0, comment="malformed task output"),
@@ -178,7 +206,7 @@ def _evaluator_factory(sla_seconds: float | None):
             pipeline_error=output.get("pipeline_error"),
             sla_seconds=sla_seconds,
         )
-        return [
+        base = [
             Evaluation(
                 name="intent_accuracy", value=scores.intent_accuracy, comment=scores.comments["intent_accuracy"]
             ),
@@ -194,12 +222,18 @@ def _evaluator_factory(sla_seconds: float | None):
             ),
             Evaluation(name="latency_sla", value=scores.latency_sla, comment=scores.comments["latency_sla"][:500]),
         ]
+        if scores.answerability is not None:
+            ab_c = (scores.comments.get("answerability") or "")[:500]
+            base.append(
+                Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c),
+            )
+        return base
 
     return combined_evaluator
 
 
 def _run_evaluators_average() -> list:
-    """Run-level means for the four metrics."""
+    """Run-level means for the four core metrics, plus mean answerability when present."""
 
     def run_mean(*, item_results: list, **kwargs: Any):
         from langfuse import Evaluation
@@ -209,6 +243,7 @@ def _run_evaluators_average() -> list:
             "evidence_citation": [],
             "confidence_flags": [],
             "latency_sla": [],
+            "answerability": [],
         }
         for ir in item_results:
             for ev in getattr(ir, "evaluations", []) or []:
@@ -217,12 +252,47 @@ def _run_evaluators_average() -> list:
                 if name in sums and isinstance(val, (int, float)):
                     sums[name].append(float(val))
         out: list[Any] = []
-        for k, vals in sums.items():
+        for k in ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla"):
+            vals = sums[k]
             if vals:
                 out.append(Evaluation(name=f"mean_{k}", value=sum(vals) / len(vals), comment=f"n={len(vals)}"))
+        ab = sums["answerability"]
+        n_scored, n_skip, _ = _answerability_run_summary(item_results)
+        if ab:
+            pr = sum(ab) / len(ab)
+            cmt = f"n={n_scored} intent_only_skipped={n_skip} pass_rate={pr:.4f}"
+            out.append(Evaluation(name="mean_answerability", value=pr, comment=cmt))
         return out
 
     return [run_mean]
+
+
+def _local_answerability_summary(
+    rows: list[tuple[str, QAItemScores, str | None]],
+) -> dict[str, int | float]:
+    """Per-run stats for data-backed (non-null) answerability; composite remains four metrics."""
+    ab_vals: list[float] = []
+    for r in rows:
+        a = r[1].answerability
+        if a is not None:
+            ab_vals.append(float(a))
+    n = len(rows)
+    n_data = len(ab_vals)
+    n_skip = n - n_data
+    if not ab_vals:
+        return {
+            "mean": 0.0,
+            "n_data_backed": 0,
+            "n_intent_only_skipped": n_skip,
+            "pass_rate": 0.0,
+        }
+    m = sum(ab_vals) / len(ab_vals)
+    return {
+        "mean": m,
+        "n_data_backed": n_data,
+        "n_intent_only_skipped": n_skip,
+        "pass_rate": m,
+    }
 
 
 def print_console_summary(
@@ -241,6 +311,17 @@ def print_console_summary(
     for k in keys:
         print(f"  {k}: {means[k]:.4f}")
     print(f"\nItems scored: {n}")
+    a_sum = _local_answerability_summary(rows)
+    print("\n=== Answerability (harness data-backed expected intents; not in composite) ===")
+    if a_sum["n_data_backed"]:
+        print(
+            f"  mean / pass rate: {a_sum['mean']:.4f}  "
+            f"over n={a_sum['n_data_backed']}  intent-only skipped: {a_sum['n_intent_only_skipped']}"
+        )
+    else:
+        print(
+            f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}"
+        )
 
     ranked = sorted(rows, key=lambda r: composite_score(r[1]))
     print(f"\n=== Worst {worst_n} by composite (mean of four scores) ===")
@@ -411,6 +492,7 @@ def main(argv: list[str] | None = None) -> int:
                         "evidence_citation": sc.evidence_citation,
                         "confidence_flags": sc.confidence_flags,
                         "latency_sla": sc.latency_sla,
+                        "answerability": sc.answerability,
                     },
                     "error": err,
                 }
@@ -421,6 +503,7 @@ def main(argv: list[str] | None = None) -> int:
             keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
             n = len(rows)
             payload_local["means"] = {k: sum(getattr(r[1], k) for r in rows) / n for k in keys}
+            payload_local["answerability_summary"] = _local_answerability_summary(rows)
             payload_local["intent_confusion"] = {
                 f"{e}->{p}": c for (e, p), c in sorted(confusion_rows(intent_pairs).items())
             }
@@ -499,10 +582,23 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     items_out = _experiment_result_to_items(result)
+    ab_vals: list[float] = []
+    for it in items_out:
+        av = (it.get("scores") or {}).get("answerability")
+        if isinstance(av, (int, float)):
+            ab_vals.append(float(av))
+    n_items = len(items_out)
+    answerability_summary: dict[str, int | float] = {
+        "mean": (sum(ab_vals) / len(ab_vals)) if ab_vals else 0.0,
+        "n_data_backed": len(ab_vals),
+        "n_intent_only_skipped": n_items - len(ab_vals),
+        "pass_rate": (sum(ab_vals) / len(ab_vals)) if ab_vals else 0.0,
+    }
     payload_lf: dict[str, Any] = {
         "prompt_version": args.prompt_version,
         "dataset_run_id": result.dataset_run_id,
         "dataset_run_url": result.dataset_run_url,
+        "answerability_summary": answerability_summary,
         "items": items_out,
     }
     if args.json:

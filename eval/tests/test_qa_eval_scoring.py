@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from eval.qa_scoring import (
+    QAItemScores,
+    composite_score,
     compute_item_scores,
     confusion_rows,
     score_confidence_flags,
@@ -99,6 +101,19 @@ def test_compute_failure_all_zeros_except_latency() -> None:
     assert out.evidence_citation == 0.0
     assert out.confidence_flags == 0.0
     assert out.latency_sla > 0.0
+    assert out.answerability == 0.0
+
+
+def test_pipeline_error_skips_answerability_for_intent_only() -> None:
+    g = {"id": "gq-001b", "intent": "trend", "must_include": [], "must_not_include": []}
+    out = compute_item_scores(
+        golden=g,
+        response=None,
+        latency_seconds=5.0,
+        pipeline_error="connection reset",
+        sla_seconds=45.0,
+    )
+    assert out.answerability is None
 
 
 def test_compute_happy_path() -> None:
@@ -119,6 +134,7 @@ def test_compute_happy_path() -> None:
         "refused": False,
         "sql_execution_error_detail": None,
         "classified_intent": "geographic",
+        "row_count_returned": 3,
     }
     out = compute_item_scores(
         golden=g,
@@ -131,6 +147,90 @@ def test_compute_happy_path() -> None:
     assert out.evidence_citation > 0.0
     assert out.confidence_flags > 0.0
     assert out.latency_sla == 1.0
+    assert out.answerability == 1.0
+
+
+def test_answerability_data_backed_zero_rows() -> None:
+    g = {
+        "id": "gq-00z",
+        "intent": "employer",
+        "must_include": [],
+        "must_not_include": [],
+    }
+    resp = {
+        "answer": "No employers matched.",
+        "evidence": [],
+        "confidence": 0.2,
+        "confidence_flagged_low": True,
+        "confidence_explanation": "x",
+        "volume_flagged_low": False,
+        "volume_warning": None,
+        "refused": False,
+        "sql_execution_error_detail": None,
+        "classified_intent": "employer",
+        "row_count_returned": 0,
+    }
+    out = compute_item_scores(
+        golden=g,
+        response=resp,
+        latency_seconds=1.0,
+        pipeline_error=None,
+        sla_seconds=45.0,
+    )
+    assert out.answerability == 0.0
+
+
+def test_answerability_intent_only_skipped() -> None:
+    g = {
+        "id": "gq-tr",
+        "intent": "trend",
+        "must_include": [],
+        "must_not_include": [],
+    }
+    resp = {
+        "answer": "Narrative only",
+        "evidence": [],
+        "confidence": 0.5,
+        "confidence_flagged_low": False,
+        "confidence_explanation": None,
+        "volume_flagged_low": False,
+        "volume_warning": None,
+        "refused": True,
+        "refusal_message": "x",
+        "sql_execution_error_detail": None,
+        "classified_intent": "trend",
+        "row_count_returned": 0,
+    }
+    out = compute_item_scores(
+        golden=g,
+        response=resp,
+        latency_seconds=1.0,
+        pipeline_error=None,
+        sla_seconds=45.0,
+    )
+    assert out.answerability is None
+    assert "skipped" in out.comments.get("answerability", "").lower()
+
+
+def test_composite_excludes_answerability() -> None:
+    base = QAItemScores(
+        intent_accuracy=0.5,
+        evidence_citation=0.5,
+        confidence_flags=0.5,
+        latency_sla=0.5,
+        answerability=0.0,
+        comments={},
+    )
+    assert composite_score(base) == 0.5
+    hi = QAItemScores(
+        intent_accuracy=0.0,
+        evidence_citation=0.0,
+        confidence_flags=0.0,
+        latency_sla=0.0,
+        answerability=1.0,
+        comments={},
+    )
+    assert composite_score(hi) == 0.0
 
 
 def test_confusion_rows() -> None:

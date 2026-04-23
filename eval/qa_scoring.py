@@ -1,7 +1,13 @@
 """Automated scores (0.0–1.0) for golden-question Q&A eval — Week 9 harness.
 
-Four metrics aligned with docs/Week 9/TODO.md:
+Core four metrics (baseline composite) per docs/Week 9/TODO.md:
 ``intent_accuracy``, ``evidence_citation``, ``confidence_flags``, ``latency_sla``.
+
+An optional fifth metric, ``answerability``, is reported separately: for expected
+intents marked data-backed in ``INTENT_TO_DATA_BACKED`` it is 1.0 when
+``row_count_returned > 0`` in the pipeline response, else 0.0. Intents that are
+not data-backed in the harness map are skipped (``answerability`` is ``None``).
+The baseline ``composite_score`` is still the mean of the four core metrics only.
 """
 
 from __future__ import annotations
@@ -18,6 +24,21 @@ _CONFIDENCE_TRANSPARENCY_THRESHOLD = 0.6
 _DEFAULT_LATENCY_SLA_SECONDS = 45.0
 
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
+
+# Whether the golden *expected* intent is evaluated for answerability (SQL rows).
+# Only the Week 9 eval harness (Pair A) maintains this map as data/pipeline
+# capabilities land; the classifier does not set this.
+INTENT_TO_DATA_BACKED: dict[str, bool] = {
+    "trend": False,
+    "role_evolution": False,
+    "emergence": False,
+    "disruption": False,
+    "curriculum": True,
+    "employer": True,
+    "workflow": True,
+    "geographic": True,
+    "comparison": True,
+}
 
 RELATED_INTENTS: dict[str, set[str]] = {
     "geographic": {"comparison", "employer", "workflow"},
@@ -42,6 +63,7 @@ class QAItemScores:
     evidence_citation: float
     confidence_flags: float
     latency_sla: float
+    answerability: float | None
     comments: dict[str, str]
 
 
@@ -177,6 +199,38 @@ def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = Non
     return max(0.0, min(1.0, s)), f"min(1, {sla:.1f}s / latency)"
 
 
+def score_answerability(
+    *,
+    expected_intent: str,
+    response: dict[str, Any] | None,
+    pipeline_error: str | None,
+) -> tuple[float | None, str]:
+    """1.0 if data-backed and ``row_count_returned > 0``; 0.0 on failure/empty rows.
+
+    Intents not marked data-backed in ``INTENT_TO_DATA_BACKED`` (or unknown intent)
+    are skipped: returns ``(None, comment)``.
+
+    ``row_count_returned`` is set on the analytics API response
+    (``AnalyticsQueryResponse``) from guardrailed SQL row count.
+    """
+    exp = _norm_intent(expected_intent)
+    if not exp:
+        return None, "skipped: missing expected_intent in metadata"
+    if not INTENT_TO_DATA_BACKED.get(exp, False):
+        return None, f"skipped: intent {exp!r} not data-backed in harness map"
+
+    if pipeline_error or response is None:
+        return 0.0, pipeline_error or "no response"
+
+    try:
+        rc = int(response.get("row_count_returned") or 0)
+    except (TypeError, ValueError):
+        rc = 0
+    if rc > 0:
+        return 1.0, f"row_count_returned={rc} (data-backed intent)"
+    return 0.0, "row_count_returned=0 (data-backed intent, no SQL rows)"
+
+
 def compute_item_scores(
     *,
     golden: dict[str, Any],
@@ -185,21 +239,28 @@ def compute_item_scores(
     pipeline_error: str | None,
     sla_seconds: float | None = None,
 ) -> QAItemScores:
-    """Aggregate four scores; on failure use 0.0 with explanatory comments."""
+    """Aggregate four core scores and optional answerability; on failure use 0.0 (or skip) with comments."""
     exp_intent = str(golden.get("intent") or golden.get("expected_intent") or "")
     difficulty = str(golden.get("difficulty") or "medium")
 
     if pipeline_error or response is None:
+        an, an_c = score_answerability(
+            expected_intent=exp_intent,
+            response=None,
+            pipeline_error=pipeline_error,
+        )
         z = QAItemScores(
             intent_accuracy=0.0,
             evidence_citation=0.0,
             confidence_flags=0.0,
             latency_sla=score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)[0],
+            answerability=an,
             comments={
                 "intent_accuracy": pipeline_error or "no response",
                 "evidence_citation": pipeline_error or "no response",
                 "confidence_flags": pipeline_error or "no response",
                 "latency_sla": "latency only (pipeline failed)",
+                "answerability": an_c,
             },
         )
         return z
@@ -232,23 +293,30 @@ def compute_item_scores(
     )
 
     ls, ls_c = score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)
+    an, an_c = score_answerability(
+        expected_intent=exp_intent,
+        response=response,
+        pipeline_error=pipeline_error,
+    )
 
     return QAItemScores(
         intent_accuracy=ia,
         evidence_citation=ec,
         confidence_flags=cf,
         latency_sla=ls,
+        answerability=an,
         comments={
             "intent_accuracy": ia_c,
             "evidence_citation": ec_c,
             "confidence_flags": cf_c,
             "latency_sla": ls_c,
+            "answerability": an_c,
         },
     )
 
 
 def composite_score(scores: QAItemScores) -> float:
-    """Mean of four metrics (simple baseline composite)."""
+    """Mean of the four core metrics only (excludes ``answerability``)."""
     vals = (scores.intent_accuracy, scores.evidence_citation, scores.confidence_flags, scores.latency_sla)
     return float(sum(vals) / max(1, len(vals)))
 

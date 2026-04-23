@@ -2,7 +2,7 @@
 
 ## Golden-question Q&A eval (`qa_eval.py`)
 
-Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`), and optionally records results in Langfuse as a dataset run.
+Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`) plus an optional `answerability` when the expected intent is data-backed in the harness map (not part of the baseline composite, which remains the mean of the four), and optionally records results in Langfuse as a dataset run. Run summaries and JSON include `answerability_summary` (mean, counts, pass rate) separately from the four `means` keys.
 
 ### Prerequisites
 

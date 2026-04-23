@@ -450,6 +450,7 @@ def _synthesis_to_api(
     sql_generated: str,
     intent_label: str,
     classification_confidence: float,
+    row_count_returned: int = 0,
 ) -> AnalyticsQueryResponse:
     answer = (sr.refusal_message or "").strip() if sr.refused else (sr.answer_text or "").strip()
     if not answer and sr.refusal_message:
@@ -484,6 +485,7 @@ def _synthesis_to_api(
         cost_usd=float(sr.total_cost_usd),
         total_cost_usd=float(sr.total_cost_usd),
         cost_breakdown_usd={leg: float(cost) for leg, cost in sr.cost_breakdown_usd.items()},
+        row_count_returned=max(0, int(row_count_returned)),
     )
 
 
@@ -634,6 +636,7 @@ def run_analytics_qna(
             sql_generated=sql_line,
             intent_label=intent_label,
             classification_confidence=conf,
+            row_count_returned=int(q_payload.row_count_returned),
         )
         if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
             append_conversation_turn(
