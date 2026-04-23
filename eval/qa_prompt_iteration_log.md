@@ -114,19 +114,40 @@ expands beyond 80 items in a follow-up cycle.
 
 ---
 
-### DEV-003 — `source` field omitted from Pair C (Bryan) geographic questions
+### DEV-003 — `source` field dropped from the canonical schema (all 90 rows)
 
 **Spec / Emilio's originals:** `"source": "wfd_archetype"` present on
-each item.
+a subset of items (notably the first-author Pair D rows
+`gq-061`–`gq-080`).
 
-**Current state:** Bryan's 10 geographic questions (`gq-041` –
-`gq-050`) do not carry the `source` field. The field is not in
-`_REQUIRED` validation in `upload_qa_dataset.py` and is cosmetic
-metadata.
+**Team-lead call (2026-04-23):** drop `source` from the canonical
+golden-question schema. Not required by `upload_qa_dataset.py`
+validation, not consistently populated across pairs, and carries no
+signal for the automated scorers. Provenance, if needed, belongs in
+Langfuse dataset-item metadata — not in the JSON source of truth.
 
-**Decision:** Omit for consistency within Pair C; the field is not
-scored. Standardise to include it if the schema is formalised in a
-later sprint.
+**Current state:** `source` is **not** present on any of the 90
+rows. Canonical schema is the 8-key set enforced by the invariant
+check run against `eval/qa_golden_questions.json`:
+
+```
+{id, question, intent, context, ideal_answer_summary,
+ must_include, must_not_include, difficulty}
+```
+
+**Applied in:**
+- `18783f5 chore(eval): drop non-canonical 'source' field from gq-061-gq-080`
+  (2026-04-23) — removed `source` from the 20 Pair D rows that still
+  carried it.
+- `3f7d657 chore(eval): sync corpus to chore/gq-consolidate-90-medium`
+  (2026-04-23) — full-file sync to Gary's consolidated corpus
+  (`origin/chore/gq-consolidate-90-medium`); locks the 8-key schema
+  across all 90 rows and confirms via the invariant check
+  (`schema clean` assertion).
+
+**Decision:** No deviation remaining — spec is now the
+`source`-less 8-key schema. Leaving DEV-003 in the log as the
+audit trail for the schema change.
 
 ---
 
@@ -326,3 +347,4 @@ per-intent improvement before declaring a version better. At n ≈ 80, a
 | Date | Who | Change |
 |------|-----|--------|
 | 2026-04-22 | Bryan | Created skeleton; documented DEV-001 (latency formula), DEV-002 (refusal coverage), DEV-003 (`source` field); v1-baseline section stubbed pending full 80-question corpus |
+| 2026-04-23 | Bryan | Rewrote DEV-003 to reflect team-lead call to drop `source` from the canonical schema across all 90 rows (commits `18783f5` + `3f7d657`). No behaviour change to scorers; audit trail only. |
