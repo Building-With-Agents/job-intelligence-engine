@@ -39,9 +39,11 @@ def test_classify_temporal_period_none_returns_none() -> None:
 
 def test_classify_temporal_period_naive_datetime_is_utc_wall_clock() -> None:
     """Naive datetimes use UTC wall clock (same components as UTC-aware → same bucket)."""
-    assert classify_temporal_period(datetime(2023, 6, 15, 12, 0, 0)) == classify_temporal_period(
-        datetime(2023, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
-    ) == "post_gpt4"
+    assert (
+        classify_temporal_period(datetime(2023, 6, 15, 12, 0, 0))
+        == classify_temporal_period(datetime(2023, 6, 15, 12, 0, 0, tzinfo=timezone.utc))
+        == "post_gpt4"
+    )
 
 
 @pytest.mark.parametrize(
