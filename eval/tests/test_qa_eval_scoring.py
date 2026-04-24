@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import io
+from contextlib import redirect_stdout
+
+from eval.qa_eval import print_console_summary
 from eval.qa_scoring import (
     QAItemScores,
     composite_score,
@@ -348,6 +352,51 @@ def test_composite_filters_none_partial() -> None:
     )
     # mean((0.0, 1.0)) = 0.5
     assert abs(composite_score(mixed) - 0.5) < 1e-9
+
+
+def test_print_console_summary_does_not_crash_with_none_content_metrics() -> None:
+    """Regression: print_console_summary must not raise TypeError when content metrics are None.
+
+    Before the fix, f"{None:.2f}" in the worst-N block crashed the summary for any
+    eval run that included at least one pipeline-failed item (JIE #263 exclusion design).
+    """
+    infra_fail = QAItemScores(
+        intent_accuracy=None,
+        evidence_citation=None,
+        confidence_flags=None,
+        latency_sla=0.8,
+        answerability=None,
+        comments={
+            "intent_accuracy": "excluded: connection reset",
+            "evidence_citation": "excluded: connection reset",
+            "confidence_flags": "excluded: connection reset",
+            "latency_sla": "latency computed",
+            "answerability": "skipped: intent not data-backed",
+        },
+    )
+    good = QAItemScores(
+        intent_accuracy=1.0,
+        evidence_citation=0.9,
+        confidence_flags=0.85,
+        latency_sla=1.0,
+        answerability=None,
+        comments={
+            "intent_accuracy": "intent matches",
+            "evidence_citation": "overlap heuristic",
+            "confidence_flags": "calibration ok",
+            "latency_sla": "within SLA",
+            "answerability": "skipped",
+        },
+    )
+    rows = [("gq-001", infra_fail, "connection reset"), ("gq-002", good, None)]
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        print_console_summary(rows=rows, worst_n=5)
+    out = buf.getvalue()
+    # None content metrics render as " — " not as a numeric format
+    assert " — " in out
+    # Non-None metrics still render as float strings
+    assert "1.00" in out or "0.90" in out
 
 
 def test_confusion_rows() -> None:

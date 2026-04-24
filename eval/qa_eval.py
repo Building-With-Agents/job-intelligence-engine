@@ -336,14 +336,17 @@ def print_console_summary(
     else:
         print(f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}")
 
+    def _fmt(v: float | None) -> str:
+        return f"{v:.2f}" if v is not None else " — "
+
     ranked = sorted(rows, key=lambda r: composite_score(r[1]))
     print(f"\n=== Worst {worst_n} by composite (mean of four scores) ===")
     for gq_id, sc, err in ranked[:worst_n]:
         ce = err or ""
         print(
             f"  {gq_id}: composite={composite_score(sc):.3f} "
-            f"i={sc.intent_accuracy:.2f} e={sc.evidence_citation:.2f} "
-            f"c={sc.confidence_flags:.2f} l={sc.latency_sla:.2f} {ce[:60]}"
+            f"i={_fmt(sc.intent_accuracy)} e={_fmt(sc.evidence_citation)} "
+            f"c={_fmt(sc.confidence_flags)} l={sc.latency_sla:.2f} {ce[:60]}"
         )
 
 
