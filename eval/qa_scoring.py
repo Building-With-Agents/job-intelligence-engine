@@ -16,7 +16,7 @@ Week 10 pairs from distinguishing "fix the prompt" from "fix the infrastructure"
 | sql_execution_error_detail set       | ``None``| Infra failure on evidence_citation     |
 | Empty answer (contract violation)    | ``None``| Pipeline output contract broken        |
 | Committed answer with no evidence    | ``0.0`` | Real quality failure; keep as signal   |
-| Correct classification of any intent | ``1.0`` | Quality signal; always computable      |
+| Correct exact intent                 | ``1.0`` | Quality signal; binary (JIE #261)     |
 
 ``latency_sla`` is the one exception: wall-clock time is computable even when the
 pipeline fails, so it always returns a float.
@@ -67,7 +67,9 @@ INTENT_TO_DATA_BACKED: dict[str, bool] = {
     "comparison": True,
 }
 
-RELATED_INTENTS: dict[str, set[str]] = {
+# Not used in ``score_intent_accuracy`` (JIE #261: binary labels only). Kept for
+# offline analysis / confusion matrix interpretation; do not add to the scoring path.
+RELATED_INTENTS_OFFLINE: dict[str, set[str]] = {
     "geographic": {"comparison", "employer", "workflow"},
     "comparison": {"geographic", "trend"},
     "trend": {"role_evolution", "comparison", "disruption", "emergence", "curriculum"},
@@ -103,15 +105,13 @@ def score_intent_accuracy(
     classified_intent: str,
     difficulty: str = "medium",
 ) -> tuple[float, str]:
-    """Exact match on normalized intent; optional leniency for ``hard`` (IMP-030 hook)."""
+    """Binary exact match on normalized intent: 1.0 or 0.0 (JIE #261; ``difficulty`` reserved)."""
     exp = _norm_intent(expected_intent)
     got = _norm_intent(classified_intent)
     if not exp:
         return 0.0, "missing expected_intent in metadata"
     if got == exp:
         return 1.0, "intent matches"
-    if got in RELATED_INTENTS.get(exp, set()):
-        return 0.5, f"related: expected {exp!r}, got {got!r}"
     return 0.0, f"mismatch: expected {exp!r}, got {got!r}"
 
 

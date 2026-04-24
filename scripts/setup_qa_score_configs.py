@@ -35,7 +35,7 @@ Langfuse UI works as the tutorial describes.
 Score config inventory (all NUMERIC, range 0.0-1.0):
 
 Automated layer (5 — scored by ``eval/qa_scoring.py``):
-    * ``intent_accuracy``  — classifier routing (0.0 / 0.5 / 1.0)
+    * ``intent_accuracy``  — classifier routing, binary (0.0 / 1.0)
     * ``evidence_citation`` — rubric-gated evidence quality
     * ``confidence_flags`` — calibration of low-confidence flag
     * ``latency_sla``      — continuous decay, 45s SLA
@@ -101,8 +101,8 @@ CONFIGS: tuple[dict[str, str | float], ...] = (
     {
         "name": "intent_accuracy",
         "description": (
-            "Automated. 1.0 if classified intent == expected; 0.5 if the classified "
-            "intent is in the related-intents set for the expected intent; 0.0 otherwise."
+            "Automated. 1.0 if classified intent == expected (normalized); 0.0 otherwise "
+            "(JIE #261: binary; related-intent pairs appear in confusion_rows only)."
         ),
     },
     {

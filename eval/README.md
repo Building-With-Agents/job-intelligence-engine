@@ -2,7 +2,7 @@
 
 ## Golden-question Q&A eval (`qa_eval.py`)
 
-Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`), and optionally records results in Langfuse as a dataset run. A fifth metric (`answerability`) is emitted separately for data-backed intents — see the subsection below.
+Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`), and optionally records results in Langfuse as a dataset run. **`intent_accuracy` is binary** (1.0 exact match / 0.0 else; JIE #261); use the printed intent confusion matrix to inspect near-miss routing. A fifth metric (`answerability`) is emitted separately for data-backed intents — see the subsection below.
 
 ### Answerability (5th metric, JIE #247)
 

@@ -26,13 +26,14 @@ def test_intent_exact_match() -> None:
     assert s == 1.0
 
 
-def test_intent_related() -> None:
+def test_intent_related_counts_as_mismatch() -> None:
+    """JIE #261: no 0.5 partial credit; use confusion_rows for related-intent analysis."""
     s, c = score_intent_accuracy(
         expected_intent="geographic",
         classified_intent="comparison",
     )
-    assert s == 0.5
-    assert "related" in c
+    assert s == 0.0
+    assert "mismatch" in c
 
 
 def test_intent_mismatch() -> None:
