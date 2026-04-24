@@ -1,13 +1,34 @@
-"""Automated scores (0.0–1.0) for golden-question Q&A eval — Week 9 harness.
+"""Automated scores (0.0–1.0 or None) for golden-question Q&A eval — Week 9 harness.
 
 Core four metrics (baseline composite) per docs/Week 9/TODO.md:
 ``intent_accuracy``, ``evidence_citation``, ``confidence_flags``, ``latency_sla``.
 
+## None semantics (JIE #263)
+
+Infrastructure failures (pipeline crash, SQL execution error, empty answer) are
+**excluded** from quality metrics rather than zeroed out.  Zeroing them would
+conflate two orthogonal axes — pipeline health vs answer quality — and prevent
+Week 10 pairs from distinguishing "fix the prompt" from "fix the infrastructure".
+
+| Failure class                        | Score   | Rationale                              |
+|--------------------------------------|---------|----------------------------------------|
+| pipeline_error / timeout / 500       | ``None``| Infra failure; not gradable            |
+| sql_execution_error_detail set       | ``None``| Infra failure on evidence_citation     |
+| Empty answer (contract violation)    | ``None``| Pipeline output contract broken        |
+| Committed answer with no evidence    | ``0.0`` | Real quality failure; keep as signal   |
+| Correct classification of any intent | ``1.0`` | Quality signal; always computable      |
+
+``latency_sla`` is the one exception: wall-clock time is computable even when the
+pipeline fails, so it always returns a float.
+
 An optional fifth metric, ``answerability``, is reported separately: for expected
 intents marked data-backed in ``INTENT_TO_DATA_BACKED`` it is 1.0 when
-``row_count_returned > 0`` in the pipeline response, else 0.0. Intents that are
-not data-backed in the harness map are skipped (``answerability`` is ``None``).
-The baseline ``composite_score`` is still the mean of the four core metrics only.
+``row_count_returned > 0``, else 0.0 (infra → 0.0 will be fixed in JIE #269).
+Intents not in the data-backed map are skipped (returns ``None``).
+
+The ``composite_score`` is the mean of the four core metrics over the **scorable
+pool** — ``None`` values are excluded before averaging, so the denominator shrinks
+rather than the mean being dragged down by infrastructure noise.
 """
 
 from __future__ import annotations
@@ -33,7 +54,7 @@ _LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
 
 # Whether the golden *expected* intent is evaluated for answerability (SQL rows).
-# Only the Week 9 eval harness (Pair A) maintains this map as data/pipeline
+# Only the Week 9 eval harness (Pair C) maintains this map as data/pipeline
 # capabilities land; the classifier does not set this.
 INTENT_TO_DATA_BACKED: dict[str, bool] = {
     "trend": False,
@@ -66,10 +87,13 @@ def _norm_intent(s: str | None) -> str:
 
 @dataclass(frozen=True)
 class QAItemScores:
-    intent_accuracy: float
-    evidence_citation: float
-    confidence_flags: float
+    # Content metrics: None when excluded due to infrastructure failure (JIE #263).
+    intent_accuracy: float | None
+    evidence_citation: float | None
+    confidence_flags: float | None
+    # Latency is always computable — even on pipeline failure we have wall-clock time.
     latency_sla: float
+    # Answerability: None for non-data-backed intents (skipped by design).
     answerability: float | None
     comments: dict[str, str]
 
@@ -117,15 +141,24 @@ def score_evidence_citation(
     refused: bool,
     sql_execution_error_detail: str | None,
     pipeline_error: str | None,
-) -> tuple[float, str]:
-    """Grounding + rubric heuristics (semantic tokens → keyword presence)."""
+) -> tuple[float | None, str]:
+    """Grounding + rubric heuristics (semantic tokens → keyword presence).
+
+    Returns ``None`` for infrastructure failures so they are excluded from run
+    means rather than dragging down the quality signal (JIE #263):
+
+    - ``pipeline_error`` set           → ``None`` (pipeline crash / timeout)
+    - ``sql_execution_error_detail`` set → ``None`` (SQL infra failure)
+    - empty answer                     → ``None`` (input-contract violation)
+    - committed answer, no evidence    → ``0.0`` (real quality failure)
+    """
     if pipeline_error:
-        return 0.0, f"pipeline_error: {pipeline_error[:200]}"
+        return None, f"excluded: pipeline_error — {pipeline_error[:200]}"
     if sql_execution_error_detail:
-        return 0.0, "sql_execution_error present"
+        return None, f"excluded: sql_execution_error — {sql_execution_error_detail[:200]}"
     ans = (answer or "").strip().lower()
     if not ans:
-        return 0.0, "empty answer"
+        return None, "excluded: empty answer (input-contract violation)"
 
     if refused:
         # Refusal can be correct; reward non-empty evidence or explicit caveat in answer.
@@ -243,6 +276,9 @@ def score_answerability(
 
     ``row_count_returned`` is set on the analytics API response
     (``AnalyticsQueryResponse``) from guardrailed SQL row count.
+
+    Note: infra failures still return 0.0 here (not None) — that redesign is
+    tracked as JIE #269 (answerability redesign).
     """
     exp = _norm_intent(expected_intent)
     if not exp:
@@ -270,9 +306,16 @@ def compute_item_scores(
     pipeline_error: str | None,
     sla_seconds: float | None = None,
 ) -> QAItemScores:
-    """Aggregate four core scores and optional answerability; on failure use 0.0 (or skip) with comments."""
+    """Aggregate four core scores and optional answerability.
+
+    On infrastructure failure (``pipeline_error`` or no ``response``), content
+    metrics are set to ``None`` so they are excluded from run means.  Only
+    ``latency_sla`` is always computed (JIE #263).
+    """
     exp_intent = str(golden.get("intent") or golden.get("expected_intent") or "")
     difficulty = str(golden.get("difficulty") or "medium")
+
+    ls, ls_c = score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)
 
     if pipeline_error or response is None:
         an, an_c = score_answerability(
@@ -280,21 +323,21 @@ def compute_item_scores(
             response=None,
             pipeline_error=pipeline_error,
         )
-        z = QAItemScores(
-            intent_accuracy=0.0,
-            evidence_citation=0.0,
-            confidence_flags=0.0,
-            latency_sla=score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)[0],
+        reason = pipeline_error or "no response"
+        return QAItemScores(
+            intent_accuracy=None,
+            evidence_citation=None,
+            confidence_flags=None,
+            latency_sla=ls,
             answerability=an,
             comments={
-                "intent_accuracy": pipeline_error or "no response",
-                "evidence_citation": pipeline_error or "no response",
-                "confidence_flags": pipeline_error or "no response",
-                "latency_sla": "latency only (pipeline failed)",
+                "intent_accuracy": f"excluded: {reason}",
+                "evidence_citation": f"excluded: {reason}",
+                "confidence_flags": f"excluded: {reason}",
+                "latency_sla": f"{ls_c} (content metrics excluded — pipeline failure)",
                 "answerability": an_c,
             },
         )
-        return z
 
     classified = str(response.get("classified_intent") or "other")
     ia, ia_c = score_intent_accuracy(
@@ -323,7 +366,6 @@ def compute_item_scores(
         volume_warning=response.get("volume_warning"),
     )
 
-    ls, ls_c = score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)
     an, an_c = score_answerability(
         expected_intent=exp_intent,
         response=response,
@@ -347,9 +389,21 @@ def compute_item_scores(
 
 
 def composite_score(scores: QAItemScores) -> float:
-    """Mean of the four core metrics only (excludes ``answerability``)."""
-    vals = (scores.intent_accuracy, scores.evidence_citation, scores.confidence_flags, scores.latency_sla)
-    return float(sum(vals) / max(1, len(vals)))
+    """Mean of scorable core metrics only (excludes ``answerability`` and ``None`` values).
+
+    ``latency_sla`` is always a float so the denominator is always ≥ 1.
+    Content metrics excluded due to infrastructure failures (JIE #263) are
+    dropped from the average — the denominator shrinks rather than the mean
+    being dragged down by pipeline noise.
+    """
+    candidates = (
+        scores.intent_accuracy,
+        scores.evidence_citation,
+        scores.confidence_flags,
+        scores.latency_sla,
+    )
+    vals = [v for v in candidates if v is not None]
+    return float(sum(vals) / len(vals))
 
 
 def confusion_rows(

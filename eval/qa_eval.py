@@ -184,7 +184,11 @@ def _answerability_run_summary(
 
 
 def _evaluator_factory(sla_seconds: float | None):
-    """Build Langfuse evaluator: four core Evaluations, plus answerability when scored."""
+    """Build Langfuse evaluator: core Evaluations (None scores skipped), plus answerability when scored.
+
+    Infrastructure-excluded content metrics (JIE #263) produce no Evaluation rather than a 0.0
+    value so they are absent from Langfuse score distributions rather than polluting them.
+    """
 
     def combined_evaluator(
         *,
@@ -197,13 +201,8 @@ def _evaluator_factory(sla_seconds: float | None):
         from langfuse import Evaluation
 
         if not isinstance(output, dict):
-            # No golden on malformed output — emit four scores only.
-            return [
-                Evaluation(name="intent_accuracy", value=0.0, comment="malformed task output"),
-                Evaluation(name="evidence_citation", value=0.0, comment="malformed task output"),
-                Evaluation(name="confidence_flags", value=0.0, comment="malformed task output"),
-                Evaluation(name="latency_sla", value=0.0, comment="malformed task output"),
-            ]
+            # Malformed harness output (not a pipeline failure) — emit latency only.
+            return [Evaluation(name="latency_sla", value=0.0, comment="malformed task output")]
         golden = output.get("golden") or {}
         scores = compute_item_scores(
             golden=golden,
@@ -212,34 +211,29 @@ def _evaluator_factory(sla_seconds: float | None):
             pipeline_error=output.get("pipeline_error"),
             sla_seconds=sla_seconds,
         )
-        base = [
-            Evaluation(
-                name="intent_accuracy", value=scores.intent_accuracy, comment=scores.comments["intent_accuracy"]
-            ),
-            Evaluation(
-                name="evidence_citation",
-                value=scores.evidence_citation,
-                comment=scores.comments["evidence_citation"][:500],
-            ),
-            Evaluation(
-                name="confidence_flags",
-                value=scores.confidence_flags,
-                comment=scores.comments["confidence_flags"][:500],
-            ),
-            Evaluation(name="latency_sla", value=scores.latency_sla, comment=scores.comments["latency_sla"][:500]),
-        ]
+        # Only emit Evaluations for scorable (non-None) values; Langfuse requires float.
+        evals: list[Any] = []
+        for name in ("intent_accuracy", "evidence_citation", "confidence_flags"):
+            val = getattr(scores, name)
+            if val is not None:
+                evals.append(Evaluation(name=name, value=val, comment=scores.comments[name][:500]))
+        evals.append(
+            Evaluation(name="latency_sla", value=scores.latency_sla, comment=scores.comments["latency_sla"][:500])
+        )
         if scores.answerability is not None:
             ab_c = (scores.comments.get("answerability") or "")[:500]
-            base.append(
-                Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c),
-            )
-        return base
+            evals.append(Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c))
+        return evals
 
     return combined_evaluator
 
 
 def _run_evaluators_average() -> list:
-    """Run-level means for the four core metrics, plus mean answerability when present."""
+    """Run-level means for the four core metrics, plus mean answerability when present.
+
+    ``n_scored`` and ``n_excluded`` are included in each comment so readers know
+    the denominator and how many items were excluded as infrastructure failures (JIE #263).
+    """
 
     def run_mean(*, item_results: list, **kwargs: Any):
         from langfuse import Evaluation
@@ -257,11 +251,14 @@ def _run_evaluators_average() -> list:
                 val = getattr(ev, "value", None) if not isinstance(ev, dict) else ev.get("value")
                 if name in sums and isinstance(val, (int, float)):
                     sums[name].append(float(val))
+        n_total = len(item_results)
         out: list[Any] = []
         for k in ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla"):
             vals = sums[k]
             if vals:
-                out.append(Evaluation(name=f"mean_{k}", value=sum(vals) / len(vals), comment=f"n={len(vals)}"))
+                n_excl = n_total - len(vals)
+                cmt = f"n_scored={len(vals)} n_excluded={n_excl} n_total={n_total}"
+                out.append(Evaluation(name=f"mean_{k}", value=sum(vals) / len(vals), comment=cmt))
         ab = sums["answerability"]
         n_scored, n_skip, _ = _answerability_run_summary(item_results)
         if ab:
@@ -301,22 +298,34 @@ def _local_answerability_summary(
     }
 
 
+def _metric_mean(rows: list[tuple[str, QAItemScores, str | None]], key: str) -> tuple[float | None, int, int]:
+    """Return (mean_or_None, n_scored, n_excluded) for a named metric across rows."""
+    vals = [getattr(r[1], key) for r in rows if getattr(r[1], key) is not None]
+    n_scored = len(vals)
+    n_excl = len(rows) - n_scored
+    mean = sum(vals) / n_scored if vals else None
+    return mean, n_scored, n_excl
+
+
 def print_console_summary(
     *,
     rows: list[tuple[str, QAItemScores, str | None]],
     worst_n: int = 8,
 ) -> None:
-    """Print means and worst items by composite score."""
+    """Print per-metric means (with n_scored / n_excluded) and worst items by composite."""
     if not rows:
         print("No items.")
         return
     n = len(rows)
     keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
-    means = {k: sum(getattr(r[1], k) for r in rows) / n for k in keys}
     print("\n=== QA golden eval — means ===")
     for k in keys:
-        print(f"  {k}: {means[k]:.4f}")
-    print(f"\nItems scored: {n}")
+        mean, n_scored, n_excl = _metric_mean(rows, k)
+        if mean is not None:
+            print(f"  {k}: {mean:.4f}  (n_scored={n_scored}/{n} excluded={n_excl})")
+        else:
+            print(f"  {k}: — excluded all  (n_excluded={n_excl}/{n})")
+    print(f"\nItems total: {n}")
     a_sum = _local_answerability_summary(rows)
     print("\n=== Answerability (harness data-backed expected intents; not in composite) ===")
     if a_sum["n_data_backed"]:
@@ -327,14 +336,17 @@ def print_console_summary(
     else:
         print(f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}")
 
+    def _fmt(v: float | None) -> str:
+        return f"{v:.2f}" if v is not None else " — "
+
     ranked = sorted(rows, key=lambda r: composite_score(r[1]))
     print(f"\n=== Worst {worst_n} by composite (mean of four scores) ===")
     for gq_id, sc, err in ranked[:worst_n]:
         ce = err or ""
         print(
             f"  {gq_id}: composite={composite_score(sc):.3f} "
-            f"i={sc.intent_accuracy:.2f} e={sc.evidence_citation:.2f} "
-            f"c={sc.confidence_flags:.2f} l={sc.latency_sla:.2f} {ce[:60]}"
+            f"i={_fmt(sc.intent_accuracy)} e={_fmt(sc.evidence_citation)} "
+            f"c={_fmt(sc.confidence_flags)} l={sc.latency_sla:.2f} {ce[:60]}"
         )
 
 
@@ -505,8 +517,13 @@ def main(argv: list[str] | None = None) -> int:
         }
         if rows:
             keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
-            n = len(rows)
-            payload_local["means"] = {k: sum(getattr(r[1], k) for r in rows) / n for k in keys}
+            payload_local["means"] = {
+                k: round(m, 6) if (m := _metric_mean(rows, k)[0]) is not None else None
+                for k in keys
+            }
+            payload_local["excluded_counts"] = {
+                k: _metric_mean(rows, k)[2] for k in ("intent_accuracy", "evidence_citation", "confidence_flags")
+            }
             payload_local["answerability_summary"] = _local_answerability_summary(rows)
             payload_local["intent_confusion"] = {
                 f"{e}->{p}": c for (e, p), c in sorted(confusion_rows(intent_pairs).items())
