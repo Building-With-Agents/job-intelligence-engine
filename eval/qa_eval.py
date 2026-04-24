@@ -518,8 +518,7 @@ def main(argv: list[str] | None = None) -> int:
         if rows:
             keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
             payload_local["means"] = {
-                k: round(m, 6) if (m := _metric_mean(rows, k)[0]) is not None else None
-                for k in keys
+                k: round(m, 6) if (m := _metric_mean(rows, k)[0]) is not None else None for k in keys
             }
             payload_local["excluded_counts"] = {
                 k: _metric_mean(rows, k)[2] for k in ("intent_accuracy", "evidence_citation", "confidence_flags")
