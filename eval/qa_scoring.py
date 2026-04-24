@@ -160,6 +160,30 @@ def _answer_covers_keywords(answer_lower: str, keywords: list[str], *, min_hits:
     return hits >= need
 
 
+def _rubric_must_and_penalty(
+    ans_lower: str,
+    must_include: list[str],
+    must_not_include: list[str],
+) -> tuple[float, float]:
+    """Rubric subscores: must_include mean and accumulated must_not penalty (0..0.6)."""
+    include_scores: list[float] = []
+    for tok in must_include:
+        kws = _keywords_from_rubric_token(tok)
+        if not kws:
+            continue
+        need = max(1, len(kws) // 2)
+        ok = _answer_covers_keywords(ans_lower, kws, min_hits=need)
+        include_scores.append(1.0 if ok else 0.35)
+    must_in_avg = sum(include_scores) / len(include_scores) if include_scores else 0.75
+    penalty = 0.0
+    for tok in must_not_include:
+        kws = _keywords_from_rubric_token(tok)
+        if len(kws) >= 2 and _answer_covers_keywords(ans_lower, kws, min_hits=len(kws)):
+            penalty += 0.15
+    penalty = min(0.6, penalty)
+    return must_in_avg, penalty
+
+
 def score_evidence_citation(
     *,
     answer: str,
@@ -169,6 +193,8 @@ def score_evidence_citation(
     refused: bool,
     sql_execution_error_detail: str | None,
     pipeline_error: str | None,
+    intent_is_data_backed: bool = False,
+    expected_intent: str = "",
 ) -> tuple[float | None, str]:
     """Grounding + rubric heuristics (semantic tokens → keyword presence).
 
@@ -188,11 +214,18 @@ def score_evidence_citation(
     if not ans:
         return None, "excluded: empty answer (input-contract violation)"
 
+    must_in_avg, penalty = _rubric_must_and_penalty(ans, must_include, must_not_include)
+
     if refused:
-        # Refusal can be correct; reward non-empty evidence or explicit caveat in answer.
-        if evidence:
-            return 0.85, "refused with evidence rows"
-        return 0.7 if len(ans) > 40 else 0.4, "refusal without evidence list"
+        # JIE #260: rubric on refusal text; strong penalty when data-backed should have committed SQL-backed answer.
+        raw_r = 0.85 * must_in_avg + 0.15 * (1.0 - penalty)
+        raw_r = max(0.0, min(1.0, raw_r))
+        if intent_is_data_backed:
+            scaled = max(0.0, min(1.0, raw_r * 0.35))
+            return scaled, (
+                f"data-backed refusal: rubric×0.35 (expected commit); intent={_norm_intent(expected_intent) or '?'}"
+            )
+        return raw_r, "intent-only refusal: rubric (must_include / must_not) without length floors"
 
     if not evidence:
         return 0.0, "no evidence items while not refused"
@@ -206,24 +239,6 @@ def score_evidence_citation(
         overlap_score = min(1.0, overlap * 3.0)
     else:
         overlap_score = 0.3
-
-    include_scores: list[float] = []
-    for tok in must_include:
-        kws = _keywords_from_rubric_token(tok)
-        if not kws:
-            continue
-        need = max(1, len(kws) // 2)
-        ok = _answer_covers_keywords(ans, kws, min_hits=need)
-        include_scores.append(1.0 if ok else 0.35)
-
-    must_in_avg = sum(include_scores) / len(include_scores) if include_scores else 0.75
-
-    penalty = 0.0
-    for tok in must_not_include:
-        kws = _keywords_from_rubric_token(tok)
-        if len(kws) >= 2 and _answer_covers_keywords(ans, kws, min_hits=len(kws)):
-            penalty += 0.15
-    penalty = min(0.6, penalty)
 
     raw = 0.45 * overlap_score + 0.45 * must_in_avg + 0.1 * (1.0 - penalty)
     return max(0.0, min(1.0, raw)), "overlap + must_include heuristics (see IMP-030 for LLM judge)"
@@ -451,6 +466,8 @@ def compute_item_scores(
         refused=bool(response.get("refused")),
         sql_execution_error_detail=response.get("sql_execution_error_detail"),
         pipeline_error=pipeline_error,
+        intent_is_data_backed=dback,
+        expected_intent=exp_intent,
     )
 
     cf, cf_c = score_confidence_flags(

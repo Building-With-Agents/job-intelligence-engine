@@ -104,6 +104,40 @@ def test_evidence_empty_answer_excluded() -> None:
     assert "excluded" in c
 
 
+def test_evidence_refusal_data_backed_strong_penalty() -> None:
+    """JIE #260: wrongful refusal on data-backed items gets rubric scaled ~0.35×, not a length floor."""
+    s, c = score_evidence_citation(
+        answer="I cannot provide SQL results for this geographic query at this time.",
+        evidence=[],
+        must_include=["el_paso_subregion_filter_confirmed"],
+        must_not_include=[],
+        refused=True,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+        intent_is_data_backed=True,
+        expected_intent="geographic",
+    )
+    assert s is not None and s <= 0.35
+    assert "0.35" in c or "rubric" in c.lower()
+
+
+def test_evidence_refusal_intent_only_uses_rubric_not_length() -> None:
+    s, c = score_evidence_citation(
+        answer="Short",
+        evidence=[],
+        must_include=[],
+        must_not_include=[],
+        refused=True,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+        intent_is_data_backed=False,
+        expected_intent="trend",
+    )
+    assert s is not None
+    assert s >= 0.7
+    assert "intent-only refusal" in c
+
+
 def test_evidence_committed_no_evidence_stays_zero() -> None:
     """A non-empty, non-refused answer with no evidence rows is a real quality failure (0.0)."""
     s, c = score_evidence_citation(

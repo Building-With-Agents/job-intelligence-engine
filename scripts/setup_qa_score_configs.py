@@ -90,9 +90,8 @@ CONFIGS: tuple[dict[str, str | float], ...] = (
     {
         "name": "evidence_citation",
         "description": (
-            "Automated. Rubric-gated evidence quality for data-backed answers. "
-            "Refusal-without-evidence template scores a flat 0.700; real citation "
-            "quality emerges once data-backed intents return rows."
+            "Automated. Rubric + overlap for committed answers; for refusals, must_include/must_not "
+            "on the text (JIE #260). Data-backed + refuse uses a strong ~0.35 rubric scale."
         ),
     },
     {
