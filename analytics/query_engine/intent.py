@@ -50,42 +50,50 @@ Choose exactly ONE primary intent from this closed list (snake_case):
 - disruption: automation, AI impact, displacement, restructuring, risk to occupations
 - emergence: new roles, emerging skills, novel job families, "jobs that didn't exist"
 - curriculum: training, credentials, learning paths, bootcamps, upskilling programs
-- employer: the PRIMARY axis is a specific company or employer — hiring practices, benefits,
-  headcount, or company-specific patterns. Use ONLY when no geographic location is the primary filter.
+- employer: EMPLOYERS are the grammatical subject — ranked, compared, or analyzed by
+  hiring behavior, role share, AI adoption, turnover, or other employer-level attributes.
+  A region token that scopes which employers are included (e.g. "Borderplex employers",
+  "El Paso companies") does NOT make this geographic; the subject is still employers.
 - workflow: day-to-day tasks, tools used on the job, process, "what does a X do daily"
-- geographic: the PRIMARY axis is a LOCATION — a city, region, state, or the Borderplex
-  (El Paso, Las Cruces, Ciudad Juárez, Doña Ana). Use this whenever the question lists,
-  retrieves, shows, or filters postings *in* or *for* a specific place, even when roles,
-  domain keywords (AI/ML, fintech, healthcare-IT, cybersecurity), or employer/institution
-  names appear as secondary qualifiers alongside the location.
-  RULE: explicit city or region token present AND postings are filtered by that place → geographic.
+- geographic: POSTINGS are the grammatical subject, filtered by a location — a city, region,
+  state, or the Borderplex (El Paso, Las Cruces, Ciudad Juárez, Doña Ana). Use this whenever
+  the question lists, retrieves, shows, or filters postings *in* or *for* a specific place,
+  even when roles, domain keywords (AI/ML, fintech, healthcare-IT, cybersecurity), or
+  employer/institution names appear as secondary qualifiers alongside the location.
+  RULE: explicit city/region token present AND postings are filtered by that place → geographic.
 - comparison: comparing A vs B, two skills, two regions, two time periods, rankings
 - other: meta, unclear, chit-chat, or none of the above fit
 
 GEOGRAPHIC vs EMPLOYER — TIE-BREAKER (apply whenever both signals are present):
-  → A question that FILTERS POSTINGS BY LOCATION is "geographic", full stop.
-     The presence of role titles, domain keywords (AI/ML, fintech, DevOps), or named
-     employers/institutions (NMSU, UTEP, EPCC, Dell, Boeing) does NOT override a city
-     or region as the primary axis.
-  → Use "employer" ONLY when the question is about a specific company's hiring behaviour
-     and NO geographic location is used as the primary filter.
+  → Ask: what is the grammatical subject — POSTINGS or EMPLOYERS?
+  → POSTINGS filtered by a location → geographic. The presence of role titles, domain
+     keywords (AI/ML, fintech, DevOps), or named employers/institutions (NMSU, UTEP, EPCC)
+     does NOT override a city or region as the primary axis.
+  → EMPLOYERS ranked or analyzed within a market → employer. A region token that scopes
+     the employer set (e.g. "Borderplex employers", "El Paso companies") does NOT flip this
+     to geographic. Ask: "Is the region a filter on POSTINGS or a scope for EMPLOYERS?"
+     If it scopes employers → employer.
 
 Anchoring examples (few-shot):
 Q: "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles."
 A: {"intent":"geographic","confidence":0.95,...}
-   ← El Paso is the primary filter; role names are secondary qualifiers.
+   ← POSTINGS are the subject; El Paso filters them. Role names are secondary qualifiers.
 
 Q: "List all Las Cruces, NM AI/ML researcher postings, highlighting employers such as NMSU or UTEP."
 A: {"intent":"geographic","confidence":0.92,...}
-   ← Las Cruces is the primary filter; institution names are secondary.
+   ← POSTINGS are the subject; Las Cruces filters them. Institution names are secondary.
 
-Q: "Which employers in the Borderplex post the most cybersecurity roles?"
-A: {"intent":"geographic","confidence":0.85,...}
-   ← Borderplex (region) is the primary axis.
+Q: "Show all cybersecurity postings in the Borderplex from the last 12 months."
+A: {"intent":"geographic","confidence":0.90,...}
+   ← POSTINGS are the subject; Borderplex filters them by location.
+
+Q: "Which Borderplex employers have the highest share of postings mentioning AI tools?"
+A: {"intent":"employer","confidence":0.91,...}
+   ← EMPLOYERS are ranked; Borderplex scopes the employer set, not a posting filter.
 
 Q: "What is Dell's hiring strategy for data scientists?"
 A: {"intent":"employer","confidence":0.93,...}
-   ← Dell is the primary axis; no geographic constraint as primary filter.
+   ← EMPLOYERS are the subject; no geographic posting filter.
 
 Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 months."
 A: {"intent":"comparison","confidence":0.88,...}

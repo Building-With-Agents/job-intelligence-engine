@@ -62,9 +62,9 @@ def test_system_prompt_contains_tiebreaker_section() -> None:
     assert "TIE-BREAKER" in _SYSTEM_PROMPT
 
 
-def test_system_prompt_geographic_describes_primary_location_axis() -> None:
-    """geographic definition must call out 'PRIMARY axis is a LOCATION'."""
-    assert "PRIMARY axis is a LOCATION" in _SYSTEM_PROMPT
+def test_system_prompt_geographic_describes_postings_as_subject() -> None:
+    """geographic definition must frame postings as grammatical subject filtered by location."""
+    assert "POSTINGS are the grammatical subject" in _SYSTEM_PROMPT
 
 
 def test_system_prompt_geographic_rule_covers_secondary_qualifiers() -> None:
@@ -73,9 +73,21 @@ def test_system_prompt_geographic_rule_covers_secondary_qualifiers() -> None:
     assert "secondary qualifiers" in _SYSTEM_PROMPT
 
 
-def test_system_prompt_employer_clarified_no_geo_override() -> None:
-    """employer definition must explicitly say it applies only without a geographic primary filter."""
-    assert "NO geographic location is used as the primary filter" in _SYSTEM_PROMPT
+def test_system_prompt_employer_clarified_employers_are_subject() -> None:
+    """employer definition must frame employers as grammatical subject, not geographic filter."""
+    assert "grammatical subject" in _SYSTEM_PROMPT
+    assert "employer" in _SYSTEM_PROMPT.lower()
+
+
+def test_system_prompt_employer_region_scoping_clause() -> None:
+    """employer definition must state that a region scoping employers does not flip to geographic."""
+    assert "scopes the employer set" in _SYSTEM_PROMPT or "scopes which employers" in _SYSTEM_PROMPT
+
+
+def test_system_prompt_tiebreaker_asks_postings_or_employers() -> None:
+    """TIE-BREAKER must frame the key diagnostic as postings-subject vs employers-subject."""
+    assert "POSTINGS" in _SYSTEM_PROMPT
+    assert "EMPLOYERS" in _SYSTEM_PROMPT
 
 
 def test_system_prompt_contains_anchoring_examples() -> None:
@@ -84,10 +96,20 @@ def test_system_prompt_contains_anchoring_examples() -> None:
     assert "AI agent developer" in _SYSTEM_PROMPT
 
 
+def test_system_prompt_geographic_borderplex_example_is_posting_filter() -> None:
+    """Borderplex geographic example must show postings-as-subject, not employers-as-subject."""
+    assert "Show all cybersecurity postings in the Borderplex" in _SYSTEM_PROMPT
+
+
+def test_system_prompt_employer_borderplex_example_present() -> None:
+    """Prompt must include a Borderplex employer example to anchor the employer-in-region boundary."""
+    assert "Which Borderplex employers" in _SYSTEM_PROMPT
+    assert '"employer"' in _SYSTEM_PROMPT
+
+
 def test_system_prompt_contains_pure_employer_counterexample() -> None:
     """Prompt must include a pure-employer counter-example (Dell)."""
     assert "Dell" in _SYSTEM_PROMPT
-    assert '"employer"' in _SYSTEM_PROMPT
 
 
 def test_system_prompt_contains_comparison_counterexample() -> None:
@@ -273,6 +295,66 @@ _GEO_QUESTIONS = [
         "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC.",
     ),
 ]
+
+
+_EMPLOYER_QUESTIONS = [
+    (
+        "gq-061",
+        "Show open AI-core roles (AI agent developer, prompt engineer, ML engineer) at UTEP, NMSU, or EPCC in the last 12 months.",
+    ),
+    (
+        "gq-062",
+        "Which Borderplex employers have the highest share of postings mentioning AI tools (Copilot, LangChain, LLM APIs) in the agentic_era period?",
+    ),
+    (
+        "gq-063",
+        "List all IT postings from Borderplex federal-contractor employers (defense, aerospace, government-tech) that require a security clearance.",
+    ),
+    (
+        "gq-064",
+        "Which Borderplex healthcare-IT employers are hiring for clinical-data-analyst or health-informatics roles with AI-adjacent skill requirements?",
+    ),
+    (
+        "gq-065",
+        "Show all Borderplex fintech and payments-technology employer postings from the post_gpt4 and agentic_era periods.",
+    ),
+    (
+        "gq-066",
+        "Which Borderplex employers posted the most data-engineer or data-scientist roles in the last 12 months, and what share of their postings require AI-adjacent skills?",
+    ),
+    (
+        "gq-067",
+        "Compare hiring activity between Borderplex academic employers (UTEP, NMSU, EPCC) and private-sector IT employers over the last 18 months.",
+    ),
+    (
+        "gq-068",
+        "Which Borderplex employers have introduced AI-native roles (AI agent developer, prompt engineer) for the first time in the agentic_era period, signaling a shift in hiring strategy?",
+    ),
+    (
+        "gq-069",
+        "Show all Borderplex legal-tech and e-discovery employer postings, grouped by employer, in the last 12 months.",
+    ),
+    (
+        "gq-070",
+        "Which Borderplex employers have the highest repeat-posting rate for the same role family — suggesting either high turnover or aggressive expansion?",
+    ),
+]
+
+
+@pytest.mark.parametrize("gq_id,question", _EMPLOYER_QUESTIONS, ids=[q[0] for q in _EMPLOYER_QUESTIONS])
+def test_employer_plumbing_returns_employer(gq_id: str, question: str) -> None:
+    """Classifier returns employer when LLM emits employer JSON (regression for gq-061–070).
+
+    These questions all involve Borderplex-scoped employer analysis. The fixed prompt
+    must NOT teach the model to classify 'Which Borderplex employers…' as geographic.
+    The old third few-shot example (geographic for that pattern) was the bug.
+    """
+    with patch(
+        "analytics.query_engine.intent.complete",
+        return_value=_make_complete_result("employer", 0.91),
+    ):
+        result = classify_workforce_question(question, correlation_id=gq_id)
+    assert result["intent"] == "employer", f"{gq_id}: expected employer, got {result['intent']!r} — check plumbing"
 
 
 @pytest.mark.parametrize("gq_id,question", _GEO_QUESTIONS, ids=[q[0] for q in _GEO_QUESTIONS])
