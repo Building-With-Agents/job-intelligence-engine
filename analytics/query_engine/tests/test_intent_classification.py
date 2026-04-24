@@ -243,7 +243,13 @@ _GEO_QUESTIONS = [
 @pytest.mark.parametrize("gq_id,question", _GEO_QUESTIONS, ids=[q[0] for q in _GEO_QUESTIONS])
 def test_geographic_plumbing_returns_geographic(gq_id: str, question: str) -> None:
     """Classifier returns geographic when LLM emits geographic JSON (full pipeline smoke)."""
-    geo_term = "El Paso" if "El Paso" in question else "Las Cruces" if "Las Cruces" in question else "Borderplex"
+    # Check Borderplex first — gq-048 contains "El Paso" in a parenthetical but its
+    # primary region token is "Borderplex", so priority order matters here.
+    geo_term = (
+        "Borderplex" if "Borderplex" in question
+        else "El Paso" if "El Paso" in question
+        else "Las Cruces"
+    )
     with patch(
         "analytics.query_engine.intent.complete",
         return_value=_make_complete_result("geographic", 0.9, geo_terms=[geo_term]),
@@ -252,6 +258,8 @@ def test_geographic_plumbing_returns_geographic(gq_id: str, question: str) -> No
     assert result["intent"] == "geographic", (
         f"{gq_id}: expected geographic, got {result['intent']!r} — check plumbing"
     )
-    assert result["extracted_entities"]["geographic_terms"], (
-        f"{gq_id}: geographic_terms should be non-empty"
+    geo_terms = result["extracted_entities"]["geographic_terms"]
+    assert geo_terms, f"{gq_id}: geographic_terms should be non-empty"
+    assert geo_term in geo_terms, (
+        f"{gq_id}: expected primary geo_term {geo_term!r} in {geo_terms!r}"
     )
