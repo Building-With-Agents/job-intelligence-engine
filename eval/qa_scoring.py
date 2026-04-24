@@ -21,10 +21,12 @@ Week 10 pairs from distinguishing "fix the prompt" from "fix the infrastructure"
 ``latency_sla`` is the one exception: wall-clock time is computable even when the
 pipeline fails, so it always returns a float.
 
-An optional fifth metric, ``answerability``, is reported separately: for expected
-intents marked data-backed in ``INTENT_TO_DATA_BACKED`` it is 1.0 when
-``row_count_returned > 0``, else 0.0 (infra → 0.0 will be fixed in JIE #269).
-Intents not in the data-backed map are skipped (returns ``None``).
+Optional metrics ``answerability`` and ``correct_refusal`` are reported separately
+from the four-metric mean. Data-backed expected intents: ``answerability`` is
+``None`` (excluded) on infrastructure failure, not ``0.0`` (JIE #269). Per-item
+``data_backed`` in the golden record overrides ``INTENT_TO_DATA_BACKED`` when set.
+``correct_refusal`` scores intent-only (non–data-backed) items on refuse vs commit;
+it is ``None`` (N/A) for data-backed expected intents.
 
 The ``composite_score`` is the mean of the four core metrics over the **scorable
 pool** — ``None`` values are excluded before averaging, so the denominator shrinks
@@ -86,6 +88,31 @@ def _norm_intent(s: str | None) -> str:
     return (s or "").strip().lower()
 
 
+def intent_is_data_backed(golden: dict[str, Any], expected_intent: str) -> bool:
+    """True if the golden item expects row-backed SQL eval; per-item ``data_backed`` overrides the map (JIE #269)."""
+    v = golden.get("data_backed")
+    if isinstance(v, bool):
+        return v
+    exp = _norm_intent(expected_intent)
+    return bool(INTENT_TO_DATA_BACKED.get(exp, False))
+
+
+def _expected_min_rows(golden: dict[str, Any]) -> int | None:
+    v = golden.get("expected_min_rows")
+    if v is None or v is False:
+        return None
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    return n if n > 0 else None
+
+
+def _refusal_appropriate(golden: dict[str, Any]) -> bool | None:
+    v = golden.get("refusal_appropriate")
+    return v if isinstance(v, bool) else None
+
+
 @dataclass(frozen=True)
 class QAItemScores:
     # Content metrics: None when excluded due to infrastructure failure (JIE #263).
@@ -94,8 +121,10 @@ class QAItemScores:
     confidence_flags: float | None
     # Latency is always computable — even on pipeline failure we have wall-clock time.
     latency_sla: float
-    # Answerability: None for non-data-backed intents (skipped by design).
+    # Answerability: None for non-data-backed intents, or when excluded (infra) on data-backed.
     answerability: float | None
+    # Intent-only: refuse vs commit; None for data-backed (N/A) or when pipeline returned nothing (JIE #269).
+    correct_refusal: float | None
     comments: dict[str, str]
 
 
@@ -269,34 +298,81 @@ def score_answerability(
     expected_intent: str,
     response: dict[str, Any] | None,
     pipeline_error: str | None,
+    data_backed: bool,
+    expected_min_rows: int | None = None,
+    zero_rows_is_correct: bool = False,
 ) -> tuple[float | None, str]:
-    """1.0 if data-backed and ``row_count_returned > 0``; 0.0 on failure/empty rows.
+    """1.0 / 0.0 for data-backed items with a gradable response; ``None`` if skipped or not gradable (JIE #269).
 
-    Intents not marked data-backed in ``INTENT_TO_DATA_BACKED`` (or unknown intent)
-    are skipped: returns ``(None, comment)``.
+    On ``pipeline_error`` or missing ``response`` for a data-backed item, returns
+    ``None`` (same #263-style exclusion as other content metrics) — not ``0.0``.
 
-    ``row_count_returned`` is set on the analytics API response
-    (``AnalyticsQueryResponse``) from guardrailed SQL row count.
-
-    Note: infra failures still return 0.0 here (not None) — that redesign is
-    tracked as JIE #269 (answerability redesign).
+    When ``expected_min_rows`` is set, require ``row_count_returned >= expected_min_rows``,
+    unless ``zero_rows_is_correct`` and ``row_count_returned == 0`` (e.g. no matches in region).
     """
     exp = _norm_intent(expected_intent)
     if not exp:
         return None, "skipped: missing expected_intent in metadata"
-    if not INTENT_TO_DATA_BACKED.get(exp, False):
-        return None, f"skipped: intent {exp!r} not data-backed in harness map"
+    if not data_backed:
+        return None, f"skipped: intent {exp!r} not data-backed in harness (use data_backed in golden to override)"
 
     if pipeline_error or response is None:
-        return 0.0, pipeline_error or "no response"
+        return None, f"excluded: not gradable — {pipeline_error or 'no response'}"
 
     try:
         rc = int(response.get("row_count_returned") or 0)
     except (TypeError, ValueError):
         rc = 0
+
+    if expected_min_rows is not None and expected_min_rows > 0:
+        if zero_rows_is_correct and rc == 0:
+            return 1.0, "row_count=0; zero_rows_is_correct (expected empty cohort)"
+        if rc >= expected_min_rows:
+            return 1.0, f"row_count_returned={rc} (>= {expected_min_rows})"
+        return 0.0, f"row_count_returned={rc} (below {expected_min_rows})"
+
+    if zero_rows_is_correct and rc == 0:
+        return 1.0, "row_count=0; zero_rows_is_correct"
     if rc > 0:
         return 1.0, f"row_count_returned={rc} (data-backed intent)"
     return 0.0, "row_count_returned=0 (data-backed intent, no SQL rows)"
+
+
+def score_correct_refusal(
+    *,
+    expected_intent: str,
+    intent_data_backed: bool,
+    refused: bool,
+    question: str,
+    refusal_appropriate: bool | None = None,
+    no_response: bool = False,
+) -> tuple[float | None, str]:
+    """1.0 / 0.0 for intent-only (non–data-backed) items; ``None`` if N/A (JIE #269).
+
+    Data-backed expected intents: not applicable (``None``) — use answerability and evidence.
+    When the pipeline did not return a body to evaluate, returns ``None``.
+
+    If ``refusal_appropriate`` is set on the golden row, ``True`` means the item expects a
+    refusal; ``False`` means it expects a committed answer. If omitted, the default is to
+    prefer a committed answer for intent-only items (``refused`` → 0.0). Empty question:
+    returns ``None``.
+    """
+    if no_response:
+        return None, "excluded: no response (cannot evaluate)"
+    if intent_data_backed:
+        return None, "N/A: data-backed expected intent (use answerability + evidence path)"
+    if not (question or "").strip():
+        return None, "skipped: empty question"
+    exp = _norm_intent(expected_intent)
+    if not exp:
+        return None, "skipped: missing expected_intent in metadata"
+    if refusal_appropriate is not None:
+        if refusal_appropriate:
+            return (1.0, "expected refusal, got refusal") if refused else (0.0, "expected refusal, got committed answer")
+        return (0.0, "expected committed answer, got refusal") if refused else (1.0, "expected committed answer, got answer")
+    if refused:
+        return 0.0, "intent-only: default assumes committed answer (set refusal_appropriate in golden to override)"
+    return 1.0, "intent-only: committed answer (default)"
 
 
 def compute_item_scores(
@@ -315,6 +391,11 @@ def compute_item_scores(
     """
     exp_intent = str(golden.get("intent") or golden.get("expected_intent") or "")
     difficulty = str(golden.get("difficulty") or "medium")
+    q_text = str(golden.get("question") or "")
+    dback = intent_is_data_backed(golden, exp_intent)
+    emn = _expected_min_rows(golden)
+    zrc = bool(golden.get("zero_rows_is_correct", False))
+    rapt = _refusal_appropriate(golden)
 
     ls, ls_c = score_latency_sla(latency_seconds=latency_seconds, sla_seconds=sla_seconds)
 
@@ -323,6 +404,17 @@ def compute_item_scores(
             expected_intent=exp_intent,
             response=None,
             pipeline_error=pipeline_error,
+            data_backed=dback,
+            expected_min_rows=emn,
+            zero_rows_is_correct=zrc,
+        )
+        cr, cr_c = score_correct_refusal(
+            expected_intent=exp_intent,
+            intent_data_backed=dback,
+            refused=False,
+            question=q_text,
+            refusal_appropriate=rapt,
+            no_response=True,
         )
         reason = pipeline_error or "no response"
         return QAItemScores(
@@ -331,12 +423,14 @@ def compute_item_scores(
             confidence_flags=None,
             latency_sla=ls,
             answerability=an,
+            correct_refusal=cr,
             comments={
                 "intent_accuracy": f"excluded: {reason}",
                 "evidence_citation": f"excluded: {reason}",
                 "confidence_flags": f"excluded: {reason}",
                 "latency_sla": f"{ls_c} (content metrics excluded — pipeline failure)",
                 "answerability": an_c,
+                "correct_refusal": cr_c,
             },
         )
 
@@ -371,6 +465,17 @@ def compute_item_scores(
         expected_intent=exp_intent,
         response=response,
         pipeline_error=pipeline_error,
+        data_backed=dback,
+        expected_min_rows=emn,
+        zero_rows_is_correct=zrc,
+    )
+    cr, cr_c = score_correct_refusal(
+        expected_intent=exp_intent,
+        intent_data_backed=dback,
+        refused=bool(response.get("refused")),
+        question=q_text,
+        refusal_appropriate=rapt,
+        no_response=False,
     )
 
     return QAItemScores(
@@ -379,12 +484,14 @@ def compute_item_scores(
         confidence_flags=cf,
         latency_sla=ls,
         answerability=an,
+        correct_refusal=cr,
         comments={
             "intent_accuracy": ia_c,
             "evidence_citation": ec_c,
             "confidence_flags": cf_c,
             "latency_sla": ls_c,
             "answerability": an_c,
+            "correct_refusal": cr_c,
         },
     )
 

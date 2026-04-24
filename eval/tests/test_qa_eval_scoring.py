@@ -142,7 +142,13 @@ def test_latency_above_sla() -> None:
 
 def test_compute_failure_content_excluded_latency_computed() -> None:
     """On pipeline failure, content metrics are None (excluded); latency is still computed (JIE #263)."""
-    g = {"id": "gq-001", "intent": "geographic", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-001",
+        "question": "What is hiring like in El Paso?",
+        "intent": "geographic",
+        "must_include": [],
+        "must_not_include": [],
+    }
     out = compute_item_scores(
         golden=g,
         response=None,
@@ -154,15 +160,23 @@ def test_compute_failure_content_excluded_latency_computed() -> None:
     assert out.evidence_citation is None
     assert out.confidence_flags is None
     assert out.latency_sla > 0.0
-    # geographic is data-backed; answerability stays 0.0 on infra failure (JIE #269 will fix).
-    assert out.answerability == 0.0
+    # geographic is data-backed; answerability is excluded on infra failure (JIE #269).
+    assert out.answerability is None
+    assert out.correct_refusal is None
     assert "excluded" in out.comments["intent_accuracy"].lower()
     assert "excluded" in out.comments["evidence_citation"].lower()
+    assert "excluded" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_compute_sql_error_excludes_evidence_citation_only() -> None:
     """sql_execution_error_detail excludes evidence_citation but leaves intent_accuracy scorable."""
-    g = {"id": "gq-sql", "intent": "employer", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-sql",
+        "question": "List employers in the region",
+        "intent": "employer",
+        "must_include": [],
+        "must_not_include": [],
+    }
     resp = {
         "answer": "Some answer here.",
         "evidence": [],
@@ -189,7 +203,13 @@ def test_compute_sql_error_excludes_evidence_citation_only() -> None:
 
 
 def test_pipeline_error_skips_answerability_for_intent_only() -> None:
-    g = {"id": "gq-001b", "intent": "trend", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-001b",
+        "question": "Hiring trend question",
+        "intent": "trend",
+        "must_include": [],
+        "must_not_include": [],
+    }
     out = compute_item_scores(
         golden=g,
         response=None,
@@ -198,11 +218,14 @@ def test_pipeline_error_skips_answerability_for_intent_only() -> None:
         sla_seconds=45.0,
     )
     assert out.answerability is None
+    assert out.correct_refusal is None
+    assert "excluded" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_compute_happy_path() -> None:
     g = {
         "id": "gq-002",
+        "question": "El Paso subregional data",
         "intent": "geographic",
         "must_include": ["el_paso_subregion_filter_confirmed"],
         "must_not_include": [],
@@ -232,11 +255,13 @@ def test_compute_happy_path() -> None:
     assert out.confidence_flags > 0.0
     assert out.latency_sla == 1.0
     assert out.answerability == 1.0
+    assert out.correct_refusal is None
 
 
 def test_answerability_data_backed_zero_rows() -> None:
     g = {
         "id": "gq-00z",
+        "question": "Show employers",
         "intent": "employer",
         "must_include": [],
         "must_not_include": [],
@@ -267,6 +292,7 @@ def test_answerability_data_backed_zero_rows() -> None:
 def test_answerability_intent_only_skipped() -> None:
     g = {
         "id": "gq-tr",
+        "question": "Narrative trend in roles",
         "intent": "trend",
         "must_include": [],
         "must_not_include": [],
@@ -294,6 +320,8 @@ def test_answerability_intent_only_skipped() -> None:
     )
     assert out.answerability is None
     assert "skipped" in out.comments.get("answerability", "").lower()
+    assert out.correct_refusal == 0.0
+    assert "default" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_composite_excludes_answerability() -> None:
@@ -303,6 +331,7 @@ def test_composite_excludes_answerability() -> None:
         confidence_flags=0.5,
         latency_sla=0.5,
         answerability=0.0,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(base) == 0.5
@@ -312,6 +341,7 @@ def test_composite_excludes_answerability() -> None:
         confidence_flags=0.0,
         latency_sla=0.0,
         answerability=1.0,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(hi) == 0.0
@@ -325,6 +355,7 @@ def test_composite_filters_none_uses_latency_anchor() -> None:
         confidence_flags=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(scores) == 1.0
@@ -338,6 +369,7 @@ def test_composite_filters_none_partial() -> None:
         confidence_flags=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     # Only intent_accuracy and latency_sla are scorable → mean((1.0, 1.0)) = 1.0
@@ -349,6 +381,7 @@ def test_composite_filters_none_partial() -> None:
         confidence_flags=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     # mean((0.0, 1.0)) = 0.5
@@ -367,12 +400,14 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
         confidence_flags=None,
         latency_sla=0.8,
         answerability=None,
+        correct_refusal=None,
         comments={
             "intent_accuracy": "excluded: connection reset",
             "evidence_citation": "excluded: connection reset",
             "confidence_flags": "excluded: connection reset",
             "latency_sla": "latency computed",
             "answerability": "skipped: intent not data-backed",
+            "correct_refusal": "excluded",
         },
     )
     good = QAItemScores(
@@ -381,12 +416,14 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
         confidence_flags=0.85,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={
             "intent_accuracy": "intent matches",
             "evidence_citation": "overlap heuristic",
             "confidence_flags": "calibration ok",
             "latency_sla": "within SLA",
             "answerability": "skipped",
+            "correct_refusal": "N/A",
         },
     )
     rows = [("gq-001", infra_fail, "connection reset"), ("gq-002", good, None)]

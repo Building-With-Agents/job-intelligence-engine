@@ -90,6 +90,17 @@ def _validate_item(item: dict, idx: int) -> None:
             f"Item[{idx}] {gq_id!r}: 'difficulty' must be one of "
             f"{sorted(_VALID_DIFFICULTIES)}; got {item['difficulty']!r}"
         )
+    if "data_backed" in item and not isinstance(item["data_backed"], bool):
+        raise ValueError(f"Item[{idx}] {gq_id!r}: data_backed must be bool if set")
+    if "expected_min_rows" in item and item["expected_min_rows"] is not None:
+        try:
+            int(item["expected_min_rows"])
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Item[{idx}] {gq_id!r}: expected_min_rows must be an integer") from e
+    if "zero_rows_is_correct" in item and not isinstance(item["zero_rows_is_correct"], bool):
+        raise ValueError(f"Item[{idx}] {gq_id!r}: zero_rows_is_correct must be bool if set")
+    if "refusal_appropriate" in item and not isinstance(item["refusal_appropriate"], bool):
+        raise ValueError(f"Item[{idx}] {gq_id!r}: refusal_appropriate must be bool if set")
 
 
 def _validate_no_duplicate_ids(questions: list[dict]) -> None:
@@ -119,6 +130,7 @@ def _build_dataset_item(item: dict) -> tuple[dict, dict, dict]:
 
     metadata = {
         "id": item["id"],
+        "question": item["question"],
         # Canonical key the eval harness reads for intent_accuracy scoring.
         "expected_intent": item["intent"],
         # Keep the raw field too — avoids confusion when reading Langfuse UI.
@@ -131,6 +143,9 @@ def _build_dataset_item(item: dict) -> tuple[dict, dict, dict]:
         # expected_output separately.
         "ideal_answer_summary": item["ideal_answer_summary"],
     }
+    for k in ("data_backed", "expected_min_rows", "zero_rows_is_correct", "refusal_appropriate"):
+        if k in item:
+            metadata[k] = item[k]
 
     return input_data, expected_output, metadata
 

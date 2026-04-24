@@ -1,8 +1,8 @@
 """Register QA eval score configs on the Langfuse project (JIE #247 + Week 9).
 
 One-liner: Langfuse Cloud disables score-config auto-creation at the org
-level; this registers the 8 configs the Q&A eval produces so manual
-scoring is unblocked in the UI.
+level; this registers the Q&A eval score configs (automated + manual + run-level) so
+manual scoring is unblocked in the UI.
 
 Run once per Langfuse instance (local or cloud). Idempotent: skips configs
 whose name already exists. Safe to re-run after a new Langfuse instance is
@@ -23,8 +23,8 @@ disabled at the org level. The practical consequence:
    dropdown read from the Score Config registry, not from raw submitted
    scores. Empty registry → empty dropdown → manual scoring
    (correctness / decision_relevance / followup_quality) is blocked.
-3. This script closes that gap by explicitly creating all 8 configs
-   (5 automated + 3 manual) as NUMERIC ranged 0.0-1.0, with
+3. This script closes that gap by explicitly creating all required configs
+   (automated per-trace, run-level where applicable, plus 3 manual) as NUMERIC ranged 0.0-1.0, with
    rubric-aware descriptions pulled from ``eval/qa_scoring.py`` and the
    Week 9 scoring tutorial (Stage 5).
 
@@ -34,12 +34,17 @@ Langfuse UI works as the tutorial describes.
 
 Score config inventory (all NUMERIC, range 0.0-1.0):
 
-Automated layer (5 — scored by ``eval/qa_scoring.py``):
+Automated per-trace (scored by ``eval/qa_scoring.py``):
     * ``intent_accuracy``  — classifier routing, binary (0.0 / 1.0)
     * ``evidence_citation`` — rubric-gated evidence quality
     * ``confidence_flags`` — calibration of low-confidence flag
     * ``latency_sla``      — continuous decay, 45s SLA
-    * ``answerability``    — JIE #247; data-backed row_count > 0
+    * ``answerability``    — JIE #247; data-backed rows (excluded on infra)
+    * ``correct_refusal``  — JIE #269; intent-only refuse vs commit
+
+Run-level (from ``qa_eval`` run evaluators, when applicable):
+    * ``refusal_correctness_rate`` — mean of ``correct_refusal`` over the intent-only cohort
+    * ``mean_*`` for core metrics
 
 Manual layer (3 — scored in the Langfuse UI per
 ``docs/Week 9/reading-langfuse-scoring-tutorial.md`` Stage 5):
@@ -79,7 +84,7 @@ from langfuse import Langfuse  # noqa: E402
 from langfuse.api.commons.types.score_config_data_type import ScoreConfigDataType  # noqa: E402
 
 # Single source of truth — matches:
-#   * eval/qa_scoring.py (automated layer, 5 scores)
+#   * eval/qa_scoring.py (per-trace + run-level names used by qa_eval)
 #   * docs/Week 9/reading-langfuse-scoring-tutorial.md Stage 5 (manual layer, 3 scores)
 CONFIGS: tuple[dict[str, str | float], ...] = (
     {
@@ -116,10 +121,24 @@ CONFIGS: tuple[dict[str, str | float], ...] = (
     {
         "name": "answerability",
         "description": (
-            "Automated (JIE #247). For data-backed intents only: 1.0 if "
-            "row_count_returned > 0, 0.0 if zero. Null/skipped for intent-only "
-            "intents (trend / role_evolution / emergence / disruption) until "
-            "posted_date ingestion lands. Reported separately, not in composite."
+            "Automated (JIE #247 + JIE #269). For data-backed expected intents: "
+            "1.0/0.0 on row count per harness rules; Null if not data-backed, "
+            "or excluded (not gradable) on infrastructure failure / missing response."
+        ),
+    },
+    {
+        "name": "correct_refusal",
+        "description": (
+            "Automated (JIE #269). For intent-only (non–data-backed) expected intents: "
+            "1.0/0.0 on appropriate refuse vs commit. Null (N/A) for data-backed intents "
+            "or when the pipeline did not return a response."
+        ),
+    },
+    {
+        "name": "refusal_correctness_rate",
+        "description": (
+            "Run-level. Mean of per-item correct_refusal over the intent-only scored cohort "
+            "(JIE #269). See comment on the run evaluation for n_scored / n_excluded."
         ),
     },
     {
@@ -204,7 +223,7 @@ def main() -> int:
         return 0
 
     if not to_create:
-        print("Nothing to do — all 8 configs already registered.")
+        print("Nothing to do — all score configs in CONFIGS are already registered.")
         return 0
 
     print("== Creating ==")

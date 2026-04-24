@@ -10,10 +10,12 @@ Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_gold
 
 | Condition | `answerability` |
 |-----------|-----------------|
-| Expected intent not data-backed in harness map | `None` (skipped) |
-| Data-backed intent, pipeline error or no response | `0.0` |
-| Data-backed intent, `row_count_returned == 0` | `0.0` |
+| Expected intent not data-backed in harness map (or `data_backed: false` in golden) | `None` (skipped) |
+| Data-backed intent, pipeline error or no response | `None` (excluded, not 0.0) |
+| Data-backed intent, `row_count_returned == 0` (and not `zero_rows_is_correct`) | `0.0` |
 | Data-backed intent, `row_count_returned > 0`  | `1.0` |
+
+Optional golden fields (JIE #269): `data_backed` (overrides the harness map), `expected_min_rows`, `zero_rows_is_correct`, `refusal_appropriate`. A sixth automated score, `correct_refusal` (1.0/0.0, or `None` for data-backed / no response), applies to intent-only items only and is not part of the four-metric `composite_score` mean. Run output includes `refusal_correctness_summary` (mean over the intent-only scored cohort).
 
 `row_count_returned` is a new field on `AnalyticsQueryResponse` populated by the ORM path in `analytics.query_engine.routing.run_analytics_qna`.
 
