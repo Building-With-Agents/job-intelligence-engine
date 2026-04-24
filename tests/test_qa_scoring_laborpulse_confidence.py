@@ -28,7 +28,13 @@ def test_coerce_eval_response_confidence(raw: object, expected: float) -> None:
 
 def test_compute_item_scores_accepts_laborpulse_confidence_string() -> None:
     sc = compute_item_scores(
-        golden={"intent": "curriculum", "must_include": [], "must_not_include": []},
+        golden={
+            "id": "gq-lp-1",
+            "question": "x?",
+            "intent": "curriculum",
+            "must_include": [],
+            "must_not_include": [],
+        },
         response={
             "answer": "x",
             "evidence": [{"title": "t", "source": "s", "snippet": "n"}],
@@ -38,5 +44,5 @@ def test_compute_item_scores_accepts_laborpulse_confidence_string() -> None:
         latency_seconds=1.0,
         pipeline_error=None,
     )
-    assert isinstance(sc.confidence_flags, float)
-    assert 0.0 <= sc.confidence_flags <= 1.0
+    assert isinstance(sc.confidence_self_consistency, float)
+    assert 0.0 <= sc.confidence_self_consistency <= 1.0

@@ -101,6 +101,15 @@ def _validate_item(item: dict, idx: int) -> None:
         raise ValueError(f"Item[{idx}] {gq_id!r}: zero_rows_is_correct must be bool if set")
     if "refusal_appropriate" in item and not isinstance(item["refusal_appropriate"], bool):
         raise ValueError(f"Item[{idx}] {gq_id!r}: refusal_appropriate must be bool if set")
+    if "expected_confidence_range" in item and item["expected_confidence_range"] is not None:
+        ecr = item["expected_confidence_range"]
+        if not isinstance(ecr, (list, tuple)) or len(ecr) != 2:
+            raise ValueError(f"Item[{idx}] {gq_id!r}: expected_confidence_range must be [lo, hi]")
+        try:
+            float(ecr[0])
+            float(ecr[1])
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Item[{idx}] {gq_id!r}: expected_confidence_range bounds must be numbers") from e
 
 
 def _validate_no_duplicate_ids(questions: list[dict]) -> None:
@@ -143,7 +152,7 @@ def _build_dataset_item(item: dict) -> tuple[dict, dict, dict]:
         # expected_output separately.
         "ideal_answer_summary": item["ideal_answer_summary"],
     }
-    for k in ("data_backed", "expected_min_rows", "zero_rows_is_correct", "refusal_appropriate"):
+    for k in ("data_backed", "expected_min_rows", "zero_rows_is_correct", "refusal_appropriate", "expected_confidence_range"):
         if k in item:
             metadata[k] = item[k]
 

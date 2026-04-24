@@ -37,14 +37,15 @@ Score config inventory (all NUMERIC, range 0.0-1.0):
 Automated per-trace (scored by ``eval/qa_scoring.py``):
     * ``intent_accuracy``  — classifier routing, binary (0.0 / 1.0)
     * ``evidence_citation`` — rubric-gated evidence quality
-    * ``confidence_flags`` — calibration of low-confidence flag
+    * ``confidence_self_consistency`` — low-confidence flag vs numeric confidence (JIE #267)
+    * ``confidence_in_expected_range`` — optional rubric [lo, hi] in golden
     * ``latency_sla``      — continuous decay, 45s SLA
     * ``answerability``    — JIE #247; data-backed rows (excluded on infra)
     * ``correct_refusal``  — JIE #269; intent-only refuse vs commit
 
 Run-level (from ``qa_eval`` run evaluators, when applicable):
     * ``refusal_correctness_rate`` — mean of ``correct_refusal`` over the intent-only cohort
-    * ``mean_*`` for core metrics
+    * ``mean_*`` for core metrics; JIE #268 ``*_composite`` and ``subcomposite_gated`` run evaluators
 
 Manual layer (3 — scored in the Langfuse UI per
 ``docs/Week 9/reading-langfuse-scoring-tutorial.md`` Stage 5):
@@ -95,12 +96,22 @@ CONFIGS: tuple[dict[str, str | float], ...] = (
         ),
     },
     {
-        "name": "confidence_flags",
+        "name": "confidence_self_consistency",
         "description": (
-            "Automated. 1.0 if confidence-flag calibration is correct "
-            "(low-confidence responses include an explanation and flag, "
-            "high-confidence responses do not over-flag), else 0.0."
+            "Automated (JIE #267). Self-consistency: numeric confidence vs low-confidence flag "
+            "vs 0.6; non-empty explanation/volume when flags are on. No length floors."
         ),
+    },
+    {
+        "name": "confidence_in_expected_range",
+        "description": (
+            "Automated (JIE #267). When golden has expected_confidence_range [lo,hi], "
+            "graduated score for confidence fit; omitted when not set (Null)."
+        ),
+    },
+    {
+        "name": "mean_confidence_in_expected_range",
+        "description": "Run-level mean of confidence_in_expected_range over items that had a range in golden.",
     },
     {
         "name": "intent_accuracy",
@@ -139,6 +150,30 @@ CONFIGS: tuple[dict[str, str | float], ...] = (
             "Run-level. Mean of per-item correct_refusal over the intent-only scored cohort "
             "(JIE #269). See comment on the run evaluation for n_scored / n_excluded."
         ),
+    },
+    {
+        "name": "prompt_quality_composite",
+        "description": "JIE #268 run-level. Proxies to mean evidence_citation until JIE #265 splits rubric.",
+    },
+    {
+        "name": "classification_composite",
+        "description": "JIE #268 run-level. Mean intent accuracy (binary).",
+    },
+    {
+        "name": "pipeline_health_composite",
+        "description": "JIE #268 run-level. Answerability + latency + correct_refusal blend; see eval/qa_scoring.",
+    },
+    {
+        "name": "safety_composite",
+        "description": "JIE #268 run-level. self_consistency and in-range; see eval/qa_scoring.",
+    },
+    {
+        "name": "overall_geometric_composite",
+        "description": "JIE #268. Geometric mean of the four sub-composites when all four are defined.",
+    },
+    {
+        "name": "subcomposite_gated",
+        "description": "JIE #268. 1.0 if answerability mean is below the gate env threshold; 0.0 otherwise.",
     },
     {
         "name": "correctness",
