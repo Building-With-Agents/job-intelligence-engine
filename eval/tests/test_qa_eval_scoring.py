@@ -54,8 +54,9 @@ def test_evidence_empty_not_refused() -> None:
     assert "no evidence" in c
 
 
-def test_evidence_pipeline_error_zero() -> None:
-    s, _ = score_evidence_citation(
+def test_evidence_pipeline_error_excluded() -> None:
+    """pipeline_error → None (excluded), not 0.0 (JIE #263)."""
+    s, c = score_evidence_citation(
         answer="x",
         evidence=[{"title": "t", "snippet": "n"}],
         must_include=[],
@@ -64,7 +65,53 @@ def test_evidence_pipeline_error_zero() -> None:
         sql_execution_error_detail=None,
         pipeline_error="boom",
     )
+    assert s is None
+    assert "excluded" in c
+
+
+def test_evidence_sql_error_excluded() -> None:
+    """sql_execution_error_detail → None (infrastructure failure, JIE #263)."""
+    s, c = score_evidence_citation(
+        answer="El Paso employers showed growth.",
+        evidence=[{"title": "t", "source": "s", "snippet": "el paso"}],
+        must_include=[],
+        must_not_include=[],
+        refused=False,
+        sql_execution_error_detail="column foo does not exist",
+        pipeline_error=None,
+    )
+    assert s is None
+    assert "excluded" in c
+
+
+def test_evidence_empty_answer_excluded() -> None:
+    """Empty answer is an input-contract violation → None (JIE #263)."""
+    s, c = score_evidence_citation(
+        answer="",
+        evidence=[{"title": "t", "snippet": "n"}],
+        must_include=[],
+        must_not_include=[],
+        refused=False,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+    )
+    assert s is None
+    assert "excluded" in c
+
+
+def test_evidence_committed_no_evidence_stays_zero() -> None:
+    """A non-empty, non-refused answer with no evidence rows is a real quality failure (0.0)."""
+    s, c = score_evidence_citation(
+        answer="El Paso employers showed growth.",
+        evidence=[],
+        must_include=[],
+        must_not_include=[],
+        refused=False,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+    )
     assert s == 0.0
+    assert "no evidence" in c
 
 
 def test_confidence_calibration() -> None:
@@ -88,7 +135,8 @@ def test_latency_above_sla() -> None:
     assert abs(s - 0.5) < 1e-6
 
 
-def test_compute_failure_all_zeros_except_latency() -> None:
+def test_compute_failure_content_excluded_latency_computed() -> None:
+    """On pipeline failure, content metrics are None (excluded); latency is still computed (JIE #263)."""
     g = {"id": "gq-001", "intent": "geographic", "must_include": [], "must_not_include": []}
     out = compute_item_scores(
         golden=g,
@@ -97,11 +145,42 @@ def test_compute_failure_all_zeros_except_latency() -> None:
         pipeline_error="connection reset",
         sla_seconds=45.0,
     )
-    assert out.intent_accuracy == 0.0
-    assert out.evidence_citation == 0.0
-    assert out.confidence_flags == 0.0
+    assert out.intent_accuracy is None
+    assert out.evidence_citation is None
+    assert out.confidence_flags is None
     assert out.latency_sla > 0.0
+    # geographic is data-backed; answerability stays 0.0 on infra failure (JIE #269 will fix).
     assert out.answerability == 0.0
+    assert "excluded" in out.comments["intent_accuracy"].lower()
+    assert "excluded" in out.comments["evidence_citation"].lower()
+
+
+def test_compute_sql_error_excludes_evidence_citation_only() -> None:
+    """sql_execution_error_detail excludes evidence_citation but leaves intent_accuracy scorable."""
+    g = {"id": "gq-sql", "intent": "employer", "must_include": [], "must_not_include": []}
+    resp = {
+        "answer": "Some answer here.",
+        "evidence": [],
+        "confidence": 0.8,
+        "confidence_flagged_low": False,
+        "confidence_explanation": None,
+        "volume_flagged_low": False,
+        "volume_warning": None,
+        "refused": False,
+        "sql_execution_error_detail": "relation does not exist",
+        "classified_intent": "employer",
+        "row_count_returned": 0,
+    }
+    out = compute_item_scores(
+        golden=g,
+        response=resp,
+        latency_seconds=3.0,
+        pipeline_error=None,
+        sla_seconds=45.0,
+    )
+    assert out.intent_accuracy == 1.0, "intent classification is unaffected by SQL error"
+    assert out.evidence_citation is None, "SQL error excludes evidence_citation"
+    assert out.confidence_flags is not None, "confidence calibration is unaffected by SQL error"
 
 
 def test_pipeline_error_skips_answerability_for_intent_only() -> None:
@@ -231,6 +310,44 @@ def test_composite_excludes_answerability() -> None:
         comments={},
     )
     assert composite_score(hi) == 0.0
+
+
+def test_composite_filters_none_uses_latency_anchor() -> None:
+    """When all content metrics are None (infra failure), composite is anchored to latency_sla only (JIE #263)."""
+    scores = QAItemScores(
+        intent_accuracy=None,
+        evidence_citation=None,
+        confidence_flags=None,
+        latency_sla=1.0,
+        answerability=None,
+        comments={},
+    )
+    assert composite_score(scores) == 1.0
+
+
+def test_composite_filters_none_partial() -> None:
+    """Partial None: composite averages over the scorable pool only, denominator shrinks (JIE #263)."""
+    scores = QAItemScores(
+        intent_accuracy=1.0,
+        evidence_citation=None,
+        confidence_flags=None,
+        latency_sla=1.0,
+        answerability=None,
+        comments={},
+    )
+    # Only intent_accuracy and latency_sla are scorable → mean((1.0, 1.0)) = 1.0
+    assert composite_score(scores) == 1.0
+
+    mixed = QAItemScores(
+        intent_accuracy=0.0,
+        evidence_citation=None,
+        confidence_flags=None,
+        latency_sla=1.0,
+        answerability=None,
+        comments={},
+    )
+    # mean((0.0, 1.0)) = 0.5
+    assert abs(composite_score(mixed) - 0.5) < 1e-9
 
 
 def test_confusion_rows() -> None:
