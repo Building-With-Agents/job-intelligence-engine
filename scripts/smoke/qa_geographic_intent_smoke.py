@@ -69,8 +69,7 @@ _GEO_QUESTIONS: list[tuple[str, str]] = [
     ),
     (
         "gq-047",
-        "Retrieve all El Paso, TX entry-level IT postings that have a published salary range,"
-        " grouped by job family.",
+        "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family.",
     ),
     (
         "gq-048",

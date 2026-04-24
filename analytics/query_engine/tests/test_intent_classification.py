@@ -30,21 +30,25 @@ from analytics.query_engine.intent import (
 # ---------------------------------------------------------------------------
 
 
-def _make_complete_result(intent: str, confidence: float = 0.9, geo_terms: list[str] | None = None, role_names: list[str] | None = None) -> dict:
+def _make_complete_result(
+    intent: str, confidence: float = 0.9, geo_terms: list[str] | None = None, role_names: list[str] | None = None
+) -> dict:
     """Build a mock ``complete()`` return value emitting the given intent."""
     return {
         "success": True,
         "extraction_failed": False,
-        "content": json.dumps({
-            "intent": intent,
-            "confidence": confidence,
-            "extracted_entities": {
-                "geographic_terms": geo_terms or [],
-                "role_names": role_names or [],
-                "skill_names": [],
-                "time_references": [],
-            },
-        }),
+        "content": json.dumps(
+            {
+                "intent": intent,
+                "confidence": confidence,
+                "extracted_entities": {
+                    "geographic_terms": geo_terms or [],
+                    "role_names": role_names or [],
+                    "skill_names": [],
+                    "time_references": [],
+                },
+            }
+        ),
     }
 
 
@@ -150,7 +154,8 @@ def test_classify_populates_geographic_entities() -> None:
     with patch(
         "analytics.query_engine.intent.complete",
         return_value=_make_complete_result(
-            "geographic", 0.92,
+            "geographic",
+            0.92,
             geo_terms=["El Paso", "TX"],
             role_names=["prompt engineer"],
         ),
@@ -227,16 +232,46 @@ def test_classify_low_confidence_sets_needs_clarification() -> None:
 # ---------------------------------------------------------------------------
 
 _GEO_QUESTIONS = [
-    ("gq-041", "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the agentic_era period."),
-    ("gq-042", "List every Las Cruces, NM data engineer posting from the last 90 days with required skills including Python, SQL, and a cloud platform."),
-    ("gq-043", "Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, and clinical data analyst roles — that require AI or ML skills."),
-    ("gq-044", "Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraform experience."),
-    ("gq-045", "Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt4 or agentic_era periods."),
-    ("gq-046", "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification such as CISSP, CISA, or CompTIA Security+."),
-    ("gq-047", "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family."),
-    ("gq-048", "Find all Borderplex (El Paso and Las Cruces combined) fintech or regtech developer postings from the agentic_era period."),
-    ("gq-049", "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows flagged."),
-    ("gq-050", "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC."),
+    (
+        "gq-041",
+        "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the agentic_era period.",
+    ),
+    (
+        "gq-042",
+        "List every Las Cruces, NM data engineer posting from the last 90 days with required skills including Python, SQL, and a cloud platform.",
+    ),
+    (
+        "gq-043",
+        "Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, and clinical data analyst roles — that require AI or ML skills.",
+    ),
+    (
+        "gq-044",
+        "Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraform experience.",
+    ),
+    (
+        "gq-045",
+        "Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt4 or agentic_era periods.",
+    ),
+    (
+        "gq-046",
+        "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification such as CISSP, CISA, or CompTIA Security+.",
+    ),
+    (
+        "gq-047",
+        "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family.",
+    ),
+    (
+        "gq-048",
+        "Find all Borderplex (El Paso and Las Cruces combined) fintech or regtech developer postings from the agentic_era period.",
+    ),
+    (
+        "gq-049",
+        "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows flagged.",
+    ),
+    (
+        "gq-050",
+        "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC.",
+    ),
 ]
 
 
@@ -245,21 +280,13 @@ def test_geographic_plumbing_returns_geographic(gq_id: str, question: str) -> No
     """Classifier returns geographic when LLM emits geographic JSON (full pipeline smoke)."""
     # Check Borderplex first — gq-048 contains "El Paso" in a parenthetical but its
     # primary region token is "Borderplex", so priority order matters here.
-    geo_term = (
-        "Borderplex" if "Borderplex" in question
-        else "El Paso" if "El Paso" in question
-        else "Las Cruces"
-    )
+    geo_term = "Borderplex" if "Borderplex" in question else "El Paso" if "El Paso" in question else "Las Cruces"
     with patch(
         "analytics.query_engine.intent.complete",
         return_value=_make_complete_result("geographic", 0.9, geo_terms=[geo_term]),
     ):
         result = classify_workforce_question(question, correlation_id=gq_id)
-    assert result["intent"] == "geographic", (
-        f"{gq_id}: expected geographic, got {result['intent']!r} — check plumbing"
-    )
+    assert result["intent"] == "geographic", f"{gq_id}: expected geographic, got {result['intent']!r} — check plumbing"
     geo_terms = result["extracted_entities"]["geographic_terms"]
     assert geo_terms, f"{gq_id}: geographic_terms should be non-empty"
-    assert geo_term in geo_terms, (
-        f"{gq_id}: expected primary geo_term {geo_term!r} in {geo_terms!r}"
-    )
+    assert geo_term in geo_terms, f"{gq_id}: expected primary geo_term {geo_term!r} in {geo_terms!r}"
