@@ -1244,14 +1244,14 @@ python scripts/week8_verify_counts.py
 If the Week 7 aggregate tables show `(empty)` or `0`, populate them:
 
 ```
-python scripts/smoke/refresh_aggregates.py
+python scripts/refresh_aggregates.py
 ```
 
 **Optional flags:**
 
 ```
-python scripts/smoke/refresh_aggregates.py --week 2026-04-14      # target a specific Monday
-python scripts/smoke/refresh_aggregates.py --skip-pipeline         # steps 2,3,8,9 only (skip sector/geo)
+python scripts/refresh_aggregates.py --week 2026-04-14      # target a specific Monday
+python scripts/refresh_aggregates.py --skip-pipeline         # steps 2,3,8,9 only (skip sector/geo)
 ```
 
 **What the script does:**
@@ -1654,7 +1654,7 @@ The `success` field in `dbo.orchestration_audit_log` reflects the HTTP status co
 
 If `skill_demand_weekly`, `tool_demand_weekly`, `role_snapshot_weekly`, `sector_summary_weekly`, `skill_velocity`, `skill_co_occurrence`, `geo_demand_weekly`, and `trajectory_map` all have zero rows, the Week 7 analytics aggregate pipeline has not been run. This is the root cause of most "no data" states on Week 8 Streamlit pages. The `cohort_gap_cache` may have rows from `api_smoke.py`, but those rows contain empty `market_skill_demand` arrays because the triggers queried empty upstream tables.
 
-Fix: run `python scripts/smoke/refresh_aggregates.py`, then re-run `api_smoke.py` to refresh caches with real data. If `sector_summary_weekly` and `geo_demand_weekly` are still empty after that, the root cause is [#172](https://github.com/Building-With-Agents/job-intelligence-engine/issues/172) — `job_postings.publish_date` is 99% NULL because `date_posted` from JSearch was never promoted from `normalized_jobs`. Once #172 merges and the backfill runs, re-run the aggregates per [#189](https://github.com/Building-With-Agents/job-intelligence-engine/issues/189).
+Fix: run `python scripts/refresh_aggregates.py`, then re-run `api_smoke.py` to refresh caches with real data. If `sector_summary_weekly` and `geo_demand_weekly` are still empty after that, the root cause is [#172](https://github.com/Building-With-Agents/job-intelligence-engine/issues/172) — `job_postings.publish_date` is 99% NULL because `date_posted` from JSearch was never promoted from `normalized_jobs`. Once #172 merges and the backfill runs, re-run the aggregates per [#189](https://github.com/Building-With-Agents/job-intelligence-engine/issues/189).
 
 **`sqlglot` / `fastapi` / `uvicorn` missing on pre-merge venvs**
 
