@@ -1094,76 +1094,141 @@
     "question": "How does AI-core role demand (AI agent developer, prompt engineer, ML engineer) in El Paso, TX compare to Las Cruces, NM in the agentic_era period?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "compare posting demands for  AI-core role families in the agentic_era bucket, split by Borderplex subregion El Paso vs Las Cruces",
+    "ideal_answer_summary": "Restricts to temporal_period = 'agentic_era' on dbo.job_postings. Splits counts by borderplex_subregion IN ('el_paso', 'las_cruces') (or equivalent city/state filters on normalized_jobs joined on source/external_id if subregion is sparse).  Restricts to AI-core roles using role_classification and/or job_title / canonical_roles.label (via canonical_role_id) consistent with “AI agent developer”, “prompt engineer”, “ML engineer”. Reports posting counts or shares per city as [to be filled from data] and states data period / low-volume caveat if n < 30. Names tables used (e.g. job_postings, optional canonical_roles)",
+    "must_include": [
+      "agentic_era",
+      "borderplex_subregion OR el_paso AND las_cruces",
+      "job_postings",
+      "temporal_period",
+      "Posting count or share language with [to be filled from data] OR explicit “insufficient volume”",
+      "Data period OR period coverage wording"
+    ],
+    "must_not_include": [
+      "National or non-Borderplex metros (e.g. Austin, Phoenix) as if they were in corpus",
+      "Invented exact percentages without “from data” / evidence",
+      "skill_demand_weekly alone as the only source without explaining it has no geo columns (if JP used for geo split, that’s fine)"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-052",
     "question": "Which IT skills are required in El Paso, TX postings but rarely mentioned in Las Cruces, NM postings, and vice versa?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Contrast which skills appear frequently in one subregion vs rare in the other (set-difference / ratio style).",
+    "ideal_answer_summary": "Use dbo.job_postings filtered by borderplex_subregion (el_paso vs las_cruces), join normalized_jobs on source/external_id, then join extracted_intelligence on normalized_job_id and unnest skills JSONB . Report top skills unique / over-represented in each metro with counts or shares [to be filled from data]; caveat sparse skills / confidence threshold  if used. If extraction coverage is low, state refusal / partial.",
+    "must_include": [
+      "extracted_intelligence",
+      "skills OR skill_label",
+      "borderplex_subregion",
+      "el_paso",
+      "las_cruces",
+      "Both directions (“El Paso vs Las Cruces” / “vice versa”)",
+      "Numeric results as [to be filled from data] or caveat"
+    ],
+    "must_not_include": [
+      "Claiming skill_demand_weekly answers metro-specific asymmetry without job_postings geo/subregion path",
+      "Fabricated employer names",
+      "Single-city-only answer"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-053",
     "question": "Compare the share of remote-eligible IT postings between El Paso and Las Cruces — which market leans more remote?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Compare share of postings that are remote-eligible between the two subregions.",
+    "ideal_answer_summary": "Use dbo.job_postings.is_remote and normalized_jobs.is_remote / work_arrangement via join with borderplex_subregion IN ('el_paso','las_cruces'). Compute remote share = remote-eligible count / total IT postings per subregion [to be filled from data]; define “IT” via role_classification filter or SOC/title rule and say it explicitly. Note is_remote NULL handling. Include volume caveat.",
+    "must_include": [
+      "is_remote",
+      "borderplex_subregion",
+      "job_postings",
+      "Share or percentage with [to be filled from data]",
+      "El Paso AND Las Cruces (or el_paso / las_cruces)"
+    ],
+    "must_not_include": [
+      "Using only geo_demand_weekly for remote share (it has no is_remote)",
+      "Conflating remote with regional bucket without explanation"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-054",
     "question": "How does the mix of Tier 1 AI-core roles versus Tier 3 sector-IT roles differ between El Paso and Las Cruces?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Compare mix of role buckets (AI-core vs sector IT) between metros; tiers must map to data, not hand-wavy labels.",
+    "ideal_answer_summary": "Operationalize Tier 1 / Tier 3 using job_postings.role_classification (and/or canonical_roles.label) with an explicit mapping table in prose (“Tier 1 = … classifications; Tier 3 = …”). Filter borderplex_subregion, compare counts or shares [to be filled from data]. If tier taxonomy is not populated, refuse or report unclassified counts.",
+    "must_include": [
+      "role_classification OR canonical_roles",
+      "borderplex_subregion",
+      "Mix / share / distribution language",
+      "el_paso AND las_cruces",
+      "[to be filled from data] for numbers OR insufficient-data refusal"
+    ],
+    "must_not_include": [
+      "Tier labels without tying them to role_classification / canonical_roles",
+      "National averages"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-055",
     "question": "Compare Borderplex IT posting volume across the four temporal periods — which periods saw the largest quarter-over-quarter growth?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Temporal comparison across pre_chatgpt, early_genai, post_gpt4, agentic_era for Borderplex IT postings.",
+    "ideal_answer_summary": "Aggregate dbo.job_postings (IT filter explicit) by temporal_period, optionally by week_start from aggregates if using role_snapshot_weekly / geo_demand_weekly. Identify largest quarter-over-quarter growth with which two quarters and delta [to be filled from data]; if weekly tables lack temporal_period, join path from postings to weeks must be stated. Refuse if periods missing.",
+    "must_include": [
+      "At least three of: pre_chatgpt, early_genai, post_gpt4, agentic_era",
+      "job_postings OR geo_demand_weekly / role_snapshot_weekly (with clear join logic)",
+      "Quarter-over-quarter OR QoQ",
+      "[to be filled from data] for growth figures"
+    ],
+    "must_not_include": [
+      "Invented calendar quarters not derived from week_start / posting dates",
+      "Non-Borderplex geography"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": "gq-056",
     "question": "How do Borderplex data engineer postings in the early_genai period compare to the agentic_era period in terms of required AI skills?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Role-specific temporal comparison of AI-related skills/tools in descriptions / extraction.",
+    "ideal_answer_summary": "Filter data-engineer postings: role_classification / title / canonical_roles match “data engineer”. Split by temporal_period IN ('early_genai','agentic_era'). Compare AI skills/tools via extracted_intelligence unnest (skills, tools) with optional confidence threshold, or tool_demand_weekly only if the role filter can be justified through join. Summarize skills/tools that rose or appeared only in agentic_era [to be filled from data].",
+    "must_include": [
+      "early_genai",
+      "agentic_era",
+      "data engineer (or equivalent role filter)",
+      "extracted_intelligence OR tool_demand_weekly",
+      "temporal_period"
+    ],
+    "must_not_include": [
+      "Conflating all Borderplex roles with data engineer only",
+      "skill_demand_weekly without role linkage if claim is role-specific"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-057",
     "question": "Compare Borderplex healthcare-IT versus fintech-IT hiring volume over the last 12 months — which sector is hiring more aggressively?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
+    "context": "Sector hiring comparison; last 12 months must be defined on a date column.",
+    "ideal_answer_summary": "Prefer sector_summary_weekly filtered by sector (or employer_profiles.sector joined via job_postings) for healthcare vs fintech buckets—use exact sector strings present in DB after verification. Restrict week_start to last 12 months from max week in table [to be filled from data]. Report totals or weekly sums [to be filled from data] and name which sector label maps to each side.",
+    "must_include": [
+      "sector_summary_weekly OR (employer_profiles AND job_postings)",
+      "Healthcare AND fintech (or verified sector labels)",
+      "Last 12 months tied to week_start OR date_posted / createdat (whichever path is used—state it)"
+    ],
+    "must_not_include": [
+      "US-wide sector stats not from allowlisted tables",
+      "Vague “healthcare jobs up” without sector / table reference"
+    ],
     "difficulty": "standard"
   },
   {
@@ -1171,33 +1236,57 @@
     "question": "How does the credential-inflation rate (share of postings requiring a named certification) compare between Borderplex cybersecurity and cloud-architect roles?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Compare share of postings requiring named certifications between two role families.",
+    "ideal_answer_summary": "Define cybersecurity vs cloud architect via role_classification / title / canonical_roles. Certification signal from extracted_intelligence unnest skills with type = 'Certification' (or equivalent field in JSON—verify schema) and/or keyword rules on normalized_jobs.requirements. Report shares [to be filled from data] per family and volume caveat.",
+    "must_include": [
+      "Certification OR certification",
+      "Cybersecurity AND cloud (or chosen role labels)",
+      "extracted_intelligence OR normalized_jobs",
+      "Share / rate with [to be filled from data]"
+    ],
+    "must_not_include": [
+      "Claiming disruption_fingerprints (not on Ask-the-Data allowlist) unless eval scope explicitly allows non–Ask-the-Data SQL",
+      "Single-role-only answer"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": "gq-059",
     "question": "Compare the AI-density (share of postings mentioning AI keywords) between Borderplex Tier 2 AI-adjacent roles and Tier 3 sector-IT roles in the post_gpt4 period.",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Compare AI keyword / tool density between Tier 2 AI-adjacent and Tier 3 sector-IT under post_gpt4.",
+    "ideal_answer_summary": "Operationalize Tier 2 / Tier 3 with role_classification / canonical_roles mapping (explicit in answer). Filter temporal_period = 'post_gpt4'. “AI-density” via tool_demand_weekly for AI tools and/or extracted_intelligence tools + normalized text join—per posting numerator/denominator defined clearly. Report ratio or share [to be filled from data] for each tier; refuse if tiers sparse.",
+    "must_include": [
+      "post_gpt4",
+      "Tier 2 AND Tier 3 (with mapping to role_classification or canonical_roles)",
+      "temporal_period",
+      "AI-density operationalized (tools/keywords)"
+    ],
+    "must_not_include": [
+      "agentic_era as the period (wrong bucket)",
+      "Density without definition of numerator/denominator"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": "gq-060",
     "question": "How do Borderplex DevOps and SRE roles compare to Borderplex data engineer roles in terms of AI-tool adoption in the agentic_era period?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "",
-    "ideal_answer_summary": "",
-    "must_include": [],
-    "must_not_include": [],
-    "difficulty": "standard"
+    "context": "Compare two role families on AI-tool adoption in the agentic_era period.",
+    "ideal_answer_summary": "Filter job_postings (or role_snapshot_weekly joined to canonical_roles) for DevOps/SRE vs data engineer families; temporal_period = 'agentic_era'. Measure AI tools via tool_demand_weekly joined through postings if possible, or extracted_intelligence tools unnest with role filter. Summarize adoption rate / top tools [to be filled from data] per family; caveat sample size.",
+    "must_include": [
+      "agentic_era",
+      "DevOps OR SRE AND data engineer",
+      "tool_demand_weekly OR extracted_intelligence",
+      "temporal_period"
+    ],
+    "must_not_include": [
+      "Same answer for both families with no contrast",
+      "National FAANG hiring anecdotes"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": "gq-061",

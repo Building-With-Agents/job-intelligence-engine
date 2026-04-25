@@ -70,6 +70,8 @@ class AnalyticsQueryResponse(BaseModel):
     answer: str
     evidence: list[EvidenceItem]
     confidence: float
+    classified_intent: str = "other"
+    intent_classification_confidence: float = 0.0
     periods_described: str = ""
     confidence_flagged_low: bool = False
     confidence_explanation: str | None = None
@@ -83,6 +85,11 @@ class AnalyticsQueryResponse(BaseModel):
     cost_usd: float
     total_cost_usd: float = 0.0
     cost_breakdown_usd: dict[str, float] = Field(default_factory=dict)
+    row_count_returned: int = Field(
+        default=0,
+        ge=0,
+        description="Rows returned from guardrailed SQL for this question (0 if none or not executed).",
+    )
 
 
 class TriggerEnvelope(BaseModel):
