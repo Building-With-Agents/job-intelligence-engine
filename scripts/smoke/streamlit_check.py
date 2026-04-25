@@ -57,7 +57,7 @@ def main() -> int:
     print("STREAMLIT IMPORT CHECK SUMMARY")
     print(f"{'=' * 60}")
     total_ok = sum(1 for _, ok, _ in results if ok)
-    for label, ok, _err in results:
+    for label, ok, _ in results:
         status = "PASS" if ok else "FAIL"
         print(f"  {status}  {label}")
     print(f"\n{total_ok}/{len(results)} pages imported successfully")

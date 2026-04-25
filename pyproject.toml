@@ -40,6 +40,21 @@ ignore = [
 "../scripts/pg-seed-data/export_agent_data.py" = ["T201"]
 "../scripts/pg-seed-data/seed_agent_data.py" = ["T201"]
 "../scripts/pg-seed-data/seed_pg_database.py" = ["T201"]
+# Full-pipeline and dataset CLI scripts
+"agents/scripts/run_full_extraction.py" = ["T201"]
+"scripts/run_full_extraction.py" = ["T201"]
+"agents/scripts/upload_langfuse_dataset.py" = ["T201"]
+"scripts/upload_langfuse_dataset.py" = ["T201"]
+"agents/scripts/export_langfuse_dataset.py" = ["T201"]
+"scripts/export_langfuse_dataset.py" = ["T201"]
+"scripts/demo_qna_synthesis_metrics.py" = ["T201"]
+"scripts/langfuse_cost_analysis.py" = ["T201"]
+"scripts/pg-seed-data/clean_schema.py" = ["T201"]
+"scripts/pg-seed-data/clean_stale_postings.py" = ["T201"]
+"scripts/pg-seed-data/export_fixtures.py" = ["T201"]
+# Smoke / verification CLIs print status to stdout for operators
+"scripts/smoke/*.py" = ["T201"]
+"scripts/week8_verify_counts.py" = ["T201"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["agents", "analytics"]
