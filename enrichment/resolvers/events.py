@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from common.event_envelope import EventEnvelope
@@ -10,20 +9,11 @@ from common.event_envelope import EventEnvelope
 # Increment when ``RecordEnriched`` **batch** payload gains backward-incompatible fields.
 RECORD_ENRICHED_SCHEMA_VERSION = 3
 
-_DEFAULT_DEDUP_COSINE = 0.92
-_DEFAULT_DEDUP_WINDOW_DAYS = 30
-
 
 def _dedup_config_from_env() -> tuple[float, int]:
-    try:
-        thresh = float(os.getenv("DEDUP_COSINE_THRESHOLD", str(_DEFAULT_DEDUP_COSINE)))
-    except (TypeError, ValueError):
-        thresh = _DEFAULT_DEDUP_COSINE
-    try:
-        days = int(os.getenv("DEDUP_ROLLING_WINDOW_DAYS", str(_DEFAULT_DEDUP_WINDOW_DAYS)))
-    except (TypeError, ValueError):
-        days = _DEFAULT_DEDUP_WINDOW_DAYS
-    return thresh, days
+    from enrichment._config import dedup_cosine_threshold, dedup_rolling_window_days
+
+    return dedup_cosine_threshold(), dedup_rolling_window_days()
 
 
 def build_dedup_block(

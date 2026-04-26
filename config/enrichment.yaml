@@ -1,0 +1,47 @@
+# config/enrichment.yaml — enrichment agent tuning.
+#
+# Phase 1 enrichment knobs: parallelism, dedup, spam preview heuristic,
+# and ESCO seeding. The async path enforces a hard concurrency cap of 5
+# (issue #149: higher values exhaust the SQLAlchemy connection pool and
+# hang on async DB calls).
+
+enrichment:
+  # Enable async parallel enrichment. When false, fall back to serial loop.
+  # Env override: ENRICHMENT_PARALLEL
+  parallel: true
+
+  # Max concurrent enrichment jobs in the async path. MUST be <= 5
+  # (issue #149: classify_soc and classify_naics_async make sync DB calls
+  # inside asyncio.gather; concurrency >5 exhausts the connection pool and
+  # hangs indefinitely with no error). Validator clamps to default on
+  # out-of-range values.
+  # Env override: ENRICHMENT_CONCURRENCY
+  concurrency: 5
+
+  # Per-job gather() timeout in seconds covering SOC + NAICS + employer
+  # classification together. Min 1.
+  # Env override: ENRICHMENT_LLM_TIMEOUT
+  llm_timeout_seconds: 120
+
+  dedup:
+    # Cosine similarity threshold for fuzzy dedup (Decision #39 — EBS).
+    # Range 0.0–1.0. Calibrate via enrichment/dedup/calibration.py.
+    # Env override: DEDUP_COSINE_THRESHOLD
+    cosine_threshold: 0.92
+
+    # Rolling comparison window (days before anchor date) used when
+    # querying recent postings for dedup candidates. Min 1.
+    # Env override: DEDUP_ROLLING_WINDOW_DAYS
+    rolling_window_days: 30
+
+  spam_preview:
+    # Enable heuristic fallback when the spam-preview LLM is unavailable.
+    # Off by default — heuristic estimates are noisy and offline-only.
+    # Env override: SPAM_PREVIEW_ALLOW_HEURISTIC
+    allow_heuristic: false
+
+  esco_seed:
+    # Apply curated ESCO subset filter during seeding (scripts/seed_esco.py).
+    # When false, the full ESCO digital-skills cluster is loaded.
+    # Env override: ESCO_SEED_APPLY_FILTER
+    apply_filter: false

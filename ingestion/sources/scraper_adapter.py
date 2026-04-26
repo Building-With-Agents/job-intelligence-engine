@@ -53,8 +53,9 @@ class Crawl4AIAdapter(SourceAdapter):
         return "crawl4ai"
 
     def __init__(self) -> None:
-        targets = os.getenv("SCRAPING_TARGETS", "")
-        self._targets = [t.strip() for t in targets.split(",") if t.strip()]
+        from ingestion._config import scraping_targets
+
+        self._targets = scraping_targets()
 
     async def fetch(self, region: RegionConfig) -> list[RawJobRecord]:
         """Fetch job postings for the given region."""

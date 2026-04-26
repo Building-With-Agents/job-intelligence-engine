@@ -87,10 +87,9 @@ class _SkillsLLMRoot(BaseModel):
 
 def _skill_confidence_threshold() -> float:
     """Minimum confidence for a skill to be kept; skills below this are discarded."""
-    try:
-        return float(os.getenv("SKILL_CONFIDENCE_THRESHOLD", str(DEFAULT_SKILL_CONFIDENCE_THRESHOLD)))
-    except (TypeError, ValueError):
-        return DEFAULT_SKILL_CONFIDENCE_THRESHOLD
+    from common.pipeline_config import skill_confidence_threshold
+
+    return skill_confidence_threshold()
 
 
 def _llm_skill_to_record(raw: _LLMSkill) -> SkillRecord | None:

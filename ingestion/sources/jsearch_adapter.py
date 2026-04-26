@@ -81,7 +81,9 @@ def _get_rps_state() -> dict:
     except RuntimeError:
         # Not inside a running loop — return a one-shot dummy state so callers
         # that invoke helpers outside a loop don't crash.
-        rps = max(1, _env_int("JSEARCH_RPS", _RPS_DEFAULT))
+        from ingestion._config import jsearch_rps
+
+        rps = jsearch_rps()
         return {
             "semaphore": asyncio.Semaphore(rps),
             "lock": asyncio.Lock(),
@@ -91,7 +93,9 @@ def _get_rps_state() -> dict:
     key = id(loop)
     state = _rps_state.get(key)
     if state is None:
-        rps = max(1, _env_int("JSEARCH_RPS", _RPS_DEFAULT))
+        from ingestion._config import jsearch_rps
+
+        rps = jsearch_rps()
         state = {
             "semaphore": asyncio.Semaphore(rps),
             "lock": asyncio.Lock(),
@@ -235,13 +239,23 @@ class JSearchAdapter(SourceAdapter):
         location = (region.query_location or "").strip()
         query = f"{keyword} in {location}" if location else keyword
 
-        country = (os.getenv("JSEARCH_COUNTRY", "us") or "us").strip().lower()
-        language = (os.getenv("JSEARCH_LANGUAGE", "en") or "en").strip().lower()
-        date_posted = (os.getenv("JSEARCH_DATE_POSTED", "all") or "all").strip().lower()
-        num_pages = max(1, min(50, _env_int("JSEARCH_MAX_PAGES", 50)))
-        max_retries = max(0, _env_int("JSEARCH_MAX_RETRIES", 2))
-        base_delay = max(1, _env_int("JSEARCH_RETRY_BASE_DELAY_SECONDS", 10))
-        max_delay = max(base_delay, _env_int("JSEARCH_RETRY_MAX_DELAY_SECONDS", 60))
+        from ingestion._config import (
+            jsearch_country,
+            jsearch_date_posted,
+            jsearch_language,
+            jsearch_max_pages,
+            jsearch_retry_base_delay_seconds,
+            jsearch_retry_max_delay_seconds,
+            jsearch_retry_max_retries,
+        )
+
+        country = jsearch_country()
+        language = jsearch_language()
+        date_posted = jsearch_date_posted()
+        num_pages = jsearch_max_pages()
+        max_retries = jsearch_retry_max_retries()
+        base_delay = jsearch_retry_base_delay_seconds()
+        max_delay = max(base_delay, jsearch_retry_max_delay_seconds())
 
         all_records: list[RawJobRecord] = []
         seen_hashes: set[str] = set()

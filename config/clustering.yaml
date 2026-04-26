@@ -1,0 +1,58 @@
+# config/clustering.yaml — canonical role clustering tuning.
+#
+# HDBSCAN parameters and emergence-detection thresholds for the analytics
+# clustering pipeline. Migrated from analytics/clustering/config.py module
+# constants. All numeric values are validated by common.config_loader
+# (out-of-range or parse errors fall back to the default below).
+
+clustering:
+  embedding:
+    # Postings embedded per Azure OpenAI batch call. Higher = fewer round
+    # trips but larger payloads. Min 1.
+    # Env override: CLUSTER_EMBEDDING_BATCH_SIZE
+    batch_size: 50
+
+    # Agent name written to llm_audit_log.audit_agent for embedding rows.
+    # Env override: CLUSTER_EMBEDDING_AUDIT_AGENT_NAME
+    audit_agent_name: analytics-clustering
+
+  # Skip clustering entirely when fewer than this many normalized postings
+  # exist (clusters trained on small samples are unstable). Min 1.
+  # Env override: CLUSTER_MIN_TOTAL_POSTINGS
+  min_total_postings: 500
+
+  # HDBSCAN min_cluster_size. Smaller = more, tighter clusters. Min 1.
+  # Env override: CLUSTER_MIN_CLUSTER_SIZE
+  min_cluster_size: 10
+
+  # HDBSCAN min_samples (density floor). Min 1.
+  # Env override: CLUSTER_MIN_SAMPLES
+  min_samples: 5
+
+  # HDBSCAN cluster_selection_epsilon. 0.0 = pure tree split. Min 0.0.
+  # Env override: CLUSTER_SELECTION_EPSILON
+  selection_epsilon: 0.0
+
+  # Distance metric passed to HDBSCAN. Lowercased on read.
+  # Env override: CLUSTER_DISTANCE_METRIC
+  distance_metric: euclidean
+
+  # Min fraction of postings inside a cluster sharing the dominant SOC label
+  # for that label to be assigned. Range 0.0–1.0.
+  # Env override: CLUSTER_LABEL_DOMINANCE_THRESHOLD
+  label_dominance_threshold: 0.30
+
+  emergence:
+    # Cluster quality score floor for emergence detection. Range 0.0–1.0.
+    # Env override: EMERGENCE_MIN_QUALITY_SCORE
+    min_quality_score: 0.70
+
+    # Min count of skills not seen in baseline window for "emerging" tag.
+    # Min 1.
+    # Env override: EMERGENCE_MIN_NOVEL_SKILLS
+    min_novel_skills: 3
+
+    # Min distinct employers posting the cluster's roles before flagging
+    # as a real signal vs. one-shop noise. Min 1.
+    # Env override: EMERGENCE_MIN_DISTINCT_EMPLOYERS
+    min_distinct_employers: 2

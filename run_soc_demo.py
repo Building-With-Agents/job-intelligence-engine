@@ -37,7 +37,9 @@ def _azure_openai_configured() -> bool:
 
 
 def _ensure_llm_configured_or_exit() -> None:
-    if os.getenv("SOC_DEMO_SKIP_LLM", "").strip() in ("1", "true", "yes"):
+    from eval._config import soc_demo_skip_llm
+
+    if soc_demo_skip_llm():
         return
     provider = _llm_provider()
     if provider != "azure_openai":
@@ -91,7 +93,9 @@ def normalized_job_to_record(row: NormalizedJob) -> JobRecord:
 
 
 def make_soc_llm() -> Callable[[str], str]:
-    if os.getenv("SOC_DEMO_SKIP_LLM", "").strip() in ("1", "true", "yes"):
+    from eval._config import soc_demo_skip_llm
+
+    if soc_demo_skip_llm():
         return lambda _prompt: "unclassified"
 
     def llm(prompt: str) -> str:
@@ -142,7 +146,9 @@ async def main() -> None:
         else:
             print("\nNo SOC candidates found in dbo.socc for this title.")
 
-        if os.getenv("SOC_DEMO_SKIP_LLM", "").strip() in ("1", "true", "yes"):
+        from eval._config import soc_demo_skip_llm
+
+    if soc_demo_skip_llm():
             print("\n-- SKIP_LLM mode: skipping LLM classification --")
             return
 

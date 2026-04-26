@@ -73,11 +73,9 @@ _ABBREV_PHRASE_TO_TOKEN: tuple[tuple[str, str], ...] = tuple(
 
 
 def _fuzzy_threshold() -> int:
-    raw = os.getenv("EVAL_EXTRACTION_FUZZY_THRESHOLD", "85")
-    try:
-        return max(0, min(100, int(raw)))
-    except ValueError:
-        return 85
+    from eval._config import extraction_fuzzy_threshold
+
+    return extraction_fuzzy_threshold()
 
 
 def _normalize_label(text: str) -> str:

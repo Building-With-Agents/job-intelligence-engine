@@ -1,0 +1,40 @@
+# config/eval.yaml — eval-only knobs.
+#
+# These tune offline evaluation harnesses, demos, and one-off
+# experiments. Production pipeline code should not read these.
+
+eval:
+  extraction:
+    # rapidfuzz partial-ratio threshold for fuzzy matching extracted skills
+    # against ground-truth labels. Range 0–100. Lower = more lenient matches.
+    # Env override: EVAL_EXTRACTION_FUZZY_THRESHOLD
+    fuzzy_threshold: 85
+
+  qa:
+    # Latency SLA (seconds) for the Q&A eval; runs that exceed this are
+    # marked over-budget. Range > 0.
+    # Env override: QA_EVAL_LATENCY_SLA_SECONDS
+    latency_sla_seconds: 45.0
+
+  soc_demo:
+    # Skip the LLM call in run_soc_demo.py and return a fixture/"unclassified"
+    # response. Useful for offline demos.
+    # Env override: SOC_DEMO_SKIP_LLM
+    skip_llm: false
+
+  exp004:
+    # Path (relative to repo root) for the experiment 004 comparison CSV
+    # consumed by common/message_bus/comparison_charts.py.
+    # Env override: EXP004_COMPARISON_CSV
+    comparison_csv: data/output/exp004_comparison.csv
+
+  week8:
+    # Min intent-classification accuracy required for the week-8 eval to
+    # pass. Range 0.0–1.0.
+    # Env override: WEEK8_INTENT_MIN_ACCURACY
+    intent_min_accuracy: 0.7
+
+    # Max per-call latency (milliseconds) allowed for intent classification.
+    # Range > 0.
+    # Env override: WEEK8_INTENT_MAX_LATENCY_MS
+    intent_max_latency_ms: 5000

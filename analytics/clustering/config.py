@@ -1,9 +1,17 @@
-"""Configuration defaults for canonical role clustering."""
+"""Configuration accessors for canonical role clustering.
+
+Reads ``config/clustering.yaml`` via ``common.config_loader``. Legacy env
+vars (``CLUSTER_*``, ``EMERGENCE_*``) still override per-accessor during the
+deprecation window. Defaults live in YAML — there are none in this file.
+"""
 
 from __future__ import annotations
 
-import os
+from common.config_loader import cached_accessor, get_float, get_int, get_str
 
+# Module-level constants kept for backwards compatibility with existing
+# imports (analytics/clustering/__init__.py re-exports these). Values mirror
+# the YAML defaults; they are NOT used as fallbacks — the loader reads YAML.
 DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE = 50
 DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS = 500
 DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 10
@@ -18,87 +26,120 @@ DEFAULT_EMERGENCE_MIN_NOVEL_SKILLS = 3
 DEFAULT_EMERGENCE_MIN_DISTINCT_EMPLOYERS = 2
 
 
-def _int_from_env(name: str, default: int, *, minimum: int = 1) -> int:
-    raw = os.getenv(name, str(default))
-    try:
-        parsed = int(raw)
-    except (TypeError, ValueError):
-        return default
-    return parsed if parsed >= minimum else default
+@cached_accessor
+def cluster_embedding_batch_size() -> int:
+    return get_int(
+        file="clustering",
+        key="clustering.embedding.batch_size",
+        env="CLUSTER_EMBEDDING_BATCH_SIZE",
+        minimum=1,
+    )
 
 
-def _float_from_env(
-    name: str,
-    default: float,
-    *,
-    minimum: float = 0.0,
-    maximum: float | None = None,
-) -> float:
-    raw = os.getenv(name, str(default))
-    try:
-        parsed = float(raw)
-    except (TypeError, ValueError):
-        return default
-    if parsed < minimum:
-        return default
-    if maximum is not None and parsed > maximum:
-        return default
-    return parsed
+@cached_accessor
+def cluster_embedding_audit_agent_name() -> str:
+    return get_str(
+        file="clustering",
+        key="clustering.embedding.audit_agent_name",
+        env="CLUSTER_EMBEDDING_AUDIT_AGENT_NAME",
+    ).strip() or DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME
 
 
+@cached_accessor
 def cluster_min_total_postings() -> int:
-    return _int_from_env("CLUSTER_MIN_TOTAL_POSTINGS", DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS)
+    return get_int(
+        file="clustering",
+        key="clustering.min_total_postings",
+        env="CLUSTER_MIN_TOTAL_POSTINGS",
+        minimum=1,
+    )
 
 
+@cached_accessor
 def cluster_min_cluster_size() -> int:
-    return _int_from_env("CLUSTER_MIN_CLUSTER_SIZE", DEFAULT_CLUSTER_MIN_CLUSTER_SIZE)
+    return get_int(
+        file="clustering",
+        key="clustering.min_cluster_size",
+        env="CLUSTER_MIN_CLUSTER_SIZE",
+        minimum=1,
+    )
 
 
+@cached_accessor
 def cluster_min_samples() -> int:
-    return _int_from_env("CLUSTER_MIN_SAMPLES", DEFAULT_CLUSTER_MIN_SAMPLES)
+    return get_int(
+        file="clustering",
+        key="clustering.min_samples",
+        env="CLUSTER_MIN_SAMPLES",
+        minimum=1,
+    )
 
 
+@cached_accessor
 def cluster_selection_epsilon() -> float:
-    return _float_from_env("CLUSTER_SELECTION_EPSILON", DEFAULT_CLUSTER_SELECTION_EPSILON, minimum=0.0)
+    return get_float(
+        file="clustering",
+        key="clustering.selection_epsilon",
+        env="CLUSTER_SELECTION_EPSILON",
+        minimum=0.0,
+    )
 
 
+@cached_accessor
 def cluster_distance_metric() -> str:
-    raw = os.getenv("CLUSTER_DISTANCE_METRIC", DEFAULT_CLUSTER_DISTANCE_METRIC)
-    normalized = raw.strip().lower()
-    return normalized or DEFAULT_CLUSTER_DISTANCE_METRIC
+    return get_str(
+        file="clustering",
+        key="clustering.distance_metric",
+        env="CLUSTER_DISTANCE_METRIC",
+    ).strip().lower() or DEFAULT_CLUSTER_DISTANCE_METRIC
 
 
+@cached_accessor
 def cluster_label_dominance_threshold() -> float:
-    return _float_from_env(
-        "CLUSTER_LABEL_DOMINANCE_THRESHOLD",
-        DEFAULT_CLUSTER_LABEL_DOMINANCE_THRESHOLD,
+    return get_float(
+        file="clustering",
+        key="clustering.label_dominance_threshold",
+        env="CLUSTER_LABEL_DOMINANCE_THRESHOLD",
         minimum=0.0,
         maximum=1.0,
     )
 
 
+@cached_accessor
 def emergence_min_quality_score() -> float:
-    return _float_from_env(
-        "EMERGENCE_MIN_QUALITY_SCORE",
-        DEFAULT_EMERGENCE_MIN_QUALITY_SCORE,
+    return get_float(
+        file="clustering",
+        key="clustering.emergence.min_quality_score",
+        env="EMERGENCE_MIN_QUALITY_SCORE",
         minimum=0.0,
         maximum=1.0,
     )
 
 
+@cached_accessor
 def emergence_min_novel_skills() -> int:
-    return _int_from_env("EMERGENCE_MIN_NOVEL_SKILLS", DEFAULT_EMERGENCE_MIN_NOVEL_SKILLS)
+    return get_int(
+        file="clustering",
+        key="clustering.emergence.min_novel_skills",
+        env="EMERGENCE_MIN_NOVEL_SKILLS",
+        minimum=1,
+    )
 
 
+@cached_accessor
 def emergence_min_distinct_employers() -> int:
-    return _int_from_env(
-        "EMERGENCE_MIN_DISTINCT_EMPLOYERS",
-        DEFAULT_EMERGENCE_MIN_DISTINCT_EMPLOYERS,
+    return get_int(
+        file="clustering",
+        key="clustering.emergence.min_distinct_employers",
+        env="EMERGENCE_MIN_DISTINCT_EMPLOYERS",
+        minimum=1,
     )
 
 
 __all__ = [
     "cluster_distance_metric",
+    "cluster_embedding_audit_agent_name",
+    "cluster_embedding_batch_size",
     "cluster_label_dominance_threshold",
     "cluster_min_cluster_size",
     "cluster_min_samples",

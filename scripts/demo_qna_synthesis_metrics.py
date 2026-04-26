@@ -65,9 +65,12 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.live:
-        if os.getenv("ANALYTICS_QNA_LIVE", "").strip() != "1":
+        from analytics._config import qna_live
+
+        if not qna_live():
             print(
-                "Refusing --live: set ANALYTICS_QNA_LIVE=1 after confirming credentials and spend.",
+                "Refusing --live: set ANALYTICS_QNA_LIVE=1 (or analytics.qna_live: true in config/analytics.yaml) "
+                "after confirming credentials and spend.",
                 file=sys.stderr,
             )
             return 2

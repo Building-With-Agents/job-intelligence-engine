@@ -47,7 +47,9 @@ _MAX_DRIFT_RUNS = 5
 
 
 def _state_path() -> Path:
-    p = os.environ.get("SCHEDULER_STATE_PATH", "").strip()
+    from ingestion._config import scheduler_state_path
+
+    p = scheduler_state_path()
     if p:
         return Path(p).resolve()
     _DEFAULT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -55,18 +57,18 @@ def _state_path() -> Path:
 
 
 def _scheduler_type() -> str:
-    """Return current scheduler type from SCHEDULER_TYPE env (apscheduler | task_scheduler)."""
-    raw = os.environ.get("SCHEDULER_TYPE", "").strip().lower()
+    """Return current scheduler type from config (apscheduler | task_scheduler)."""
+    from ingestion._config import scheduler_type
+
+    raw = scheduler_type().strip().lower()
     return raw if raw in _SCHEDULER_TYPES else _DEFAULT_SCHEDULER_TYPE
 
 
 def _interval_minutes() -> int:
-    """Return INGESTION_INTERVAL_MINUTES from env (default 2) for drift expected-time calculation."""
-    raw = os.environ.get("INGESTION_INTERVAL_MINUTES", "2").strip()
-    try:
-        return max(1, int(raw))
-    except ValueError:
-        return 2
+    """Return scheduler interval from config for drift expected-time calculation."""
+    from ingestion._config import scheduler_interval_minutes
+
+    return scheduler_interval_minutes()
 
 
 def _parse_iso(s: str | None) -> datetime | None:

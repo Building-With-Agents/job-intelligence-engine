@@ -44,3 +44,18 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 def _analytics_minimum_data_guard_off_for_tests(monkeypatch: pytest.MonkeyPatch) -> None:
     """Analytics agent tests do not require 50+ enriched rows on the dev database."""
     monkeypatch.setenv("ANALYTICS_DISABLE_MINIMUM_DATA_GUARD", "1")
+
+
+@pytest.fixture(autouse=True)
+def _reset_config_loader_cache() -> None:
+    """Clear config_loader caches between tests so monkeypatch.setenv is honored.
+
+    Typed accessors are wrapped in lru_cache(maxsize=1) for performance; without
+    this fixture a value cached from one test would leak into the next when env
+    vars are monkeypatched.
+    """
+    from common.config_loader import reload_all
+
+    reload_all()
+    yield
+    reload_all()

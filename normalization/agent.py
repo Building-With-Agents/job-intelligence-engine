@@ -13,7 +13,6 @@ Consumes: IngestBatch
 from __future__ import annotations
 
 import contextlib
-import os
 import uuid
 
 import structlog
@@ -65,10 +64,13 @@ def initialize_run(state: NormalizationState) -> NormalizationState:
 def fetch_pending_records(state: NormalizationState) -> NormalizationState:
     """Query the DB for raw records with processing_status='pending'.
 
-    Supports batch-limited FIFO processing via NORM_BATCH_SIZE env var.
-    When set, fetches at most N records ordered by created_at (oldest first).
-    When unset or 0, fetches all pending records (legacy behavior).
+    Supports batch-limited FIFO processing via ``pipeline.normalization.batch_size``
+    in ``config/pipeline.yaml`` (legacy ``NORM_BATCH_SIZE`` env var still
+    overrides). When set, fetches at most N records ordered by created_at
+    (oldest first). When unset or 0, fetches all pending records.
     """
+    from common.pipeline_config import normalization_batch_size
+
     ingestion_run_id = state.get("ingestion_run_id", "")
     batch_id = state.get("batch_id", "")
 
@@ -76,7 +78,7 @@ def fetch_pending_records(state: NormalizationState) -> NormalizationState:
         log.warning("normalization_no_db", batch_id=batch_id)
         return {"_pending_records": []}  # type: ignore[typeddict-unknown-key]
 
-    batch_size = int(os.environ.get("NORM_BATCH_SIZE", "0"))
+    batch_size = normalization_batch_size()
 
     try:
         with session_scope() as session:

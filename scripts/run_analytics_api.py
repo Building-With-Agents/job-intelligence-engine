@@ -38,11 +38,13 @@ load_dotenv(_ROOT / ".env", override=False)
 if __name__ == "__main__":
     import uvicorn
 
+    from analytics._config import api_reload
+
     host = os.getenv("ANALYTICS_API_HOST", "127.0.0.1")
     port = int(os.getenv("ANALYTICS_API_PORT", "8000"))
     uvicorn.run(
         "analytics.api.app:app",
         host=host,
         port=port,
-        reload=os.getenv("ANALYTICS_API_RELOAD", "1") == "1",
+        reload=api_reload(),
     )

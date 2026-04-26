@@ -30,8 +30,10 @@ def get_engine() -> Engine:
             raise RuntimeError(
                 "PYTHON_DATABASE_URL is not set. Expected format: postgresql+psycopg2://user:pass@host:port/db"
             )
-        pool_size = int(os.getenv("DB_POOL_SIZE", "30"))
-        max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+        from common.pipeline_config import db_max_overflow, db_pool_size
+
+        pool_size = db_pool_size()
+        max_overflow = db_max_overflow()
         _engine = create_engine(
             url,
             pool_pre_ping=True,

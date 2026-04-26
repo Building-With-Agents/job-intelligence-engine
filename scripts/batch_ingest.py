@@ -85,17 +85,20 @@ def _load_api_keys() -> list[tuple[int, str]]:
 
 
 def _resolve_start_key_slot(cli_value: int | None) -> int:
-    """Choose the first key slot to use, preferring CLI over env."""
-    raw = cli_value if cli_value is not None else os.getenv("JSEARCH_START_KEY_INDEX", "1")
-    try:
-        slot = int(raw)
-    except (TypeError, ValueError):
-        log.warning("invalid_start_key_slot", raw_value=raw, fallback=1)
-        return 1
-    if slot < 1:
-        log.warning("invalid_start_key_slot", raw_value=raw, fallback=1)
-        return 1
-    return slot
+    """Choose the first key slot to use, preferring CLI over the YAML config."""
+    if cli_value is not None:
+        try:
+            slot = int(cli_value)
+        except (TypeError, ValueError):
+            log.warning("invalid_start_key_slot", raw_value=cli_value, fallback=1)
+            return 1
+        if slot < 1:
+            log.warning("invalid_start_key_slot", raw_value=cli_value, fallback=1)
+            return 1
+        return slot
+    from ingestion._config import jsearch_start_key_index
+
+    return jsearch_start_key_index()
 
 
 def _expand_queries(
@@ -282,9 +285,11 @@ def main() -> None:
     _propagate_throttle_env(throttle)
 
     # Safety log: paid key lives in slot 1; warn if operator pointed start elsewhere.
-    start_idx_env = os.getenv("JSEARCH_START_KEY_INDEX", "1")
-    if start_idx_env != "1":
-        log.warning("start_key_not_paid_slot", JSEARCH_START_KEY_INDEX=start_idx_env)
+    from ingestion._config import jsearch_start_key_index
+
+    start_idx = jsearch_start_key_index()
+    if start_idx != 1:
+        log.warning("start_key_not_paid_slot", JSEARCH_START_KEY_INDEX=start_idx)
 
     # Filter queries based on --start-query and --queries flags
     if args.queries:

@@ -75,7 +75,14 @@ def test_ainvoke_structured_extraction_llm_matches_sync_success_metadata() -> No
         )
 
     assert parsed_async == parsed_sync == parsed
-    assert async_meta == sync_meta
+    # latency_ms is wall-clock and can differ between async/sync paths (the
+    # first call also pays cache-warm cost for config YAML); compare the
+    # rest of the metadata, then assert latency_ms is non-negative on both.
+    async_meta_no_lat = {k: v for k, v in async_meta.items() if k != "latency_ms"}
+    sync_meta_no_lat = {k: v for k, v in sync_meta.items() if k != "latency_ms"}
+    assert async_meta_no_lat == sync_meta_no_lat
+    assert async_meta["latency_ms"] >= 0
+    assert sync_meta["latency_ms"] >= 0
     assert async_meta["tokens_used"] == 16
     assert async_meta["cost_usd"] == 0.123
     assert async_meta["model"] == "gpt-test (test-tasks-deployment)"

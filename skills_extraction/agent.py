@@ -100,8 +100,9 @@ def _llm_deployment_name() -> str:
 
 def _parallel_enabled() -> bool:
     """Return True when intra-job async extraction is enabled."""
-    value = os.getenv("SKILLS_EXTRACTION_PARALLEL", "1").strip().lower()
-    return value not in {"0", "false", "no", "off"}
+    from skills_extraction._config import parallel_enabled
+
+    return parallel_enabled()
 
 
 def _env_int(name: str, default: int, *, minimum: int | None = None) -> int:
@@ -160,34 +161,30 @@ def _env_float(name: str, default: float, *, minimum: float | None = None) -> fl
 
 def _parallel_concurrency() -> int:
     """Return the configured max concurrent jobs for inter-job extraction."""
-    return _env_int(
-        "SKILLS_EXTRACTION_CONCURRENCY",
-        _DEFAULT_SKILLS_EXTRACTION_CONCURRENCY,
-        minimum=1,
-    )
+    from skills_extraction._config import parallel_concurrency
+
+    return parallel_concurrency()
 
 
 def _serial_chunk_size() -> int:
     """Deprecated serial-only chunk size used when parallel mode is unavailable."""
-    return _env_int("SKILLS_EXTRACTION_CHUNK_SIZE", _DEFAULT_CHUNK_SIZE, minimum=0)
+    from skills_extraction._config import serial_chunk_size
+
+    return serial_chunk_size()
 
 
 def _serial_chunk_cooldown() -> float:
     """Deprecated serial-only chunk cooldown used when parallel mode is unavailable."""
-    return _env_float(
-        "SKILLS_EXTRACTION_CHUNK_COOLDOWN",
-        _DEFAULT_CHUNK_COOLDOWN,
-        minimum=0.0,
-    )
+    from skills_extraction._config import serial_chunk_cooldown
+
+    return serial_chunk_cooldown()
 
 
 def _serial_inter_job_delay() -> float:
     """Deprecated serial-only per-job delay used when parallel mode is unavailable."""
-    return _env_float(
-        "SKILLS_EXTRACTION_DELAY",
-        _DEFAULT_INTER_LLM_DELAY,
-        minimum=0.0,
-    )
+    from skills_extraction._config import serial_inter_job_delay
+
+    return serial_inter_job_delay()
 
 
 def _warn_parallel_deprecated_serial_throttles() -> None:
@@ -299,8 +296,9 @@ class EventOrDatabaseWorkItemLoader:
 
         # FIFO: load normalized records not yet extracted (processing loop mode)
         if check_db_connection():
-            batch_size = int(os.environ.get("NORM_BATCH_SIZE", "50"))
-            return self._from_database_unextracted(batch_size)
+            from skills_extraction._config import fifo_fetch_size
+
+            return self._from_database_unextracted(fifo_fetch_size())
 
         return []
 
@@ -563,10 +561,9 @@ class SkillsExtractionAgent(BaseAgent):
             return self._legacy_fixture_response(event)
 
         # Cap work items per run (0 = no limit; set SKILLS_EXTRACTION_MAX_JOBS to override)
-        try:
-            max_jobs = int(os.environ.get("SKILLS_EXTRACTION_MAX_JOBS", "0"))
-        except (TypeError, ValueError):
-            max_jobs = 0
+        from skills_extraction._config import max_jobs as _max_jobs_accessor
+
+        max_jobs = _max_jobs_accessor()
         if max_jobs > 0 and len(work_items) > max_jobs:
             work_items = work_items[:max_jobs]
 
@@ -673,10 +670,9 @@ class SkillsExtractionAgent(BaseAgent):
         if not work_items:
             return self._legacy_fixture_response(event)
 
-        try:
-            max_jobs = int(os.environ.get("SKILLS_EXTRACTION_MAX_JOBS", "0"))
-        except (TypeError, ValueError):
-            max_jobs = 0
+        from skills_extraction._config import max_jobs as _max_jobs_accessor
+
+        max_jobs = _max_jobs_accessor()
         if max_jobs > 0 and len(work_items) > max_jobs:
             work_items = work_items[:max_jobs]
 
@@ -1267,10 +1263,16 @@ def _metadata_from_pass2(
     """Flatten Pass 1/2 dimension metadata for ``extracted_intelligence.extraction_metadata`` JSON."""
     dim = meta.get("dimension_metas") or {}
     raw_warnings = [str(w) for w in (meta.get("extraction_warnings") or [])]
+    from common.config_loader import get_str as _get_str
+
     em = ExtractionMetadata(
         extraction_version=extraction_version,
         model_used=str(meta.get("model") or ""),
-        model_tier=os.environ.get("EXTRACTION_MODEL_TIER", "mixed"),
+        model_tier=_get_str(
+            file="llm",
+            key="llm.extraction_model_tier",
+            env="EXTRACTION_MODEL_TIER",
+        ),
         tokens_used=int(meta.get("tokens_used") or 0),
         cost_usd=float(meta.get("cost_usd") or 0.0),
         extraction_duration_ms=int(meta.get("latency_ms") or 0),

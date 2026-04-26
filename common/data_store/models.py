@@ -61,8 +61,11 @@ class Base(DeclarativeBase):
     pass
 
 
-FRESH_THRESHOLD_DAYS = int(os.getenv("FRESH_THRESHOLD_DAYS", "30"))
-STALE_THRESHOLD_DAYS = int(os.getenv("STALE_THRESHOLD_DAYS", "90"))
+from analytics._config import fresh_threshold_days as _fresh_threshold_days
+from analytics._config import stale_threshold_days as _stale_threshold_days
+
+FRESH_THRESHOLD_DAYS = _fresh_threshold_days()
+STALE_THRESHOLD_DAYS = _stale_threshold_days()
 
 
 def classify_freshness(days: int) -> Literal["fresh", "stale", "expired"]:

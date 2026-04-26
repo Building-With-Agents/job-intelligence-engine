@@ -18,7 +18,6 @@ than ``cost_usd`` (both originate from the same Langfuse-aware cost path in
 
 from __future__ import annotations
 
-import os
 import re
 import uuid
 from typing import Literal
@@ -57,8 +56,10 @@ def resolve_laborpulse_conversation_id(raw: str | None) -> str:
 
 
 def confidence_bucket(score: float) -> Literal["low", "medium", "high"]:
-    low = float(os.getenv("LABORPULSE_CONF_LOW_BELOW", "0.60"))
-    high = float(os.getenv("LABORPULSE_CONF_HIGH_AT_OR_ABOVE", "0.85"))
+    from analytics.api._config import confidence_high_at_or_above, confidence_low_below
+
+    low = confidence_low_below()
+    high = confidence_high_at_or_above()
     if score < low:
         return "low"
     if score < high:

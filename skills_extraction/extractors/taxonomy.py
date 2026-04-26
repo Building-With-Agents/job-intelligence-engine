@@ -321,7 +321,12 @@ _esco_normalized_matrix: np.ndarray | None = None  # (n_skills, dim) L2-normaliz
 
 _EMBED_MAX_RETRIES = 5
 _EMBED_BASE_DELAY = 1.0  # seconds
-_EMBED_INTER_REQUEST_DELAY = float(os.getenv("EMBEDDING_REQUEST_DELAY", "0"))
+
+
+def _embed_inter_request_delay() -> float:
+    from skills_extraction._config import embedding_inter_request_delay
+
+    return embedding_inter_request_delay()
 
 # #108: prompt text for llm_audit_log prompt_hash only (not sent again)
 _EMBEDDING_AUDIT_PROMPT_MAX_CHARS = 8000
@@ -355,13 +360,10 @@ def _embedding_usage_input_tokens(data: Any) -> int:
 
 
 def _embedding_cost_usd(input_tokens: int) -> float:
-    """Rough $/1K input tokens for text-embedding-3-small class; set EMBEDDING_INPUT_USD_PER_1K_TOKENS to override (#108)."""
-    raw = os.getenv("EMBEDDING_INPUT_USD_PER_1K_TOKENS", "0.00002")
-    try:
-        per_1k = float(raw)
-    except (TypeError, ValueError):
-        per_1k = 0.00002
-    return (input_tokens / 1000.0) * per_1k
+    """Rough $/1K input tokens; set ``skills_extraction.embedding.input_usd_per_1k_tokens`` to override (#108)."""
+    from skills_extraction._config import embedding_input_usd_per_1k_tokens
+
+    return (input_tokens / 1000.0) * embedding_input_usd_per_1k_tokens()
 
 
 def _embedding_error_reason(prefix: str, detail: str | None = None) -> str:
@@ -630,7 +632,9 @@ def _resolve_step4_embedding_impl(label: str) -> TaxonomyResult | None:
     """Embedding cosine similarity >= threshold. Uses SKILL_TAXONOMY_SIMILARITY_THRESHOLD (default 0.92).
     Uses cached pre-normalized ESCO matrix; query is embedded via Azure API, then dot product.
     """
-    threshold = float(os.getenv("SKILL_TAXONOMY_SIMILARITY_THRESHOLD", "0.92"))
+    from skills_extraction._config import taxonomy_similarity_threshold
+
+    threshold = taxonomy_similarity_threshold()
     cache = _get_esco_embeddings()
     if cache is None:
         return None
@@ -800,7 +804,9 @@ def resolve_taxonomy_batch(labels: list[str]) -> list[TaxonomyResult]:
         cache = _get_esco_embeddings()
         if cache is not None:
             meta, matrix_norm = cache
-            threshold = float(os.getenv("SKILL_TAXONOMY_SIMILARITY_THRESHOLD", "0.92"))
+            from skills_extraction._config import taxonomy_similarity_threshold
+
+            threshold = taxonomy_similarity_threshold()
             # Batch embedding request(s) for all pending (chunk to respect API limits)
             all_query_vectors: list[list[float]] = []
             for j in range(0, len(pending_step4), _EMBEDDING_CHUNK_SIZE):

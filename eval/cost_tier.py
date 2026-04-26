@@ -46,7 +46,13 @@ def resolve_llm_audit_model_tier(model: str | None) -> str:
     if m in MODEL_TIER_MAP:
         return MODEL_TIER_MAP[m]
     if m in _deployment_names():
-        explicit = os.getenv("EXTRACTION_MODEL_TIER", "").strip().lower()
+        from common.config_loader import get_str
+
+        explicit = get_str(
+            file="llm",
+            key="llm.extraction_model_tier",
+            env="EXTRACTION_MODEL_TIER",
+        ).strip().lower()
         if explicit in ("haiku", "sonnet"):
             return explicit
         return "sonnet"

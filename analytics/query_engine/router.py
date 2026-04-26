@@ -56,8 +56,11 @@ log = structlog.get_logger()
 # Guardrail constants
 # ---------------------------------------------------------------------------
 
-_QUERY_LIMIT: int = int(os.getenv("ANALYTICS_QUERY_LIMIT", "100"))
-_QUERY_TIMEOUT_SECONDS: int = int(os.getenv("ANALYTICS_QUERY_TIMEOUT_SECONDS", "30"))
+from analytics._config import query_row_limit as _query_row_limit
+from analytics._config import query_timeout_seconds as _query_timeout_seconds
+
+_QUERY_LIMIT: int = _query_row_limit()
+_QUERY_TIMEOUT_SECONDS: int = _query_timeout_seconds()
 
 #: Tables the router is permitted to query.  Extending this set requires an
 #: explicit PR review — do not add raw pipeline tables here.

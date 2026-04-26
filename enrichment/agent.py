@@ -1234,7 +1234,9 @@ class EnrichmentAgent(BaseAgent):
                 company = posting.get("company") or ""
 
                 # Run SOC, NAICS, employer LLM calls concurrently with per-call timeout
-                _ENRICH_LLM_TIMEOUT = int(os.getenv("ENRICHMENT_LLM_TIMEOUT", "120"))
+                from enrichment._config import enrichment_llm_timeout_seconds
+
+                _ENRICH_LLM_TIMEOUT = enrichment_llm_timeout_seconds()
                 _nj_id = posting.get("normalized_job_id")
                 _gather_start = time.perf_counter()
 
@@ -1344,10 +1346,14 @@ class EnrichmentAgent(BaseAgent):
     # ------------------------------------------------------------------
 
     def _enrichment_parallel_enabled(self) -> bool:
-        return os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no")
+        from enrichment._config import enrichment_parallel
+
+        return enrichment_parallel()
 
     def _enrichment_concurrency(self) -> int:
-        return max(1, int(os.getenv("ENRICHMENT_CONCURRENCY", "30")))
+        from enrichment._config import enrichment_concurrency
+
+        return enrichment_concurrency()
 
     async def _enrich_batch_parallel(
         self,

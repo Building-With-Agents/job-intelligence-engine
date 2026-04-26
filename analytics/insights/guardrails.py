@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-STALENESS_THRESHOLD_MINUTES = int(os.getenv("STALENESS_THRESHOLD_MINUTES", "15"))
-CARDINALITY_CAP = int(os.getenv("CARDINALITY_CAP", "500"))
+from analytics._config import cardinality_cap as _cardinality_cap
+from analytics._config import staleness_threshold_minutes as _staleness_threshold_minutes
+
+STALENESS_THRESHOLD_MINUTES = _staleness_threshold_minutes()
+CARDINALITY_CAP = _cardinality_cap()
 
 
 def _utc_now() -> datetime:

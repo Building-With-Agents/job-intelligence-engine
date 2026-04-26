@@ -1,0 +1,65 @@
+# config/skills_extraction.yaml — Work Intelligence Agent (skills extraction) tuning.
+#
+# Parallel/serial mode toggles, concurrency, taxonomy similarity threshold,
+# and per-call LLM/embedding throttling. The async path is preferred; the
+# serial path retains legacy throttle knobs for back-compat.
+
+skills_extraction:
+  # Enable async parallel extraction inside each job AND across jobs (up to
+  # concurrency below). When false, fall back to serial loop with the
+  # deprecated chunk/cooldown/delay knobs below.
+  # Env override: SKILLS_EXTRACTION_PARALLEL
+  parallel: true
+
+  # Max concurrent jobs in flight when parallel mode is enabled. Min 1.
+  # Env override: SKILLS_EXTRACTION_CONCURRENCY
+  concurrency: 5
+
+  # LLM call timeout (seconds) for structured tasks/responsibilities/skills
+  # extraction. Min 1.
+  # Env override: SKILLS_EXTRACTION_LLM_TIMEOUT
+  llm_timeout_seconds: 120
+
+  # Cap on jobs processed per run. 0 = unlimited (production default);
+  # use a small value during local debugging. Min 0.
+  # Env override: SKILLS_EXTRACTION_MAX_JOBS
+  max_jobs: 0
+
+  # Records to fetch from `normalized_jobs` per FIFO pass (skills extraction
+  # processing-loop mode). Distinct from `pipeline.normalization.batch_size`
+  # because the FIFO pass needs a bounded fetch by default to avoid loading
+  # all unextracted records at once. Min 1.
+  # Env override: NORM_BATCH_SIZE
+  fifo_fetch_size: 50
+
+  # Deprecated serial-mode throttles. Only used when parallel: false.
+  # Kept so legacy production scripts continue to honor existing tuning.
+  serial:
+    # Records per extraction batch in serial mode. Min 0 (0 = single batch).
+    # Env override: SKILLS_EXTRACTION_CHUNK_SIZE
+    chunk_size: 5
+
+    # Seconds between extraction batches in serial mode. Min 0.0.
+    # Env override: SKILLS_EXTRACTION_CHUNK_COOLDOWN
+    chunk_cooldown_seconds: 30
+
+    # Inter-job delay seconds in serial mode. Min 0.0.
+    # Env override: SKILLS_EXTRACTION_DELAY
+    delay_seconds: 1.0
+
+  taxonomy:
+    # Embedding cosine similarity threshold for matching extracted skills to
+    # ESCO digital-skills cluster (taxonomy step 4). Range 0.0–1.0.
+    # Env override: SKILL_TAXONOMY_SIMILARITY_THRESHOLD
+    similarity_threshold: 0.92
+
+  embedding:
+    # Inter-request delay (seconds) inside the Azure embedding batcher.
+    # 0 disables throttling. Min 0.0.
+    # Env override: EMBEDDING_REQUEST_DELAY
+    inter_request_delay_seconds: 0
+
+    # Cost per 1K input tokens for the embeddings deployment, used by the
+    # taxonomy seeding cost ledger. Min 0.0.
+    # Env override: EMBEDDING_INPUT_USD_PER_1K_TOKENS
+    input_usd_per_1k_tokens: 0.00002

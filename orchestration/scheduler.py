@@ -80,17 +80,16 @@ def _scheduled_job() -> None:
 
 
 def _interval_minutes() -> int:
-    raw = os.environ.get("INGESTION_INTERVAL_MINUTES", "2").strip()
-    try:
-        n = int(raw)
-        return max(1, n)
-    except ValueError:
-        return 2
+    from ingestion._config import scheduler_interval_minutes
+
+    return scheduler_interval_minutes()
 
 
 def main() -> None:
     """Start the scheduler and block the main thread."""
-    cron_expr = os.environ.get("INGESTION_CRON_EXPRESSION", "").strip()
+    from ingestion._config import scheduler_cron_expression
+
+    cron_expr = scheduler_cron_expression() or ""
     interval_min = _interval_minutes()
 
     scheduler = BackgroundScheduler()
