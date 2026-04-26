@@ -1355,6 +1355,39 @@ class EnrichmentAgent(BaseAgent):
                     except Exception as emp_exc:
                         log.warning("enrich_record_employer_persist_failed", error=str(emp_exc))
 
+            # Classify role + seniority (closes #282/#283; mirrors the serial
+            # path in _process_skills_extracted_batch). Without this, the
+            # parallel path leaves role_classification + seniority_level NULL.
+            try:
+                from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
+
+                tech_refs, sector_refs = self._ensure_refs()
+                extraction_dict = build_extraction_dict(
+                    posting.get("skills"),
+                    posting.get("tools"),
+                    posting.get("tasks"),
+                    posting.get("responsibilities"),
+                    posting.get("context"),
+                )
+                role_cls, seniority_cls = classify_job(
+                    posting.get("title") or "",
+                    posting.get("description"),
+                    extraction_dict,
+                    tech_refs,
+                    sector_refs,
+                    is_internship=bool(posting.get("is_internship", False)),
+                )
+                if role_cls and not merged.get("role_classification"):
+                    merged["role_classification"] = role_cls
+                if seniority_cls and not merged.get("seniority"):
+                    merged["seniority"] = seniority_cls
+            except Exception as cls_exc:  # noqa: BLE001
+                log.warning(
+                    "enrich_record_async_classify_job_failed",
+                    normalized_job_id=posting.get("normalized_job_id"),
+                    error=str(cls_exc),
+                )
+
             return merged
         except Exception:
             log.warning("enrich_record_async_degraded", agent=self.agent_id, reason="resolver_exception")
