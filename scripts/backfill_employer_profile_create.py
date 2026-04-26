@@ -63,7 +63,7 @@ _SELECT_PENDING_SQL = text(
         jp.job_description            AS description,
         c.company_name                AS company_name
     FROM dbo.job_postings jp
-    LEFT JOIN dbo.companies c ON c.company_id = jp.company_id
+    INNER JOIN dbo.companies c ON c.company_id = jp.company_id
     WHERE jp.employer_profile_id IS NULL
       AND jp.company_id IS NOT NULL
       AND NOT EXISTS (
@@ -73,6 +73,10 @@ _SELECT_PENDING_SQL = text(
     LIMIT :batch_size
     """
 )
+# INNER JOIN above excludes orphan-FK rows where ``jp.company_id`` doesn't
+# exist in ``dbo.companies`` — those would always fail the
+# ``employer_profiles_company_id_fkey`` constraint on insert and would
+# otherwise loop in the predicate set forever, burning LLM credits.
 
 _LINK_SQL = text(
     """
@@ -84,7 +88,13 @@ _LINK_SQL = text(
 
 _COUNT_SQL = text(
     """
-    SELECT COUNT(*)
+    SELECT
+        COUNT(*) FILTER (WHERE EXISTS (
+            SELECT 1 FROM dbo.companies c WHERE c.company_id = jp.company_id
+        )) AS saveable,
+        COUNT(*) FILTER (WHERE NOT EXISTS (
+            SELECT 1 FROM dbo.companies c WHERE c.company_id = jp.company_id
+        )) AS orphan_fk
     FROM dbo.job_postings jp
     WHERE jp.employer_profile_id IS NULL
       AND jp.company_id IS NOT NULL
@@ -111,15 +121,23 @@ def main() -> int:
     from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 
     with session_scope() as s:
-        total = int(s.execute(_COUNT_SQL).scalar_one())
-    print(f"Pending: {total} job_postings rows need employer_profile generation.")
+        row = s.execute(_COUNT_SQL).mappings().one()
+    saveable = int(row["saveable"])
+    orphan_fk = int(row["orphan_fk"])
+    print(f"Saveable rows (company exists; need profile): {saveable}")
+    if orphan_fk:
+        print(
+            f"Skipped (orphan FK — company_id not in dbo.companies): {orphan_fk}  "
+            f"— pre-existing data integrity issue; cannot link employer_profile_id"
+        )
 
     if args.dry_run:
         print("--dry-run: no LLM calls, no UPDATEs.")
         return 0
-    if total == 0:
+    if saveable == 0:
         print("Nothing to do.")
         return 0
+    total = saveable
 
     processed = 0
     succeeded = 0
@@ -129,58 +147,60 @@ def main() -> int:
         if args.max_records and processed >= args.max_records:
             break
 
+        # Read the batch in its own session, then close it before per-row work.
         with session_scope() as session:
             rows = session.execute(_SELECT_PENDING_SQL, {"batch_size": args.batch_size}).mappings().all()
-            if not rows:
+        if not rows:
+            break
+
+        for row in rows:
+            if args.max_records and processed >= args.max_records:
                 break
 
-            for row in rows:
-                if args.max_records and processed >= args.max_records:
-                    break
+            jp_id = row["job_posting_id"]
+            cid = row["company_id"]
+            title = row["title"] or ""
+            desc = row["description"] or ""
+            company_name = (row["company_name"] or "").strip() or "Unknown"
 
-                jp_id = row["job_posting_id"]
-                cid = row["company_id"]
-                title = row["title"] or ""
-                desc = row["description"] or ""
-                company_name = (row["company_name"] or "").strip() or "Unknown"
-
-                try:
-                    # 1. LLM classifier — same one the live enrichment path uses.
+            # Use a FRESH session per row so a poisoned transaction (e.g. the
+            # employer classifier's internal SELECT failing on bad data) can't
+            # cascade into the next row. Each row is independently committable.
+            try:
+                with session_scope() as session:
                     ep = build_employer_profile(desc, company_name, session)
-                    # 2. Upsert into dbo.employer_profiles (mirrors the promotion path).
                     profile_id = upsert_employer_profile_by_company_id(
                         session,
                         cid,
                         ep.model_dump(mode="json"),
                     )
-                    # 3. Link the FK on the job_posting row.
                     session.execute(
                         _LINK_SQL,
                         {"job_posting_id": jp_id, "employer_profile_id": str(profile_id)},
                     )
-                    succeeded += 1
-                except Exception as exc:  # noqa: BLE001
-                    log.warning(
-                        "backfill_employer_profile_create_failed",
-                        job_posting_id=jp_id,
-                        company_id=cid,
-                        company_name=company_name,
-                        title=(title or "")[:60],
-                        error=str(exc),
-                    )
-                    errors += 1
+                succeeded += 1
+            except Exception as exc:  # noqa: BLE001
+                log.warning(
+                    "backfill_employer_profile_create_failed",
+                    job_posting_id=jp_id,
+                    company_id=cid,
+                    company_name=company_name,
+                    title=(title or "")[:60],
+                    error=str(exc),
+                )
+                errors += 1
 
-                processed += 1
-                if processed % 10 == 0:
-                    log.info(
-                        "backfill_employer_profile_create_progress",
-                        processed=processed,
-                        succeeded=succeeded,
-                        errors=errors,
-                        remaining=total - processed,
-                    )
-                if args.delay > 0:
-                    time.sleep(args.delay)
+            processed += 1
+            if processed % 10 == 0:
+                log.info(
+                    "backfill_employer_profile_create_progress",
+                    processed=processed,
+                    succeeded=succeeded,
+                    errors=errors,
+                    remaining=total - processed,
+                )
+            if args.delay > 0:
+                time.sleep(args.delay)
 
     log.info(
         "backfill_employer_profile_create_complete",
