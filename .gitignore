@@ -178,3 +178,4 @@ docs/findings/generate-*.cjs
 .codex
 .tmp_*.json
 .tmp_*.log
+.env.pre-config-cleanup.bak

@@ -12,8 +12,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # Variables that have been migrated to YAML accessors. Every one of these
@@ -141,11 +139,7 @@ def _is_allowed_file(path: Path) -> bool:
 def test_no_direct_legacy_env_reads_in_production_code() -> None:
     """Walk all .py files under the repo root; assert no migrated var name is read
     via direct ``os.getenv`` outside the allowlisted paths."""
-    py_files = [
-        p
-        for p in _REPO_ROOT.rglob("*.py")
-        if ".venv" not in str(p) and "__pycache__" not in str(p)
-    ]
+    py_files = [p for p in _REPO_ROOT.rglob("*.py") if ".venv" not in str(p) and "__pycache__" not in str(p)]
     violations: list[tuple[str, int, str]] = []
     for path in py_files:
         if _is_allowed_file(path):

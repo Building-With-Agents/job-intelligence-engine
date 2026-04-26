@@ -14,7 +14,8 @@ the dotted YAML path you need to fix.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import pytest
 
@@ -38,23 +39,22 @@ PARITY: list[tuple[str, str | None, Any]] = [
     # `db_sql_schema` is optional; YAML stores `~` (null) so the accessor
     # returns None and callers fall through to ORM-driven detection.
     ("common.pipeline_config:db_sql_schema", "JIE_SQL_SCHEMA", None),
-
     # ---------- clustering.yaml ----------
     ("analytics.clustering.config:cluster_embedding_batch_size", "CLUSTER_EMBEDDING_BATCH_SIZE", 50),
-    ("analytics.clustering.config:cluster_embedding_audit_agent_name",
-     "CLUSTER_EMBEDDING_AUDIT_AGENT_NAME", "analytics-clustering"),
+    (
+        "analytics.clustering.config:cluster_embedding_audit_agent_name",
+        "CLUSTER_EMBEDDING_AUDIT_AGENT_NAME",
+        "analytics-clustering",
+    ),
     ("analytics.clustering.config:cluster_min_total_postings", "CLUSTER_MIN_TOTAL_POSTINGS", 500),
     ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 10),
     ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 5),
     ("analytics.clustering.config:cluster_selection_epsilon", "CLUSTER_SELECTION_EPSILON", 0.0),
     ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "euclidean"),
-    ("analytics.clustering.config:cluster_label_dominance_threshold",
-     "CLUSTER_LABEL_DOMINANCE_THRESHOLD", 0.30),
+    ("analytics.clustering.config:cluster_label_dominance_threshold", "CLUSTER_LABEL_DOMINANCE_THRESHOLD", 0.30),
     ("analytics.clustering.config:emergence_min_quality_score", "EMERGENCE_MIN_QUALITY_SCORE", 0.70),
     ("analytics.clustering.config:emergence_min_novel_skills", "EMERGENCE_MIN_NOVEL_SKILLS", 3),
-    ("analytics.clustering.config:emergence_min_distinct_employers",
-     "EMERGENCE_MIN_DISTINCT_EMPLOYERS", 2),
-
+    ("analytics.clustering.config:emergence_min_distinct_employers", "EMERGENCE_MIN_DISTINCT_EMPLOYERS", 2),
     # ---------- enrichment.yaml ----------
     # parallel is currently False — async path hangs; flip back to True
     # once the in-flight enrichment-async fix PR lands.
@@ -65,7 +65,6 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ("enrichment._config:dedup_rolling_window_days", "DEDUP_ROLLING_WINDOW_DAYS", 30),
     ("enrichment._config:spam_preview_allow_heuristic", "SPAM_PREVIEW_ALLOW_HEURISTIC", False),
     ("enrichment._config:esco_seed_apply_filter", "ESCO_SEED_APPLY_FILTER", False),
-
     # ---------- skills_extraction.yaml ----------
     ("skills_extraction._config:parallel_enabled", "SKILLS_EXTRACTION_PARALLEL", True),
     ("skills_extraction._config:parallel_concurrency", "SKILLS_EXTRACTION_CONCURRENCY", 5),
@@ -74,15 +73,12 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ("skills_extraction._config:serial_chunk_size", "SKILLS_EXTRACTION_CHUNK_SIZE", 5),
     ("skills_extraction._config:serial_chunk_cooldown", "SKILLS_EXTRACTION_CHUNK_COOLDOWN", 30.0),
     ("skills_extraction._config:serial_inter_job_delay", "SKILLS_EXTRACTION_DELAY", 1.0),
-    ("skills_extraction._config:taxonomy_similarity_threshold",
-     "SKILL_TAXONOMY_SIMILARITY_THRESHOLD", 0.92),
+    ("skills_extraction._config:taxonomy_similarity_threshold", "SKILL_TAXONOMY_SIMILARITY_THRESHOLD", 0.92),
     ("skills_extraction._config:embedding_inter_request_delay", "EMBEDDING_REQUEST_DELAY", 0.0),
-    ("skills_extraction._config:embedding_input_usd_per_1k_tokens",
-     "EMBEDDING_INPUT_USD_PER_1K_TOKENS", 0.00002),
+    ("skills_extraction._config:embedding_input_usd_per_1k_tokens", "EMBEDDING_INPUT_USD_PER_1K_TOKENS", 0.00002),
     # `fifo_fetch_size` reads NORM_BATCH_SIZE legacy env (50 = original FIFO
     # default, distinct from pipeline.normalization.batch_size which is 0).
     ("skills_extraction._config:fifo_fetch_size", "NORM_BATCH_SIZE", 50),
-
     # ---------- analytics.yaml ----------
     ("analytics._config:staleness_threshold_minutes", "STALENESS_THRESHOLD_MINUTES", 15),
     ("analytics._config:cardinality_cap", "CARDINALITY_CAP", 500),
@@ -94,13 +90,11 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ("analytics._config:query_timeout_seconds", "ANALYTICS_QUERY_TIMEOUT_SECONDS", 30),
     ("analytics._config:qna_live", "ANALYTICS_QNA_LIVE", False),
     ("analytics._config:api_reload", "ANALYTICS_API_RELOAD", True),
-
     # ---------- laborpulse.yaml ----------
     ("analytics.api._config:confidence_low_below", "LABORPULSE_CONF_LOW_BELOW", 0.60),
     ("analytics.api._config:confidence_high_at_or_above", "LABORPULSE_CONF_HIGH_AT_OR_ABOVE", 0.85),
     ("analytics.api._config:allow_no_api_keys", "LABORPULSE_ALLOW_NO_API_KEYS", False),
     ("analytics.api._config:dashboard_query_mock", "DASHBOARD_ANALYTICS_QUERY_MOCK", True),
-
     # ---------- ingestion.yaml ----------
     ("ingestion._config:jsearch_country", "JSEARCH_COUNTRY", "us"),
     ("ingestion._config:jsearch_language", "JSEARCH_LANGUAGE", "en"),
@@ -117,7 +111,6 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ("ingestion._config:scheduler_interval_minutes", "INGESTION_INTERVAL_MINUTES", 2),
     ("ingestion._config:scheduler_cron_expression", "INGESTION_CRON_EXPRESSION", None),
     ("ingestion._config:scheduler_state_path", "SCHEDULER_STATE_PATH", None),
-
     # ---------- eval.yaml ----------
     ("eval._config:extraction_fuzzy_threshold", "EVAL_EXTRACTION_FUZZY_THRESHOLD", 85),
     ("eval._config:qa_latency_sla_seconds", "QA_EVAL_LATENCY_SLA_SECONDS", 45.0),
@@ -197,22 +190,29 @@ def test_every_legacy_env_is_covered_by_parity_table() -> None:
     #     tests in common/tests/test_llm_adapter.py and test_llm_client_async.py.
     skipped = {
         # llm_costs.yaml — covered separately
-        "SONNET_INPUT_COST_PER_TOKEN", "SONNET_OUTPUT_COST_PER_TOKEN",
-        "HAIKU_INPUT_COST_PER_TOKEN", "HAIKU_OUTPUT_COST_PER_TOKEN",
-        "GPT41_INPUT_COST_PER_TOKEN", "GPT41_OUTPUT_COST_PER_TOKEN",
-        "GPT41MINI_INPUT_COST_PER_TOKEN", "GPT41MINI_OUTPUT_COST_PER_TOKEN",
-        "GPT4O_INPUT_COST_PER_TOKEN", "GPT4O_OUTPUT_COST_PER_TOKEN",
-        "GPT4OMINI_INPUT_COST_PER_TOKEN", "GPT4OMINI_OUTPUT_COST_PER_TOKEN",
-        "GEMINI_FLASH_INPUT_COST_PER_TOKEN", "GEMINI_FLASH_OUTPUT_COST_PER_TOKEN",
-        "GEMINI_PRO_INPUT_COST_PER_TOKEN", "GEMINI_PRO_OUTPUT_COST_PER_TOKEN",
+        "SONNET_INPUT_COST_PER_TOKEN",
+        "SONNET_OUTPUT_COST_PER_TOKEN",
+        "HAIKU_INPUT_COST_PER_TOKEN",
+        "HAIKU_OUTPUT_COST_PER_TOKEN",
+        "GPT41_INPUT_COST_PER_TOKEN",
+        "GPT41_OUTPUT_COST_PER_TOKEN",
+        "GPT41MINI_INPUT_COST_PER_TOKEN",
+        "GPT41MINI_OUTPUT_COST_PER_TOKEN",
+        "GPT4O_INPUT_COST_PER_TOKEN",
+        "GPT4O_OUTPUT_COST_PER_TOKEN",
+        "GPT4OMINI_INPUT_COST_PER_TOKEN",
+        "GPT4OMINI_OUTPUT_COST_PER_TOKEN",
+        "GEMINI_FLASH_INPUT_COST_PER_TOKEN",
+        "GEMINI_FLASH_OUTPUT_COST_PER_TOKEN",
+        "GEMINI_PRO_INPUT_COST_PER_TOKEN",
+        "GEMINI_PRO_OUTPUT_COST_PER_TOKEN",
         # llm.yaml — exercised via resolve_llm_route() and adapter integration tests
-        "GEMINI_MODEL", "EXTRACTION_MODEL_TIER",
+        "GEMINI_MODEL",
+        "EXTRACTION_MODEL_TIER",
     }
     expected = _MIGRATED_VARS - skipped
     missing = expected - parity_envs
-    assert not missing, (
-        f"Migrated env vars missing from PARITY table:\n  - " + "\n  - ".join(sorted(missing))
-    )
+    assert not missing, "Migrated env vars missing from PARITY table:\n  - " + "\n  - ".join(sorted(missing))
 
 
 def test_pricing_loaded_from_yaml_costs(yaml_only_env: None) -> None:
@@ -221,8 +221,8 @@ def test_pricing_loaded_from_yaml_costs(yaml_only_env: None) -> None:
     Verifies all eight model entries exist with input/output values that
     match the historical per-token defaults (per-million / 1_000_000).
     """
-    from common.config_loader import reload_all
     import common.llm_adapter
+    from common.config_loader import reload_all
 
     # Force the PRICING table to rebuild from YAML in case test ordering
     # left a stale dict in place from a previous import.
@@ -255,10 +255,16 @@ def test_resolve_llm_route_default_from_yaml(yaml_only_env: None, monkeypatch: p
     # delete LLM-related vars; yaml_only_env covers the migrated set, but
     # LLM_DEFAULT etc. live outside the parity table.
     for v in (
-        "LLM_PROVIDER", "LLM_DEFAULT", "LLM_SYNTHESIS",
-        "LLM_EXTRACTION", "LLM_EXTRACTION_TASKS",
-        "LLM_EXTRACTION_RESPONSIBILITIES", "LLM_EXTRACTION_NAICS",
-        "LLM_EXTRACTION_EMPLOYER", "LLM_CLASSIFICATION", "LLM_ANALYTICS",
+        "LLM_PROVIDER",
+        "LLM_DEFAULT",
+        "LLM_SYNTHESIS",
+        "LLM_EXTRACTION",
+        "LLM_EXTRACTION_TASKS",
+        "LLM_EXTRACTION_RESPONSIBILITIES",
+        "LLM_EXTRACTION_NAICS",
+        "LLM_EXTRACTION_EMPLOYER",
+        "LLM_CLASSIFICATION",
+        "LLM_ANALYTICS",
     ):
         monkeypatch.delenv(v, raising=False)
 

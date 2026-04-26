@@ -28,7 +28,6 @@ Usage::
 
 from __future__ import annotations
 
-import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field

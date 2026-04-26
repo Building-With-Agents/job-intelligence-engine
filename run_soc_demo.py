@@ -148,7 +148,7 @@ async def main() -> None:
 
         from eval._config import soc_demo_skip_llm
 
-    if soc_demo_skip_llm():
+        if soc_demo_skip_llm():
             print("\n-- SKIP_LLM mode: skipping LLM classification --")
             return
 

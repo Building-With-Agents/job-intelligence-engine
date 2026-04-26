@@ -13,34 +13,46 @@ from common.config_loader import (
     get_str,
 )
 
-
 # ---------- JSearch search filters ----------
+
 
 @cached_accessor
 def jsearch_country() -> str:
-    return get_str(
-        file="ingestion",
-        key="ingestion.jsearch.country",
-        env="JSEARCH_COUNTRY",
-    ).strip().lower()
+    return (
+        get_str(
+            file="ingestion",
+            key="ingestion.jsearch.country",
+            env="JSEARCH_COUNTRY",
+        )
+        .strip()
+        .lower()
+    )
 
 
 @cached_accessor
 def jsearch_language() -> str:
-    return get_str(
-        file="ingestion",
-        key="ingestion.jsearch.language",
-        env="JSEARCH_LANGUAGE",
-    ).strip().lower()
+    return (
+        get_str(
+            file="ingestion",
+            key="ingestion.jsearch.language",
+            env="JSEARCH_LANGUAGE",
+        )
+        .strip()
+        .lower()
+    )
 
 
 @cached_accessor
 def jsearch_date_posted() -> str:
-    return get_str(
-        file="ingestion",
-        key="ingestion.jsearch.date_posted",
-        env="JSEARCH_DATE_POSTED",
-    ).strip().lower()
+    return (
+        get_str(
+            file="ingestion",
+            key="ingestion.jsearch.date_posted",
+            env="JSEARCH_DATE_POSTED",
+        )
+        .strip()
+        .lower()
+    )
 
 
 @cached_accessor
@@ -66,6 +78,7 @@ def jsearch_max_pages() -> int:
 
 
 # ---------- JSearch retry policy ----------
+
 
 @cached_accessor
 def jsearch_retry_max_retries() -> int:
@@ -99,6 +112,7 @@ def jsearch_retry_max_delay_seconds() -> int:
 
 # ---------- JSearch throttle ----------
 
+
 @cached_accessor
 def jsearch_rps() -> int:
     return get_int(
@@ -121,6 +135,7 @@ def jsearch_rpm() -> int:
 
 # ---------- Scraping ----------
 
+
 @cached_accessor
 def scraping_targets() -> list[str]:
     return get_list(
@@ -131,6 +146,7 @@ def scraping_targets() -> list[str]:
 
 
 # ---------- Scheduler ----------
+
 
 @cached_accessor
 def scheduler_type() -> str:

@@ -183,9 +183,7 @@ def main() -> None:
                     # Closes the docstring promise that this script fills employer_profile_id.
                     employer_profile_id = None
                     try:
-                        cid = session.execute(
-                            _LOOKUP_COMPANY_ID_SQL, {"job_posting_id": jp_id}
-                        ).scalar_one_or_none()
+                        cid = session.execute(_LOOKUP_COMPANY_ID_SQL, {"job_posting_id": jp_id}).scalar_one_or_none()
                         if cid:
                             employer_profile_id = session.execute(
                                 _LOOKUP_EMPLOYER_PROFILE_SQL, {"company_id": cid}

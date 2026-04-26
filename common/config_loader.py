@@ -35,8 +35,9 @@ from __future__ import annotations
 import functools
 import os
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 import structlog
 import yaml
@@ -55,7 +56,7 @@ class ConfigError(RuntimeError):
     """Raised when a required config key is missing or fails validation in both env and YAML."""
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def load_yaml(name: str) -> dict[str, Any]:
     """Load and cache a YAML file from ``config/<name>.yaml``.
 
@@ -130,6 +131,7 @@ def _missing(file: str, key: str, env: str | None) -> ConfigError:
 # int / optional int
 # ---------------------------------------------------------------------------
 
+
 def _try_int(
     candidate: Any,
     *,
@@ -201,6 +203,7 @@ def get_optional_int(
 # ---------------------------------------------------------------------------
 # float / optional float
 # ---------------------------------------------------------------------------
+
 
 def _try_float(
     candidate: Any,
@@ -308,6 +311,7 @@ def get_bool(*, file: str, key: str, env: str | None) -> bool:
 # str / optional str
 # ---------------------------------------------------------------------------
 
+
 def get_str(*, file: str, key: str, env: str | None) -> str:
     """Resolve a required string."""
     raw_env = _env_value(env, file, key)
@@ -334,6 +338,7 @@ def get_optional_str(*, file: str, key: str, env: str | None) -> str | None:
 # list
 # ---------------------------------------------------------------------------
 
+
 def get_list(
     *,
     file: str,
@@ -352,10 +357,7 @@ def get_list(
         return [str(x).strip() for x in val if str(x).strip()]
     if isinstance(val, str):
         return [x.strip() for x in val.split(separator) if x.strip()]
-    raise ConfigError(
-        f"config/{file}.yaml -> {key}: value {val!r} must be a YAML list "
-        f"or comma-separated string."
-    )
+    raise ConfigError(f"config/{file}.yaml -> {key}: value {val!r} must be a YAML list or comma-separated string.")
 
 
 # ---------------------------------------------------------------------------

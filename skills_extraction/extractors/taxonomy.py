@@ -328,6 +328,7 @@ def _embed_inter_request_delay() -> float:
 
     return embedding_inter_request_delay()
 
+
 # #108: prompt text for llm_audit_log prompt_hash only (not sent again)
 _EMBEDDING_AUDIT_PROMPT_MAX_CHARS = 8000
 _EMBEDDING_AUDIT_ERROR_MAX_CHARS = 1000

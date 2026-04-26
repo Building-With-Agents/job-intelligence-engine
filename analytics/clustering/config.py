@@ -38,11 +38,14 @@ def cluster_embedding_batch_size() -> int:
 
 @cached_accessor
 def cluster_embedding_audit_agent_name() -> str:
-    return get_str(
-        file="clustering",
-        key="clustering.embedding.audit_agent_name",
-        env="CLUSTER_EMBEDDING_AUDIT_AGENT_NAME",
-    ).strip() or DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME
+    return (
+        get_str(
+            file="clustering",
+            key="clustering.embedding.audit_agent_name",
+            env="CLUSTER_EMBEDDING_AUDIT_AGENT_NAME",
+        ).strip()
+        or DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME
+    )
 
 
 @cached_accessor
@@ -87,11 +90,16 @@ def cluster_selection_epsilon() -> float:
 
 @cached_accessor
 def cluster_distance_metric() -> str:
-    return get_str(
-        file="clustering",
-        key="clustering.distance_metric",
-        env="CLUSTER_DISTANCE_METRIC",
-    ).strip().lower() or DEFAULT_CLUSTER_DISTANCE_METRIC
+    return (
+        get_str(
+            file="clustering",
+            key="clustering.distance_metric",
+            env="CLUSTER_DISTANCE_METRIC",
+        )
+        .strip()
+        .lower()
+        or DEFAULT_CLUSTER_DISTANCE_METRIC
+    )
 
 
 @cached_accessor

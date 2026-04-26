@@ -123,6 +123,5 @@ def test_every_leaf_has_env_override_comment(filename: str) -> None:
         missing.append(dotted)
     assert not missing, (
         f"{filename}: leaves without an `# Env override:` comment "
-        f"(add one or extend _NO_ENV_OVERRIDE_ALLOWLIST):\n  - "
-        + "\n  - ".join(missing)
+        f"(add one or extend _NO_ENV_OVERRIDE_ALLOWLIST):\n  - " + "\n  - ".join(missing)
     )

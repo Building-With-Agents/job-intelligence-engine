@@ -43,6 +43,7 @@ def _write(path: Path, name: str, body: str) -> None:
 
 # ---------- load_yaml ----------
 
+
 def test_load_yaml_missing_file_returns_empty(tmp_config_dir: Path) -> None:
     assert load_yaml("nonexistent") == {}
 
@@ -70,6 +71,7 @@ def test_load_yaml_caches_result(tmp_config_dir: Path) -> None:
 
 
 # ---------- get_int (required, YAML-authoritative) ----------
+
 
 def test_get_int_yaml_value(tmp_config_dir: Path) -> None:
     _write(tmp_config_dir, "demo", "a:\n  b: 42\n")
@@ -99,18 +101,14 @@ def test_get_int_raises_when_yaml_below_minimum(tmp_config_dir: Path) -> None:
         get_int(file="demo", key="a.b", env=None, minimum=0)
 
 
-def test_get_int_env_invalid_falls_back_to_yaml(
-    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_get_int_env_invalid_falls_back_to_yaml(tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Env value that fails parsing falls through to YAML; YAML wins."""
     _write(tmp_config_dir, "demo", "a:\n  b: 42\n")
     monkeypatch.setenv("DEMO_VAR", "not_a_number")
     assert get_int(file="demo", key="a.b", env="DEMO_VAR") == 42
 
 
-def test_get_int_env_below_min_falls_back_to_yaml(
-    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_get_int_env_below_min_falls_back_to_yaml(tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Out-of-range env value falls through to YAML."""
     _write(tmp_config_dir, "demo", "a:\n  b: 5\n")
     monkeypatch.setenv("DEMO_VAR", "0")
@@ -118,6 +116,7 @@ def test_get_int_env_below_min_falls_back_to_yaml(
 
 
 # ---------- get_optional_int ----------
+
 
 def test_get_optional_int_returns_none_when_missing(tmp_config_dir: Path) -> None:
     assert get_optional_int(file="demo", key="missing", env=None) is None
@@ -130,6 +129,7 @@ def test_get_optional_int_returns_yaml_value(tmp_config_dir: Path) -> None:
 
 # ---------- get_float ----------
 
+
 def test_get_float_yaml_value(tmp_config_dir: Path) -> None:
     _write(tmp_config_dir, "demo", "x: 0.92\n")
     assert get_float(file="demo", key="x", env=None) == 0.92
@@ -141,33 +141,34 @@ def test_get_float_raises_when_yaml_out_of_range(tmp_config_dir: Path) -> None:
         get_float(file="demo", key="x", env=None, minimum=0.0, maximum=1.0)
 
 
-def test_get_float_env_below_min_falls_back_to_yaml(
-    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_get_float_env_below_min_falls_back_to_yaml(tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _write(tmp_config_dir, "demo", "x: 0.7\n")
     monkeypatch.setenv("DEMO_VAR", "-1")
-    assert get_float(
-        file="demo", key="x", env="DEMO_VAR", minimum=0.0, maximum=1.0
-    ) == 0.7
+    assert get_float(file="demo", key="x", env="DEMO_VAR", minimum=0.0, maximum=1.0) == 0.7
 
 
 # ---------- get_bool ----------
 
-@pytest.mark.parametrize("raw,expected", [
-    (True, True),
-    (False, False),
-    ("true", True),
-    ("FALSE", False),
-    ("1", True),
-    ("0", False),
-    ("yes", True),
-    ("no", False),
-    ("on", True),
-    ("off", False),
-])
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        (True, True),
+        (False, False),
+        ("true", True),
+        ("FALSE", False),
+        ("1", True),
+        ("0", False),
+        ("yes", True),
+        ("no", False),
+        ("on", True),
+        ("off", False),
+    ],
+)
 def test_get_bool_yaml(tmp_config_dir: Path, raw: object, expected: bool) -> None:
     _write(
-        tmp_config_dir, "demo",
+        tmp_config_dir,
+        "demo",
         f"x: {raw!r}\n" if isinstance(raw, str) else f"x: {str(raw).lower()}\n",
     )
     assert get_bool(file="demo", key="x", env=None) is expected
@@ -185,15 +186,14 @@ def test_get_bool_raises_when_yaml_invalid(tmp_config_dir: Path) -> None:
         get_bool(file="demo", key="x", env=None)
 
 
-def test_get_bool_env_invalid_falls_back_to_yaml(
-    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_get_bool_env_invalid_falls_back_to_yaml(tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _write(tmp_config_dir, "demo", "x: true\n")
     monkeypatch.setenv("DEMO_VAR", "maybe")
     assert get_bool(file="demo", key="x", env="DEMO_VAR") is True
 
 
 # ---------- get_str / get_optional_str ----------
+
 
 def test_get_str_yaml_value(tmp_config_dir: Path) -> None:
     _write(tmp_config_dir, "demo", "x: hello\n")
@@ -216,6 +216,7 @@ def test_get_optional_str_returns_value(tmp_config_dir: Path) -> None:
 
 # ---------- get_optional_float ----------
 
+
 def test_get_optional_float_returns_none(tmp_config_dir: Path) -> None:
     assert get_optional_float(file="demo", key="missing", env=None) is None
 
@@ -227,6 +228,7 @@ def test_get_optional_float_returns_yaml_value(tmp_config_dir: Path) -> None:
 
 # ---------- get_list ----------
 
+
 def test_get_list_from_yaml_list(tmp_config_dir: Path) -> None:
     _write(tmp_config_dir, "demo", "x:\n  - a\n  - b\n  - c\n")
     assert get_list(file="demo", key="x", env=None) == ["a", "b", "c"]
@@ -237,9 +239,7 @@ def test_get_list_from_yaml_csv_string(tmp_config_dir: Path) -> None:
     assert get_list(file="demo", key="x", env=None) == ["a", "b", "c"]
 
 
-def test_get_list_env_csv_override(
-    tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_get_list_env_csv_override(tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _write(tmp_config_dir, "demo", "x:\n  - a\n")
     monkeypatch.setenv("DEMO_LIST", "x,y,z")
     assert get_list(file="demo", key="x", env="DEMO_LIST") == ["x", "y", "z"]
@@ -251,6 +251,7 @@ def test_get_list_raises_when_missing(tmp_config_dir: Path) -> None:
 
 
 # ---------- cached_accessor + reload_all ----------
+
 
 def test_cached_accessor_caches_and_reloads(tmp_config_dir: Path) -> None:
     @cached_accessor
@@ -269,10 +270,12 @@ def test_cached_accessor_caches_and_reloads(tmp_config_dir: Path) -> None:
 
 # ---------- env override warning ----------
 
+
 def test_env_override_emits_warning_once(
     tmp_config_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     import logging
+
     import structlog
 
     structlog.configure(
@@ -295,6 +298,7 @@ def test_env_override_emits_warning_once(
 
 
 # ---------- dotted-key resolution ----------
+
 
 def test_resolve_returns_none_when_path_missing(tmp_config_dir: Path) -> None:
     _write(tmp_config_dir, "demo", "a:\n  b: 1\n")

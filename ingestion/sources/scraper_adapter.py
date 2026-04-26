@@ -7,7 +7,6 @@ file at ``data/fixtures/fallback_scrape_sample.json``.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import structlog

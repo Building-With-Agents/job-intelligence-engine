@@ -104,11 +104,15 @@ def _model_tier_for_skills_extraction(model_name: str) -> str:
     """
     from common.config_loader import get_str
 
-    explicit = get_str(
-        file="llm",
-        key="llm.extraction_model_tier",
-        env="EXTRACTION_MODEL_TIER",
-    ).strip().lower()
+    explicit = (
+        get_str(
+            file="llm",
+            key="llm.extraction_model_tier",
+            env="EXTRACTION_MODEL_TIER",
+        )
+        .strip()
+        .lower()
+    )
     if explicit and explicit in PRICING:
         return explicit
     return resolve_model_tier(model_name)
@@ -127,7 +131,8 @@ def _build_gemini_llm(model: str | None = None) -> Any:
     from common.config_loader import get_str
 
     return ChatGoogleGenerativeAI(
-        model=model or get_str(
+        model=model
+        or get_str(
             file="llm",
             key="llm.gemini_model",
             env="GEMINI_MODEL",

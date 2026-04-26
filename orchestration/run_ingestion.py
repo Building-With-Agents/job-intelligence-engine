@@ -13,7 +13,6 @@ the scheduler; this script does not use it (runs once and exits).
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 

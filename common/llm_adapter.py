@@ -90,6 +90,7 @@ def get_tracer() -> LangfuseTracer | None:
 # their deployment/API names to MODEL_TIER_MAP below.
 # ---------------------------------------------------------------------------
 
+
 def _per_token_from_yaml(yaml_key: str, env_var: str) -> float:
     """Resolve a per-token cost.
 
@@ -517,6 +518,7 @@ def complete(
 
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         from common.config_loader import get_str as _get_str
+
         gemini_model = model or _get_str(
             file="llm",
             key="llm.gemini_model",

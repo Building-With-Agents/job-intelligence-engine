@@ -32,7 +32,6 @@ job_postings agent-added columns (via run_migrations ALTER TABLE; not in Prisma 
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import date, datetime, timezone
 from typing import Literal

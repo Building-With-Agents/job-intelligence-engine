@@ -64,16 +64,20 @@ def _reset_to_pending() -> None:
     engine = get_engine()
     with engine.begin() as conn:
         # Find raw_ids for the 3 jobs
-        ids = conn.execute(
-            text(
-                "SELECT id FROM dbo.raw_ingested_jobs "
-                "WHERE (source, external_id) IN ("
-                + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
-                + ")"
-            ),
-            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
-            | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
-        ).scalars().all()
+        ids = (
+            conn.execute(
+                text(
+                    "SELECT id FROM dbo.raw_ingested_jobs "
+                    "WHERE (source, external_id) IN ("
+                    + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
+                    + ")"
+                ),
+                {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
+                | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
+            )
+            .scalars()
+            .all()
+        )
         if not ids:
             print("ERROR: no raw_ingested_jobs match the 3 (source, external_id) keys.")
             sys.exit(2)
@@ -90,28 +94,21 @@ def _reset_to_pending() -> None:
                 + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
                 + "))"
             ),
-            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
-            | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
+            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)} | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
         )
         conn.execute(
             text(
                 "DELETE FROM dbo.normalized_jobs "
-                "WHERE (source, external_id) IN ("
-                + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
-                + ")"
+                "WHERE (source, external_id) IN (" + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS))) + ")"
             ),
-            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
-            | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
+            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)} | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
         )
         conn.execute(
             text(
                 "DELETE FROM dbo.job_postings "
-                "WHERE (source, external_id) IN ("
-                + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
-                + ")"
+                "WHERE (source, external_id) IN (" + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS))) + ")"
             ),
-            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
-            | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
+            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)} | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
         )
 
         # Reset processing_status to pending and bump to FIFO-front
@@ -138,9 +135,12 @@ def _run_processing_loop() -> int:
     cmd = [
         sys.executable,
         str(_REPO_ROOT / "scripts" / "run_processing_loop.py"),
-        "--batch-size", "3",
-        "--max-iterations", "1",
-        "--delay", "0",
+        "--batch-size",
+        "3",
+        "--max-iterations",
+        "1",
+        "--delay",
+        "0",
     ]
     print(f"\n>>> {' '.join(cmd)}\n")
     return subprocess.run(cmd, env=env, cwd=_REPO_ROOT).returncode
@@ -150,9 +150,10 @@ def _verify() -> bool:
     """Inspect the 9 backfill-equivalent fields and print PASS/FAIL per field."""
     engine = get_engine()
     with engine.connect() as conn:
-        rows = conn.execute(
-            text(
-                """
+        rows = (
+            conn.execute(
+                text(
+                    """
                 SELECT n.id AS norm_id, n.source, n.external_id, n.title,
                        e.id AS extracted_id, e.extraction_failed, e.overall_confidence,
                        jp.job_posting_id,
@@ -167,12 +168,15 @@ def _verify() -> bool:
                   ON jp.source = n.source AND jp.external_id = n.external_id
                 WHERE (n.source, n.external_id) IN (
                 """
-                + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
-                + ") ORDER BY n.id"
-            ),
-            {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
-            | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
-        ).mappings().all()
+                    + ",".join(f"(:s{i}, :e{i})" for i in range(len(SMOKE_JOBS)))
+                    + ") ORDER BY n.id"
+                ),
+                {f"s{i}": s for i, (s, _) in enumerate(SMOKE_JOBS)}
+                | {f"e{i}": e for i, (_, e) in enumerate(SMOKE_JOBS)},
+            )
+            .mappings()
+            .all()
+        )
 
     if len(rows) != 3:
         print(f"FAIL: expected 3 rows, got {len(rows)}")
@@ -183,14 +187,16 @@ def _verify() -> bool:
     for r in rows:
         print(f"--- norm_id={r['norm_id']} ext={r['external_id']!r} title={(r['title'] or '')[:55]!r} ---")
         # Stage gates
-        print(f"  EXTRACT  : extracted_id={r['extracted_id']!s:6} failed={r['extraction_failed']!s:5} confidence={r['overall_confidence']}")
-        if r['extraction_failed'] is not False:
+        print(
+            f"  EXTRACT  : extracted_id={r['extracted_id']!s:6} failed={r['extraction_failed']!s:5} confidence={r['overall_confidence']}"
+        )
+        if r["extraction_failed"] is not False:
             print("    FAIL: extraction did not succeed")
             all_ok = False
-        promoted = r['job_posting_id'] is not None
+        promoted = r["job_posting_id"] is not None
         print(f"  PROMOTE  : job_posting_id={r['job_posting_id']!s}")
         if not promoted:
-            spam_tier = r.get('spam_tier')
+            spam_tier = r.get("spam_tier")
             if spam_tier == "rejected":
                 print(f"    INFO: rejected as spam (tier={spam_tier!r}); promotion intentionally skipped")
             else:
@@ -201,15 +207,17 @@ def _verify() -> bool:
 
         # Field-by-field check vs the 9 backfill-equivalent columns
         checks = [
-            ("quality_score",         r['quality_score']        is not None),
-            ("soc_code",              r['soc_code']             is not None),
-            ("naics_code",            r['naics_code']           is not None),
-            ("employer_profile_id",   r['employer_profile_id']  is not None),
-            ("date_posted",           r['date_posted']          is not None),
-            ("is_remote",             r['is_remote']            is not None),
-            ("seniority_level",       r['seniority_level']      is not None),
-            ("role_classification",   r['role_classification']  is not None
-                                       and r['role_classification'] != 'N/A Not an IT role'),
+            ("quality_score", r["quality_score"] is not None),
+            ("soc_code", r["soc_code"] is not None),
+            ("naics_code", r["naics_code"] is not None),
+            ("employer_profile_id", r["employer_profile_id"] is not None),
+            ("date_posted", r["date_posted"] is not None),
+            ("is_remote", r["is_remote"] is not None),
+            ("seniority_level", r["seniority_level"] is not None),
+            (
+                "role_classification",
+                r["role_classification"] is not None and r["role_classification"] != "N/A Not an IT role",
+            ),
         ]
         salary_present = any(r[c] is not None for c in ("salary_min", "salary_max", "salary_currency", "salary_period"))
         checks.append(("salary_*", salary_present or "tolerated (source has no salary)"))
