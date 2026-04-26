@@ -7,8 +7,11 @@
 
 enrichment:
   # Enable async parallel enrichment. When false, fall back to serial loop.
+  # CURRENTLY SERIAL: the async path can hang in classify_soc /
+  # classify_naics_async asyncio.gather. Flip back to ``true`` once the
+  # in-flight async-fix PR lands.
   # Env override: ENRICHMENT_PARALLEL
-  parallel: true
+  parallel: false
 
   # Max concurrent enrichment jobs in the async path. MUST be <= 5
   # (issue #149: classify_soc and classify_naics_async make sync DB calls

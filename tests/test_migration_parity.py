@@ -56,7 +56,9 @@ PARITY: list[tuple[str, str | None, Any]] = [
      "EMERGENCE_MIN_DISTINCT_EMPLOYERS", 2),
 
     # ---------- enrichment.yaml ----------
-    ("enrichment._config:enrichment_parallel", "ENRICHMENT_PARALLEL", True),
+    # parallel is currently False — async path hangs; flip back to True
+    # once the in-flight enrichment-async fix PR lands.
+    ("enrichment._config:enrichment_parallel", "ENRICHMENT_PARALLEL", False),
     ("enrichment._config:enrichment_concurrency", "ENRICHMENT_CONCURRENCY", 5),
     ("enrichment._config:enrichment_llm_timeout_seconds", "ENRICHMENT_LLM_TIMEOUT", 120),
     ("enrichment._config:dedup_cosine_threshold", "DEDUP_COSINE_THRESHOLD", 0.92),
