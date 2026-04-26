@@ -466,6 +466,13 @@ def _job_postings_promotion_payload(
         "naics_code": enriched.get("naics_code"),
         "soc_code": enriched.get("soc_code"),
         "role_classification": enriched.get("role_classification"),
+        # Forward fields the promotion path COALESCEs into job_postings.
+        # Without these, seniority_level + employer_profile_id stay NULL and
+        # the backfill scripts have to plug the gap (issues #281, #282).
+        "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
+        "seniority": enriched.get("seniority"),
+        "employer_metadata": enriched.get("employer_metadata"),
+        "company_id": enriched.get("company_id"),
     }
 
 
@@ -735,6 +742,29 @@ class EnrichmentAgent(BaseAgent):
                         )
                         enriched["quality_score"] = q_res.quality_score
                         enriched["quality_components"] = q_res.components
+
+                        # Classify role + seniority (closes #282/#283 — was previously
+                        # filled only by scripts/backfill_qna_columns.py post-hoc).
+                        try:
+                            tech_refs, sector_refs = self._ensure_refs()
+                            role_cls, seniority_cls = classify_job(
+                                posting.get("title") or "",
+                                posting.get("description"),
+                                extraction,
+                                tech_refs,
+                                sector_refs,
+                                is_internship=bool(posting.get("is_internship", False)),
+                            )
+                            if role_cls and not enriched.get("role_classification"):
+                                enriched["role_classification"] = role_cls
+                            if seniority_cls and not enriched.get("seniority"):
+                                enriched["seniority"] = seniority_cls
+                        except Exception as cls_exc:  # noqa: BLE001
+                            log.warning(
+                                "enrichment_batch_classify_job_failed",
+                                normalized_job_id=posting.get("normalized_job_id"),
+                                error=str(cls_exc),
+                            )
 
                         enriched_count += 1
 
