@@ -1,19 +1,19 @@
 {
-  "exportedAt": "2026-04-27T07:24:39.949113Z",
+  "exportedAt": "2026-04-27T19:16:50.524334Z",
   "scope": "agent",
   "source": "postgresql",
   "schema": "dbo",
   "counts": {
-    "raw_ingested_jobs": 5230,
-    "job_ingestion_runs": 1312,
-    "normalized_jobs": 4794,
+    "raw_ingested_jobs": 5238,
+    "job_ingestion_runs": 1315,
+    "normalized_jobs": 4802,
     "normalization_quarantine": 16,
-    "extracted_intelligence": 4794,
-    "employer_profiles": 1738,
-    "companies": 1835,
+    "extracted_intelligence": 4802,
+    "employer_profiles": 1739,
+    "companies": 1836,
     "naics": 2125,
-    "job_postings": 4241,
-    "llm_audit_log": 40843
+    "job_postings": 4246,
+    "llm_audit_log": 40936
   },
   "skipped": []
 }
