@@ -152,7 +152,13 @@ def _build_dataset_item(item: dict) -> tuple[dict, dict, dict]:
         # expected_output separately.
         "ideal_answer_summary": item["ideal_answer_summary"],
     }
-    for k in ("data_backed", "expected_min_rows", "zero_rows_is_correct", "refusal_appropriate", "expected_confidence_range"):
+    for k in (
+        "data_backed",
+        "expected_min_rows",
+        "zero_rows_is_correct",
+        "refusal_appropriate",
+        "expected_confidence_range",
+    ):
         if k in item:
             metadata[k] = item[k]
 

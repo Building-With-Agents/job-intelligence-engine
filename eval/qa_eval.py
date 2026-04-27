@@ -84,9 +84,7 @@ def _validate_optional_golden_fields(item: dict[str, Any], idx: int) -> None:
             float(ecr[0])
             float(ecr[1])
         except (TypeError, ValueError) as e:
-            raise ValueError(
-                f"Item[{idx}] {bid!r}: expected_confidence_range bounds must be numbers"
-            ) from e
+            raise ValueError(f"Item[{idx}] {bid!r}: expected_confidence_range bounds must be numbers") from e
 
 
 def load_golden_questions(path: Path) -> list[dict[str, Any]]:
@@ -471,9 +469,7 @@ def print_console_summary(
     cie_m, cie_s, cie_e = _metric_mean(rows, "confidence_in_expected_range")
     print("\n=== confidence_in_expected_range (optional golden [lo,hi]; not in four-metric mean) ===")
     if cie_m is not None:
-        print(
-            f"  mean: {cie_m:.4f}  (n_scored={cie_s}/{n} excluded (no range or infra)={cie_e})"
-        )
+        print(f"  mean: {cie_m:.4f}  (n_scored={cie_s}/{n} excluded (no range or infra)={cie_e})")
     else:
         print("  (no items with expected_confidence_range)")
 
@@ -587,7 +583,13 @@ def _build_local_experiment_data(questions: list[dict[str, Any]]) -> list[dict[s
             "difficulty": row["difficulty"],
             "ideal_answer_summary": row["ideal_answer_summary"],
         }
-        for k in ("data_backed", "expected_min_rows", "zero_rows_is_correct", "refusal_appropriate", "expected_confidence_range"):
+        for k in (
+            "data_backed",
+            "expected_min_rows",
+            "zero_rows_is_correct",
+            "refusal_appropriate",
+            "expected_confidence_range",
+        ):
             if k in row:
                 meta[k] = row[k]
         data.append(
@@ -696,9 +698,7 @@ def main(argv: list[str] | None = None) -> int:
                 for k in ("intent_accuracy", "evidence_citation", "confidence_self_consistency")
             }
             cr_mean, _, cie_n = _metric_mean(rows, "confidence_in_expected_range")
-            payload_local["mean_confidence_in_expected_range"] = (
-                round(cr_mean, 6) if cr_mean is not None else None
-            )
+            payload_local["mean_confidence_in_expected_range"] = round(cr_mean, 6) if cr_mean is not None else None
             payload_local["confidence_in_expected_range_n"] = cie_n
             payload_local["run_ece"] = None
             payload_local["answerability_summary"] = _local_answerability_summary(rows)

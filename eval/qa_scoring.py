@@ -455,8 +455,14 @@ def score_correct_refusal(
         return None, "skipped: missing expected_intent in metadata"
     if refusal_appropriate is not None:
         if refusal_appropriate:
-            return (1.0, "expected refusal, got refusal") if refused else (0.0, "expected refusal, got committed answer")
-        return (0.0, "expected committed answer, got refusal") if refused else (1.0, "expected committed answer, got answer")
+            return (
+                (1.0, "expected refusal, got refusal") if refused else (0.0, "expected refusal, got committed answer")
+            )
+        return (
+            (0.0, "expected committed answer, got refusal")
+            if refused
+            else (1.0, "expected committed answer, got answer")
+        )
     if refused:
         return 0.0, "intent-only: default assumes committed answer (set refusal_appropriate in golden to override)"
     return 1.0, "intent-only: committed answer (default)"
