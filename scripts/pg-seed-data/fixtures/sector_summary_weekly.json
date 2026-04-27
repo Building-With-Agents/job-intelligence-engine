@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "id": 1,
+    "week_start": "2026-04-20",
+    "sector": "Information Technology",
+    "posting_count": 34,
+    "employer_count": 15,
+    "avg_salary": 90000.0,
+    "top_skills": [
+      "c++",
+      "cross-functional collaboration",
+      "risk assessment",
+      "linux",
+      "software development",
+      "authentication",
+      "authorization",
+      "cybersecurity",
+      "encryption",
+      "fda regulatory compliance"
+    ],
+    "computed_at": "2026-04-27T19:16:11.811843+00:00"
+  },
+  {
+    "id": 2,
+    "week_start": "2026-04-20",
+    "sector": "Other",
+    "posting_count": 56,
+    "employer_count": 38,
+    "avg_salary": 70000.0,
+    "top_skills": [
+      "cross-functional collaboration",
+      "security clearance",
+      "artificial intelligence",
+      "code review",
+      "communication",
+      "mentoring",
+      "problem solving",
+      "python",
+      "rest apis",
+      "cybersecurity"
+    ],
+    "computed_at": "2026-04-27T19:16:11.811843+00:00"
+  }
+]

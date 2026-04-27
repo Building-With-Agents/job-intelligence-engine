@@ -132,3 +132,28 @@ skill_demand_weekly → extracted_intelligence → job_postings → companies �
 8. Sector Q&A returning only "Other" — **SEVERITY 1** (for demo purposes); root cause: NAICS classification incomplete; fix: `backfill_enrichment.py` then `refresh_aggregates.py`.
 
 Owner: Fatima + Nestor (Pair B), Week 9 Exercise 9.4
+
+---
+
+### Update Notes — 2026-04-27 (post-#280 / post-#285 audit re-run)
+
+The original findings above remain the authoritative snapshot of the 2026-04-22 dev DB state. The pull quotes below capture which findings the weekend's config refactor (PR #280) and dev-DB re-export (PR #285) closed, which are still outstanding, and what regressed. They do not modify the original analysis.
+
+> **Recommendation #4 — `employer_profile_id` backfill: ✅ FULLY RESOLVED by PR #280.**
+> The post-#280 dev DB shows 100% join success on `job_postings → employer_profiles` (4,246 source rows, 0 orphans) versus 0% / 2,696 orphans at the time of writing. PR #280 added a SQL backfill, populated `employer_profile_id` natively in the live enrichment loop, and brought the dev DB to 100% coverage. Pair B's drill-down audit was the structural finding that made this fix actionable.
+
+> **Recommendation #5 — 1,317 `normalized_jobs` orphans: ⚠️ PARTIALLY RESOLVED.**
+> Re-running the audit on the post-#280 dev DB shows the orphan count dropped from 1,317 (58% join success) to **469** (90.2% join success). PR #280's `company_id` UUID case-mismatch fix (#284) closed roughly two-thirds of the orphans, but 469 residual orphans on the `normalized_jobs → job_postings` (`source`/`external_id`) join remain. Tracked as [JIE #289](https://github.com/Building-With-Agents/job-intelligence-engine/issues/289). Pair B's `scripts/employer_drill_down_audit.py` is the issue's reproducer.
+
+> **Recommendation #6 — sector connection / NAICS classification: ⚠️ FIXTURE-LEVEL FIX APPLIED; underlying NAICS depth still limited.**
+> Pair B's audit recorded 4 rows in `sector_summary_weekly` on 2026-04-22; the post-#285 dev DB had **0 rows** before this PR. Running `scripts/refresh_aggregates.py` against the post-#280 dev DB populated `sector_summary_weekly` with 2 rows and `geo_demand_weekly` with 3 rows for the 2026-04-20 target week. Test 4 of the drill-down audit now joins successfully (returns 2 rows for Python: "Information Technology" and "Other"), reducing SEVERITY 1 gap count from 3 to 1. The remaining gap is a "very limited overlap" warning (only 2 sector rows) — the underlying NAICS classification depth is still thin and most postings classify as "Other," which is the broader concern Pair B flagged in their original Recommendation #6. The fixture-export gap was tracked as [JIE #290](https://github.com/Building-With-Agents/job-intelligence-engine/issues/290) and is closed by this PR's fixture re-export.
+
+> **Recommendation #1 — `analytics_minimum_data_guard_no_created_column`: ✅ APPEARS RESOLVED by PR #280.**
+> A clean run of `scripts/refresh_aggregates.py` against the post-#280 dev DB completed all 6 aggregate tables successfully (`skill_demand_weekly`, `tool_demand_weekly`, `skill_velocity`, `skill_co_occurrence`, `sector_summary_weekly`, `geo_demand_weekly`) with **0 failures** and no `analytics_minimum_data_guard_no_created_column` warning surfacing in the structlog output. The column-name alignment Pair B flagged (`createdat` vs `created_column`) appears to have been corrected as part of the #280 config + enrichment refactor, though no explicit commit message in #280 calls it out. If this warning resurfaces in future runs, file a follow-up issue.
+
+> **Recommendations #2 (Borderplex in `_route_trend`), #3 (temporal periods), #7 (`company_size`): UNCHANGED.**
+> These were not in scope for #280 or #285. Carry forward as written into Week 10 prompt-iteration work.
+
+> **Audit script Windows-compatibility note.** `scripts/employer_drill_down_audit.py` uses unicode arrows (`←`, `→`) in print statements that fail under Windows' default cp1252 encoding. Workaround: prepend `PYTHONIOENCODING=utf-8` to the run command. Worth a small follow-up to wrap the print statements or set the encoding explicitly inside the script for cross-platform portability.
+
+Post-merge audit run + addendum authored 2026-04-27 by Gary (instructor) using Pair B's audit script as the verification tool.
