@@ -11,10 +11,12 @@ from eval.qa_scoring import (
     composite_score,
     compute_item_scores,
     confusion_rows,
-    score_confidence_flags,
+    run_subcomposites_and_gates,
+    score_confidence_self_consistency,
     score_evidence_citation,
     score_intent_accuracy,
     score_latency_sla,
+    subcomposites_from_means,
 )
 
 
@@ -26,13 +28,14 @@ def test_intent_exact_match() -> None:
     assert s == 1.0
 
 
-def test_intent_related() -> None:
+def test_intent_related_counts_as_mismatch() -> None:
+    """JIE #261: no 0.5 partial credit; use confusion_rows for related-intent analysis."""
     s, c = score_intent_accuracy(
         expected_intent="geographic",
         classified_intent="comparison",
     )
-    assert s == 0.5
-    assert "related" in c
+    assert s == 0.0
+    assert "mismatch" in c
 
 
 def test_intent_mismatch() -> None:
@@ -103,6 +106,40 @@ def test_evidence_empty_answer_excluded() -> None:
     assert "excluded" in c
 
 
+def test_evidence_refusal_data_backed_strong_penalty() -> None:
+    """JIE #260: wrongful refusal on data-backed items gets rubric scaled ~0.35×, not a length floor."""
+    s, c = score_evidence_citation(
+        answer="I cannot provide SQL results for this geographic query at this time.",
+        evidence=[],
+        must_include=["el_paso_subregion_filter_confirmed"],
+        must_not_include=[],
+        refused=True,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+        intent_is_data_backed=True,
+        expected_intent="geographic",
+    )
+    assert s is not None and s <= 0.35
+    assert "0.35" in c or "rubric" in c.lower()
+
+
+def test_evidence_refusal_intent_only_uses_rubric_not_length() -> None:
+    s, c = score_evidence_citation(
+        answer="Short",
+        evidence=[],
+        must_include=[],
+        must_not_include=[],
+        refused=True,
+        sql_execution_error_detail=None,
+        pipeline_error=None,
+        intent_is_data_backed=False,
+        expected_intent="trend",
+    )
+    assert s is not None
+    assert s >= 0.7
+    assert "intent-only refusal" in c
+
+
 def test_evidence_committed_no_evidence_stays_zero() -> None:
     """A non-empty, non-refused answer with no evidence rows is a real quality failure (0.0)."""
     s, c = score_evidence_citation(
@@ -119,14 +156,26 @@ def test_evidence_committed_no_evidence_stays_zero() -> None:
 
 
 def test_confidence_calibration() -> None:
-    s, _ = score_confidence_flags(
+    s, _ = score_confidence_self_consistency(
         confidence=0.5,
         confidence_flagged_low=True,
         confidence_explanation="Low volume in cohort; interpret with caution.",
         volume_flagged_low=False,
         volume_warning=None,
     )
-    assert s >= 0.8
+    assert s >= 0.9
+
+
+def test_confidence_miscalibration_is_not_perfect() -> None:
+    """JIE #267: wrong flag vs low numeric confidence (Case B) must not be 1.0."""
+    s, _ = score_confidence_self_consistency(
+        confidence=0.15,
+        confidence_flagged_low=False,
+        confidence_explanation=None,
+        volume_flagged_low=False,
+        volume_warning=None,
+    )
+    assert s < 0.6
 
 
 def test_latency_at_sla() -> None:
@@ -141,7 +190,13 @@ def test_latency_above_sla() -> None:
 
 def test_compute_failure_content_excluded_latency_computed() -> None:
     """On pipeline failure, content metrics are None (excluded); latency is still computed (JIE #263)."""
-    g = {"id": "gq-001", "intent": "geographic", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-001",
+        "question": "What is hiring like in El Paso?",
+        "intent": "geographic",
+        "must_include": [],
+        "must_not_include": [],
+    }
     out = compute_item_scores(
         golden=g,
         response=None,
@@ -151,17 +206,25 @@ def test_compute_failure_content_excluded_latency_computed() -> None:
     )
     assert out.intent_accuracy is None
     assert out.evidence_citation is None
-    assert out.confidence_flags is None
+    assert out.confidence_self_consistency is None
     assert out.latency_sla > 0.0
-    # geographic is data-backed; answerability stays 0.0 on infra failure (JIE #269 will fix).
-    assert out.answerability == 0.0
+    # geographic is data-backed; answerability is excluded on infra failure (JIE #269).
+    assert out.answerability is None
+    assert out.correct_refusal is None
     assert "excluded" in out.comments["intent_accuracy"].lower()
     assert "excluded" in out.comments["evidence_citation"].lower()
+    assert "excluded" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_compute_sql_error_excludes_evidence_citation_only() -> None:
     """sql_execution_error_detail excludes evidence_citation but leaves intent_accuracy scorable."""
-    g = {"id": "gq-sql", "intent": "employer", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-sql",
+        "question": "List employers in the region",
+        "intent": "employer",
+        "must_include": [],
+        "must_not_include": [],
+    }
     resp = {
         "answer": "Some answer here.",
         "evidence": [],
@@ -184,11 +247,17 @@ def test_compute_sql_error_excludes_evidence_citation_only() -> None:
     )
     assert out.intent_accuracy == 1.0, "intent classification is unaffected by SQL error"
     assert out.evidence_citation is None, "SQL error excludes evidence_citation"
-    assert out.confidence_flags is not None, "confidence calibration is unaffected by SQL error"
+    assert out.confidence_self_consistency is not None, "confidence calibration is unaffected by SQL error"
 
 
 def test_pipeline_error_skips_answerability_for_intent_only() -> None:
-    g = {"id": "gq-001b", "intent": "trend", "must_include": [], "must_not_include": []}
+    g = {
+        "id": "gq-001b",
+        "question": "Hiring trend question",
+        "intent": "trend",
+        "must_include": [],
+        "must_not_include": [],
+    }
     out = compute_item_scores(
         golden=g,
         response=None,
@@ -197,11 +266,14 @@ def test_pipeline_error_skips_answerability_for_intent_only() -> None:
         sla_seconds=45.0,
     )
     assert out.answerability is None
+    assert out.correct_refusal is None
+    assert "excluded" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_compute_happy_path() -> None:
     g = {
         "id": "gq-002",
+        "question": "El Paso subregional data",
         "intent": "geographic",
         "must_include": ["el_paso_subregion_filter_confirmed"],
         "must_not_include": [],
@@ -228,14 +300,16 @@ def test_compute_happy_path() -> None:
     )
     assert out.intent_accuracy == 1.0
     assert out.evidence_citation > 0.0
-    assert out.confidence_flags > 0.0
+    assert out.confidence_self_consistency > 0.0
     assert out.latency_sla == 1.0
     assert out.answerability == 1.0
+    assert out.correct_refusal is None
 
 
 def test_answerability_data_backed_zero_rows() -> None:
     g = {
         "id": "gq-00z",
+        "question": "Show employers",
         "intent": "employer",
         "must_include": [],
         "must_not_include": [],
@@ -266,6 +340,7 @@ def test_answerability_data_backed_zero_rows() -> None:
 def test_answerability_intent_only_skipped() -> None:
     g = {
         "id": "gq-tr",
+        "question": "Narrative trend in roles",
         "intent": "trend",
         "must_include": [],
         "must_not_include": [],
@@ -293,24 +368,30 @@ def test_answerability_intent_only_skipped() -> None:
     )
     assert out.answerability is None
     assert "skipped" in out.comments.get("answerability", "").lower()
+    assert out.correct_refusal == 0.0
+    assert "default" in out.comments.get("correct_refusal", "").lower()
 
 
 def test_composite_excludes_answerability() -> None:
     base = QAItemScores(
         intent_accuracy=0.5,
         evidence_citation=0.5,
-        confidence_flags=0.5,
+        confidence_self_consistency=0.5,
+        confidence_in_expected_range=None,
         latency_sla=0.5,
         answerability=0.0,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(base) == 0.5
     hi = QAItemScores(
         intent_accuracy=0.0,
         evidence_citation=0.0,
-        confidence_flags=0.0,
+        confidence_self_consistency=0.0,
+        confidence_in_expected_range=None,
         latency_sla=0.0,
         answerability=1.0,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(hi) == 0.0
@@ -321,9 +402,11 @@ def test_composite_filters_none_uses_latency_anchor() -> None:
     scores = QAItemScores(
         intent_accuracy=None,
         evidence_citation=None,
-        confidence_flags=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     assert composite_score(scores) == 1.0
@@ -334,9 +417,11 @@ def test_composite_filters_none_partial() -> None:
     scores = QAItemScores(
         intent_accuracy=1.0,
         evidence_citation=None,
-        confidence_flags=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     # Only intent_accuracy and latency_sla are scorable → mean((1.0, 1.0)) = 1.0
@@ -345,9 +430,11 @@ def test_composite_filters_none_partial() -> None:
     mixed = QAItemScores(
         intent_accuracy=0.0,
         evidence_citation=None,
-        confidence_flags=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={},
     )
     # mean((0.0, 1.0)) = 0.5
@@ -363,29 +450,37 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
     infra_fail = QAItemScores(
         intent_accuracy=None,
         evidence_citation=None,
-        confidence_flags=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
         latency_sla=0.8,
         answerability=None,
+        correct_refusal=None,
         comments={
             "intent_accuracy": "excluded: connection reset",
             "evidence_citation": "excluded: connection reset",
-            "confidence_flags": "excluded: connection reset",
+            "confidence_self_consistency": "excluded: connection reset",
+            "confidence_in_expected_range": "excluded: connection reset",
             "latency_sla": "latency computed",
             "answerability": "skipped: intent not data-backed",
+            "correct_refusal": "excluded",
         },
     )
     good = QAItemScores(
         intent_accuracy=1.0,
         evidence_citation=0.9,
-        confidence_flags=0.85,
+        confidence_self_consistency=0.85,
+        confidence_in_expected_range=None,
         latency_sla=1.0,
         answerability=None,
+        correct_refusal=None,
         comments={
             "intent_accuracy": "intent matches",
             "evidence_citation": "overlap heuristic",
-            "confidence_flags": "calibration ok",
+            "confidence_self_consistency": "calibration ok",
+            "confidence_in_expected_range": "no range",
             "latency_sla": "within SLA",
             "answerability": "skipped",
+            "correct_refusal": "N/A",
         },
     )
     rows = [("gq-001", infra_fail, "connection reset"), ("gq-002", good, None)]
@@ -397,6 +492,27 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
     assert " — " in out
     # Non-None metrics still render as float strings
     assert "1.00" in out or "0.90" in out
+
+
+def test_subcomposites_geometric_not_crashing_on_nones() -> None:
+    """JIE #268: overall is None if any of the four sub-ingredients is None."""
+    s = subcomposites_from_means(
+        evidence_citation=1.0,
+        intent_accuracy=1.0,
+        latency_sla=1.0,
+        answerability=None,
+        correct_refusal=None,
+        confidence_self_consistency=1.0,
+        confidence_in_expected_range=None,
+    )
+    assert s["pipeline_health_composite"] == 1.0
+    out = s["overall_geometric_composite"]
+    assert out is not None
+    assert abs(out - 1.0) < 1e-6
+
+
+def test_subcomposites_empty_rows() -> None:
+    assert run_subcomposites_and_gates([])["gate_message"] == "no items"
 
 
 def test_confusion_rows() -> None:
