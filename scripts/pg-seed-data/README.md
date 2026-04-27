@@ -2,6 +2,26 @@
 
 Seed a fresh PostgreSQL container with reference data for the watechcoalition platform.
 
+## Prerequisites: Git LFS
+
+Five fixtures (`extracted_intelligence.json`, `raw_ingested_jobs.json`,
+`job_postings.json`, `normalized_jobs.json`, `llm_audit_log.json`) are stored
+via [Git LFS](https://git-lfs.com/) because they exceed GitHub's 50 MB
+recommendation. **Install Git LFS once before cloning** or your seed will
+silently load empty arrays from 133-byte pointer files:
+
+```bash
+# Install (one-time, system-level)
+git lfs install                     # macOS / Linux (with git-lfs already on PATH)
+# Windows: included with Git for Windows; if missing, run: winget install GitHub.GitLFS
+
+# If you already cloned without LFS, fetch the real files:
+git lfs pull
+```
+
+Verify with `ls -la scripts/pg-seed-data/fixtures/extracted_intelligence.json` —
+you should see ~120 MB, not ~133 bytes.
+
 ## Quick Start (Junior Devs)
 
 ```bash

@@ -46,6 +46,14 @@ Starts PostgreSQL (app database), Redis, and Langfuse (6 containers for observab
 
 ## Seed Database
 
+> **Requires Git LFS.** Five seed fixtures (>10 MB each) ride on Git LFS. If
+> you haven't already, install it once per machine — Windows: bundled with
+> Git for Windows, or `winget install GitHub.GitLFS`; macOS: `brew install
+> git-lfs`; Linux: `apt install git-lfs` — then run `git lfs install`. If you
+> already cloned, run `git lfs pull` to fetch the real files. Without LFS the
+> seeder silently loads empty arrays from 133-byte pointer files. Details:
+> [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-git-lfs).
+
 ```bash
 # Run migrations (creates agent-managed tables)
 python scripts/db_check.py migrate
