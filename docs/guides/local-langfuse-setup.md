@@ -63,6 +63,10 @@ LLM_PROVIDER=azure_openai
 
 If your local PostgreSQL is empty, seed it:
 
+> **Requires Git LFS** — see [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
+> for the one-time install. Without LFS the seeder loads empty arrays from
+> pointer files for the five large fixtures.
+
 ```bash
 python scripts/pg-seed-data/seed_pg_database.py
 ```

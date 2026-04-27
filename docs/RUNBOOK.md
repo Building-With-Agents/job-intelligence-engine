@@ -555,6 +555,11 @@ export new fixtures and share them via `export_fixtures.py`.
 > **Only run this on your personal local Docker environment.** Never run against the
 > admin source-of-truth database. After a volume reset, re-seed from committed fixtures:
 > `python scripts/pg-seed-data/seed_pg_database.py`
+>
+> **Requires Git LFS.** Five seed fixtures are LFS-tracked. Run `git lfs pull`
+> before reseeding if you haven't already. See
+> [`scripts/pg-seed-data/README.md`](../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
+> for the one-time install.
 
 ```bash
 docker compose down -v
