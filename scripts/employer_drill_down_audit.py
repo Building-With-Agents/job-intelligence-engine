@@ -44,6 +44,7 @@ _GAP_THRESHOLD = 5  # fewer than this many rows triggers SEVERITY 1
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _q(sql: str) -> list[Any]:
     """Execute a SELECT and return all rows."""
     with get_engine().connect() as conn:
@@ -94,15 +95,13 @@ def _register_gap(test: str, table: str, issue: str, row_count: int | None = Non
 # TEST 1 — Join Path Integrity (row count trace)
 # ---------------------------------------------------------------------------
 
+
 def test1_join_path_integrity() -> None:
     _header("TEST 1 — Join Path Integrity (row count trace)")
     print("  Tracing 'Data Engineer' rows hop-by-hop through the chain.\n")
 
     # Step A: skill_demand_weekly — baseline rows matching 'data engineer'
-    count_sdw = _scalar(
-        "SELECT COUNT(*) FROM dbo.skill_demand_weekly "
-        "WHERE skill_label ILIKE '%data engineer%'"
-    )
+    count_sdw = _scalar("SELECT COUNT(*) FROM dbo.skill_demand_weekly WHERE skill_label ILIKE '%data engineer%'")
 
     # Step B: extracted_intelligence rows where skills JSONB contains 'Data Engineer'
     count_ei = _scalar(
@@ -144,9 +143,9 @@ def test1_join_path_integrity() -> None:
 
     steps = [
         ("skill_demand_weekly (data engineer)", count_sdw),
-        ("extracted_intelligence",              count_ei),
-        ("job_postings",                        count_jp),
-        ("employer_profiles",                   count_ep),
+        ("extracted_intelligence", count_ei),
+        ("job_postings", count_jp),
+        ("employer_profiles", count_ep),
     ]
 
     # Find largest absolute drop
@@ -190,6 +189,7 @@ def test1_join_path_integrity() -> None:
 # ---------------------------------------------------------------------------
 # TEST 2 — Integrity Audit (success rate, orphan count, fan-out ratio)
 # ---------------------------------------------------------------------------
+
 
 def test2_integrity_audit() -> None:
     _header("TEST 2 — Integrity Audit (success rate / orphan count / fan-out ratio)")
@@ -275,15 +275,24 @@ def test2_integrity_audit() -> None:
     hops = [
         (
             "extracted_intelligence → normalized_jobs",
-            ei_total, ei_joined, ei_orphans, ei_fanout,
+            ei_total,
+            ei_joined,
+            ei_orphans,
+            ei_fanout,
         ),
         (
             "normalized_jobs → job_postings",
-            nj_total, nj_joined, nj_orphans, nj_fanout,
+            nj_total,
+            nj_joined,
+            nj_orphans,
+            nj_fanout,
         ),
         (
             "job_postings → employer_profiles",
-            jp_total, jp_joined, jp_orphans, jp_fanout,
+            jp_total,
+            jp_joined,
+            jp_orphans,
+            jp_fanout,
         ),
     ]
 
@@ -324,6 +333,7 @@ def test2_integrity_audit() -> None:
 # ---------------------------------------------------------------------------
 # TEST 3 — Employer Profile Health Check
 # ---------------------------------------------------------------------------
+
 
 def test3_employer_profile_health() -> None:
     _header("TEST 3 — Employer Profile Health Check")
@@ -380,6 +390,7 @@ def test3_employer_profile_health() -> None:
 # ---------------------------------------------------------------------------
 # TEST 4 — Sector Connection Test (skill_demand_weekly → sector_summary_weekly)
 # ---------------------------------------------------------------------------
+
 
 def test4_sector_connection() -> None:
     _header("TEST 4 — Sector Connection Test (Python: skill_demand_weekly → sector_summary_weekly)")
@@ -466,10 +477,7 @@ def test4_sector_connection() -> None:
         )
         print("  " + "-" * 85)
         for row in rows[:5]:
-            print(
-                f"  {str(row[0]):<16} {str(row[1]):<30} {str(row[2]):<12} "
-                f"{str(row[3]):>11} {str(row[4]):>12}"
-            )
+            print(f"  {str(row[0]):<16} {str(row[1]):<30} {str(row[2]):<12} {str(row[3]):>11} {str(row[4]):>12}")
         if row_count < _GAP_THRESHOLD:
             _register_gap(
                 test="Test 4 — Sector Connection Test",
@@ -488,6 +496,7 @@ def test4_sector_connection() -> None:
 # TEST 5 — Gap Report Generator
 # ---------------------------------------------------------------------------
 
+
 def test5_gap_report() -> None:
     _header("TEST 5 — Gap Report Generator")
 
@@ -500,9 +509,7 @@ def test5_gap_report() -> None:
     _footer()
 
     for gap in _gaps:
-        row_info = (
-            f"  Rows returned : {gap['row_count']}\n" if gap["row_count"] is not None else ""
-        )
+        row_info = f"  Rows returned : {gap['row_count']}\n" if gap["row_count"] is not None else ""
         print(_DIV)
         print("  SEVERITY 1 — GAP DETECTED")
         print(_DIV)
@@ -518,6 +525,7 @@ def test5_gap_report() -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     print(_DIV)
