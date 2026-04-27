@@ -27,6 +27,8 @@ from sqlalchemy.orm import Session
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
+from analytics.query_engine.curriculum_path import CurriculumInputs, build_curriculum_inputs
+from analytics.query_engine.curriculum_synthesis import synthesize_curriculum_outline
 from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
@@ -489,6 +491,105 @@ def _synthesis_to_api(
     )
 
 
+def _extract_recommended_follow_up_section(markdown: str) -> str:
+    text = markdown or ""
+    m = re.search(
+        r"(?msi)^\s*##\s+recommended follow-up\s*\r?\n(.*?)(?=^\s*##\s+)",
+        text,
+    )
+    if not m:
+        m = re.search(r"(?msi)^\s*##\s+recommended follow-up\s*\r?\n(.*)\Z", text)
+    return (m.group(1).strip() if m else "")
+
+
+def _curriculum_to_analytics_response(
+    *,
+    ins: CurriculumInputs,
+    synthesis: dict[str, Any],
+    intent_label: str,
+    classification_confidence: float,
+) -> AnalyticsQueryResponse:
+    """Shape curriculum synthesis for :class:`AnalyticsQueryResponse` (API parity with other intents)."""
+    answer = (synthesis.get("answer") or "").strip()
+    is_suff = bool(synthesis.get("is_sufficient"))
+    modules: list[str] = list(synthesis.get("modules") or [])
+
+    if is_suff and modules:
+        out_conf = 0.9
+    elif is_suff:
+        out_conf = 0.4
+    else:
+        out_conf = 0.0
+
+    follow_text = _extract_recommended_follow_up_section(answer)
+    follow_up: list[str] = [follow_text] if follow_text else []
+
+    evidence: list[EvidenceItem] = [
+        EvidenceItem(
+            title="skill_demand_weekly",
+            source="dbo.skill_demand_weekly",
+            snippet=(
+                f"Top skills for curriculum inputs: {len(ins.top_skills)} skills "
+                f"(demand week aligned in period; see data_flags.top_skills={ins.data_flags.get('top_skills', True)})."
+            ),
+            supporting_count=len(ins.top_skills) or None,
+            time_period=ins.period,
+        ),
+        EvidenceItem(
+            title="skill_velocity",
+            source="dbo.skill_velocity",
+            snippet=(
+                f"Rising skills: {len(ins.rising_skills)} rows; "
+                f"data_flags.rising_skills={ins.data_flags.get('rising_skills', True)}."
+            ),
+            supporting_count=len(ins.rising_skills) or None,
+            time_period=ins.period,
+        ),
+        EvidenceItem(
+            title="extracted_intelligence",
+            source="dbo.extracted_intelligence",
+            snippet=(
+                f"Tool/responsibility co-occurrence pairs: {len(ins.co_occurring)}; "
+                f"data_flags.co_occurring={ins.data_flags.get('co_occurring', True)}."
+            ),
+            supporting_count=len(ins.co_occurring) or None,
+            time_period=ins.period,
+        ),
+        EvidenceItem(
+            title="employer_profiles",
+            source="dbo.employer_profiles",
+            snippet=(
+                f"Top employers: {len(ins.top_employers)}; "
+                f"data_flags.top_employers={ins.data_flags.get('top_employers', True)}."
+            ),
+            supporting_count=len(ins.top_employers) or None,
+            time_period=ins.period,
+        ),
+    ]
+    ic = max(0.0, min(1.0, float(classification_confidence)))
+    return AnalyticsQueryResponse(
+        answer=answer or "No answer could be generated for this question.",
+        evidence=evidence,
+        confidence=float(out_conf),
+        classified_intent=str(intent_label or "curriculum"),
+        intent_classification_confidence=ic,
+        periods_described=ins.period,
+        confidence_flagged_low=bool(out_conf < 0.6),
+        confidence_explanation=None,
+        volume_flagged_low=False,
+        volume_warning=None,
+        refused=False,
+        refusal_message=None,
+        sql_execution_error_detail=None,
+        follow_up_questions=follow_up,
+        sql_generated="curriculum_path (multi-table ORM)",
+        cost_usd=0.0,
+        total_cost_usd=0.0,
+        cost_breakdown_usd={},
+        row_count_returned=max(0, int(len(ins.top_skills))),
+    )
+
+
 def run_analytics_qna(
     session: Session,
     question: str,
@@ -586,6 +687,51 @@ def run_analytics_qna(
             check_region_entitled(taccess, q, ent)
         else:
             check_region_entitled(taccess, q, {})
+
+        if intent_label == "curriculum":
+            role_names_for_ci: list[str] | None = None
+            if isinstance(classification.get("extracted_entities"), dict):
+                rn = classification["extracted_entities"].get("role_names")
+                if isinstance(rn, list):
+                    role_names_for_ci = [str(x) for x in rn if x]
+            ins = build_curriculum_inputs(session, q, role_names=role_names_for_ci)
+            syn_out = synthesize_curriculum_outline(ins, correlation_id=cid)
+            api = _curriculum_to_analytics_response(
+                ins=ins,
+                synthesis=syn_out,
+                intent_label=intent_label,
+                classification_confidence=conf,
+            )
+            audit_log.insert_orchestration_audit(
+                session,
+                correlation_id=cid,
+                endpoint=endpoint,
+                question=q,
+                sql_generated="curriculum_path (multi-table ORM)",
+                confidence=float(api.confidence),
+                success=True,
+                error_code=None,
+                payload={
+                    **payload_audit,
+                    "row_count": len(ins.top_skills),
+                    "citations": len(api.evidence),
+                    "refused": False,
+                    "curriculum_is_sufficient": bool(syn_out.get("is_sufficient")),
+                    "curriculum_modules": len(syn_out.get("modules") or []),
+                },
+                tenant_id=taccess.tenant_id,
+            )
+            if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:
+                append_conversation_turn(
+                    session,
+                    conversation_id=laborpulse_conversation_id.strip(),
+                    tenant_id=tid,
+                    user_email=uem,
+                    question=q,
+                    answer=api.answer,
+                    intent_label=intent_label,
+                )
+            return api
 
         router = QueryRouter()
         route_result = router.route(classification, session, tenant=taccess)

@@ -1,0 +1,213 @@
+"""Curriculum outline synthesis from :class:`CurriculumInputs` (Week 10).
+
+Calls :func:`common.llm_adapter.complete` with ``role="synthesis"`` (``LLM_SYNTHESIS`` /
+``chat-gpt41`` by default). Skips the LLM when there is no resolved role or no
+top-skill demand signal, per product guardrails.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import Any, Final
+
+import structlog
+
+from analytics.query_engine.curriculum_path import CurriculumInputs
+from common.llm_adapter import complete
+
+log = structlog.get_logger()
+
+_AGENT: Final[str] = "analytics-curriculum-synthesis"
+
+_SYSTEM_PROMPT = """You are generating a training-program outline for a workforce development director
+in the Borderplex region (El Paso TX + Las Cruces NM). You must only use the data
+provided. Do not reach for outside knowledge.
+
+FORBIDDEN:
+- Do NOT invent skill names. Every skill in your outline must appear verbatim in the
+  input data below.
+- Do NOT produce generic module titles (e.g. "Cloud fundamentals") without a matching
+  demand signal in the input data.
+- Do NOT reference national, statewide, Austin, or Albuquerque data.
+- Do NOT reference any external curriculum catalog, bootcamp, or university program by name.
+- If a section has no supporting data, say so explicitly — never invent content to fill it."""
+
+_USER_TEMPLATE = """Role: {canonical_role}
+Period: {period}
+Region: {region}
+
+Top demanded skills: {top_skills_json}
+Rising skills (4wk trend > 10%): {rising_skills_json}
+Co-occurring tools + responsibilities: {co_occurring_json}
+Top employers hiring for this role: {top_employers_json}
+
+Produce a markdown outline with these sections in this order:
+
+## Program scope
+Role, estimated duration, regional scope, temporal period.
+
+## Modules
+6-8 modules. Each module must include:
+- Module title (must match a skill or skill cluster from the data above verbatim)
+- Demand signal (cite % of postings, employer count, OR velocity trend — include
+  the numeric value and the source table)
+- One-paragraph description
+
+## Sequencing rationale
+Why modules are ordered this way.
+
+## Evidence
+Tables queried, temporal period, regional filter, sample size.
+
+## Recommended follow-up
+One concrete next step the director can take."""
+
+_INSUFFICIENT_NO_ROLE: Final[dict[str, Any]] = {
+    "answer": (
+        "Insufficient data: could not resolve the requested role in the Borderplex dataset. "
+        "Try a different role name such as 'software developer', 'data analyst', or "
+        "'cybersecurity analyst'."
+    ),
+    "is_sufficient": False,
+    "modules": [],
+}
+
+_INSUFFICIENT_NO_TOP_SKILLS: Final[dict[str, Any]] = {
+    "answer": (
+        "Insufficient data: we resolved a target role, but there are no top demanded skills "
+        "in the Borderplex aggregates for the current time window, so a skills-grounded "
+        "curriculum outline cannot be generated. Check back after the next analytics refresh, "
+        "or try a role with more postings in this region."
+    ),
+    "is_sufficient": False,
+    "modules": [],
+}
+
+_INSUFFICIENT_LLM_ERROR: Final[dict[str, Any]] = {
+    "answer": (
+        "Insufficient data: the curriculum outline could not be generated at this time. "
+        "Please retry, or use Ask the Data after confirming analytics aggregates are fresh."
+    ),
+    "is_sufficient": False,
+    "modules": [],
+}
+
+
+def _json_block(obj: Any) -> str:
+    return json.dumps(obj, default=str, ensure_ascii=False, indent=2)
+
+
+def _strip_code_fence(text: str) -> str:
+    t = (text or "").strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:markdown|md)?\s*", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\s*```$", "", t)
+    return t.strip()
+
+
+def _extract_module_titles(markdown: str) -> list[str]:
+    """Parse module titles from the ``## Modules`` section (### headings, bold bullets)."""
+    md = markdown or ""
+    m = re.search(
+        r"(?msi)^##\s+modules\s*\r?\n(.*?)(?=^##\s+)",
+        md,
+    )
+    if not m:
+        m = re.search(r"(?msi)^##\s+modules\s*\r?\n(.*)\Z", md)
+    section = m.group(1) if m else ""
+    if not section.strip():
+        return []
+
+    titles: list[str] = []
+    for line in section.splitlines():
+        line = line.strip()
+        h3 = re.match(r"^###\s+(.+)$", line)
+        if h3:
+            titles.append(h3.group(1).strip())
+            continue
+        bold = re.match(r"^[-*]\s*\*\*([^*]+)\*\*\s*[:：]?", line)
+        if bold:
+            titles.append(bold.group(1).strip())
+            continue
+        mtitle = re.match(r"^[-*]\s*Module title\s*:\s*(.+)$", line, re.I)
+        if mtitle:
+            titles.append(mtitle.group(1).strip().strip("`*"))
+    seen: set[str] = set()
+    out: list[str] = []
+    for t in titles:
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out[:12]
+
+
+def synthesize_curriculum_outline(
+    inputs: CurriculumInputs,
+    *,
+    correlation_id: str | None = None,
+    max_tokens: int = 4_000,
+) -> dict[str, Any]:
+    """Build a markdown curriculum outline from data-grounded :class:`CurriculumInputs`.
+
+    Respects ``data_flags``: skips the LLM when the role did not match or when there are
+    no top demanded skills. On LLM failure, returns a non-raising insufficient-data
+    structure (``is_sufficient`` false).
+
+    Returns
+    -------
+    dict
+        ``{"answer": str, "is_sufficient": bool, "modules": list[str]}``
+    """
+    if inputs.data_flags.get("canonical_role", False) or not (inputs.canonical_role or "").strip():
+        log.info("curriculum_synthesis_skipped", reason="no_resolved_role")
+        return dict(_INSUFFICIENT_NO_ROLE)
+
+    if not inputs.top_skills:
+        log.info("curriculum_synthesis_skipped", reason="empty_top_skills")
+        return dict(_INSUFFICIENT_NO_TOP_SKILLS)
+
+    user_prompt = _USER_TEMPLATE.format(
+        canonical_role=inputs.canonical_role,
+        period=inputs.period,
+        region=inputs.region,
+        top_skills_json=_json_block(inputs.top_skills),
+        rising_skills_json=_json_block(inputs.rising_skills),
+        co_occurring_json=_json_block(inputs.co_occurring),
+        top_employers_json=_json_block(inputs.top_employers),
+    )
+
+    try:
+        result = complete(
+            prompt=user_prompt,
+            agent_name=_AGENT,
+            role="synthesis",
+            system=_SYSTEM_PROMPT,
+            max_tokens=max_tokens,
+            correlation_id=correlation_id,
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.warning("curriculum_synthesis_llm_exception", error_type=type(exc).__name__)
+        return dict(_INSUFFICIENT_LLM_ERROR)
+
+    if not result.get("success") or result.get("extraction_failed"):
+        log.info(
+            "curriculum_synthesis_llm_failed",
+            success=result.get("success"),
+            extraction_failed=result.get("extraction_failed"),
+        )
+        return dict(_INSUFFICIENT_LLM_ERROR)
+
+    content = _strip_code_fence((result.get("content") or "").strip())
+    if not content:
+        return dict(_INSUFFICIENT_LLM_ERROR)
+
+    modules = _extract_module_titles(content)
+    return {
+        "answer": content,
+        "is_sufficient": True,
+        "modules": modules,
+    }
+
+
+__all__ = ["synthesize_curriculum_outline"]
