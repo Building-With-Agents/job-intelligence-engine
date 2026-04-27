@@ -1,0 +1,81 @@
+# config/ingestion.yaml — ingestion-source tuning + scheduling.
+#
+# Knobs that shape JSearch API calls (filters, throttle, retries, detail
+# backfill), web scraping targets, and the orchestration scheduler. JSearch
+# query catalogues remain in config/ingestion_queries.yaml. API keys and
+# detail endpoint URLs stay in .env (secrets / environment-specific).
+
+ingestion:
+  jsearch:
+    # Country filter passed to /search. Lowercased on read.
+    # Env override: JSEARCH_COUNTRY
+    country: us
+
+    # Language filter passed to /search. Lowercased on read.
+    # Env override: JSEARCH_LANGUAGE
+    language: en
+
+    # Date filter passed to /search (e.g. "all", "today", "month").
+    # Lowercased on read.
+    # Env override: JSEARCH_DATE_POSTED
+    date_posted: all
+
+    # Slot index (1-based) for which JSearch API key the run starts on.
+    # Slot 1 is the paid Pro-plan key; slots 2–4 are overflow.
+    # Min 1, max 4.
+    # Env override: JSEARCH_START_KEY_INDEX
+    start_key_index: 1
+
+    # Pages fetched per query. JSearch caps at 50 per query.
+    # Min 1, max 50.
+    # Env override: JSEARCH_MAX_PAGES
+    max_pages: 50
+
+    retry:
+      # Per-page retries on JSearch 429 responses. Min 0.
+      # Env override: JSEARCH_MAX_RETRIES
+      max_retries: 2
+
+      # Initial backoff seconds on 429. Min 1.
+      # Env override: JSEARCH_RETRY_BASE_DELAY_SECONDS
+      base_delay_seconds: 10
+
+      # Max backoff seconds on 429. Must be >= base_delay_seconds.
+      # Env override: JSEARCH_RETRY_MAX_DELAY_SECONDS
+      max_delay_seconds: 60
+
+    throttle:
+      # Max requests per second across the whole pool. Pro tier cap is 5.
+      # Min 1.
+      # Env override: JSEARCH_RPS
+      requests_per_second: 5
+
+      # Max requests per minute. Pro tier cap is 250. Min 1.
+      # Env override: JSEARCH_RPM
+      requests_per_minute: 250
+
+  # Comma-separated extra Crawl4AI scrape target URLs. Empty means no
+  # custom targets (use the built-in adapters).
+  # Env override: SCRAPING_TARGETS
+  scraping_targets: []
+
+  scheduler:
+    # APScheduler trigger type. Common values: "interval", "cron".
+    # Env override: SCHEDULER_TYPE
+    type: apscheduler
+
+    # Interval-mode scheduler period in minutes. Min 1. Ignored when
+    # cron_expression is set.
+    # Env override: INGESTION_INTERVAL_MINUTES
+    interval_minutes: 2
+
+    # Optional cron expression (e.g. "0 2 * * *" for daily at 02:00).
+    # When set, takes precedence over interval_minutes. ``null`` means
+    # use interval mode.
+    # Env override: INGESTION_CRON_EXPRESSION
+    cron_expression: ~
+
+    # Optional path to APScheduler state JSON for last-run persistence.
+    # ``null`` defaults to the legacy in-memory state.
+    # Env override: SCHEDULER_STATE_PATH
+    state_path: ~

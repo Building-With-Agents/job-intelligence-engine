@@ -484,7 +484,9 @@ def main(argv: list[str] | None = None) -> int:
     golden_by_id = {str(r["id"]): r for r in all_questions}
     questions = all_questions[: max(0, args.limit)] if args.limit is not None else all_questions
 
-    sla_seconds = float(os.getenv("QA_EVAL_LATENCY_SLA_SECONDS") or "45.0")
+    from eval._config import qa_latency_sla_seconds
+
+    sla_seconds = qa_latency_sla_seconds()
 
     if args.dry_run or not os.getenv("LANGFUSE_SECRET_KEY"):
         if not os.getenv("LANGFUSE_SECRET_KEY") and not args.dry_run:

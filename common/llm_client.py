@@ -102,7 +102,17 @@ def _model_tier_for_skills_extraction(model_name: str) -> str:
     EXTRACTION_MODEL_TIER env var is kept for explicit overrides but should
     only be needed when deploying a model not yet in MODEL_TIER_MAP.
     """
-    explicit = os.getenv("EXTRACTION_MODEL_TIER", "").strip().lower()
+    from common.config_loader import get_str
+
+    explicit = (
+        get_str(
+            file="llm",
+            key="llm.extraction_model_tier",
+            env="EXTRACTION_MODEL_TIER",
+        )
+        .strip()
+        .lower()
+    )
     if explicit and explicit in PRICING:
         return explicit
     return resolve_model_tier(model_name)
@@ -118,8 +128,15 @@ def _build_gemini_llm(model: str | None = None) -> Any:
             "Install with: pip install langchain-google-genai"
         ) from e
 
+    from common.config_loader import get_str
+
     return ChatGoogleGenerativeAI(
-        model=model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=model
+        or get_str(
+            file="llm",
+            key="llm.gemini_model",
+            env="GEMINI_MODEL",
+        ),
         google_api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.1,
     )
@@ -943,7 +960,9 @@ async def ainvoke_structured_extraction_llm(
 
         try:
             chain = _structured_output_chain(llm, output_schema)
-            timeout_seconds = int(os.getenv("SKILLS_EXTRACTION_LLM_TIMEOUT", "120"))
+            from skills_extraction._config import llm_timeout_seconds as _se_llm_timeout
+
+            timeout_seconds = _se_llm_timeout()
             raw_out: Any = await asyncio.wait_for(chain.ainvoke(prompt), timeout=timeout_seconds)
 
             latency_ms = int((time.perf_counter() - start) * 1000)

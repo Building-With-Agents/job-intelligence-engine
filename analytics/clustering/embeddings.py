@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Sequence
 
 import structlog
 
 from analytics.clustering.config import (
-    DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME,
-    DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE,
+    cluster_embedding_audit_agent_name,
+    cluster_embedding_batch_size,
 )
 from analytics.clustering.text import prepare_clustering_texts
 from analytics.clustering.types import EmbeddedPostingText, PostingClusterFeatures, PreparedClusteringText
@@ -19,18 +18,11 @@ log = structlog.get_logger()
 
 
 def _embedding_batch_size() -> int:
-    raw = os.getenv("CLUSTER_EMBEDDING_BATCH_SIZE", str(DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE))
-    try:
-        parsed = int(raw)
-    except (TypeError, ValueError):
-        return DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE
-    return parsed if parsed > 0 else DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE
+    return cluster_embedding_batch_size()
 
 
 def _embedding_audit_agent_name() -> str:
-    raw = os.getenv("CLUSTER_EMBEDDING_AUDIT_AGENT_NAME", DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME)
-    normalized = raw.strip()
-    return normalized or DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME
+    return cluster_embedding_audit_agent_name()
 
 
 def embed_prepared_clustering_texts(

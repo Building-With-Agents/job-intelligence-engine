@@ -33,7 +33,6 @@ rather than the mean being dragged down by infrastructure noise.
 
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -255,7 +254,9 @@ def coerce_eval_response_confidence(raw: Any) -> float:
 
 def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float, str]:
     """Normalized score: 1.0 at or below SLA, decays above."""
-    sla = float(sla_seconds or os.getenv("QA_EVAL_LATENCY_SLA_SECONDS") or _DEFAULT_LATENCY_SLA_SECONDS)
+    from eval._config import qa_latency_sla_seconds
+
+    sla = float(sla_seconds or qa_latency_sla_seconds())
     if sla <= 0:
         sla = _DEFAULT_LATENCY_SLA_SECONDS
     lat = max(float(latency_seconds or 0.0), 1e-6)

@@ -1,0 +1,50 @@
+# config/pipeline.yaml — cross-cutting pipeline knobs.
+#
+# Settings shared by ingestion → normalization → enrichment → analytics.
+# Subsystem-specific knobs live in their own YAML file (see config/README.md).
+
+pipeline:
+  # Default rows pulled per ingestion batch when no CLI --limit override is set.
+  # Used as the JSearch adapter limit and downstream batch sizing hint.
+  # Env override: BATCH_SIZE
+  batch_size: 100
+
+  spam:
+    # Heuristic spam score above which jobs are flagged for operator review
+    # but still flow through the pipeline. Range: 0.0–1.0.
+    # Env override: SPAM_FLAG_THRESHOLD
+    flag_threshold: 0.7
+
+    # Score above which jobs are auto-rejected and never written to
+    # job_postings. Must be > flag_threshold. Range: 0.0–1.0.
+    # Env override: SPAM_REJECT_THRESHOLD
+    reject_threshold: 0.9
+
+  # Confidence cutoff below which an extracted skill is dropped before
+  # the taxonomy match step. Range: 0.0–1.0.
+  # Env override: SKILL_CONFIDENCE_THRESHOLD
+  skill_confidence_threshold: 0.75
+
+  database:
+    # SQLAlchemy connection pool size. Set high enough to absorb async
+    # fan-out in enrichment (issue #149 caps concurrency at 5 to stay
+    # within the pool). Min 1.
+    # Env override: DB_POOL_SIZE
+    pool_size: 30
+
+    # Extra connections allowed above pool_size during bursts. Min 0.
+    # Env override: DB_MAX_OVERFLOW
+    max_overflow: 20
+
+    # Optional explicit schema override for analytics tables. When unset,
+    # the repository falls through to SQLAlchemy ORM-driven schema detection
+    # (`public` or whatever the table's __table__.schema is). Set to "dbo"
+    # for the demo Postgres seed, or "public" for fresh deployments.
+    # Env override: JIE_SQL_SCHEMA
+    sql_schema: ~
+
+  normalization:
+    # Rows per normalization batch. 0 = "process all pending postings"
+    # (legacy behavior; scripts set this via env to scope per-run batches).
+    # Env override: NORM_BATCH_SIZE
+    batch_size: 0

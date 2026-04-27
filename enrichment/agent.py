@@ -466,6 +466,13 @@ def _job_postings_promotion_payload(
         "naics_code": enriched.get("naics_code"),
         "soc_code": enriched.get("soc_code"),
         "role_classification": enriched.get("role_classification"),
+        # Forward fields the promotion path COALESCEs into job_postings.
+        # Without these, seniority_level + employer_profile_id stay NULL and
+        # the backfill scripts have to plug the gap (issues #281, #282).
+        "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
+        "seniority": enriched.get("seniority"),
+        "employer_metadata": enriched.get("employer_metadata"),
+        "company_id": enriched.get("company_id"),
     }
 
 
@@ -735,6 +742,29 @@ class EnrichmentAgent(BaseAgent):
                         )
                         enriched["quality_score"] = q_res.quality_score
                         enriched["quality_components"] = q_res.components
+
+                        # Classify role + seniority (closes #282/#283 — was previously
+                        # filled only by scripts/backfill_qna_columns.py post-hoc).
+                        try:
+                            tech_refs, sector_refs = self._ensure_refs()
+                            role_cls, seniority_cls = classify_job(
+                                posting.get("title") or "",
+                                posting.get("description"),
+                                extraction,
+                                tech_refs,
+                                sector_refs,
+                                is_internship=bool(posting.get("is_internship", False)),
+                            )
+                            if role_cls and not enriched.get("role_classification"):
+                                enriched["role_classification"] = role_cls
+                            if seniority_cls and not enriched.get("seniority"):
+                                enriched["seniority"] = seniority_cls
+                        except Exception as cls_exc:  # noqa: BLE001
+                            log.warning(
+                                "enrichment_batch_classify_job_failed",
+                                normalized_job_id=posting.get("normalized_job_id"),
+                                error=str(cls_exc),
+                            )
 
                         enriched_count += 1
 
@@ -1234,7 +1264,9 @@ class EnrichmentAgent(BaseAgent):
                 company = posting.get("company") or ""
 
                 # Run SOC, NAICS, employer LLM calls concurrently with per-call timeout
-                _ENRICH_LLM_TIMEOUT = int(os.getenv("ENRICHMENT_LLM_TIMEOUT", "120"))
+                from enrichment._config import enrichment_llm_timeout_seconds
+
+                _ENRICH_LLM_TIMEOUT = enrichment_llm_timeout_seconds()
                 _nj_id = posting.get("normalized_job_id")
                 _gather_start = time.perf_counter()
 
@@ -1323,6 +1355,39 @@ class EnrichmentAgent(BaseAgent):
                     except Exception as emp_exc:
                         log.warning("enrich_record_employer_persist_failed", error=str(emp_exc))
 
+            # Classify role + seniority (closes #282/#283; mirrors the serial
+            # path in _process_skills_extracted_batch). Without this, the
+            # parallel path leaves role_classification + seniority_level NULL.
+            try:
+                from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
+
+                tech_refs, sector_refs = self._ensure_refs()
+                extraction_dict = build_extraction_dict(
+                    posting.get("skills"),
+                    posting.get("tools"),
+                    posting.get("tasks"),
+                    posting.get("responsibilities"),
+                    posting.get("context"),
+                )
+                role_cls, seniority_cls = classify_job(
+                    posting.get("title") or "",
+                    posting.get("description"),
+                    extraction_dict,
+                    tech_refs,
+                    sector_refs,
+                    is_internship=bool(posting.get("is_internship", False)),
+                )
+                if role_cls and not merged.get("role_classification"):
+                    merged["role_classification"] = role_cls
+                if seniority_cls and not merged.get("seniority"):
+                    merged["seniority"] = seniority_cls
+            except Exception as cls_exc:  # noqa: BLE001
+                log.warning(
+                    "enrich_record_async_classify_job_failed",
+                    normalized_job_id=posting.get("normalized_job_id"),
+                    error=str(cls_exc),
+                )
+
             return merged
         except Exception:
             log.warning("enrich_record_async_degraded", agent=self.agent_id, reason="resolver_exception")
@@ -1344,10 +1409,14 @@ class EnrichmentAgent(BaseAgent):
     # ------------------------------------------------------------------
 
     def _enrichment_parallel_enabled(self) -> bool:
-        return os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no")
+        from enrichment._config import enrichment_parallel
+
+        return enrichment_parallel()
 
     def _enrichment_concurrency(self) -> int:
-        return max(1, int(os.getenv("ENRICHMENT_CONCURRENCY", "30")))
+        from enrichment._config import enrichment_concurrency
+
+        return enrichment_concurrency()
 
     async def _enrich_batch_parallel(
         self,

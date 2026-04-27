@@ -55,15 +55,21 @@ class TestScheduleFromEnvironment:
             assert _interval_minutes() == 2
 
     def test_interval_minutes_from_env(self) -> None:
-        """INGESTION_INTERVAL_MINUTES sets the interval (min 1)."""
+        """INGESTION_INTERVAL_MINUTES sets the interval (min 1; below-min falls back to YAML)."""
+        from common.config_loader import reload_all
         from orchestration.scheduler import _interval_minutes
 
         with patch.dict(os.environ, {"INGESTION_INTERVAL_MINUTES": "5"}):
+            reload_all()
             assert _interval_minutes() == 5
         with patch.dict(os.environ, {"INGESTION_INTERVAL_MINUTES": "1"}):
+            reload_all()
             assert _interval_minutes() == 1
         with patch.dict(os.environ, {"INGESTION_INTERVAL_MINUTES": "0"}):
-            assert _interval_minutes() == 1  # clamped to 1
+            reload_all()
+            # Env value 0 fails minimum=1 validation → falls back to the YAML
+            # value (config/ingestion.yaml -> ingestion.scheduler.interval_minutes = 2).
+            assert _interval_minutes() == 2
 
     def test_interval_minutes_invalid_falls_back_to_2(self) -> None:
         """Invalid INGESTION_INTERVAL_MINUTES falls back to 2."""

@@ -8,7 +8,6 @@ scores unless ``SPAM_PREVIEW_ALLOW_HEURISTIC=1`` (offline-only noisy estimate).
 from __future__ import annotations
 
 import json
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -21,20 +20,11 @@ log = structlog.get_logger()
 AUDIT_AGENT_SPAM_PREVIEW = "enrichment-spam-preview"
 
 
-def _threshold(name: str, default: str) -> float:
-    raw = os.getenv(name, default)
-    try:
-        return float(raw)
-    except ValueError:
-        return float(default)
-
-
 def get_spam_thresholds() -> tuple[float, float]:
-    """Current flag and reject thresholds from env (for reporting)."""
-    return (
-        _threshold("SPAM_FLAG_THRESHOLD", "0.7"),
-        _threshold("SPAM_REJECT_THRESHOLD", "0.9"),
-    )
+    """Current flag and reject thresholds from config (for reporting)."""
+    from common.pipeline_config import spam_flag_threshold, spam_reject_threshold
+
+    return (spam_flag_threshold(), spam_reject_threshold())
 
 
 def apply_spam_tiers(
@@ -49,10 +39,14 @@ def apply_spam_tiers(
     * ``<= reject`` → ``(None, "flagged")``
     * ``> reject`` → ``(True, "rejected")``
 
-    Thresholds default from ``SPAM_FLAG_THRESHOLD`` (0.7) and ``SPAM_REJECT_THRESHOLD`` (0.9).
+    Thresholds default from ``config/pipeline.yaml`` (``pipeline.spam.flag_threshold``
+    = 0.7, ``pipeline.spam.reject_threshold`` = 0.9). Legacy
+    ``SPAM_FLAG_THRESHOLD`` / ``SPAM_REJECT_THRESHOLD`` env vars still override.
     """
-    f = _threshold("SPAM_FLAG_THRESHOLD", "0.7") if flag is None else flag
-    r = _threshold("SPAM_REJECT_THRESHOLD", "0.9") if reject is None else reject
+    from common.pipeline_config import spam_flag_threshold, spam_reject_threshold
+
+    f = spam_flag_threshold() if flag is None else flag
+    r = spam_reject_threshold() if reject is None else reject
     if spam_score < f:
         return False, "clean"
     if spam_score <= r:
@@ -232,11 +226,9 @@ def score_spam_preview(
     elif extraction_empty:
         extraction_note = "empty_extraction"
 
-    allow_heuristic = os.getenv("SPAM_PREVIEW_ALLOW_HEURISTIC", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-    )
+    from enrichment._config import spam_preview_allow_heuristic
+
+    allow_heuristic = spam_preview_allow_heuristic()
 
     def _degraded() -> SpamPreviewResult:
         return SpamPreviewResult(

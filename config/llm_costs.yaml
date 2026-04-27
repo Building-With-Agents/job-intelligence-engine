@@ -1,0 +1,62 @@
+# config/llm_costs.yaml — per-million-token input/output prices in USD.
+#
+# Numeric source of truth for the PRICING table in common/llm_adapter.py.
+# Vendor pages quote prices per 1M tokens; this file matches that unit
+# (the adapter divides by 1_000_000 before multiplying by token counts).
+#
+# Update when vendor pricing changes. Legacy ``*_COST_PER_TOKEN`` env vars
+# remain as emergency overrides during the deprecation window (issue #210).
+
+llm_costs:
+  # Anthropic
+  sonnet:
+    # USD per 1,000,000 input tokens.
+    # Env override: SONNET_INPUT_COST_PER_TOKEN  (legacy: per-token, not per-million)
+    input_per_million_tokens: 3.00
+    # USD per 1,000,000 output tokens.
+    # Env override: SONNET_OUTPUT_COST_PER_TOKEN  (legacy: per-token)
+    output_per_million_tokens: 15.00
+
+  haiku:
+    # Env override: HAIKU_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 0.25
+    # Env override: HAIKU_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 1.25
+
+  # Azure OpenAI / OpenAI — list prices; override via env when negotiated rates differ
+  gpt41:
+    # Env override: GPT41_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 2.00
+    # Env override: GPT41_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 8.00
+
+  gpt41mini:
+    # Env override: GPT41MINI_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 0.40
+    # Env override: GPT41MINI_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 1.60
+
+  gpt4o:
+    # Env override: GPT4O_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 2.50
+    # Env override: GPT4O_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 10.00
+
+  gpt4omini:
+    # Env override: GPT4OMINI_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 0.15
+    # Env override: GPT4OMINI_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 0.60
+
+  # Gemini
+  gemini_flash:
+    # Env override: GEMINI_FLASH_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 0.15
+    # Env override: GEMINI_FLASH_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 0.60
+
+  gemini_pro:
+    # Env override: GEMINI_PRO_INPUT_COST_PER_TOKEN
+    input_per_million_tokens: 1.25
+    # Env override: GEMINI_PRO_OUTPUT_COST_PER_TOKEN
+    output_per_million_tokens: 10.00

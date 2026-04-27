@@ -23,12 +23,9 @@ MOCK_ANALYTICS_QUERY_RESPONSE: dict[str, Any] = {
 
 
 def analytics_query_uses_mock() -> bool:
-    return os.getenv("DASHBOARD_ANALYTICS_QUERY_MOCK", "1").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    from analytics.api._config import dashboard_query_mock
+
+    return dashboard_query_mock()
 
 
 def analytics_query_base_url() -> str:

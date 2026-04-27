@@ -783,11 +783,9 @@ def run(config: Config) -> int:
         all_records = build_records(digital_rows, skills_by_uri)
         # Optional Week-4 subset. When enabled, merge back GenAI parent concepts
         # (see merge_missing_genai_parent_concepts) so taxonomy step 1 stays valid.
-        apply_filter = os.getenv("ESCO_SEED_APPLY_FILTER", "").lower() in (
-            "1",
-            "true",
-            "yes",
-        )
+        from enrichment._config import esco_seed_apply_filter
+
+        apply_filter = esco_seed_apply_filter()
         if apply_filter:
             records = merge_missing_genai_parent_concepts(all_records, filter_records(all_records))
         else:

@@ -90,43 +90,128 @@ def get_tracer() -> LangfuseTracer | None:
 # their deployment/API names to MODEL_TIER_MAP below.
 # ---------------------------------------------------------------------------
 
-PRICING: dict[str, dict[str, float]] = {
-    # Anthropic
-    "sonnet": {
-        "input": float(os.getenv("SONNET_INPUT_COST_PER_TOKEN", str(3.00 / 1_000_000))),
-        "output": float(os.getenv("SONNET_OUTPUT_COST_PER_TOKEN", str(15.00 / 1_000_000))),
-    },
-    "haiku": {
-        "input": float(os.getenv("HAIKU_INPUT_COST_PER_TOKEN", str(0.25 / 1_000_000))),
-        "output": float(os.getenv("HAIKU_OUTPUT_COST_PER_TOKEN", str(1.25 / 1_000_000))),
-    },
-    # Azure OpenAI / OpenAI — use regional list prices; override via env if negotiated rates differ
-    "gpt-4.1-mini": {
-        "input": float(os.getenv("GPT41MINI_INPUT_COST_PER_TOKEN", str(0.40 / 1_000_000))),
-        "output": float(os.getenv("GPT41MINI_OUTPUT_COST_PER_TOKEN", str(1.60 / 1_000_000))),
-    },
-    "gpt-4.1": {
-        "input": float(os.getenv("GPT41_INPUT_COST_PER_TOKEN", str(2.00 / 1_000_000))),
-        "output": float(os.getenv("GPT41_OUTPUT_COST_PER_TOKEN", str(8.00 / 1_000_000))),
-    },
-    "gpt-4o": {
-        "input": float(os.getenv("GPT4O_INPUT_COST_PER_TOKEN", str(2.50 / 1_000_000))),
-        "output": float(os.getenv("GPT4O_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
-    },
-    "gpt-4o-mini": {
-        "input": float(os.getenv("GPT4OMINI_INPUT_COST_PER_TOKEN", str(0.15 / 1_000_000))),
-        "output": float(os.getenv("GPT4OMINI_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
-    },
-    # Gemini
-    "gemini-2.5-flash": {
-        "input": float(os.getenv("GEMINI_FLASH_INPUT_COST_PER_TOKEN", str(0.15 / 1_000_000))),
-        "output": float(os.getenv("GEMINI_FLASH_OUTPUT_COST_PER_TOKEN", str(0.60 / 1_000_000))),
-    },
-    "gemini-2.5-pro": {
-        "input": float(os.getenv("GEMINI_PRO_INPUT_COST_PER_TOKEN", str(1.25 / 1_000_000))),
-        "output": float(os.getenv("GEMINI_PRO_OUTPUT_COST_PER_TOKEN", str(10.00 / 1_000_000))),
-    },
-}
+
+def _per_token_from_yaml(yaml_key: str, env_var: str) -> float:
+    """Resolve a per-token cost.
+
+    YAML stores per-million-tokens (vendor-quote convention) under
+    ``config/llm_costs.yaml``; this helper divides by 1,000,000. Legacy
+    ``*_COST_PER_TOKEN`` env vars override per-token directly (their
+    historical unit) during the deprecation window (issue #210).
+    Defaults live in YAML — there are none in this file.
+    """
+    from common.config_loader import get_float
+
+    raw_env = os.getenv(env_var) if env_var else None
+    if raw_env is not None and raw_env.strip():
+        try:
+            return float(raw_env)
+        except (TypeError, ValueError):
+            pass  # fall through to YAML
+
+    per_million = get_float(
+        file="llm_costs",
+        key=yaml_key,
+        env=None,
+        minimum=0.0,
+    )
+    return per_million / 1_000_000
+
+
+def _build_pricing() -> dict[str, dict[str, float]]:
+    """Resolve PRICING table from ``config/llm_costs.yaml`` plus legacy env overrides.
+
+    Defaults live in ``config/llm_costs.yaml``; this function intentionally
+    has no numeric values.
+    """
+    return {
+        # Anthropic
+        "sonnet": {
+            "input": _per_token_from_yaml(
+                "llm_costs.sonnet.input_per_million_tokens",
+                "SONNET_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.sonnet.output_per_million_tokens",
+                "SONNET_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        "haiku": {
+            "input": _per_token_from_yaml(
+                "llm_costs.haiku.input_per_million_tokens",
+                "HAIKU_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.haiku.output_per_million_tokens",
+                "HAIKU_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        # Azure OpenAI / OpenAI
+        "gpt-4.1-mini": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gpt41mini.input_per_million_tokens",
+                "GPT41MINI_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gpt41mini.output_per_million_tokens",
+                "GPT41MINI_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        "gpt-4.1": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gpt41.input_per_million_tokens",
+                "GPT41_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gpt41.output_per_million_tokens",
+                "GPT41_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        "gpt-4o": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gpt4o.input_per_million_tokens",
+                "GPT4O_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gpt4o.output_per_million_tokens",
+                "GPT4O_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        "gpt-4o-mini": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gpt4omini.input_per_million_tokens",
+                "GPT4OMINI_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gpt4omini.output_per_million_tokens",
+                "GPT4OMINI_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        # Gemini
+        "gemini-2.5-flash": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gemini_flash.input_per_million_tokens",
+                "GEMINI_FLASH_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gemini_flash.output_per_million_tokens",
+                "GEMINI_FLASH_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+        "gemini-2.5-pro": {
+            "input": _per_token_from_yaml(
+                "llm_costs.gemini_pro.input_per_million_tokens",
+                "GEMINI_PRO_INPUT_COST_PER_TOKEN",
+            ),
+            "output": _per_token_from_yaml(
+                "llm_costs.gemini_pro.output_per_million_tokens",
+                "GEMINI_PRO_OUTPUT_COST_PER_TOKEN",
+            ),
+        },
+    }
+
+
+PRICING: dict[str, dict[str, float]] = _build_pricing()
 
 # Model/deployment name → PRICING key.
 # Covers: Anthropic model IDs, Azure API model names, Azure deployment names,
@@ -155,17 +240,24 @@ MODEL_TIER_MAP: dict[str, str] = {
 def resolve_llm_route(role: str | None = None) -> tuple[str, str]:
     """Resolve (provider, model_or_deployment) for a pipeline role.
 
-    Resolution (fail fast — no legacy fallbacks):
+    Resolution (legacy env wins during deprecation, then YAML, then fail fast):
     1. LLM_{ROLE} env var (e.g. LLM_SYNTHESIS for role="synthesis")
        - If value contains ':', split as provider:model (e.g. "gemini:gemini-2.5-pro")
-       - Otherwise, use LLM_PROVIDER as the provider
-    2. LLM_DEFAULT env var (same colon-split logic)
-    3. Raise ValueError with clear message
+       - Otherwise, use LLM_PROVIDER (env or YAML) as the provider
+    2. ``llm.routes.<role>`` from ``config/llm.yaml`` (same colon-split logic)
+    3. LLM_DEFAULT env var (same colon-split logic)
+    4. ``llm.routes.default`` from ``config/llm.yaml``
+    5. Raise ValueError with clear message
 
     Roles: synthesis, extraction, extraction_tasks, extraction_responsibilities,
            extraction_naics, extraction_employer, classification, analytics
     """
-    default_provider = os.getenv("LLM_PROVIDER", "azure_openai")
+    from common.config_loader import _resolve
+
+    default_provider = os.getenv("LLM_PROVIDER")
+    if not default_provider:
+        yaml_provider = _resolve("llm", "llm.provider")
+        default_provider = str(yaml_provider) if yaml_provider else "azure_openai"
 
     def _parse(value: str) -> tuple[str, str]:
         if ":" in value:
@@ -173,23 +265,29 @@ def resolve_llm_route(role: str | None = None) -> tuple[str, str]:
             return provider.strip(), model.strip()
         return default_provider, value.strip()
 
-    # 1. Role-specific: LLM_{ROLE}
+    # 1. Role-specific: LLM_{ROLE} env, then YAML
     if role:
         role_var = f"LLM_{role.upper()}"
         val = os.getenv(role_var)
         if val:
             return _parse(val)
+        yaml_route = _resolve("llm", f"llm.routes.{role}")
+        if yaml_route:
+            return _parse(str(yaml_route))
 
-    # 2. Global default: LLM_DEFAULT
+    # 2. Global default: LLM_DEFAULT env, then YAML
     default = os.getenv("LLM_DEFAULT")
     if default:
         return _parse(default)
+    yaml_default = _resolve("llm", "llm.routes.default")
+    if yaml_default:
+        return _parse(str(yaml_default))
 
     # 3. Fail fast
     role_hint = f"LLM_{role.upper()}" if role else "LLM_DEFAULT"
     raise ValueError(
-        f"No LLM deployment configured. Set {role_hint} or LLM_DEFAULT in your .env. "
-        f"Copy the LLM section from .env.example."
+        f"No LLM deployment configured. Set {role_hint} or LLM_DEFAULT in your .env "
+        f"(or fill in config/llm.yaml -> llm.routes). Copy the LLM section from .env.example."
     )
 
 
@@ -233,7 +331,9 @@ def resolve_model_tier(model: str) -> str:
     if provider == "azure_openai":
         return "gpt-4.1-mini"
     if provider == "gemini":
-        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        from common.config_loader import get_str as _get_str
+
+        gemini_model = _get_str(file="llm", key="llm.gemini_model", env="GEMINI_MODEL")
         return MODEL_TIER_MAP.get(gemini_model, "gemini-2.5-flash")
     if provider == "anthropic":
         return "sonnet"
@@ -417,7 +517,13 @@ def complete(
             ) from exc
 
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        gemini_model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        from common.config_loader import get_str as _get_str
+
+        gemini_model = model or _get_str(
+            file="llm",
+            key="llm.gemini_model",
+            env="GEMINI_MODEL",
+        )
         gmodel = genai.GenerativeModel(gemini_model, system_instruction=system or None)
 
         correlation_id = correlation_id or str(uuid.uuid4())

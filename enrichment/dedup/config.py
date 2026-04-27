@@ -1,8 +1,11 @@
-"""Configuration for fuzzy dedup (env + defaults). Documented in CONTEXT.md."""
+"""Configuration accessors for fuzzy dedup.
+
+Reads ``config/enrichment.yaml`` via ``common.config_loader``. Legacy env
+vars (``DEDUP_COSINE_THRESHOLD``) still override per-accessor during the
+deprecation window.
+"""
 
 from __future__ import annotations
-
-import os
 
 # Cosine similarity threshold (Decision #39 — EBS). Calibrate in Sprint 4 using FP/FN rates.
 ENV_DEDUP_COSINE_THRESHOLD = "DEDUP_COSINE_THRESHOLD"
@@ -20,8 +23,7 @@ JOB_POSTING_DATE_COLUMN = "date_posted"
 
 
 def dedup_cosine_threshold() -> float:
-    """Read threshold from env; default 0.92."""
-    raw = os.getenv(ENV_DEDUP_COSINE_THRESHOLD)
-    if raw is None or raw.strip() == "":
-        return DEFAULT_DEDUP_COSINE_THRESHOLD
-    return float(raw)
+    """Read threshold from config; default 0.92."""
+    from enrichment._config import dedup_cosine_threshold as _accessor
+
+    return _accessor()

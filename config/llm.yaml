@@ -1,0 +1,57 @@
+# config/llm.yaml — LLM provider routing.
+#
+# Provider, role-based deployment mapping, Gemini model selection, and
+# the extraction tier hint. Per-token costs live in config/llm_costs.yaml.
+# API keys, endpoints, and API versions stay in .env (per-environment /
+# secret data).
+
+llm:
+  # Default provider for all calls. One of: azure_openai | gemini |
+  # anthropic | mock. Each role below can override with colon syntax
+  # (e.g. LLM_SYNTHESIS=gemini:gemini-2.5-pro).
+  # Env override: LLM_PROVIDER
+  provider: azure_openai
+
+  routes:
+    # Default deployment for any role that does not specify its own.
+    # Env override: LLM_DEFAULT
+    default: chat-gpt41mini
+
+    # Sonnet-tier deployment for Q&A synthesis and complex reasoning.
+    # Env override: LLM_SYNTHESIS
+    synthesis: chat-gpt41
+
+    # Optional per-role overrides. ``null`` = fall back to ``default``.
+    # When set as a colon-prefixed string (e.g. "gemini:gemini-2.5-pro"),
+    # the prefix selects the provider for that single role.
+
+    # Env override: LLM_EXTRACTION
+    extraction: ~
+
+    # Env override: LLM_EXTRACTION_TASKS
+    extraction_tasks: ~
+
+    # Env override: LLM_EXTRACTION_RESPONSIBILITIES
+    extraction_responsibilities: ~
+
+    # Env override: LLM_EXTRACTION_NAICS
+    extraction_naics: ~
+
+    # Env override: LLM_EXTRACTION_EMPLOYER
+    extraction_employer: ~
+
+    # Env override: LLM_CLASSIFICATION
+    classification: ~
+
+    # Env override: LLM_ANALYTICS
+    analytics: ~
+
+  # Gemini model name used when the provider is "gemini" (or a route uses
+  # "gemini:" prefix). Common values: gemini-2.5-flash, gemini-2.5-pro.
+  # Env override: GEMINI_MODEL
+  gemini_model: gemini-2.5-flash
+
+  # Hint for cost-tier ledgers: "fast" | "mixed" | "quality". Pure
+  # informational — does not change which deployment is called.
+  # Env override: EXTRACTION_MODEL_TIER
+  extraction_model_tier: mixed

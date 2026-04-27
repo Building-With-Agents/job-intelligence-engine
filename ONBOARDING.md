@@ -103,6 +103,14 @@ Creates all agent-managed tables (`raw_ingested_jobs`, `normalized_jobs`, `extra
 
 ### Seed Data
 
+> **Requires Git LFS** — five seed fixtures are stored in Git LFS because they
+> exceed GitHub's 50 MB recommendation. Install once per machine (Windows: bundled
+> with Git for Windows, or `winget install GitHub.GitLFS`; macOS: `brew install
+> git-lfs`; Linux: `apt install git-lfs`), run `git lfs install`, and `git lfs
+> pull` if your clone is missing the real files. Without LFS the seeder loads
+> empty arrays from pointer files. Details:
+> [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-git-lfs).
+
 The seed script handles reference data and enriched pipeline data in one pass:
 
 ```bash

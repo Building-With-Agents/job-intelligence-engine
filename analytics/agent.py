@@ -213,7 +213,9 @@ def _minimum_guard_db_configured() -> bool:
 
 
 def _minimum_guard_disabled() -> bool:
-    return os.getenv("ANALYTICS_DISABLE_MINIMUM_DATA_GUARD", "").strip() == "1"
+    from analytics._config import disable_minimum_data_guard
+
+    return disable_minimum_data_guard()
 
 
 def _coerce_last_computed_at(payload: dict[str, Any]) -> datetime | None:
@@ -785,8 +787,9 @@ class AnalyticsAgent(BaseAgent):
 
         try:
             with session_scope() as session:
-                limit_raw = os.getenv("ANALYTICS_CLUSTERING_LOAD_LIMIT")
-                limit = int(limit_raw) if limit_raw and limit_raw.isdigit() else None
+                from analytics._config import clustering_load_limit
+
+                limit = clustering_load_limit()
                 features = load_posting_cluster_features(session, limit=limit)
                 extras["clustering_features_loaded"] = len(features)
 

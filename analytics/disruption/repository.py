@@ -21,7 +21,6 @@ Canonical role list reads ``canonical_roles.role_id``.
 
 from __future__ import annotations
 
-import os
 import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -77,9 +76,11 @@ def _validate_schema_identifier(raw: str) -> str:
 
 def _agent_table_prefix(session: Any) -> str:
     """Return ``'<schema>.'`` for qualifying agent tables in raw SQL (PostgreSQL)."""
-    env_raw = (os.getenv("JIE_SQL_SCHEMA") or "").strip()
-    if env_raw:
-        return f"{_validate_schema_identifier(env_raw)}."
+    from common.pipeline_config import db_sql_schema
+
+    configured = db_sql_schema()
+    if configured:
+        return f"{_validate_schema_identifier(configured)}."
     if not isinstance(session, OrmSession):
         orm_schema = CanonicalRole.__table__.schema
         return f"{(orm_schema or 'public').strip()}."

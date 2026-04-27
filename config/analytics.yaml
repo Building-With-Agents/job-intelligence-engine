@@ -1,0 +1,56 @@
+# config/analytics.yaml — Analytics Agent guardrails and limits.
+#
+# Aggregation freshness thresholds, query guardrails, kill-switches, and the
+# Q&A live-spend gate. Clustering tuning lives in config/clustering.yaml;
+# LaborPulse-specific knobs live in config/laborpulse.yaml.
+
+analytics:
+  # Minutes after computed_at when an aggregate is considered stale by the
+  # dashboard. Stale aggregates still serve (with a banner) but trigger a
+  # refresh. Min 1.
+  # Env override: STALENESS_THRESHOLD_MINUTES
+  staleness_threshold_minutes: 15
+
+  # Max distinct values per category dimension before bucketing the
+  # long tail into "Other". Min 1.
+  # Env override: CARDINALITY_CAP
+  cardinality_cap: 500
+
+  # Postings newer than this many days are considered "fresh". Min 1.
+  # Env override: FRESH_THRESHOLD_DAYS
+  fresh_threshold_days: 30
+
+  # Postings older than this many days are considered "expired" / "stale".
+  # Min 1.
+  # Env override: STALE_THRESHOLD_DAYS
+  stale_threshold_days: 90
+
+  # Set to true to bypass the 50-row minimum-data guard. Only use in
+  # tests / demo runs where you intentionally have a tiny seed dataset.
+  # Env override: ANALYTICS_DISABLE_MINIMUM_DATA_GUARD
+  disable_minimum_data_guard: false
+
+  # Optional cap on the number of records loaded for canonical role
+  # clustering. ``null`` = unlimited (production default). Min 1 when set.
+  # Env override: ANALYTICS_CLUSTERING_LOAD_LIMIT
+  clustering_load_limit: ~
+
+  query:
+    # Max rows per /analytics/query response. Min 1.
+    # Env override: ANALYTICS_QUERY_LIMIT
+    row_limit: 100
+
+    # Per-query execution timeout in seconds. Min 1.
+    # Env override: ANALYTICS_QUERY_TIMEOUT_SECONDS
+    timeout_seconds: 30
+
+  # Set to true to allow scripts/demo_qna_synthesis_metrics.py --live to
+  # spend real LLM tokens. Off in CI by default.
+  # Env override: ANALYTICS_QNA_LIVE
+  qna_live: false
+
+  api:
+    # Enable Uvicorn auto-reload for the analytics API server.
+    # Useful in dev; should be false for production.
+    # Env override: ANALYTICS_API_RELOAD
+    reload: true

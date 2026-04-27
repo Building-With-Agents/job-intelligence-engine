@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -387,9 +386,11 @@ async def post_analytics_query(
                 raise HTTPException(status_code=400, detail=code) from exc
             raise
 
+        from analytics.api._config import allow_no_api_keys
+
         allowed = load_api_keys()
         if not allowed:
-            if os.getenv("LABORPULSE_ALLOW_NO_API_KEYS", "").strip() == "1":
+            if allow_no_api_keys():
                 scv.bind_contextvars(key_id="none")
                 log.info("analytics_query_request", key_id="none", dev_escape="allow_no_api_keys")
             else:

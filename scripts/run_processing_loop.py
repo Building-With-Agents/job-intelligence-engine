@@ -158,12 +158,15 @@ def main() -> None:
         os.environ.setdefault("SKILLS_EXTRACTION_CONCURRENCY", "10")
         os.environ.setdefault("ENRICHMENT_PARALLEL", "1")
         os.environ.setdefault("ENRICHMENT_CONCURRENCY", "5")  # capped at 5 — see issue #149
+        from enrichment._config import enrichment_concurrency
+        from skills_extraction._config import parallel_concurrency
+
         log.info(
             "fast_mode_enabled",
             batch_size=args.batch_size,
             delay=args.delay,
-            skills_concurrency=os.getenv("SKILLS_EXTRACTION_CONCURRENCY"),
-            enrichment_concurrency=os.getenv("ENRICHMENT_CONCURRENCY"),
+            skills_concurrency=parallel_concurrency(),
+            enrichment_concurrency=enrichment_concurrency(),
         )
 
     # Set batch size for normalization agent
@@ -288,17 +291,17 @@ def main() -> None:
                 extract_out = extract_agent.process(extract_event)
                 extract_duration_ms = int((time.perf_counter() - extract_start) * 1000)
                 extract_count = 0
-                parallel_enabled = os.getenv("SKILLS_EXTRACTION_PARALLEL", "1").strip().lower() not in (
-                    "0",
-                    "false",
-                    "no",
-                )
+                from skills_extraction._config import parallel_enabled as _se_parallel_enabled
+
+                parallel_enabled = _se_parallel_enabled()
                 serial_estimate_ms = 0
                 if extract_out is not None:
                     records = extract_out.payload.get("records", [])
                     extract_count = len(records) if isinstance(records, list) else 0
 
-                    concurrency = int(os.getenv("SKILLS_EXTRACTION_CONCURRENCY", "5"))
+                    from skills_extraction._config import parallel_concurrency as _se_parallel_concurrency
+
+                    concurrency = _se_parallel_concurrency()
                     avg_per_job_ms = extract_out.payload.get("avg_per_job_ms", 0)
                     serial_estimate_ms = avg_per_job_ms * extract_count if avg_per_job_ms else 0
                     log.info(
@@ -322,11 +325,9 @@ def main() -> None:
                 enrich_out = enrich_agent.process(enrich_event)
                 enrich_duration_ms = int((time.perf_counter() - enrich_start) * 1000)
                 enriched_count = 0
-                enrichment_mode = (
-                    "parallel"
-                    if os.getenv("ENRICHMENT_PARALLEL", "1").strip().lower() not in ("0", "false", "no")
-                    else "serial"
-                )
+                from enrichment._config import enrichment_parallel as _enrich_parallel
+
+                enrichment_mode = "parallel" if _enrich_parallel() else "serial"
                 if enrich_out is not None:
                     enriched_count = enrich_out.payload.get("enriched_count", 0)
                     if enriched_count > 0:

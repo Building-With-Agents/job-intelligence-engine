@@ -1,0 +1,31 @@
+# config/laborpulse.yaml — LaborPulse / wfd-os integration knobs (JIE #222–#226).
+#
+# Confidence-bucket thresholds for ``POST /analytics/query`` responses,
+# the dev-only "allow no API keys" escape hatch (JIE #226), and the
+# Streamlit dashboard mock toggle. Per-environment headers
+# (X-Tenant-Id, X-User-Email, X-Request-Id) and outbound API secrets stay
+# in ``.env`` — those are tenant- and rotation-specific.
+
+laborpulse:
+  confidence:
+    # Synthesis confidence float below which the bucketed response label is
+    # "low". Range 0.0–1.0; must be < high_at_or_above.
+    # Env override: LABORPULSE_CONF_LOW_BELOW
+    low_below: 0.60
+
+    # Synthesis confidence float at or above which the label is "high".
+    # Between low_below and high_at_or_above the label is "medium".
+    # Range 0.0–1.0; must be > low_below.
+    # Env override: LABORPULSE_CONF_HIGH_AT_OR_ABOVE
+    high_at_or_above: 0.85
+
+  # Dev-only escape hatch: when true, POST /analytics/query is allowed
+  # without configured API keys. Production must NEVER set this.
+  # Env override: LABORPULSE_ALLOW_NO_API_KEYS
+  allow_no_api_keys: false
+
+  # When true, the Streamlit dashboard's analytics query client returns
+  # canned mock responses instead of calling the real API. Useful in
+  # local dev before the API is reachable.
+  # Env override: DASHBOARD_ANALYTICS_QUERY_MOCK
+  dashboard_query_mock: true

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import csv
-import os
 from pathlib import Path
 
 import structlog
@@ -20,7 +19,9 @@ log = structlog.get_logger()
 
 
 def _default_csv_path() -> Path:
-    return Path(os.getenv("EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"))
+    from eval._config import exp004_comparison_csv
+
+    return Path(exp004_comparison_csv())
 
 
 def _ensure_parent_dir(path: Path) -> None:

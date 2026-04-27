@@ -54,8 +54,28 @@ _UPDATE_SQL = text("""
     SET quality_score = :quality_score,
         soc_code = :soc_code,
         naics_code = :naics_code,
-        spam_score = :spam_score
+        spam_score = :spam_score,
+        employer_profile_id = COALESCE(
+            CAST(:employer_profile_id AS uuid),
+            employer_profile_id
+        )
     WHERE job_posting_id = :job_posting_id
+""")
+
+# Look up an existing employer_profiles row by company_id; the live enrichment
+# pipeline upserts these as a side-effect of promotion, so we just need to read
+# the existing UUID here. No LLM call required.
+_LOOKUP_EMPLOYER_PROFILE_SQL = text("""
+    SELECT id::text FROM dbo.employer_profiles
+    WHERE company_id = CAST(:company_id AS uuid)
+    LIMIT 1
+""")
+
+# Resolve the company_id for a given job_posting_id (the script's input row only
+# carries source/external_id; we need company_id for the employer_profiles join).
+_LOOKUP_COMPANY_ID_SQL = text("""
+    SELECT company_id::text FROM dbo.job_postings
+    WHERE job_posting_id::text = :job_posting_id
 """)
 
 
@@ -159,6 +179,22 @@ def main() -> None:
                     except Exception as e:
                         log.warning("backfill_naics_failed", job_posting_id=jp_id, error=str(e))
 
+                    # Employer profile linkback (no LLM — just look up by company_id).
+                    # Closes the docstring promise that this script fills employer_profile_id.
+                    employer_profile_id = None
+                    try:
+                        cid = session.execute(_LOOKUP_COMPANY_ID_SQL, {"job_posting_id": jp_id}).scalar_one_or_none()
+                        if cid:
+                            employer_profile_id = session.execute(
+                                _LOOKUP_EMPLOYER_PROFILE_SQL, {"company_id": cid}
+                            ).scalar_one_or_none()
+                    except Exception as e:
+                        log.warning(
+                            "backfill_employer_profile_lookup_failed",
+                            job_posting_id=jp_id,
+                            error=str(e),
+                        )
+
                     session.execute(
                         _UPDATE_SQL,
                         {
@@ -167,6 +203,7 @@ def main() -> None:
                             "soc_code": soc_code,
                             "naics_code": naics_code,
                             "spam_score": spam_res.spam_score,
+                            "employer_profile_id": employer_profile_id,
                         },
                     )
                     updated += 1
