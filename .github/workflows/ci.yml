@@ -47,4 +47,4 @@ jobs:
         env:
           PYTHONPATH: .
           LLM_PROVIDER: mock
-        run: python -m pytest tests/ enrichment/tests/ analytics/ -m "not live_llm" -v --tb=short
+        run: python -m pytest tests/ enrichment/tests/ analytics/ scripts/tests/ -m "not live_llm" -v --tb=short
