@@ -104,3 +104,15 @@ Document prompt changes and before/after metrics when iterating on the skills ex
 ### After this change
 
 On all 30 `extraction_ground_truth.json` jobs, the current `extract_tools` + `normalize_tool_label_for_eval` yields **92 / 127** GT tool labels matched (micro **P≈0.76, R≈0.72**).
+
+---
+
+## Week 10 — LaborPulse Q&A red-team (prompt / guardrail iteration)
+
+Use this table for **up to three** iteration cycles after `eval/qa_red_team_report.md` findings. Record the **exact** prompt or code diff (PR link or file + snippet) in **Change made**.
+
+| Cycle | Question ID | Before score | Failure pattern | Change made (exact diff) | After score | Outcome (helped / hurt / neutral) |
+|-------|-------------|--------------|-----------------|--------------------------|-------------|-----------------------------------|
+| 1 | _e.g. RT-403_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| 2 | | | | | | |
+| 3 | | | | | | |
