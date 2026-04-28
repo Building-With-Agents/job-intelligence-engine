@@ -1,20 +1,24 @@
 # ruff: noqa: T201
 #!/usr/bin/env python3
-"""Red-team runner: POST each RT adversarial question to LaborPulse ``/ask``.
+"""Red-team runner: POST each RT case to ``POST /analytics/query`` (LaborPulse Q&A).
 
 Usage (from repo root, venv activated)::
 
-    export LABORPULSE_ASK_BASE_URL=https://your-host.example.com   # no trailing slash
-    export ANALYTICS_QUERY_X_API_KEY=...   # if the deployed API requires it
+    # Loads .env from repo root (same as other scripts). API key is sent if either is set:
+    #   ANALYTICS_QUERY_X_API_KEY  OR  first entry's ``secret`` from valid JSON in JIE_API_KEYS
+    export LABORPULSE_ASK_BASE_URL=http://127.0.0.1:8000   # optional; this is the default
     python -m eval.run_redteam_ask
+
+**Bash:** If you ``export JIE_API_KEYS=...`` manually, wrap the value in **single quotes** so
+``!`` inside JSON does not trigger ``event not found`` (history expansion).
 
 Outputs:
 
 - Console: summary table (RT-ID | HTTP status | first 200 chars of body).
 - ``eval/redteam_raw_responses.json`` — full per-RT payloads (status, body, question).
 
-Langfuse: this script does not call Langfuse. If ``/ask`` returns a trace or request id
-field, it is copied into the saved JSON for manual lookup in Langfuse.
+Langfuse: this script does not call Langfuse. If the API returns trace or SQL fields, they are
+copied into ``trace_sql_hints`` for manual lookup.
 """
 
 from __future__ import annotations
@@ -28,8 +32,38 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from dotenv import load_dotenv
 
 from eval.qa_eval_laborpulse_headers import laborpulse_analytics_query_headers
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _x_api_key_for_redteam() -> str | None:
+    """Client ``X-API-Key``: explicit env, else first ``secret`` from valid ``JIE_API_KEYS`` JSON."""
+    x = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if x:
+        return x
+    raw = os.environ.get("JIE_API_KEYS", "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        sec = str(data[0].get("secret", "")).strip()
+        return sec or None
+    return None
+
+
+def _laborpulse_headers_with_key(*, x_request_id: str) -> dict[str, str]:
+    h = laborpulse_analytics_query_headers(x_request_id=x_request_id)
+    key = _x_api_key_for_redteam()
+    if key:
+        h["X-API-Key"] = key
+    return h
+
 
 # Verbatim inputs (preserve escaping — RT-504/505 use \\n in JSON file as real newlines in Python).
 REDTEAM_CASES: list[tuple[str, str]] = [
@@ -113,7 +147,7 @@ def run_all(
     dry_run: bool,
 ) -> dict[str, Any]:
     base = base_url.rstrip("/")
-    ask_url = f"{base}/ask"
+    ask_url = f"{base}/analytics/query"
     results: dict[str, Any] = {}
     summary_rows: list[tuple[str, int, str]] = []
 
@@ -122,7 +156,7 @@ def run_all(
         client = httpx.Client(timeout=timeout_s)
     try:
         for rt_id, question in REDTEAM_CASES:
-            headers = laborpulse_analytics_query_headers(x_request_id=rt_id)
+            headers = _laborpulse_headers_with_key(x_request_id=rt_id)
             entry: dict[str, Any] = {
                 "rt_id": rt_id,
                 "question": question,
@@ -181,7 +215,9 @@ def run_all(
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="POST red-team questions to LaborPulse /ask")
+    load_dotenv(_REPO_ROOT / ".env", override=False)
+
+    p = argparse.ArgumentParser(description="POST red-team questions to POST /analytics/query")
     p.add_argument(
         "--base-url",
         default=os.environ.get(
@@ -199,6 +235,22 @@ def main() -> int:
     p.add_argument("--dry-run", action="store_true", help="Write JSON structure without calling the API")
     args = p.parse_args()
 
+    if not args.dry_run:
+        if not _x_api_key_for_redteam():
+            print(
+                "WARNING: No X-API-Key for requests. Set ANALYTICS_QUERY_X_API_KEY or valid "
+                "JIE_API_KEYS in .env (see .env.example). Expect 401 missing_api_key or 500 if "
+                "the server cannot parse JIE_API_KEYS.",
+                file=sys.stderr,
+            )
+        else:
+            src = (
+                "ANALYTICS_QUERY_X_API_KEY"
+                if os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+                else "JIE_API_KEYS[0].secret"
+            )
+            print(f"Using X-API-Key from {src}", file=sys.stderr)
+
     info = run_all(base_url=args.base_url, timeout_s=args.timeout, output_path=args.output, dry_run=args.dry_run)
 
     print()
@@ -209,6 +261,18 @@ def main() -> int:
     print()
     print(f"Wrote full responses to {info['output_path']}")
     print("Correlate Langfuse manually using trace_sql_hints in each result entry if the API returns them.")
+
+    n500 = sum(1 for _rt, st, _ in info["summary_rows"] if st == 500)
+    if n500 and not args.dry_run:
+        print(
+            "\nIf many rows are HTTP 500 with detail Internal server error: restart the API after "
+            "fixing JIE_API_KEYS in .env (must be valid JSON). Use:\n"
+            '  JIE_API_KEYS=\'[{"key_id":"local-dev-1","secret":"local-dev-secret"}]\'\n'
+            "Or set ANALYTICS_QUERY_X_API_KEY to match that secret. "
+            "Bash: use single-quoted export for JIE_API_KEYS to avoid `!`: event not found.",
+            file=sys.stderr,
+        )
+
     return 0
 
 
