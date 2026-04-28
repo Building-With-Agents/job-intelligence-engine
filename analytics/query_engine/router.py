@@ -35,7 +35,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import Text, cast, or_, select
+from sqlalchemy import Text, cast, or_, select, text
 from sqlalchemy.orm import Session
 
 from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
@@ -48,6 +48,7 @@ from common.data_store.models import (
     SkillDemandWeekly,
     SkillVelocity,
 )
+from skills_extraction.extractors.taxonomy import _embed_texts_azure
 
 log = structlog.get_logger()
 
@@ -386,6 +387,45 @@ class QueryRouter:
         return or_(*clauses) if len(clauses) > 1 else clauses[0]
 
     @staticmethod
+    def _resolve_role_names_to_canonical_ids(
+        role_names: list[str],
+        session: Session,
+        *,
+        top_k: int = 5,
+    ) -> list[str]:
+        """Resolve free-text role names to canonical role_ids via label_embedding similarity.
+
+        Returns an empty list when ``role_names`` is empty, embedding env/API is
+        unavailable, or no rows have ``label_embedding`` populated. Callers
+        should fall back to ILIKE on ``CanonicalRole.label``.
+        """
+        if not role_names:
+            return []
+        joined = " ".join(role_names).strip()
+        if not joined:
+            return []
+        vectors = _embed_texts_azure([joined], audit_agent_name="analytics-query-router")
+        if vectors is None or not vectors or not vectors[0]:
+            return []
+        embedding = vectors[0]
+        if not embedding:
+            return []
+        vec_str = str([float(v) for v in embedding])
+        rows = session.execute(
+            text(
+                """
+                SELECT role_id
+                FROM dbo.canonical_roles
+                WHERE label_embedding IS NOT NULL
+                ORDER BY label_embedding <=> CAST(:vec AS vector)
+                LIMIT :top_k
+                """
+            ),
+            {"vec": vec_str, "top_k": top_k},
+        ).fetchall()
+        return [str(row[0]) for row in rows]
+
+    @staticmethod
     def _no_borderplex_market_aggregates(intent: str, confidence: float) -> RouteResult:
         """Subregion-only tenant: no Borderplex-wide skill/role/sector tables (JIE #224)."""
         return RouteResult(
@@ -472,9 +512,23 @@ class QueryRouter:
             cr.computed_at,
         ).order_by(cr.posting_count.desc(), cr.computed_at.desc())
 
-        role_filter = self._ilike_or(cr.label, role_names)
-        if role_filter is not None:
-            stmt = stmt.where(role_filter)
+        # Embedding resolution first; ILIKE only when resolved_ids is empty (no prior ILIKE).
+        if role_names:
+            resolved_ids = self._resolve_role_names_to_canonical_ids(role_names, session)
+            if resolved_ids:
+                stmt = stmt.where(cr.role_id.in_(resolved_ids))
+                log.info(
+                    "query_router_role_evolution_embedding_route",
+                    resolved_count=len(resolved_ids),
+                )
+            else:
+                role_filter = self._ilike_or(cr.label, role_names)
+                if role_filter is not None:
+                    stmt = stmt.where(role_filter)
+                log.info(
+                    "query_router_role_evolution_ilike_fallback",
+                    role_names_count=len(role_names),
+                )
 
         label = "canonical role evolution"
         if role_names:
@@ -711,10 +765,23 @@ class QueryRouter:
             cr.representative_titles,
         ).order_by(cr.posting_count.desc())
 
+        # Embedding resolution first; ILIKE only when resolved_ids is empty (no prior ILIKE).
         if role_names:
-            role_filter = self._ilike_or(cr.label, role_names)
-            if role_filter is not None:
-                stmt = stmt.where(role_filter)
+            resolved_ids = self._resolve_role_names_to_canonical_ids(role_names, session)
+            if resolved_ids:
+                stmt = stmt.where(cr.role_id.in_(resolved_ids))
+                log.info(
+                    "query_router_workflow_embedding_route",
+                    resolved_count=len(resolved_ids),
+                )
+            else:
+                role_filter = self._ilike_or(cr.label, role_names)
+                if role_filter is not None:
+                    stmt = stmt.where(role_filter)
+                log.info(
+                    "query_router_workflow_ilike_fallback",
+                    role_names_count=len(role_names),
+                )
             label = f"role workflow — {', '.join(role_names[:3])}"
         elif skill_names:
             # Best-effort: cast JSONB top_skills to text and ILIKE-search skill names
