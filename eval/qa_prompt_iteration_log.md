@@ -15,6 +15,7 @@ numbered sections below.
 | Version | Date | Author | Change summary | Composite mean | Notes |
 |---------|------|--------|----------------|----------------|-------|
 | `v1-baseline` | 2026-04-23 | Bryan + Emilio | Initial baseline — 90 golden questions, unmodified prompts, in-process pipeline | **0.875** | `answerability` reported separately (0.260, n=50); see v1-baseline section for full breakdown |
+| `v2.1-embedding-router` | 2026-04-28 | Pair A / #229 | `label_embedding` pgvector on `canonical_roles`; backfill + persist sync; Q&A router resolves `role_names` via `<=>` with ILIKE fallback (`role_evolution`, `workflow` only) | — | **Local verification, Langfuse run pending.** See `eval/runs/findingsv2.1-embedding-router.md`. Tests: 42 passed; re-cluster env: `CLUSTER_MIN_CLUSTER_SIZE=5`, `CLUSTER_MIN_SAMPLES=2`, `CLUSTER_MIN_TOTAL_POSTINGS=100` + `scripts/run_clustering.py --min-postings 100`. |
 
 ---
 
