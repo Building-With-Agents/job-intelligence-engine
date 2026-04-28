@@ -230,6 +230,13 @@ class NormalizedJob(Base):
     normalization_errors: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    # Promotion audit (JIE #289): stamped by apply_enrichment_to_job_postings
+    # on successful promotion to dbo.job_postings. NULL means "not yet promoted"
+    # — picked up by scripts/sweep_unpromoted_normalized_jobs.py for retry
+    # after a 1-hour grace window. Pre-#289 rows are NULL until the sweeper
+    # or the one-shot backfill backfills them.
+    promoted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
 
 class NormalizationQuarantine(Base):
     """Records that failed normalization validation."""

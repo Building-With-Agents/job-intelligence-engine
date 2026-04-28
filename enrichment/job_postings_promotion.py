@@ -669,6 +669,13 @@ def apply_enrichment_to_job_postings(
             normalized_job_id=normalized_job_id,
             job_posting_id=str(job_posting_id),
         )
+        # JIE #289: stamp promoted_at on the source normalized_jobs row so the
+        # sweeper can distinguish "promoted" from "still pending" rows. Same
+        # session as the job_postings UPDATE above — atomic via session.commit().
+        session.execute(
+            text("UPDATE dbo.normalized_jobs SET promoted_at = NOW() WHERE id = :nj_id"),
+            {"nj_id": normalized_job_id},
+        )
         return True
 
     if tier == "uncertain" or spam_score is None:
