@@ -135,6 +135,24 @@ def persist_clustering_result(
 
     session.flush()
 
+    label_embeddings_synced = 0
+    for cluster in result.clusters:
+        if not cluster.centroid_embedding:
+            continue
+        role_id = cluster_id_to_role_id.get(cluster.cluster_id)
+        if role_id is None:
+            continue
+        vec_str = str([float(v) for v in cluster.centroid_embedding])
+        session.execute(
+            text(
+                "UPDATE dbo.canonical_roles "
+                "SET label_embedding = CAST(:vec AS vector) "
+                "WHERE role_id = :role_id"
+            ),
+            {"vec": vec_str, "role_id": role_id},
+        )
+        label_embeddings_synced += 1
+
     postings_updated = 0
     for a in result.assignments:
         pid = a.posting_id
@@ -173,6 +191,7 @@ def persist_clustering_result(
         roles_inserted=roles_inserted,
         postings_updated=postings_updated,
         role_count=len(result.clusters),
+        label_embeddings_synced=label_embeddings_synced,
     )
 
     return {
