@@ -144,11 +144,7 @@ def persist_clustering_result(
             continue
         vec_str = str([float(v) for v in cluster.centroid_embedding])
         session.execute(
-            text(
-                "UPDATE dbo.canonical_roles "
-                "SET label_embedding = CAST(:vec AS vector) "
-                "WHERE role_id = :role_id"
-            ),
+            text("UPDATE dbo.canonical_roles SET label_embedding = CAST(:vec AS vector) WHERE role_id = :role_id"),
             {"vec": vec_str, "role_id": role_id},
         )
         label_embeddings_synced += 1

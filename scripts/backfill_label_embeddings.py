@@ -72,8 +72,7 @@ def main() -> None:
         exists = conn.execute(text(_LABEL_EMBEDDING_CHECK)).scalar()
         if not exists:
             print(
-                "ERROR: dbo.canonical_roles.label_embedding does not exist.\n"
-                "Run: python scripts/db_check.py migrate",
+                "ERROR: dbo.canonical_roles.label_embedding does not exist.\nRun: python scripts/db_check.py migrate",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -96,10 +95,7 @@ def main() -> None:
     print(f"  2. total canonical_roles: {total}")
     print(f"  3. rows with label_embedding: {with_embedding}")
     print(f"  4. rows still missing label_embedding: {still_missing}")
-    print(
-        "  5. rows skipped (cluster_centroid null or wrong dimension / not array): "
-        f"{skipped}"
-    )
+    print(f"  5. rows skipped (cluster_centroid null or wrong dimension / not array): {skipped}")
 
 
 if __name__ == "__main__":
