@@ -499,7 +499,7 @@ def _extract_recommended_follow_up_section(markdown: str) -> str:
     )
     if not m:
         m = re.search(r"(?msi)^\s*##\s+recommended follow-up\s*\r?\n(.*)\Z", text)
-    return (m.group(1).strip() if m else "")
+    return m.group(1).strip() if m else ""
 
 
 def _curriculum_to_analytics_response(

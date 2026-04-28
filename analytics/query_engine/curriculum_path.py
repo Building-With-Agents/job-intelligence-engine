@@ -153,9 +153,7 @@ def _jp_nj_ei_base() -> tuple[type[_JobPosting], type[NormalizedJob], type[Extra
     return _JobPosting, NormalizedJob, ExtractedIntelligence
 
 
-def _scoped_posting_predicates(
-    role_id: str | None, temporal_period: str | None, week_start: date | None
-) -> list[Any]:
+def _scoped_posting_predicates(role_id: str | None, temporal_period: str | None, week_start: date | None) -> list[Any]:
     jp, nj, _ei = _jp_nj_ei_base()
     p: list[Any] = [
         jp.source.isnot(None),
@@ -186,9 +184,7 @@ def _join_ei_to_jp() -> Any:
     )
 
 
-def _match_canonical_role(
-    session: Session, phrase: str
-) -> tuple[str | None, str | None, bool]:
+def _match_canonical_role(session: Session, phrase: str) -> tuple[str | None, str | None, bool]:
     """Return ``(role_id, label, matched)`` from ``canonical_roles`` or EI keyword fallback."""
     p = (phrase or "").strip()
     if len(p) < 2:
@@ -310,13 +306,16 @@ def _query_top_skills(
         *(_scoped_posting_predicates(role_id, temporal_period, week_start)),
         ei.extraction_failed.is_(False),
     )
-    total = session.scalar(
-        select(func.count(func.distinct(jp.job_posting_id)))
-        .select_from(ei)
-        .join(nj, nj.id == ei.normalized_job_id)
-        .join(jp, and_(nj.source == jp.source, nj.external_id == jp.external_id))
-        .where(base_scope)
-    ) or 0
+    total = (
+        session.scalar(
+            select(func.count(func.distinct(jp.job_posting_id)))
+            .select_from(ei)
+            .join(nj, nj.id == ei.normalized_job_id)
+            .join(jp, and_(nj.source == jp.source, nj.external_id == jp.external_id))
+            .where(base_scope)
+        )
+        or 0
+    )
     if total == 0 or week_start is None:
         return [], int(total)
 
@@ -442,18 +441,18 @@ def _query_rising_skills(
     return out
 
 
-def _query_co_occurring(
-    session: Session, role_id: str, temporal_period: str | None
-) -> list[dict[str, Any]]:
+def _query_co_occurring(session: Session, role_id: str, temporal_period: str | None) -> list[dict[str, Any]]:
     jp, nj, ei = _jp_nj_ei_base()
     base_scope = and_(
         *(_scoped_posting_predicates(role_id, temporal_period, None)),
         ei.extraction_failed.is_(False),
     )
     rows = session.execute(
-        select(ei.tools, ei.responsibilities).select_from(ei).join(nj, nj.id == ei.normalized_job_id).join(
-            jp, and_(nj.source == jp.source, nj.external_id == jp.external_id)
-        ).where(base_scope)
+        select(ei.tools, ei.responsibilities)
+        .select_from(ei)
+        .join(nj, nj.id == ei.normalized_job_id)
+        .join(jp, and_(nj.source == jp.source, nj.external_id == jp.external_id))
+        .where(base_scope)
     ).all()
     ctr: Counter[tuple[str, str]] = Counter()
     for tools, resps in rows:
@@ -468,10 +467,7 @@ def _query_co_occurring(
         for r in resps or []:
             if not isinstance(r, dict):
                 continue
-            txt = (
-                (r.get("text") or r.get("responsibility") or r.get("description") or r.get("title") or "")
-                .strip()
-            )
+            txt = (r.get("text") or r.get("responsibility") or r.get("description") or r.get("title") or "").strip()
             if txt:
                 r_texts.append(txt[:500])
         for tn in t_names:
@@ -554,11 +550,7 @@ def build_curriculum_inputs(
     vel_week = _latest_velocity_week(session) or week_start
     temporal = _pick_temporal_period(session)
 
-    period = (
-        f"temporal_period={temporal or 'any'};"
-        f" demand_week={week_start!s};"
-        f" velocity_week={vel_week!s}"
-    )
+    period = f"temporal_period={temporal or 'any'}; demand_week={week_start!s}; velocity_week={vel_week!s}"
 
     top_skills: list[dict[str, Any]] = []
     rising: list[dict[str, Any]] = []
