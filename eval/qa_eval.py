@@ -2,11 +2,11 @@
 """Golden-question Q&A eval: analytics + automated scores + optional Langfuse dataset runs.
 
 The baseline composite (``v1-baseline``) is the mean of four per-item metrics:
-``intent_accuracy``, ``evidence_citation``, ``confidence_flags``, ``latency_sla``.
+``intent_accuracy``, ``evidence_citation``, ``confidence_self_consistency``, ``latency_sla``.
 
-When applicable, a fifth per-item score ``answerability`` is also emitted
-(data-backed expected intents only; not part of the composite). Run-level
-``mean_*`` includes ``mean_answerability`` only for items that were scored.
+When applicable, per-item ``answerability`` and ``correct_refusal`` are also
+emitted (not part of the four-metric mean). Run-level includes ``mean_*`` and
+``refusal_correctness_rate`` / ``mean_answerability`` with cohort comments.
 
 Usage (repo root, venv active)::
 
@@ -44,6 +44,8 @@ from eval.qa_scoring import (  # noqa: E402
     composite_score,
     compute_item_scores,
     confusion_rows,
+    run_subcomposites_and_gates,
+    subcomposites_from_means,
 )
 
 log = structlog.get_logger()
@@ -57,6 +59,32 @@ def _validate_golden_row(item: dict[str, Any], idx: int) -> None:
     for f in _REQUIRED:
         if f not in item:
             raise ValueError(f"Item[{idx}] missing {f!r} (id={item.get('id')!r})")
+    _validate_optional_golden_fields(item, idx)
+
+
+def _validate_optional_golden_fields(item: dict[str, Any], idx: int) -> None:
+    """Type-check optional JIE #269 fields when present (``data_backed``, row-count hints, etc.)."""
+    bid = item.get("id", "?")
+    if "data_backed" in item and not isinstance(item["data_backed"], bool):
+        raise ValueError(f"Item[{idx}] {bid!r}: data_backed must be bool if set")
+    if "expected_min_rows" in item and item["expected_min_rows"] is not None:
+        try:
+            int(item["expected_min_rows"])
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Item[{idx}] {bid!r}: expected_min_rows must be int-coercible") from e
+    if "zero_rows_is_correct" in item and not isinstance(item["zero_rows_is_correct"], bool):
+        raise ValueError(f"Item[{idx}] {bid!r}: zero_rows_is_correct must be bool if set")
+    if "refusal_appropriate" in item and not isinstance(item["refusal_appropriate"], bool):
+        raise ValueError(f"Item[{idx}] {bid!r}: refusal_appropriate must be bool if set")
+    if "expected_confidence_range" in item and item["expected_confidence_range"] is not None:
+        ecr = item["expected_confidence_range"]
+        if not isinstance(ecr, (list, tuple)) or len(ecr) != 2:
+            raise ValueError(f"Item[{idx}] {bid!r}: expected_confidence_range must be [lo, hi]")
+        try:
+            float(ecr[0])
+            float(ecr[1])
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Item[{idx}] {bid!r}: expected_confidence_range bounds must be numbers") from e
 
 
 def load_golden_questions(path: Path) -> list[dict[str, Any]]:
@@ -213,7 +241,13 @@ def _evaluator_factory(sla_seconds: float | None):
         )
         # Only emit Evaluations for scorable (non-None) values; Langfuse requires float.
         evals: list[Any] = []
-        for name in ("intent_accuracy", "evidence_citation", "confidence_flags"):
+        for name in (
+            "intent_accuracy",
+            "evidence_citation",
+            "confidence_self_consistency",
+            "correct_refusal",
+            "confidence_in_expected_range",
+        ):
             val = getattr(scores, name)
             if val is not None:
                 evals.append(Evaluation(name=name, value=val, comment=scores.comments[name][:500]))
@@ -241,9 +275,11 @@ def _run_evaluators_average() -> list:
         sums: dict[str, list[float]] = {
             "intent_accuracy": [],
             "evidence_citation": [],
-            "confidence_flags": [],
+            "confidence_self_consistency": [],
+            "confidence_in_expected_range": [],
             "latency_sla": [],
             "answerability": [],
+            "correct_refusal": [],
         }
         for ir in item_results:
             for ev in getattr(ir, "evaluations", []) or []:
@@ -253,18 +289,75 @@ def _run_evaluators_average() -> list:
                     sums[name].append(float(val))
         n_total = len(item_results)
         out: list[Any] = []
-        for k in ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla"):
+        for k in ("intent_accuracy", "evidence_citation", "confidence_self_consistency", "latency_sla"):
             vals = sums[k]
             if vals:
                 n_excl = n_total - len(vals)
                 cmt = f"n_scored={len(vals)} n_excluded={n_excl} n_total={n_total}"
                 out.append(Evaluation(name=f"mean_{k}", value=sum(vals) / len(vals), comment=cmt))
+        cr = sums["correct_refusal"]
+        if cr:
+            n_excl = n_total - len(cr)
+            cmt = f"n_scored={len(cr)} n_excluded={n_excl} n_total={n_total} (intent-only cohort)"
+            out.append(
+                Evaluation(
+                    name="refusal_correctness_rate",
+                    value=sum(cr) / len(cr),
+                    comment=cmt,
+                )
+            )
+        cie_vals = sums["confidence_in_expected_range"]
+        if cie_vals:
+            n_excl = n_total - len(cie_vals)
+            cmt = f"n_scored={len(cie_vals)} n_excluded={n_excl} n_total={n_total} (items with range)"
+            out.append(
+                Evaluation(
+                    name="mean_confidence_in_expected_range",
+                    value=sum(cie_vals) / len(cie_vals),
+                    comment=cmt,
+                )
+            )
         ab = sums["answerability"]
         n_scored, n_skip, _ = _answerability_run_summary(item_results)
         if ab:
             pr = sum(ab) / len(ab)
             cmt = f"n={n_scored} intent_only_skipped={n_skip} pass_rate={pr:.4f}"
             out.append(Evaluation(name="mean_answerability", value=pr, comment=cmt))
+
+        def _mavg(k: str) -> float | None:
+            xs = sums.get(k) or []
+            return float(sum(xs) / len(xs)) if xs else None
+
+        scomp = subcomposites_from_means(
+            evidence_citation=_mavg("evidence_citation"),
+            intent_accuracy=_mavg("intent_accuracy"),
+            latency_sla=_mavg("latency_sla"),
+            answerability=_mavg("answerability"),
+            correct_refusal=_mavg("correct_refusal"),
+            confidence_self_consistency=_mavg("confidence_self_consistency"),
+            confidence_in_expected_range=_mavg("confidence_in_expected_range"),
+            n_data_backed_answerability=len(sums.get("answerability", [])),
+        )
+        for name in (
+            "prompt_quality_composite",
+            "classification_composite",
+            "pipeline_health_composite",
+            "safety_composite",
+            "overall_geometric_composite",
+        ):
+            v = scomp.get(name)
+            if isinstance(v, (int, float)) and v is not None and not isinstance(v, bool):
+                cmt0 = (scomp.get("gate_message") or "JIE #268 sub-composites")[:500]
+                out.append(Evaluation(name=name, value=float(v), comment=cmt0))
+        g = scomp.get("gated")
+        if isinstance(g, bool):
+            out.append(
+                Evaluation(
+                    name="subcomposite_gated",
+                    value=1.0 if g else 0.0,
+                    comment=str(scomp.get("gate_message", ""))[:500],
+                )
+            )
         return out
 
     return [run_mean]
@@ -272,8 +365,8 @@ def _run_evaluators_average() -> list:
 
 def _local_answerability_summary(
     rows: list[tuple[str, QAItemScores, str | None]],
-) -> dict[str, int | float]:
-    """Per-run stats for data-backed (non-null) answerability; composite remains four metrics."""
+) -> dict[str, int | float | None]:
+    """Per-run stats for data-backed (non-null) answerability; composite remains four core metrics."""
     ab_vals: list[float] = []
     for r in rows:
         a = r[1].answerability
@@ -298,6 +391,34 @@ def _local_answerability_summary(
     }
 
 
+def _local_refusal_correctness_summary(
+    rows: list[tuple[str, QAItemScores, str | None]],
+) -> dict[str, int | float | None]:
+    """Mean of ``correct_refusal`` over intent-only scored items (JIE #269)."""
+    cr_vals: list[float] = []
+    for r in rows:
+        c = r[1].correct_refusal
+        if c is not None:
+            cr_vals.append(float(c))
+    n = len(rows)
+    n_scored = len(cr_vals)
+    n_excl = n - n_scored
+    if not cr_vals:
+        return {
+            "refusal_correctness_rate": None,
+            "n_scored": 0,
+            "n_excluded": n,
+            "mean": None,
+        }
+    m = sum(cr_vals) / len(cr_vals)
+    return {
+        "refusal_correctness_rate": m,
+        "n_scored": n_scored,
+        "n_excluded": n_excl,
+        "mean": m,
+    }
+
+
 def _metric_mean(rows: list[tuple[str, QAItemScores, str | None]], key: str) -> tuple[float | None, int, int]:
     """Return (mean_or_None, n_scored, n_excluded) for a named metric across rows."""
     vals = [getattr(r[1], key) for r in rows if getattr(r[1], key) is not None]
@@ -317,7 +438,7 @@ def print_console_summary(
         print("No items.")
         return
     n = len(rows)
-    keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
+    keys = ("intent_accuracy", "evidence_citation", "confidence_self_consistency", "latency_sla")
     print("\n=== QA golden eval — means ===")
     for k in keys:
         mean, n_scored, n_excl = _metric_mean(rows, k)
@@ -335,6 +456,38 @@ def print_console_summary(
         )
     else:
         print(f"  (no data-backed items)  intent-only / skipped: {a_sum['n_intent_only_skipped']}")
+    r_sum = _local_refusal_correctness_summary(rows)
+    print("\n=== correct_refusal (intent-only; not in four-metric mean) ===")
+    if r_sum["n_scored"] and r_sum["mean"] is not None:
+        print(
+            f"  refusal_correctness_rate: {r_sum['refusal_correctness_rate']:.4f}  "
+            f"over n_scored={r_sum['n_scored']}  excluded (N/A): {r_sum['n_excluded']}"
+        )
+    else:
+        print("  (no intent-only correct_refusal scores — all N/A or skipped)")
+
+    cie_m, cie_s, cie_e = _metric_mean(rows, "confidence_in_expected_range")
+    print("\n=== confidence_in_expected_range (optional golden [lo,hi]; not in four-metric mean) ===")
+    if cie_m is not None:
+        print(f"  mean: {cie_m:.4f}  (n_scored={cie_s}/{n} excluded (no range or infra)={cie_e})")
+    else:
+        print("  (no items with expected_confidence_range)")
+
+    sub = run_subcomposites_and_gates(rows)
+    print("\n=== JIE #268 sub-composites (prompt_quality proxies evidence until #265) ===")
+    for k in (
+        "prompt_quality_composite",
+        "classification_composite",
+        "pipeline_health_composite",
+        "safety_composite",
+        "overall_geometric_composite",
+    ):
+        v = sub.get(k)
+        if isinstance(v, (int, float)) and v is not None:
+            print(f"  {k}: {v:.4f}")
+        else:
+            print(f"  {k}: {v}")
+    print(f"  gated: {sub.get('gated')}  ({sub.get('gate_message', '')})")
 
     def _fmt(v: float | None) -> str:
         return f"{v:.2f}" if v is not None else " — "
@@ -346,7 +499,7 @@ def print_console_summary(
         print(
             f"  {gq_id}: composite={composite_score(sc):.3f} "
             f"i={_fmt(sc.intent_accuracy)} e={_fmt(sc.evidence_citation)} "
-            f"c={_fmt(sc.confidence_flags)} l={sc.latency_sla:.2f} {ce[:60]}"
+            f"cf={_fmt(sc.confidence_self_consistency)} l={sc.latency_sla:.2f} {ce[:60]}"
         )
 
 
@@ -419,20 +572,31 @@ def _build_local_experiment_data(questions: list[dict[str, Any]]) -> list[dict[s
     """Langfuse LocalExperimentItem list mirroring upload_qa_dataset layout."""
     data: list[dict[str, Any]] = []
     for row in questions:
+        meta: dict[str, Any] = {
+            "id": row["id"],
+            "question": row["question"],
+            "expected_intent": row["intent"],
+            "intent": row["intent"],
+            "context": row.get("context", ""),
+            "must_include": row["must_include"],
+            "must_not_include": row["must_not_include"],
+            "difficulty": row["difficulty"],
+            "ideal_answer_summary": row["ideal_answer_summary"],
+        }
+        for k in (
+            "data_backed",
+            "expected_min_rows",
+            "zero_rows_is_correct",
+            "refusal_appropriate",
+            "expected_confidence_range",
+        ):
+            if k in row:
+                meta[k] = row[k]
         data.append(
             {
                 "input": {"question": row["question"]},
                 "expected_output": {"ideal_answer_summary": row["ideal_answer_summary"]},
-                "metadata": {
-                    "id": row["id"],
-                    "expected_intent": row["intent"],
-                    "intent": row["intent"],
-                    "context": row.get("context", ""),
-                    "must_include": row["must_include"],
-                    "must_not_include": row["must_not_include"],
-                    "difficulty": row["difficulty"],
-                    "ideal_answer_summary": row["ideal_answer_summary"],
-                },
+                "metadata": meta,
             }
         )
     return data
@@ -508,9 +672,11 @@ def main(argv: list[str] | None = None) -> int:
                     "scores": {
                         "intent_accuracy": sc.intent_accuracy,
                         "evidence_citation": sc.evidence_citation,
-                        "confidence_flags": sc.confidence_flags,
+                        "confidence_self_consistency": sc.confidence_self_consistency,
+                        "confidence_in_expected_range": sc.confidence_in_expected_range,
                         "latency_sla": sc.latency_sla,
                         "answerability": sc.answerability,
+                        "correct_refusal": sc.correct_refusal,
                     },
                     "error": err,
                 }
@@ -518,14 +684,26 @@ def main(argv: list[str] | None = None) -> int:
             ],
         }
         if rows:
-            keys = ("intent_accuracy", "evidence_citation", "confidence_flags", "latency_sla")
+            keys = (
+                "intent_accuracy",
+                "evidence_citation",
+                "confidence_self_consistency",
+                "latency_sla",
+            )
             payload_local["means"] = {
                 k: round(m, 6) if (m := _metric_mean(rows, k)[0]) is not None else None for k in keys
             }
             payload_local["excluded_counts"] = {
-                k: _metric_mean(rows, k)[2] for k in ("intent_accuracy", "evidence_citation", "confidence_flags")
+                k: _metric_mean(rows, k)[2]
+                for k in ("intent_accuracy", "evidence_citation", "confidence_self_consistency")
             }
+            cr_mean, _, cie_n = _metric_mean(rows, "confidence_in_expected_range")
+            payload_local["mean_confidence_in_expected_range"] = round(cr_mean, 6) if cr_mean is not None else None
+            payload_local["confidence_in_expected_range_n"] = cie_n
+            payload_local["run_ece"] = None
             payload_local["answerability_summary"] = _local_answerability_summary(rows)
+            payload_local["refusal_correctness_summary"] = _local_refusal_correctness_summary(rows)
+            payload_local["subcomposites"] = run_subcomposites_and_gates(rows)
             payload_local["intent_confusion"] = {
                 f"{e}->{p}": c for (e, p), c in sorted(confusion_rows(intent_pairs).items())
             }

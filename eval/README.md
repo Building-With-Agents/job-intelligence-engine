@@ -2,7 +2,7 @@
 
 ## Golden-question Q&A eval (`qa_eval.py`)
 
-Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_flags`, `latency_sla`), and optionally records results in Langfuse as a dataset run. A fifth metric (`answerability`) is emitted separately for data-backed intents — see the subsection below.
+Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_golden_questions.json), computes four numeric scores per item (`intent_accuracy`, `evidence_citation`, `confidence_self_consistency`, `latency_sla`), and optionally records results in Langfuse as a dataset run. **`intent_accuracy` is binary** (1.0 exact match / 0.0 else; JIE #261); use the printed intent confusion matrix to inspect near-miss routing. A fifth metric (`answerability`) is emitted separately for data-backed intents — see the subsection below.
 
 ### Answerability (5th metric, JIE #247)
 
@@ -10,10 +10,12 @@ Runs the production analytics Q&A path over [`qa_golden_questions.json`](qa_gold
 
 | Condition | `answerability` |
 |-----------|-----------------|
-| Expected intent not data-backed in harness map | `None` (skipped) |
-| Data-backed intent, pipeline error or no response | `0.0` |
-| Data-backed intent, `row_count_returned == 0` | `0.0` |
+| Expected intent not data-backed in harness map (or `data_backed: false` in golden) | `None` (skipped) |
+| Data-backed intent, pipeline error or no response | `None` (excluded, not 0.0) |
+| Data-backed intent, `row_count_returned == 0` (and not `zero_rows_is_correct`) | `0.0` |
 | Data-backed intent, `row_count_returned > 0`  | `1.0` |
+
+Optional golden fields (JIE #269): `data_backed` (overrides the harness map), `expected_min_rows`, `zero_rows_is_correct`, `refusal_appropriate`. A sixth automated score, `correct_refusal` (1.0/0.0, or `None` for data-backed / no response), applies to intent-only items only and is not part of the four-metric `composite_score` mean. Run output includes `refusal_correctness_summary` (mean over the intent-only scored cohort) and JIE #268 `subcomposites` (prompt/classification/pipeline/safety, geometric mean, and `gated` when `QA_EVAL_ANSWERABILITY_GATE_THRESHOLD` is breached; `prompt_quality` proxies `evidence_citation` until #265).
 
 `row_count_returned` is a new field on `AnalyticsQueryResponse` populated by the ORM path in `analytics.query_engine.routing.run_analytics_qna`.
 
