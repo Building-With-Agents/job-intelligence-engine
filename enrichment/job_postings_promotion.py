@@ -45,6 +45,7 @@ _RESOLVE_JOB_POSTING_SQL = text(
            nj.city AS city,
            nj.state_province AS state_province,
            nj.country AS country,
+           nj.zip_code AS zip_code,
            nj.is_remote AS is_remote,
            nj.work_arrangement AS work_arrangement
     FROM dbo.job_postings jp
@@ -85,7 +86,8 @@ _UPDATE_UNCERTAIN_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -111,7 +113,8 @@ _UPDATE_CLEAN_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -137,7 +140,8 @@ _UPDATE_FLAGGED_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -197,13 +201,13 @@ _INSERT_JOB_POSTING_SQL = text(
         job_posting_id, company_id,
         job_title, job_description, employment_type,
         location, salary_range, source, external_id,
-        ingestion_run_id, status
+        ingestion_run_id, status, zip_code
     ) VALUES (
         CAST(:job_posting_id AS uuid),
         CAST(:company_id AS uuid),
         :job_title, :job_description, :employment_type,
         :location, :salary_range, :source, :external_id,
-        :ingestion_run_id, :status
+        :ingestion_run_id, :status, :zip_code
     )
     ON CONFLICT (job_posting_id) DO NOTHING
     """
@@ -213,7 +217,7 @@ _LOAD_NORMALIZED_JOB_SQL = text(
     """
     SELECT id, source, external_id, ingestion_run_id,
            title, company, description,
-           city, state_province, country,
+           city, state_province, country, zip_code,
            is_remote, work_arrangement,
            employment_type, date_posted,
            salary_min, salary_max, salary_currency, salary_period
@@ -286,6 +290,10 @@ def _insert_job_posting_from_normalized(session: Session, normalized_job_id: int
             "external_id": nj["external_id"],
             "ingestion_run_id": nj["ingestion_run_id"],
             "status": "open",
+            # JIE #244: propagate zip_code on insert so freshly-inserted job_postings
+            # rows carry the value from normalized_jobs (which is populated by the
+            # fixed _resolve_zip_code path in jsearch_mapper.py).
+            "zip_code": nj["zip_code"],
         },
     )
     log.info(
@@ -301,6 +309,7 @@ def _insert_job_posting_from_normalized(session: Session, normalized_job_id: int
         "city": nj["city"],
         "state_province": nj["state_province"],
         "country": nj["country"],
+        "zip_code": nj["zip_code"],
         "is_remote": nj["is_remote"],
         "work_arrangement": nj["work_arrangement"],
     }
@@ -620,6 +629,14 @@ def apply_enrichment_to_job_postings(
     if is_remote_param is not None:
         is_remote_param = bool(is_remote_param)
 
+    # JIE #244: zip_code propagates from normalized_jobs to job_postings on every
+    # promotion. Resolved dict carries it from either the resolve path
+    # (_RESOLVE_JOB_POSTING_SQL added nj.zip_code) or the insert path
+    # (_insert_job_posting_from_normalized populates it directly). The UPDATE
+    # SQL uses COALESCE so a NULL here preserves whatever was already set
+    # (e.g., from a prior promotion before #244 fix landed).
+    zip_code_param = resolved.get("zip_code") if resolved else None
+
     # Structured salary (#174): pulled from normalized_jobs (already in resolved dict).
     # legacy salary_range TEXT is kept for backward compat; structured columns are preferred for analytics.
     salary_min_param = resolved.get("salary_min") if resolved else None
@@ -660,6 +677,7 @@ def apply_enrichment_to_job_postings(
         "salary_max": salary_max_param,
         "salary_currency": salary_currency_param,
         "salary_period": salary_period_param,
+        "zip_code": zip_code_param,
         **derived_output_fields,
     }
 
