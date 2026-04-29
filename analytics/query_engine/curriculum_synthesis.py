@@ -54,11 +54,7 @@ def fetch_role_suggestions(
     effective_limit = limit or int(os.getenv("CANONICAL_ROLE_SUGGESTION_LIMIT", str(_DEFAULT_ROLE_SUGGESTION_LIMIT)))
     try:
         result = session.execute(
-            text(
-                "SELECT label FROM dbo.canonical_roles "
-                "ORDER BY posting_count DESC NULLS LAST "
-                "LIMIT :lim"
-            ),
+            text("SELECT label FROM dbo.canonical_roles ORDER BY posting_count DESC NULLS LAST LIMIT :lim"),
             {"lim": effective_limit},
         )
         rows = result.fetchall()
