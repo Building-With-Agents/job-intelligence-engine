@@ -1,6 +1,6 @@
 [
   {
-    "id": 3,
+    "id": 5,
     "week_start": "2026-04-20",
     "sector": "Information Technology",
     "posting_count": 43,
@@ -18,10 +18,10 @@
       "code review",
       "cybersecurity"
     ],
-    "computed_at": "2026-04-28T23:43:21.696320+00:00"
+    "computed_at": "2026-04-29T05:53:53.923312+00:00"
   },
   {
-    "id": 4,
+    "id": 6,
     "week_start": "2026-04-20",
     "sector": "Other",
     "posting_count": 57,
@@ -39,6 +39,6 @@
       "rest apis",
       "cybersecurity"
     ],
-    "computed_at": "2026-04-28T23:43:21.696320+00:00"
+    "computed_at": "2026-04-29T05:53:53.923312+00:00"
   }
 ]
