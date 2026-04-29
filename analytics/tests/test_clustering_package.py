@@ -276,6 +276,7 @@ def test_run_clustering_builds_cluster_summaries_with_fake_clusterer(
         "min_samples": 1,
         "cluster_selection_epsilon": 0.15,
         "metric": "cosine",
+        "algorithm": "brute",
     }
 
 

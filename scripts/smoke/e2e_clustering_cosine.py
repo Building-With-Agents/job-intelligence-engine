@@ -51,6 +51,7 @@ def _ok(msg: str) -> None:
 # Check 1 — config reads cosine
 # ---------------------------------------------------------------------------
 
+
 def check_config_metric() -> None:
     from analytics.clustering.config import cluster_distance_metric  # noqa: PLC0415
 
@@ -65,6 +66,7 @@ def check_config_metric() -> None:
 # Check 2 — canonical_roles has ≥ 10 labels
 # ---------------------------------------------------------------------------
 
+
 def check_canonical_roles_count() -> None:
     db_url = os.getenv("PYTHON_DATABASE_URL")
     if not db_url:
@@ -77,9 +79,7 @@ def check_canonical_roles_count() -> None:
 
         engine = create_engine(db_url, pool_pre_ping=True)
         with Session(engine) as session:
-            result = session.execute(
-                text("SELECT COUNT(*) AS n FROM dbo.canonical_roles")
-            )
+            result = session.execute(text("SELECT COUNT(*) AS n FROM dbo.canonical_roles"))
             row = result.fetchone()
             count = int(row[0]) if row else 0
     except Exception as exc:  # noqa: BLE001
@@ -98,6 +98,7 @@ def check_canonical_roles_count() -> None:
 # ---------------------------------------------------------------------------
 # Check 3 — noise fraction (best-effort; skipped if no freshness proxy)
 # ---------------------------------------------------------------------------
+
 
 def check_noise_fraction() -> None:
     db_url = os.getenv("PYTHON_DATABASE_URL")
@@ -146,6 +147,7 @@ def check_noise_fraction() -> None:
 # Check 4 — Q&A resolves "software developer" without zero-row refusal
 # ---------------------------------------------------------------------------
 
+
 def check_qna_software_developer() -> None:
     db_url = os.getenv("PYTHON_DATABASE_URL")
     if not db_url:
@@ -187,6 +189,7 @@ def check_qna_software_developer() -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     print("=== JIE #297 — cosine clustering smoke checks ===\n")
