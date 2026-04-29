@@ -6,6 +6,11 @@ and extracts lightweight entities for routing and SQL generation.
 Uses :func:`common.llm_adapter.complete` with ``role="classification"`` so the
 call routes through the provider-agnostic adapter (Azure OpenAI ``chat-gpt41mini``
 via ``LLM_DEFAULT`` by default — see ``.cursor/rules/llm-routing.mdc``).
+
+JIE #258 — per-stage Langfuse observations: ``classify_workforce_question`` is
+wrapped with ``@observe(as_type="generation")`` so each intent-classification call
+appears as its own Langfuse generation nested inside the parent Q&A trace, enabling
+per-stage cost attribution and latency breakdown.
 """
 
 from __future__ import annotations
@@ -23,6 +28,29 @@ if TYPE_CHECKING:
     from analytics.query_engine.schemas import CostLedger
 
 log = structlog.get_logger()
+
+# ---------------------------------------------------------------------------
+# Langfuse @observe — optional; no-op when SDK is absent or unconfigured
+# ---------------------------------------------------------------------------
+try:
+    from langfuse.decorators import langfuse_context
+    from langfuse.decorators import observe as _lf_observe
+
+    _HAS_LANGFUSE = True
+except ImportError:
+    _HAS_LANGFUSE = False
+
+    def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
+        def _decorator(fn: Any) -> Any:
+            return fn
+        return _decorator
+
+    class _FakeLangfuseContext:
+        @staticmethod
+        def update_current_observation(**_kwargs: Any) -> None:
+            pass
+
+    langfuse_context = _FakeLangfuseContext()  # type: ignore[assignment]
 
 _AGENT_NAME = "analytics-intent-classification"
 _CLARIFICATION_THRESHOLD = 0.55
@@ -214,6 +242,28 @@ def _fallback_other(reason: str) -> dict[str, Any]:
     }
 
 
+def _update_langfuse_usage(llm_result: dict[str, Any]) -> None:
+    """Propagate token counts and model name from a complete() result to the current Langfuse observation."""
+    input_tokens = llm_result.get("input_tokens") or llm_result.get("prompt_tokens")
+    output_tokens = llm_result.get("output_tokens") or llm_result.get("completion_tokens")
+    model = llm_result.get("model")
+    cost_usd = llm_result.get("cost_usd")
+    update_kwargs: dict[str, Any] = {}
+    if input_tokens is not None or output_tokens is not None:
+        update_kwargs["usage"] = {
+            "input": int(input_tokens or 0),
+            "output": int(output_tokens or 0),
+            "total": int((input_tokens or 0) + (output_tokens or 0)),
+        }
+    if model:
+        update_kwargs["model"] = str(model)
+    if cost_usd is not None:
+        update_kwargs["cost_details"] = {"total": float(cost_usd)}
+    if update_kwargs:
+        langfuse_context.update_current_observation(**update_kwargs)
+
+
+@_lf_observe(as_type="generation", name="intent_classification")
 def classify_workforce_question(
     question: str,
     *,
@@ -248,6 +298,11 @@ def classify_workforce_question(
     else:
         prompt = f"User question:\n{q}\n"
 
+    langfuse_context.update_current_observation(
+        input=q,
+        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    )
+
     try:
         result = complete(
             prompt=prompt,
@@ -263,7 +318,10 @@ def classify_workforce_question(
             append_leg_from_complete(cost_ledger, "intent_classification", result, model_fallback=None)
     except Exception as exc:
         log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
+        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
         return _fallback_other("llm_exception")
+
+    _update_langfuse_usage(result)
 
     if not result.get("success") or result.get("extraction_failed"):
         return _fallback_other("llm_failed")
@@ -280,9 +338,14 @@ def classify_workforce_question(
 
     out_entities = validated.extracted_entities.model_dump()
     needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
-    return {
+    classification_out = {
         "intent": validated.intent,
         "confidence": float(validated.confidence),
         "needs_clarification": needs_clarification,
         "extracted_entities": out_entities,
     }
+    langfuse_context.update_current_observation(
+        output={"intent": validated.intent, "confidence": float(validated.confidence)},
+        metadata={"needs_clarification": needs_clarification},
+    )
+    return classification_out

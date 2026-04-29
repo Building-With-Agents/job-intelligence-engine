@@ -47,6 +47,73 @@ from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
 
+# ---------------------------------------------------------------------------
+# Langfuse @observe — optional; no-op when SDK is absent or unconfigured (JIE #258)
+# ---------------------------------------------------------------------------
+try:
+    from langfuse.decorators import langfuse_context as _lf_ctx
+    from langfuse.decorators import observe as _lf_observe
+
+    _HAS_LANGFUSE = True
+except ImportError:
+    _HAS_LANGFUSE = False
+
+    def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
+        def _decorator(fn: Any) -> Any:
+            return fn
+        return _decorator
+
+    class _FakeLangfuseContext:
+        @staticmethod
+        def update_current_observation(**_kwargs: Any) -> None:
+            pass
+
+    _lf_ctx = _FakeLangfuseContext()  # type: ignore[assignment]
+
+
+@_lf_observe(as_type="generation", name="sql_generation")
+def _call_sql_generation_llm(
+    prompt: str,
+    *,
+    query_fingerprint: str,
+    correlation_id: str | None,
+) -> dict[str, Any]:
+    """SQL generation LLM call; wrapped as a named Langfuse generation (JIE #258).
+
+    Each call appears as a separate generation observation inside the parent Q&A
+    trace, enabling per-stage cost attribution and latency breakdown.
+    """
+    _lf_ctx.update_current_observation(
+        input=prompt,
+        metadata={"agent_name": AGENT_SQL, "role": "analytics", "query_fingerprint": query_fingerprint},
+    )
+    result = complete(
+        prompt,
+        agent_name=AGENT_SQL,
+        role="analytics",
+        max_tokens=500,
+        correlation_id=correlation_id,
+    )
+    input_tokens = result.get("input_tokens") or result.get("prompt_tokens")
+    output_tokens = result.get("output_tokens") or result.get("completion_tokens")
+    model = result.get("model")
+    cost_usd = result.get("cost_usd")
+    update_kwargs: dict[str, Any] = {}
+    if input_tokens is not None or output_tokens is not None:
+        update_kwargs["usage"] = {
+            "input": int(input_tokens or 0),
+            "output": int(output_tokens or 0),
+            "total": int((input_tokens or 0) + (output_tokens or 0)),
+        }
+    if model:
+        update_kwargs["model"] = str(model)
+    if cost_usd is not None:
+        update_kwargs["cost_details"] = {"total": float(cost_usd)}
+    if update_kwargs:
+        _lf_ctx.update_current_observation(**update_kwargs)
+    _lf_ctx.update_current_observation(output=result.get("content") or "")
+    return result
+
 _SQL_EXEC_ERR_DETAIL_MAX = 400
 
 # Issue #197 — ORM / QueryRouter path parity with guardrailed ``inject_role_classification_issue197_guard``
@@ -339,11 +406,9 @@ def run_guardrailed_analytics_query(
 
     classification_confidence = max(0.0, min(1.0, classification_confidence))
 
-    sql_res = complete(
+    sql_res = _call_sql_generation_llm(
         _sql_prompt(request.query, intent_label),
-        agent_name=AGENT_SQL,
-        role="analytics",
-        max_tokens=500,
+        query_fingerprint=fp,
         correlation_id=correlation_id,
     )
     append_leg_from_complete(ledger, "sql_generation", sql_res, model_fallback=None)
