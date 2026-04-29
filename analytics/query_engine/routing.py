@@ -28,6 +28,9 @@ from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
 from analytics.query_engine.intent import classify_workforce_question
+from analytics.query_engine.langfuse_utils import lf_context as _lf_ctx
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
@@ -46,30 +49,6 @@ from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
-
-# ---------------------------------------------------------------------------
-# Langfuse @observe — optional; no-op when SDK is absent or unconfigured (JIE #258)
-# ---------------------------------------------------------------------------
-try:
-    from langfuse.decorators import langfuse_context as _lf_ctx
-    from langfuse.decorators import observe as _lf_observe
-
-    _HAS_LANGFUSE = True
-except ImportError:
-    _HAS_LANGFUSE = False
-
-    def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
-        def _decorator(fn: Any) -> Any:
-            return fn
-
-        return _decorator
-
-    class _FakeLangfuseContext:
-        @staticmethod
-        def update_current_observation(**_kwargs: Any) -> None:
-            pass
-
-    _lf_ctx = _FakeLangfuseContext()  # type: ignore[assignment]
 
 
 @_lf_observe(as_type="generation", name="sql_generation")
@@ -95,23 +74,7 @@ def _call_sql_generation_llm(
         max_tokens=500,
         correlation_id=correlation_id,
     )
-    input_tokens = result.get("input_tokens") or result.get("prompt_tokens")
-    output_tokens = result.get("output_tokens") or result.get("completion_tokens")
-    model = result.get("model")
-    cost_usd = result.get("cost_usd")
-    update_kwargs: dict[str, Any] = {}
-    if input_tokens is not None or output_tokens is not None:
-        update_kwargs["usage"] = {
-            "input": int(input_tokens or 0),
-            "output": int(output_tokens or 0),
-            "total": int((input_tokens or 0) + (output_tokens or 0)),
-        }
-    if model:
-        update_kwargs["model"] = str(model)
-    if cost_usd is not None:
-        update_kwargs["cost_details"] = {"total": float(cost_usd)}
-    if update_kwargs:
-        _lf_ctx.update_current_observation(**update_kwargs)
+    report_langfuse_usage(result)
     _lf_ctx.update_current_observation(output=result.get("content") or "")
     return result
 

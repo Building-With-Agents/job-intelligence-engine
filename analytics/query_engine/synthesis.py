@@ -27,6 +27,9 @@ from analytics.query_engine.grounding import (
     prefix_period_coverage,
     verify_answer_grounding,
 )
+from analytics.query_engine.langfuse_utils import lf_context as langfuse_context
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.schemas import (
     CostLedger,
@@ -42,51 +45,6 @@ log = structlog.get_logger()
 
 AGENT_SYNTHESIS = "analytics-qna-synthesis"
 AGENT_FOLLOWUP = "analytics-qna-followup"
-
-# ---------------------------------------------------------------------------
-# Langfuse @observe — optional; no-op when SDK is absent or unconfigured
-# ---------------------------------------------------------------------------
-try:
-    from langfuse.decorators import langfuse_context
-    from langfuse.decorators import observe as _lf_observe
-
-    _HAS_LANGFUSE = True
-except ImportError:
-    _HAS_LANGFUSE = False
-
-    def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
-        def _decorator(fn: Any) -> Any:
-            return fn
-
-        return _decorator
-
-    class _FakeLangfuseContext:
-        @staticmethod
-        def update_current_observation(**_kwargs: Any) -> None:
-            pass
-
-    langfuse_context = _FakeLangfuseContext()  # type: ignore[assignment]
-
-
-def _report_llm_usage(llm_result: dict[str, Any]) -> None:
-    """Push token counts and model name from a complete() result to the current Langfuse observation."""
-    input_tokens = llm_result.get("input_tokens") or llm_result.get("prompt_tokens")
-    output_tokens = llm_result.get("output_tokens") or llm_result.get("completion_tokens")
-    model = llm_result.get("model")
-    cost_usd = llm_result.get("cost_usd")
-    update_kwargs: dict[str, Any] = {}
-    if input_tokens is not None or output_tokens is not None:
-        update_kwargs["usage"] = {
-            "input": int(input_tokens or 0),
-            "output": int(output_tokens or 0),
-            "total": int((input_tokens or 0) + (output_tokens or 0)),
-        }
-    if model:
-        update_kwargs["model"] = str(model)
-    if cost_usd is not None:
-        update_kwargs["cost_details"] = {"total": float(cost_usd)}
-    if update_kwargs:
-        langfuse_context.update_current_observation(**update_kwargs)
 
 
 _DEFAULT_REFUSAL = "Insufficient evidence to produce a grounded answer."
@@ -260,7 +218,7 @@ def _call_synthesis_llm(
         metadata={"agent_name": AGENT_SYNTHESIS, "intent_label": intent_label},
     )
     result = complete(prompt, agent_name=AGENT_SYNTHESIS, role="synthesis", max_tokens=max_tokens)
-    _report_llm_usage(result)
+    report_langfuse_usage(result)
     langfuse_context.update_current_observation(output=result.get("content") or "")
     return result
 
@@ -282,7 +240,7 @@ def _call_followup_llm(
         metadata={"agent_name": AGENT_FOLLOWUP, "intent_label": intent_label},
     )
     result = complete(prompt, agent_name=AGENT_FOLLOWUP, role="classification", max_tokens=max_tokens)
-    _report_llm_usage(result)
+    report_langfuse_usage(result)
     langfuse_context.update_current_observation(output=result.get("content") or "")
     return result
 
