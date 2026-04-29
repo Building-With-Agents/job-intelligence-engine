@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
+from analytics.query_engine.curriculum_synthesis import no_resolved_role_message
 from analytics.query_engine.intent import classify_workforce_question
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
@@ -58,6 +59,9 @@ _ISSUE197_SQL_GUARD_HINT = (
     "real IT roles are misbucketed."
 )
 _NA_IT_ROLE_PLACEHOLDER = "N/A Not an IT role"
+
+# JIE #298 — intents that filter by canonical role; get live suggestions on 0 rows.
+_ROLE_FILTERED_INTENTS: frozenset[str] = frozenset({"curriculum", "workflow", "role_evolution"})
 
 
 def _get_role_classification_value(row: dict[str, Any]) -> str | None:
@@ -621,6 +625,16 @@ def run_analytics_qna(
         router_error = _router_error_message(route_result)
         sql_line = _sql_generated_line(route_result)
 
+        # JIE #298 — when a role-filtered intent yields 0 rows, surface live
+        # canonical role suggestions instead of the generic "No data in scope" message.
+        role_hint: str | None = None
+        if not rows and not router_error and intent_label in _ROLE_FILTERED_INTENTS:
+            role_hint = no_resolved_role_message(
+                session,
+                role_query=q[:120],
+                intent=intent_label,
+            )
+
         q_payload = QueryResultPayload(
             request=QueryRequest(query=q, prior_turns_context=pctx),
             intent_label=intent_label,
@@ -633,6 +647,7 @@ def run_analytics_qna(
             tables_referenced=list(route_result.tables_used),
             router_error=router_error,
             correlation_id=cid,
+            role_suggestion_hint=role_hint,
         )
 
         syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)
