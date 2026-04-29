@@ -74,3 +74,18 @@ def test_validate_rejects_copy() -> None:
     ok, reason, _ = validate_ask_the_data_sql("COPY dbo.job_postings TO '/tmp/x'")
     assert not ok
     assert reason == "forbidden_keyword"
+
+
+def test_validate_accepts_postal_geo_data_join() -> None:
+    """JIE #306: postal_geo_data must be in the allowlist so list-style geographic
+    queries with sub-region filtering can pass validation.
+    """
+    sql = (
+        "SELECT jp.job_posting_id, jp.job_title, pgd.county "
+        "FROM dbo.job_postings AS jp "
+        "JOIN dbo.postal_geo_data AS pgd ON pgd.zip = jp.zip_code "
+        "WHERE pgd.county = 'El Paso' LIMIT 100"
+    )
+    ok, reason, normalized = validate_ask_the_data_sql(sql)
+    assert ok, f"postal_geo_data JOIN was rejected: reason={reason!r}"
+    assert normalized is not None
