@@ -16,5 +16,23 @@
     "week_start": "2026-04-20",
     "borderplex_subregion": "regional",
     "posting_count": 11
+  },
+  {
+    "id": 4,
+    "week_start": "2026-04-20",
+    "borderplex_subregion": "el_paso",
+    "posting_count": 47
+  },
+  {
+    "id": 5,
+    "week_start": "2026-04-20",
+    "borderplex_subregion": "las_cruces",
+    "posting_count": 14
+  },
+  {
+    "id": 6,
+    "week_start": "2026-04-20",
+    "borderplex_subregion": "regional",
+    "posting_count": 11
   }
 ]

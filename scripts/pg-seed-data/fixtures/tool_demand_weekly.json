@@ -532,276 +532,290 @@
     "computed_at": "2026-04-17T03:27:57.500185+00:00"
   },
   {
-    "id": 229,
+    "id": 268,
     "tool_label": "Ansible",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 230,
+    "id": 269,
     "tool_label": "AWS",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 231,
+    "id": 270,
     "tool_label": "Azure",
     "week_start": "2026-04-20",
     "posting_count": 7,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 232,
+    "id": 271,
     "tool_label": "Bash",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 233,
+    "id": 272,
     "tool_label": "C#",
     "week_start": "2026-04-20",
     "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 234,
+    "id": 273,
     "tool_label": "C++",
     "week_start": "2026-04-20",
-    "posting_count": 7,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 8,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 235,
+    "id": 274,
     "tool_label": "Cisco",
     "week_start": "2026-04-20",
     "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 236,
+    "id": 275,
     "tool_label": "Databricks",
     "week_start": "2026-04-20",
     "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 237,
+    "id": 276,
     "tool_label": "Django",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 238,
+    "id": 277,
     "tool_label": "Docker",
     "week_start": "2026-04-20",
-    "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 2,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 239,
+    "id": 278,
     "tool_label": "GCP",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 240,
+    "id": 279,
     "tool_label": "Git",
     "week_start": "2026-04-20",
-    "posting_count": 6,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 7,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 241,
+    "id": 280,
     "tool_label": "GitHub Actions",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 242,
+    "id": 281,
     "tool_label": "Go",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 243,
+    "id": 282,
     "tool_label": "Java",
     "week_start": "2026-04-20",
-    "posting_count": 5,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 6,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 244,
+    "id": 283,
     "tool_label": "JavaScript",
     "week_start": "2026-04-20",
-    "posting_count": 6,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 7,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 245,
+    "id": 284,
+    "tool_label": "Jenkins",
+    "week_start": "2026-04-20",
+    "posting_count": 1,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
+  },
+  {
+    "id": 285,
     "tool_label": "Jira",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 246,
+    "id": 286,
     "tool_label": "Keras",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 247,
+    "id": 287,
     "tool_label": "Linux",
     "week_start": "2026-04-20",
     "posting_count": 5,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 248,
+    "id": 288,
     "tool_label": "Microsoft Excel",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 249,
+    "id": 289,
     "tool_label": "MySQL",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 250,
+    "id": 290,
     "tool_label": "Next.js",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 251,
+    "id": 291,
     "tool_label": "Node.js",
     "week_start": "2026-04-20",
     "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 252,
+    "id": 292,
     "tool_label": "NumPy",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 253,
+    "id": 293,
     "tool_label": "Pandas",
     "week_start": "2026-04-20",
     "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 254,
+    "id": 294,
     "tool_label": "Power BI",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 255,
+    "id": 295,
     "tool_label": "PowerPoint",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 256,
+    "id": 296,
     "tool_label": "Prisma",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 257,
+    "id": 297,
     "tool_label": "Python",
     "week_start": "2026-04-20",
-    "posting_count": 18,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 19,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 258,
+    "id": 298,
     "tool_label": "PyTorch",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 259,
+    "id": 299,
     "tool_label": "R",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 260,
+    "id": 300,
     "tool_label": "React",
     "week_start": "2026-04-20",
     "posting_count": 4,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 261,
+    "id": 301,
     "tool_label": "Rust",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 262,
+    "id": 302,
     "tool_label": "Scala",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 263,
+    "id": 303,
+    "tool_label": "Spring Boot",
+    "week_start": "2026-04-20",
+    "posting_count": 1,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
+  },
+  {
+    "id": 304,
     "tool_label": "SQL",
     "week_start": "2026-04-20",
     "posting_count": 8,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 264,
+    "id": 305,
     "tool_label": "Tableau",
     "week_start": "2026-04-20",
-    "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 2,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 265,
+    "id": 306,
     "tool_label": "TensorFlow",
     "week_start": "2026-04-20",
-    "posting_count": 2,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "posting_count": 3,
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 266,
+    "id": 307,
     "tool_label": "Terraform",
     "week_start": "2026-04-20",
     "posting_count": 1,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   },
   {
-    "id": 267,
+    "id": 308,
     "tool_label": "TypeScript",
     "week_start": "2026-04-20",
     "posting_count": 3,
-    "computed_at": "2026-04-27T19:16:11.452696+00:00"
+    "computed_at": "2026-04-28T23:43:21.268394+00:00"
   }
 ]
