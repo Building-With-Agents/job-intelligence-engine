@@ -379,8 +379,7 @@ def test_live_geographic_gold_per_intent_floor():
     accuracy = correct / len(_GQ_GEOGRAPHIC_GOLD)
     floor = float(os.getenv("GEOGRAPHIC_INTENT_MIN_ACCURACY", "0.8"))
     assert accuracy >= floor, (
-        f"Geographic intent accuracy {accuracy:.2f} < floor {floor:.2f}. "
-        f"Misses ({len(misses)}): {misses}"
+        f"Geographic intent accuracy {accuracy:.2f} < floor {floor:.2f}. Misses ({len(misses)}): {misses}"
     )
 
 
