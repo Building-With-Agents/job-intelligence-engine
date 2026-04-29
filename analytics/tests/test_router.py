@@ -33,8 +33,11 @@ from sqlalchemy.orm import Session
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
+    _is_list_style,
     _parse_weeks_back,
     _resolve_geo_terms,
+    _split_geo_term,
+    _tokenize_role_name,
     _week_floor,
 )
 from analytics.tenant_scope import get_tenant_access
@@ -492,3 +495,146 @@ class TestHelpers:
     def test_resolve_geo_terms_puget_seattle(self) -> None:
         ps = get_tenant_access("puget_sound")
         assert _resolve_geo_terms(["Seattle"], ps) == [("seattle_metro", True)]
+
+
+# ---------------------------------------------------------------------------
+# JIE #306 — list-style geographic routing
+# ---------------------------------------------------------------------------
+
+
+class TestListStyleDetection:
+    @pytest.mark.parametrize(
+        "question",
+        [
+            "Show all El Paso, TX postings for AI agent developer roles",
+            "List every Las Cruces, NM data engineer posting",
+            "Find all El Paso frontend developer postings mentioning React",
+            "Pull all El Paso, TX healthcare-IT postings",
+            "Retrieve all El Paso entry-level IT postings",
+            "Display the Borderplex fintech postings",
+            "Give me all Las Cruces AI/ML researcher postings",
+        ],
+    )
+    def test_list_style_keywords_detected(self, question: str) -> None:
+        assert _is_list_style(question), f"Should detect list-style: {question!r}"
+
+    @pytest.mark.parametrize(
+        "question",
+        [
+            "How many job postings are in El Paso?",
+            "What are the top skills in Las Cruces?",
+            "Compare El Paso and Las Cruces demand for data engineers",
+            "What's the trend in Borderplex AI hiring?",
+            "Which sub-region has the highest growth?",
+        ],
+    )
+    def test_aggregate_style_not_flagged(self, question: str) -> None:
+        assert not _is_list_style(question), f"Should NOT detect list-style: {question!r}"
+
+    def test_empty_question(self) -> None:
+        assert not _is_list_style("")
+        assert not _is_list_style(None)  # type: ignore[arg-type]
+
+
+class TestTokenizeRoleName:
+    @pytest.mark.parametrize(
+        ("role", "expected"),
+        [
+            ("AI/ML researcher", ["AI", "ML", "researcher"]),
+            ("applied-scientist", ["applied", "scientist"]),
+            ("AI agent developer", ["AI", "agent", "developer"]),
+            ("prompt engineer", ["prompt", "engineer"]),
+            ("LLM engineer", ["LLM", "engineer"]),
+            ("frontend developer", ["frontend", "developer"]),
+            # Stopword and short-token filtering
+            ("a researcher of ML", ["researcher", "ML"]),
+            ("", []),
+        ],
+    )
+    def test_tokenize(self, role: str, expected: list[str]) -> None:
+        assert _tokenize_role_name(role) == expected
+
+
+class TestSplitGeoTerm:
+    @pytest.mark.parametrize(
+        ("term", "expected"),
+        [
+            ("El Paso, TX", ("El Paso", "TX")),
+            ("Las Cruces, NM", ("Las Cruces", "NM")),
+            ("El Paso TX", ("El Paso", "TX")),
+            ("Las Cruces NM", ("Las Cruces", "NM")),
+            ("El Paso", ("El Paso", None)),
+            ("Texas", (None, "TX")),
+            ("New Mexico", (None, "NM")),
+            ("", (None, None)),
+        ],
+    )
+    def test_split_geo_term(self, term: str, expected: tuple[str | None, str | None]) -> None:
+        assert _split_geo_term(term) == expected
+
+
+class TestRouteGeographicListStyle:
+    def test_list_style_question_routes_to_per_posting_path(self) -> None:
+        """JIE #306: list-style geographic question must hit job_postings, not geo_demand_weekly."""
+        session = _make_session(rows=[])
+        cls = _mk_classification(
+            "geographic",
+            geo_terms=["El Paso, TX"],
+            role_names=["frontend developer"],
+            time_refs=["last 90 days"],
+        )
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="Show all El Paso, TX frontend developer postings posted in the last 90 days.",
+        )
+
+        assert result.intent == "geographic"
+        assert result.routed is True
+        # Per-posting path uses job_postings + postal_geo_data, NOT geo_demand_weekly.
+        assert "job_postings" in result.tables_used
+        assert "postal_geo_data" in result.tables_used
+        assert "geo_demand_weekly" not in result.tables_used
+        assert "per-posting" in result.query_label
+
+        # The execute() call should have been made with bind params dict
+        call_args = session.execute.call_args
+        # Args: (statement, params_dict)
+        assert len(call_args.args) >= 2
+        params = call_args.args[1]
+        assert params.get("city") == "El Paso"
+        assert params.get("state_code") == "TX"
+        # Role names are tokenized — "frontend developer" -> tokens
+        # ["frontend", "developer"] each bound as %tok% on job_title AND
+        # role_classification. Verify at least one token landed.
+        title_keys = [k for k in params if k.startswith("role_title_")]
+        cls_keys = [k for k in params if k.startswith("role_cls_")]
+        assert title_keys, "expected at least one role_title bind param"
+        assert cls_keys, "expected at least one role_cls bind param"
+        title_values = {params[k].strip("%") for k in title_keys}
+        assert {"frontend", "developer"}.issubset(title_values)
+
+    def test_aggregate_style_question_keeps_geo_demand_routing(self) -> None:
+        """Non-list-style geographic question must continue routing to geo_demand_weekly."""
+        session = _make_session()
+        cls = _mk_classification("geographic", geo_terms=["El Paso"], time_refs=["last month"])
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="How many job postings are in El Paso this month?",
+        )
+
+        assert result.intent == "geographic"
+        assert result.routed is True
+        assert result.tables_used == ["geo_demand_weekly"]
+
+    def test_route_signature_question_kwarg_is_optional(self) -> None:
+        """Backwards compat: callers that don't pass ``question`` still work
+        (handlers default ``question=""``, list-style detection defaults to False).
+        """
+        session = _make_session()
+        cls = _mk_classification("geographic", geo_terms=["Las Cruces"])
+        result = QueryRouter().route(cls, session)  # no question= kwarg
+        assert result.intent == "geographic"
+        # Without question text, list-style is not detected → aggregate path.
+        assert result.tables_used == ["geo_demand_weekly"]

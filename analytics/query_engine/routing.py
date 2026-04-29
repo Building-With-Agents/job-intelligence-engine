@@ -141,6 +141,8 @@ Operational tables (use when aggregates cannot answer):
   companies(company_id, company_name, industry_sector_id, size, city, state, normalized_location)
   employer_profiles(id, company_id, company_size, ai_maturity_signal, sector, is_known_employer)
   industry_sectors(industry_sector_id, sector_title)
+  postal_geo_data(zip, city, state_code, county, latitude, longitude)
+    Geographic reference; join to job_postings via jp.zip_code = pgd.zip for sub-region filters.
 
 Extracted intelligence (JSONB unnest — ONLY path for task / responsibility / context questions):
   extracted_intelligence(id, normalized_job_id, skills, tools, tasks, responsibilities, context)
@@ -183,6 +185,28 @@ Extracted intelligence (JSONB unnest — ONLY path for task / responsibility / c
            jsonb_array_elements(ei.context) AS elem
       WHERE elem->>'signal_type' = 'work_methodology'
       GROUP BY work_methodology ORDER BY n DESC LIMIT 10
+
+INTENT geographic — list-style vs aggregate-style routing (issue #306):
+  "How many postings in {region}?" / trend / share-by-region questions: use
+    dbo.geo_demand_weekly (sub-region grain, weekly counts only).
+  "Show / list / find / pull all postings in {region} for {role|skill}":
+    use dbo.job_postings JOINed to dbo.postal_geo_data — geo_demand_weekly
+    has no per-posting detail and will return refusal text.
+  Canonical sub-region pattern (El Paso / Las Cruces / county-level filtering):
+    SELECT jp.job_posting_id, jp.job_title, c.company_name,
+           jp.date_posted, pgd.city, pgd.state_code, pgd.county
+    FROM dbo.job_postings AS jp
+    JOIN dbo.postal_geo_data AS pgd ON pgd.zip = jp.zip_code
+    LEFT JOIN dbo.companies AS c ON c.company_id = jp.company_id
+    WHERE pgd.county = 'El Paso'           -- or pgd.city ILIKE 'El Paso'
+      AND jp.is_spam = FALSE
+      AND jp.date_posted >= NOW() - INTERVAL '90 days'
+    ORDER BY jp.date_posted DESC
+    LIMIT 100
+  When the user names a role or skill family, layer on the operational join:
+    JOIN dbo.normalized_jobs nj ON jp.source = nj.source AND jp.external_id = nj.external_id
+    JOIN dbo.extracted_intelligence ei ON ei.normalized_job_id = nj.id
+  Then unnest ei.skills / ei.tools to filter by skill_label.
 
 CRITICAL — columns that do NOT exist (never generate SQL referencing these):
   - job_postings has NO skill_id, skills, or posted_date column.
@@ -588,7 +612,7 @@ def run_analytics_qna(
             check_region_entitled(taccess, q, {})
 
         router = QueryRouter()
-        route_result = router.route(classification, session, tenant=taccess)
+        route_result = router.route(classification, session, tenant=taccess, question=q)
 
         rows = _json_safe_rows(route_result.rows)
         if intent_label in _ISSUE197_INTENTS:

@@ -369,6 +369,90 @@ def test_mock_llm_jsonb_unnest_sql_passes_guardrail(question: str, mock_sql: str
     assert ok, f"JSONB unnest SQL for {question!r} was rejected by guardrail. Reason: {reason!r}. SQL: {mock_sql!r}"
 
 
+# ---------------------------------------------------------------------------
+# JIE #306 — list-style geographic routing (postal_geo_data join pattern)
+# ---------------------------------------------------------------------------
+
+
+def test_schema_hint_contains_postal_geo_data_table() -> None:
+    """postal_geo_data must be declared so the LLM can join it for sub-region filters."""
+    assert "postal_geo_data(" in _SCHEMA_HINT, (
+        "postal_geo_data is missing from _SCHEMA_HINT. After JIE #306, list-style "
+        "geographic queries depend on this table for county/city/state_code filtering."
+    )
+
+
+def test_schema_hint_documents_postal_geo_join_pattern() -> None:
+    """The hint must document the jp.zip_code = pgd.zip join."""
+    assert "jp.zip_code = pgd.zip" in _SCHEMA_HINT or "pgd.zip = jp.zip_code" in _SCHEMA_HINT, (
+        "_SCHEMA_HINT must show the join pattern between job_postings and postal_geo_data. "
+        "Without it the LLM may invent another join key."
+    )
+
+
+def test_schema_hint_distinguishes_list_vs_aggregate_geographic() -> None:
+    """The hint must steer 'show / list / find' geographic queries to job_postings, not geo_demand_weekly.
+
+    Pre-JIE #306 every geographic intent routed to geo_demand_weekly (an aggregate),
+    so list-style questions returned 'No data in scope'. The hint now needs an
+    explicit list-style block that names job_postings + postal_geo_data as the
+    canonical pattern.
+    """
+    assert "list-style" in _SCHEMA_HINT.lower() or '"show / list' in _SCHEMA_HINT.lower(), (
+        "_SCHEMA_HINT does not differentiate list-style from aggregate-style "
+        "geographic queries — JIE #306 regression risk."
+    )
+    # The list-style block should reference both job_postings and postal_geo_data
+    assert "postal_geo_data" in _SCHEMA_HINT and "job_postings" in _SCHEMA_HINT, (
+        "list-style geographic block must name both job_postings and postal_geo_data"
+    )
+
+
+@pytest.mark.parametrize(
+    ("question", "mock_sql"),
+    [
+        (
+            "Show all El Paso, TX postings for AI agent developer roles",
+            "SELECT jp.job_posting_id, jp.job_title, c.company_name, jp.date_posted, "
+            "pgd.city, pgd.state_code, pgd.county "
+            "FROM dbo.job_postings AS jp "
+            "JOIN dbo.postal_geo_data AS pgd ON pgd.zip = jp.zip_code "
+            "LEFT JOIN dbo.companies AS c ON c.company_id = jp.company_id "
+            "WHERE pgd.county = 'El Paso' AND jp.is_spam = FALSE "
+            "ORDER BY jp.date_posted DESC LIMIT 100",
+        ),
+        (
+            "List Las Cruces NM data engineer postings (90 days)",
+            "SELECT jp.job_posting_id, jp.job_title, jp.date_posted, pgd.city, pgd.state_code "
+            "FROM dbo.job_postings jp "
+            "JOIN dbo.postal_geo_data pgd ON pgd.zip = jp.zip_code "
+            "WHERE pgd.city ILIKE 'Las Cruces' AND pgd.state_code = 'NM' "
+            "AND jp.date_posted >= NOW() - INTERVAL '90 days' "
+            "ORDER BY jp.date_posted DESC LIMIT 100",
+        ),
+        (
+            "Find El Paso frontend postings mentioning React via skills unnest",
+            "SELECT jp.job_posting_id, jp.job_title, elem->>'skill_label' AS skill "
+            "FROM dbo.job_postings jp "
+            "JOIN dbo.postal_geo_data pgd ON pgd.zip = jp.zip_code "
+            "JOIN dbo.normalized_jobs nj ON jp.source = nj.source AND jp.external_id = nj.external_id "
+            "JOIN dbo.extracted_intelligence ei ON ei.normalized_job_id = nj.id, "
+            "jsonb_array_elements(ei.skills) AS elem "
+            "WHERE pgd.county = 'El Paso' AND elem->>'skill_label' ILIKE '%React%' "
+            "LIMIT 100",
+        ),
+    ],
+)
+def test_mock_llm_list_style_geographic_sql_passes_guardrail(question: str, mock_sql: str) -> None:
+    """List-style geographic SQL using postal_geo_data must pass the guardrail post-JIE #306."""
+    from analytics.query_engine.sql_guardrails import validate_ask_the_data_sql
+
+    ok, reason, _ = validate_ask_the_data_sql(mock_sql)
+    assert ok, (
+        f"List-style geographic SQL for {question!r} was rejected by guardrail. Reason: {reason!r}. SQL: {mock_sql!r}"
+    )
+
+
 def test_mock_llm_hallucinated_task_column_on_job_postings_passes_guardrail_but_would_fail_at_execute() -> None:
     """Sanity check: the guardrail validates table allowlist + structure, NOT column existence.
     A query referencing job_postings.task_description (hallucinated) passes the guardrail but

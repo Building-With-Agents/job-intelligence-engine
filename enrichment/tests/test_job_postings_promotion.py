@@ -295,17 +295,22 @@ def test_apply_enrichment_to_job_postings_logs_and_continues_on_dedup_failure() 
 
     assert applied is True
     session.begin_nested.assert_called_once_with()
-    assert session.execute.call_count == 1
+    # JIE #289: 2 calls now — the original promotion UPDATE plus the
+    # promoted_at timestamp stamp on dbo.normalized_jobs that runs after
+    # fuzzy dedup (regardless of dedup success/failure) so the row is
+    # observable to scripts/sweep_unpromoted_normalized_jobs.py.
+    assert session.execute.call_count == 2
 
 
 def _apply_with_resolved_row_for_temporal_borderplex(resolved_row: dict[str, object]) -> tuple[bool, MagicMock]:
-    """Promotion UPDATE + patched fuzzy dedup (no extra SQL from dedup path)."""
+    """Promotion UPDATE + promoted_at stamp (#289) + patched fuzzy dedup (no extra SQL from dedup path)."""
     session = MagicMock()
     session.begin_nested.return_value = nullcontext()
     resolve_result = MagicMock()
     resolve_result.mappings.return_value.first.return_value = resolved_row
     update_result = MagicMock()
-    session.execute.side_effect = [resolve_result, update_result]
+    promoted_at_stamp_result = MagicMock()
+    session.execute.side_effect = [resolve_result, update_result, promoted_at_stamp_result]
     dedup_result = FuzzyDedupResult(
         is_duplicate=False,
         duplicate_cluster_id=None,
@@ -340,7 +345,8 @@ def test_apply_enrichment_binds_temporal_period_from_date_posted() -> None:
     )
 
     assert out is True
-    assert session.execute.call_count == 2
+    # JIE #289: 3 calls now — resolve + UPDATE + promoted_at stamp.
+    assert session.execute.call_count == 3
     _stmt, params = session.execute.call_args_list[1][0]
     assert params["temporal_period"] == "post_gpt4"
     assert "soc_code" in params
@@ -391,7 +397,8 @@ def test_apply_enrichment_binds_borderplex_subregion_from_normalized_location() 
     )
 
     assert out is True
-    assert session.execute.call_count == 2
+    # JIE #289: 3 calls now — resolve + UPDATE + promoted_at stamp.
+    assert session.execute.call_count == 3
     _stmt, params = session.execute.call_args_list[1][0]
     assert params["borderplex_subregion"] == "el_paso"
 
@@ -424,7 +431,13 @@ def test_apply_enrichment_binds_soc_code_column_from_payload() -> None:
         "date_posted": datetime(2023, 6, 15, 12, 0, 0, tzinfo=timezone.utc),
     }
     update_result = MagicMock()
-    session.execute.side_effect = [resolve_result, update_result]
+    # JIE #289: extra mocks cover any session.execute() calls inside the
+    # un-patched fuzzy dedup path plus the new promoted_at stamp.
+    session.execute.side_effect = [
+        resolve_result,
+        update_result,
+        *[MagicMock() for _ in range(10)],
+    ]
 
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
         out = apply_enrichment_to_job_postings(
@@ -522,7 +535,13 @@ def test_apply_enrichment_persists_sector_id_for_known_role() -> None:
         return_value=sector_uuid,
     ) as mock_resolve_sector:
         # Two execute calls: resolve_job_posting_row + UPDATE
-        session.execute.side_effect = [resolve_result, update_result]
+        # JIE #289: extra mocks cover any session.execute() calls inside the
+        # un-patched fuzzy dedup path plus the new promoted_at stamp.
+        session.execute.side_effect = [
+            resolve_result,
+            update_result,
+            *[MagicMock() for _ in range(10)],
+        ]
         out = apply_enrichment_to_job_postings(
             session,
             42,
@@ -556,7 +575,13 @@ def test_apply_enrichment_persists_sector_id_for_unknown_role_fallback() -> None
         "enrichment.job_postings_promotion.resolve_sector",
         return_value=other_sector_uuid,
     ) as mock_resolve_sector:
-        session.execute.side_effect = [resolve_result, update_result]
+        # JIE #289: extra mocks cover any session.execute() calls inside the
+        # un-patched fuzzy dedup path plus the new promoted_at stamp.
+        session.execute.side_effect = [
+            resolve_result,
+            update_result,
+            *[MagicMock() for _ in range(10)],
+        ]
         out = apply_enrichment_to_job_postings(
             session,
             42,
@@ -592,7 +617,13 @@ def test_apply_enrichment_sector_id_is_in_params_base_for_all_tiers() -> None:
             "enrichment.job_postings_promotion.resolve_sector",
             return_value=sector_uuid,
         ):
-            session.execute.side_effect = [resolve_result, update_result]
+            # JIE #289: extra mocks cover any session.execute() calls inside the
+            # un-patched fuzzy dedup path plus the new promoted_at stamp.
+            session.execute.side_effect = [
+                resolve_result,
+                update_result,
+                *[MagicMock() for _ in range(10)],
+            ]
             payload: dict[str, object] = {
                 "spam_tier": tier,
                 "quality_score": 0.85,
@@ -639,7 +670,14 @@ def _apply_with_qna_payload(session: MagicMock, resolved_row: dict, payload_over
     resolve_result = MagicMock()
     resolve_result.mappings.return_value.first.return_value = resolved_row
     update_result = MagicMock()
-    session.execute.side_effect = [resolve_result, update_result]
+    # JIE #289: extra mocks cover any session.execute() calls inside the
+    # un-patched fuzzy dedup path plus the new promoted_at stamp on
+    # dbo.normalized_jobs that runs at the end of _finish_with_dedup.
+    session.execute.side_effect = [
+        resolve_result,
+        update_result,
+        *[MagicMock() for _ in range(10)],
+    ]
 
     payload: dict[str, object] = {
         "spam_tier": "clean",
@@ -783,7 +821,13 @@ def test_apply_enrichment_qna_fields_present_for_all_tiers(tier: str, spam_score
         "is_remote": True,
     }
     update_result = MagicMock()
-    session.execute.side_effect = [resolve_result, update_result]
+    # JIE #289: extra mocks cover any session.execute() calls inside the
+    # un-patched fuzzy dedup path plus the new promoted_at stamp.
+    session.execute.side_effect = [
+        resolve_result,
+        update_result,
+        *[MagicMock() for _ in range(10)],
+    ]
 
     payload: dict[str, object] = {
         "spam_tier": tier,

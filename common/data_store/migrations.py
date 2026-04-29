@@ -186,6 +186,13 @@ _NORMALIZED_JOBS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.raw_ingested_jobs ADD COLUMN IF NOT EXISTS zip_code VARCHAR(10)",
     "ALTER TABLE dbo.normalized_jobs ADD COLUMN IF NOT EXISTS naics_code TEXT",
     "ALTER TABLE dbo.normalized_jobs ADD COLUMN IF NOT EXISTS employer_metadata JSONB",
+    # JIE #289 — promotion audit column. Stamped by apply_enrichment_to_job_postings
+    # on successful promotion to dbo.job_postings. NULL means the row has not been
+    # promoted yet; the sweeper at scripts/sweep_unpromoted_normalized_jobs.py picks
+    # NULL rows up after a 1-hour grace window and re-attempts via the standard
+    # promotion path. The grace window is also indexed for the sweeper's hot path.
+    "ALTER TABLE dbo.normalized_jobs ADD COLUMN IF NOT EXISTS promoted_at TIMESTAMPTZ",
+    "CREATE INDEX IF NOT EXISTS ix_normalized_jobs_promoted_at_null ON dbo.normalized_jobs (created_at) WHERE promoted_at IS NULL",
 ]
 
 # Company HQ / location fields for enrichment resolve_location (#110)

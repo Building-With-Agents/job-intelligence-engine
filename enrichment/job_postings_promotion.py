@@ -45,6 +45,7 @@ _RESOLVE_JOB_POSTING_SQL = text(
            nj.city AS city,
            nj.state_province AS state_province,
            nj.country AS country,
+           nj.zip_code AS zip_code,
            nj.is_remote AS is_remote,
            nj.work_arrangement AS work_arrangement
     FROM dbo.job_postings jp
@@ -78,6 +79,9 @@ _UPDATE_UNCERTAIN_SQL = text(
         soc_code = :soc_code,
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
+        is_spam = NULL,
+        spam_score = :spam_score,
+        spam_tier = 'uncertain',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -85,7 +89,8 @@ _UPDATE_UNCERTAIN_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -104,6 +109,7 @@ _UPDATE_CLEAN_SQL = text(
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = FALSE,
         spam_score = :spam_score,
+        spam_tier = 'clean',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -111,7 +117,8 @@ _UPDATE_CLEAN_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -130,6 +137,7 @@ _UPDATE_FLAGGED_SQL = text(
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = NULL,
         spam_score = :spam_score,
+        spam_tier = 'flagged',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -137,7 +145,8 @@ _UPDATE_FLAGGED_SQL = text(
         salary_min = COALESCE(:salary_min, salary_min),
         salary_max = COALESCE(:salary_max, salary_max),
         salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period)
+        salary_period = COALESCE(:salary_period, salary_period),
+        zip_code = COALESCE(:zip_code, zip_code)
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -147,6 +156,23 @@ _UPDATE_FUZZY_DEDUP_SQL = text(
     UPDATE dbo.job_postings SET
         is_duplicate = :is_duplicate,
         duplicate_cluster_id = CAST(:duplicate_cluster_id AS uuid)
+    WHERE job_posting_id::text = :job_posting_id
+    """
+)
+
+# JIE #308 — spam-only UPDATE used by the sweeper and one-shot backfill to add
+# the spam dimension to rows that missed classification on first promotion.
+# Deliberately narrow: writes is_spam, spam_score, spam_tier ONLY. Does NOT
+# touch quality / employer / role / zip / promoted_at / dedup — those live on
+# enrichment / promotion / dedup paths and a sweeper running post-hoc must
+# never clobber them. Tier is bound (not literal) because the sweeper applies
+# the classifier's actual output, not a routing decision.
+_UPDATE_SPAM_ONLY_SQL = text(
+    """
+    UPDATE dbo.job_postings SET
+        is_spam = :is_spam,
+        spam_score = :spam_score,
+        spam_tier = :spam_tier
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -197,13 +223,13 @@ _INSERT_JOB_POSTING_SQL = text(
         job_posting_id, company_id,
         job_title, job_description, employment_type,
         location, salary_range, source, external_id,
-        ingestion_run_id, status
+        ingestion_run_id, status, zip_code
     ) VALUES (
         CAST(:job_posting_id AS uuid),
         CAST(:company_id AS uuid),
         :job_title, :job_description, :employment_type,
         :location, :salary_range, :source, :external_id,
-        :ingestion_run_id, :status
+        :ingestion_run_id, :status, :zip_code
     )
     ON CONFLICT (job_posting_id) DO NOTHING
     """
@@ -213,7 +239,7 @@ _LOAD_NORMALIZED_JOB_SQL = text(
     """
     SELECT id, source, external_id, ingestion_run_id,
            title, company, description,
-           city, state_province, country,
+           city, state_province, country, zip_code,
            is_remote, work_arrangement,
            employment_type, date_posted,
            salary_min, salary_max, salary_currency, salary_period
@@ -286,6 +312,10 @@ def _insert_job_posting_from_normalized(session: Session, normalized_job_id: int
             "external_id": nj["external_id"],
             "ingestion_run_id": nj["ingestion_run_id"],
             "status": "open",
+            # JIE #244: propagate zip_code on insert so freshly-inserted job_postings
+            # rows carry the value from normalized_jobs (which is populated by the
+            # fixed _resolve_zip_code path in jsearch_mapper.py).
+            "zip_code": nj["zip_code"],
         },
     )
     log.info(
@@ -301,6 +331,7 @@ def _insert_job_posting_from_normalized(session: Session, normalized_job_id: int
         "city": nj["city"],
         "state_province": nj["state_province"],
         "country": nj["country"],
+        "zip_code": nj["zip_code"],
         "is_remote": nj["is_remote"],
         "work_arrangement": nj["work_arrangement"],
     }
@@ -620,6 +651,14 @@ def apply_enrichment_to_job_postings(
     if is_remote_param is not None:
         is_remote_param = bool(is_remote_param)
 
+    # JIE #244: zip_code propagates from normalized_jobs to job_postings on every
+    # promotion. Resolved dict carries it from either the resolve path
+    # (_RESOLVE_JOB_POSTING_SQL added nj.zip_code) or the insert path
+    # (_insert_job_posting_from_normalized populates it directly). The UPDATE
+    # SQL uses COALESCE so a NULL here preserves whatever was already set
+    # (e.g., from a prior promotion before #244 fix landed).
+    zip_code_param = resolved.get("zip_code") if resolved else None
+
     # Structured salary (#174): pulled from normalized_jobs (already in resolved dict).
     # legacy salary_range TEXT is kept for backward compat; structured columns are preferred for analytics.
     salary_min_param = resolved.get("salary_min") if resolved else None
@@ -660,6 +699,11 @@ def apply_enrichment_to_job_postings(
         "salary_max": salary_max_param,
         "salary_currency": salary_currency_param,
         "salary_period": salary_period_param,
+        "zip_code": zip_code_param,
+        # JIE #308 — uncertain tier UPDATE binds spam_score; default to None
+        # so the bind succeeds even when the classifier produced no score.
+        # Clean / flagged paths override below with the float value.
+        "spam_score": None,
         **derived_output_fields,
     }
 
@@ -668,6 +712,13 @@ def apply_enrichment_to_job_postings(
             session,
             normalized_job_id=normalized_job_id,
             job_posting_id=str(job_posting_id),
+        )
+        # JIE #289: stamp promoted_at on the source normalized_jobs row so the
+        # sweeper can distinguish "promoted" from "still pending" rows. Same
+        # session as the job_postings UPDATE above — atomic via session.commit().
+        session.execute(
+            text("UPDATE dbo.normalized_jobs SET promoted_at = NOW() WHERE id = :nj_id"),
+            {"nj_id": normalized_job_id},
         )
         return True
 
@@ -711,9 +762,18 @@ def apply_enrichment_to_job_postings(
         )
         return _finish_with_dedup()
 
-    log.warning(
+    # JIE #308 Fix A — loud guard. After Fix B-1 lands, every classified row
+    # reaches one of the three branches above (clean / flagged / uncertain).
+    # If we hit this fall-through, something upstream produced a tier value
+    # the routing didn't recognize ('unknown', misspelled, etc.) — surface it
+    # at ERROR with full context so the regression is visible at the next
+    # PR-CI run rather than buried in a WARNING dashboard.
+    log.error(
         "enrichment_promotion_unhandled_tier",
         normalized_job_id=normalized_job_id,
-        tier=tier or raw_tier,
+        job_posting_id=job_posting_id,
+        tier_resolved=tier,
+        tier_raw=raw_tier,
+        spam_score_payload=spam_score,
     )
     return False
