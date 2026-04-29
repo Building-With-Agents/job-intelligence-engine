@@ -179,3 +179,10 @@ docs/findings/generate-*.cjs
 .tmp_*.json
 .tmp_*.log
 .env.pre-config-cleanup.bak
+
+# Pre-destructive-op fixture snapshots — local rollback targets only.
+# Created before Phase 3 / Phase 6.2 backfills per the JIE database
+# protection rules in ~/.claude/CLAUDE.md. Never pushed; not part of the
+# canonical seed set. Safe to delete locally once the backfills are
+# verified merged on `development`.
+scripts/pg-seed-data/fixtures-pre-*/
