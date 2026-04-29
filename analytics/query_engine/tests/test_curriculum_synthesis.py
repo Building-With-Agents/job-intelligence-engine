@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from analytics.query_engine.curriculum_synthesis import (
     _FALLBACK_MESSAGE,
     fetch_role_suggestions,
