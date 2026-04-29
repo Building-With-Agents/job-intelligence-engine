@@ -74,6 +74,28 @@ GEOGRAPHIC vs EMPLOYER — TIE-BREAKER (apply whenever both signals are present)
      to geographic. Ask: "Is the region a filter on POSTINGS or a scope for EMPLOYERS?"
      If it scopes employers → employer.
 
+DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift signals appear):
+  → disruption: Primary ask is structural labor-market change tied to AI, automation,
+     displacement, augmentation, transformation, or era-defined skill/tool mix turnover
+     (e.g. pre_chatgpt vs post_gpt4, early_genai vs agentic_era). Includes demand decline
+     paired with automation/RPA/AI-tool signals, or "how skill composition shifted between
+     temporal buckets" for a role family.
+  → role_evolution: How duties, titles, or responsibilities of a role evolve narratively,
+     without the question centering on automation risk, era-bucket fingerprints, or
+     mix turnover across locked temporal periods — use role_evolution only when that
+     softer "how the job is changing" framing dominates.
+  → comparison: Two symmetric entities (two skills, two regions, two employers) ranked
+     or contrasted on equal footing. Era labels used to measure structural mix or AI
+     intensity change (not a balanced A-vs-B leaderboard of arbitrary peers) → disruption,
+     not comparison.
+  → trend: Demand velocity, growth, or time series "up or down" without era-bucket or
+     transformation/displacement framing. If temporal eras or AI/automation restructuring
+     is central → disruption, not trend.
+  → geographic: Location filters which postings are in scope, but the analytic axis is
+     still era/skill/automation shift → disruption. Use geographic only when listing or
+     filtering postings by place is the main task; a Borderplex (or similar) filter alone
+     does not override disruption when the core question is mix or automation change across eras.
+
 Anchoring examples (few-shot):
 Q: "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles."
 A: {"intent":"geographic","confidence":0.95,...}
@@ -98,6 +120,14 @@ A: {"intent":"employer","confidence":0.93,...}
 Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 months."
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
+
+Q: "For Borderplex IT roles, how did skill composition shift between pre_chatgpt and post_gpt4?"
+A: {"intent":"disruption","confidence":0.91,...}
+   ← Era-pair skill-mix / structural turnover; automation-era framing → disruption.
+
+Q: "In Borderplex software engineering postings, how does AI-assistant tool adoption today compare to one year ago?"
+A: {"intent":"disruption","confidence":0.89,...}
+   ← Adoption shift of AI workplace tools over time → disruption, not a simple demand trend.
 
 Also extract entities mentioned in the question (use empty lists if none):
 - geographic_terms: place names, regions (e.g. El Paso, Texas, remote US)
