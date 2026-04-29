@@ -619,6 +619,10 @@ def run_analytics_qna(
         route_result = router.route(classification, session, tenant=taccess, question=q)
 
         rows = _json_safe_rows(route_result.rows)
+        # Capture the router's raw row count before any post-processing filter so
+        # JIE #298's role-hint logic can distinguish "router found nothing" from
+        # "issue-197 misbucket guard removed everything."
+        router_row_count = len(rows)
         if intent_label in _ISSUE197_INTENTS:
             rows = _filter_issue197_misbucket_rows(rows)
         col_names = list(rows[0].keys()) if rows else []
@@ -627,11 +631,19 @@ def run_analytics_qna(
 
         # JIE #298 — when a role-filtered intent yields 0 rows, surface live
         # canonical role suggestions instead of the generic "No data in scope" message.
+        # Guards:
+        # - router_row_count == 0: the router itself found nothing (not the misbucket filter).
+        # - not router_error: don't double-diagnose a hard execution failure.
+        # - role_names from extracted_entities: use the structured role names the classifier
+        #   already identified, not the raw question text which produces nonsensical output.
         role_hint: str | None = None
-        if not rows and not router_error and intent_label in _ROLE_FILTERED_INTENTS:
+        if router_row_count == 0 and not router_error and intent_label in _ROLE_FILTERED_INTENTS:
+            ent = classification.get("extracted_entities") or {}
+            role_names: list[str] = ent.get("role_names") or [] if isinstance(ent, dict) else []
+            role_query_str = ", ".join(role_names) if role_names else ""
             role_hint = no_resolved_role_message(
                 session,
-                role_query=q[:120],
+                role_query=role_query_str,
                 intent=intent_label,
             )
 

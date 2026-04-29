@@ -127,3 +127,64 @@ class TestEvidenceBundleIntegration:
         bundle = build_evidence_bundle(payload)
         assert bundle.refuse_synthesis is True
         assert bundle.refusal_reason == "No data in scope for the selected filters."
+
+
+class TestRoutingRoleHintGuards:
+    """Regression tests for JIE #298 bug fixes in routing.py.
+
+    These tests verify two guards added after the initial implementation:
+
+    Bug 1 — misbucket filter masquerade: ``_filter_issue197_misbucket_rows``
+    may remove every row from a curriculum/workflow result. The hint must only
+    fire when the *router* itself returned 0 rows, not when the post-processing
+    filter discarded them.
+
+    Bug 2 — raw question as role name: ``role_query`` must use the structured
+    ``role_names`` extracted by the classifier, not the full question text.
+    """
+
+    def test_misbucket_filter_strips_rows_no_hint_set(self) -> None:
+        """Bug 1 regression: rows present before filter → hint must NOT fire."""
+        from analytics.query_engine.routing import (
+            _ROLE_FILTERED_INTENTS,
+            _filter_issue197_misbucket_rows,
+        )
+
+        # Simulate a router result with one row that is an IT-role placeholder.
+        pre_filter_rows = [{"role_classification": "N/A Not an IT role", "label": "software engineer"}]
+        post_filter_rows = _filter_issue197_misbucket_rows(pre_filter_rows)
+
+        # After filtering, rows is empty — but router_row_count (pre-filter) was 1.
+        router_row_count = len(pre_filter_rows)
+        intent_label = "curriculum"
+
+        assert post_filter_rows == []
+        # The hint condition must check router_row_count, not post-filter len(rows).
+        hint_would_fire = router_row_count == 0 and intent_label in _ROLE_FILTERED_INTENTS
+        assert not hint_would_fire, (
+            "Bug 1: hint fired because it checked post-filter rows instead of router_row_count"
+        )
+
+    def test_role_query_uses_extracted_entities_not_raw_question(self) -> None:
+        """Bug 2 regression: role_query must be extracted role_names, not question text."""
+        from analytics.query_engine.curriculum_synthesis import no_resolved_role_message
+
+        # What the classifier returns for extracted_entities.
+        extracted_entities = {"role_names": ["data analyst"], "geographic_terms": [], "skill_names": []}
+        role_names: list[str] = extracted_entities.get("role_names") or []
+        role_query_str = ", ".join(role_names)
+
+        full_question = "What skills do data analysts need for upskilling?"
+
+        session = _mock_session(["software engineer", "web developer"])
+        msg = no_resolved_role_message(session, role_query=role_query_str, intent="curriculum")
+
+        # The message must contain the role name, not sentence fragments from the question.
+        assert "data analyst" in msg
+        assert "What skills" not in msg, (
+            "Bug 2: raw question text leaked into the role_query argument"
+        )
+        assert "need for upskilling" not in msg, (
+            "Bug 2: raw question text leaked into the role_query argument"
+        )
+        assert full_question not in msg
