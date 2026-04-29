@@ -114,6 +114,7 @@ PARITY: list[tuple[str, str | None, Any]] = [
     # ---------- eval.yaml ----------
     ("eval._config:extraction_fuzzy_threshold", "EVAL_EXTRACTION_FUZZY_THRESHOLD", 85),
     ("eval._config:qa_latency_sla_seconds", "QA_EVAL_LATENCY_SLA_SECONDS", 45.0),
+    ("eval._config:qa_answerability_gate_threshold", "QA_EVAL_ANSWERABILITY_GATE_THRESHOLD", 0.2),
     ("eval._config:soc_demo_skip_llm", "SOC_DEMO_SKIP_LLM", False),
     ("eval._config:exp004_comparison_csv", "EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"),
     ("eval._config:week8_intent_min_accuracy", "WEEK8_INTENT_MIN_ACCURACY", 0.7),

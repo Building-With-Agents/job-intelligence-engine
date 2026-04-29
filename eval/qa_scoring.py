@@ -35,7 +35,6 @@ rather than the mean being dragged down by infrastructure noise.
 
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -128,6 +127,9 @@ class QAItemScores:
     answerability: float | None
     # Intent-only: refuse vs commit; None for data-backed (N/A) or when pipeline returned nothing (JIE #269).
     correct_refusal: float | None
+    # JIE #265 phase 1: decomposition of ``evidence_citation`` (None when evidence metric excluded).
+    must_include_recall: float | None
+    evidence_overlap: float | None
     comments: dict[str, str]
 
 
@@ -198,24 +200,21 @@ def score_evidence_citation(
     pipeline_error: str | None,
     intent_is_data_backed: bool = False,
     expected_intent: str = "",
-) -> tuple[float | None, str]:
+) -> tuple[float | None, str, float | None, float | None]:
     """Grounding + rubric heuristics (semantic tokens → keyword presence).
 
-    Returns ``None`` for infrastructure failures so they are excluded from run
-    means rather than dragging down the quality signal (JIE #263):
-
-    - ``pipeline_error`` set           → ``None`` (pipeline crash / timeout)
-    - ``sql_execution_error_detail`` set → ``None`` (SQL infra failure)
-    - empty answer                     → ``None`` (input-contract violation)
-    - committed answer, no evidence    → ``0.0`` (real quality failure)
+    Returns ``(combined, comment, must_include_recall, evidence_overlap)``.
+    The last two components are ``None`` when ``combined`` is excluded for
+    infrastructure reasons (JIE #263). ``evidence_overlap`` is ``None`` on
+    refusal paths where overlap is undefined (JIE #265 phase 1).
     """
     if pipeline_error:
-        return None, f"excluded: pipeline_error — {pipeline_error[:200]}"
+        return None, f"excluded: pipeline_error — {pipeline_error[:200]}", None, None
     if sql_execution_error_detail:
-        return None, f"excluded: sql_execution_error — {sql_execution_error_detail[:200]}"
+        return None, f"excluded: sql_execution_error — {sql_execution_error_detail[:200]}", None, None
     ans = (answer or "").strip().lower()
     if not ans:
-        return None, "excluded: empty answer (input-contract violation)"
+        return None, "excluded: empty answer (input-contract violation)", None, None
 
     must_in_avg, penalty = _rubric_must_and_penalty(ans, must_include, must_not_include)
 
@@ -225,13 +224,16 @@ def score_evidence_citation(
         raw_r = max(0.0, min(1.0, raw_r))
         if intent_is_data_backed:
             scaled = max(0.0, min(1.0, raw_r * 0.35))
-            return scaled, (
-                f"data-backed refusal: rubric×0.35 (expected commit); intent={_norm_intent(expected_intent) or '?'}"
+            return (
+                scaled,
+                f"data-backed refusal: rubric×0.35 (expected commit); intent={_norm_intent(expected_intent) or '?'}",
+                must_in_avg,
+                None,
             )
-        return raw_r, "intent-only refusal: rubric (must_include / must_not) without length floors"
+        return raw_r, "intent-only refusal: rubric (must_include / must_not) without length floors", must_in_avg, None
 
     if not evidence:
-        return 0.0, "no evidence items while not refused"
+        return 0.0, "no evidence items while not refused", must_in_avg, 0.0
 
     # Citation coverage: overlap between answer and evidence text (multiple patterns).
     ev_blob = " ".join(f"{e.get('title', '')} {e.get('source', '')} {e.get('snippet', '')}".lower() for e in evidence)
@@ -244,7 +246,12 @@ def score_evidence_citation(
         overlap_score = 0.3
 
     raw = 0.45 * overlap_score + 0.45 * must_in_avg + 0.1 * (1.0 - penalty)
-    return max(0.0, min(1.0, raw)), "overlap + must_include heuristics (see IMP-030 for LLM judge)"
+    return (
+        max(0.0, min(1.0, raw)),
+        "overlap + must_include heuristics (see IMP-030 for LLM judge)",
+        must_in_avg,
+        overlap_score,
+    )
 
 
 def score_confidence_self_consistency(
@@ -521,6 +528,8 @@ def compute_item_scores(
             latency_sla=ls,
             answerability=an,
             correct_refusal=cr,
+            must_include_recall=None,
+            evidence_overlap=None,
             comments={
                 "intent_accuracy": f"excluded: {reason}",
                 "evidence_citation": f"excluded: {reason}",
@@ -529,6 +538,8 @@ def compute_item_scores(
                 "latency_sla": f"{ls_c} (content metrics excluded — pipeline failure)",
                 "answerability": an_c,
                 "correct_refusal": cr_c,
+                "must_include_recall": f"excluded: {reason}",
+                "evidence_overlap": f"excluded: {reason}",
             },
         )
 
@@ -541,7 +552,7 @@ def compute_item_scores(
 
     ev_list = response.get("evidence") if isinstance(response.get("evidence"), list) else []
     ev_dicts: list[dict[str, Any]] = [e for e in ev_list if isinstance(e, dict)]
-    ec, ec_c = score_evidence_citation(
+    ec, ec_c, mir, eov = score_evidence_citation(
         answer=str(response.get("answer") or ""),
         evidence=ev_dicts,
         must_include=list(golden.get("must_include") or []),
@@ -583,6 +594,9 @@ def compute_item_scores(
         no_response=False,
     )
 
+    mir_c = f"must_include rubric mean={mir}" if mir is not None else ec_c
+    eov_c = f"answer/evidence word overlap={eov}" if eov is not None else ec_c
+
     return QAItemScores(
         intent_accuracy=ia,
         evidence_citation=ec,
@@ -591,6 +605,8 @@ def compute_item_scores(
         latency_sla=ls,
         answerability=an,
         correct_refusal=cr,
+        must_include_recall=mir,
+        evidence_overlap=eov,
         comments={
             "intent_accuracy": ia_c,
             "evidence_citation": ec_c,
@@ -599,6 +615,8 @@ def compute_item_scores(
             "latency_sla": ls_c,
             "answerability": an_c,
             "correct_refusal": cr_c,
+            "must_include_recall": mir_c,
+            "evidence_overlap": eov_c,
         },
     )
 
@@ -631,6 +649,92 @@ def confusion_rows(
         key = (_norm_intent(exp) or "?"), (_norm_intent(pred) or "?")
         out[key] = out.get(key, 0) + 1
     return out
+
+
+def intent_classification_report(intent_pairs: list[tuple[str, str]]) -> dict[str, Any]:
+    """Per-class precision / recall / F1 plus macro and weighted F1 (JIE #265 phase 2).
+
+    Labels are the sorted union of normalized expected and predicted intents.
+    """
+    if not intent_pairs:
+        return {
+            "per_class": {},
+            "macro_f1": None,
+            "weighted_f1": None,
+            "labels": [],
+        }
+    labels: set[str] = set()
+    for exp, pred in intent_pairs:
+        labels.add(_norm_intent(exp) or "?")
+        labels.add(_norm_intent(pred) or "?")
+    label_list = sorted(labels)
+
+    per_class: dict[str, dict[str, float]] = {}
+    total_support = 0
+    weighted_f1_num = 0.0
+    f1_values: list[float] = []
+
+    for c in label_list:
+        tp = fp = fn = 0
+        for exp, pred in intent_pairs:
+            e = _norm_intent(exp) or "?"
+            p = _norm_intent(pred) or "?"
+            if e == c and p == c:
+                tp += 1
+            elif e != c and p == c:
+                fp += 1
+            elif e == c and p != c:
+                fn += 1
+        support = tp + fn
+        total_support += support
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+        per_class[c] = {"precision": prec, "recall": rec, "f1": f1, "support": float(support)}
+        f1_values.append(f1)
+        weighted_f1_num += f1 * float(support)
+
+    macro = sum(f1_values) / len(f1_values) if f1_values else None
+    weighted = weighted_f1_num / total_support if total_support > 0 else None
+    return {
+        "per_class": per_class,
+        "macro_f1": macro,
+        "weighted_f1": weighted,
+        "labels": label_list,
+    }
+
+
+def intent_eval_trace_metadata(
+    *,
+    expected_intent: str,
+    classified_intent: str | None,
+    intent_accuracy: float | None,
+) -> dict[str, Any]:
+    """Flat per-item fields for Langfuse / JSON traces (JIE #265 phase 3)."""
+    exp = _norm_intent(expected_intent) or ""
+    pred = _norm_intent(classified_intent or "") or ""
+    if intent_accuracy is None:
+        return {
+            "eval_expected_intent": exp,
+            "eval_classified_intent": pred,
+            "eval_intent_correct": None,
+            "eval_intent_false_negative_class": "",
+            "eval_intent_false_positive_class": "",
+        }
+    match = intent_accuracy >= 1.0 - 1e-9
+    mismatch = intent_accuracy <= 1e-9
+    meta: dict[str, Any] = {
+        "eval_expected_intent": exp,
+        "eval_classified_intent": pred,
+        "eval_intent_correct": 1.0 if match else 0.0,
+    }
+    if mismatch and exp and pred:
+        meta["eval_intent_false_negative_class"] = exp
+        meta["eval_intent_false_positive_class"] = pred
+    else:
+        meta["eval_intent_false_negative_class"] = ""
+        meta["eval_intent_false_positive_class"] = ""
+    return meta
 
 
 def _mean_metric_on_rows(
@@ -695,7 +799,9 @@ def subcomposites_from_means(
 
     overall = _geometric_mean_four(e_mean, i_mean, ph, sfty)
 
-    th = float(os.getenv("QA_EVAL_ANSWERABILITY_GATE_THRESHOLD", "0.2"))
+    from eval._config import qa_answerability_gate_threshold
+
+    th = float(qa_answerability_gate_threshold())
     n_ab = max(0, n_data_backed_answerability)
     gated = bool(a_mean is not None and n_ab > 0 and float(a_mean) < th)
     gmsg = f"answerability {a_mean} < {th} (n_data_backed={n_ab})" if gated else "ok"
