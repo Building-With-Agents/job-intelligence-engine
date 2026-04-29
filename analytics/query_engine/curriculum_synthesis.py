@@ -51,7 +51,12 @@ def fetch_role_suggestions(
         limit: Max number of labels to return.  Defaults to the
                ``CANONICAL_ROLE_SUGGESTION_LIMIT`` env var, then 5.
     """
-    effective_limit = limit or int(os.getenv("CANONICAL_ROLE_SUGGESTION_LIMIT", str(_DEFAULT_ROLE_SUGGESTION_LIMIT)))
+    try:
+        raw_env = os.getenv("CANONICAL_ROLE_SUGGESTION_LIMIT", str(_DEFAULT_ROLE_SUGGESTION_LIMIT))
+        effective_limit = limit or int(raw_env)
+    except (ValueError, TypeError):
+        log.warning("canonical_role_suggestion_limit_invalid", raw_value=raw_env)
+        effective_limit = limit or _DEFAULT_ROLE_SUGGESTION_LIMIT
     try:
         result = session.execute(
             text("SELECT label FROM dbo.canonical_roles ORDER BY posting_count DESC NULLS LAST LIMIT :lim"),
