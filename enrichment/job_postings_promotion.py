@@ -79,6 +79,9 @@ _UPDATE_UNCERTAIN_SQL = text(
         soc_code = :soc_code,
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
+        is_spam = NULL,
+        spam_score = :spam_score,
+        spam_tier = 'uncertain',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -106,6 +109,7 @@ _UPDATE_CLEAN_SQL = text(
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = FALSE,
         spam_score = :spam_score,
+        spam_tier = 'clean',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -133,6 +137,7 @@ _UPDATE_FLAGGED_SQL = text(
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
         is_spam = NULL,
         spam_score = :spam_score,
+        spam_tier = 'flagged',
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -151,6 +156,23 @@ _UPDATE_FUZZY_DEDUP_SQL = text(
     UPDATE dbo.job_postings SET
         is_duplicate = :is_duplicate,
         duplicate_cluster_id = CAST(:duplicate_cluster_id AS uuid)
+    WHERE job_posting_id::text = :job_posting_id
+    """
+)
+
+# JIE #308 — spam-only UPDATE used by the sweeper and one-shot backfill to add
+# the spam dimension to rows that missed classification on first promotion.
+# Deliberately narrow: writes is_spam, spam_score, spam_tier ONLY. Does NOT
+# touch quality / employer / role / zip / promoted_at / dedup — those live on
+# enrichment / promotion / dedup paths and a sweeper running post-hoc must
+# never clobber them. Tier is bound (not literal) because the sweeper applies
+# the classifier's actual output, not a routing decision.
+_UPDATE_SPAM_ONLY_SQL = text(
+    """
+    UPDATE dbo.job_postings SET
+        is_spam = :is_spam,
+        spam_score = :spam_score,
+        spam_tier = :spam_tier
     WHERE job_posting_id::text = :job_posting_id
     """
 )
@@ -678,6 +700,10 @@ def apply_enrichment_to_job_postings(
         "salary_currency": salary_currency_param,
         "salary_period": salary_period_param,
         "zip_code": zip_code_param,
+        # JIE #308 — uncertain tier UPDATE binds spam_score; default to None
+        # so the bind succeeds even when the classifier produced no score.
+        # Clean / flagged paths override below with the float value.
+        "spam_score": None,
         **derived_output_fields,
     }
 
@@ -736,9 +762,18 @@ def apply_enrichment_to_job_postings(
         )
         return _finish_with_dedup()
 
-    log.warning(
+    # JIE #308 Fix A — loud guard. After Fix B-1 lands, every classified row
+    # reaches one of the three branches above (clean / flagged / uncertain).
+    # If we hit this fall-through, something upstream produced a tier value
+    # the routing didn't recognize ('unknown', misspelled, etc.) — surface it
+    # at ERROR with full context so the regression is visible at the next
+    # PR-CI run rather than buried in a WARNING dashboard.
+    log.error(
         "enrichment_promotion_unhandled_tier",
         normalized_job_id=normalized_job_id,
-        tier=tier or raw_tier,
+        job_posting_id=job_posting_id,
+        tier_resolved=tier,
+        tier_raw=raw_tier,
+        spam_score_payload=spam_score,
     )
     return False
