@@ -256,6 +256,134 @@ def test_confidence_threshold_boundary(mock_complete):
     assert out["needs_clarification"] is False
 
 
+# ---------------------------------------------------------------------------
+# GQ-041..050 geographic gold-question regression guard (JIE #305)
+# ---------------------------------------------------------------------------
+
+# Exact question texts from eval/qa_golden_questions.json — gq-041 through gq-050.
+# If any of these regress to "other" in a live run the per-intent floor test below
+# will catch it before it silently pollutes the next scorecard.
+_GQ_GEOGRAPHIC_GOLD: list[tuple[str, str]] = [
+    (
+        "gq-041",
+        "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the agentic_era period.",
+    ),
+    (
+        "gq-042",
+        "List every Las Cruces, NM data engineer posting from the last 90 days with required skills including Python, SQL, and a cloud platform.",
+    ),
+    (
+        "gq-043",
+        "Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, and clinical data analyst roles.",
+    ),
+    (
+        "gq-044",
+        "Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraform experience.",
+    ),
+    (
+        "gq-045",
+        "Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt4 or agentic_era periods.",
+    ),
+    (
+        "gq-046",
+        "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification.",
+    ),
+    (
+        "gq-047",
+        "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family.",
+    ),
+    (
+        "gq-048",
+        "Find all Borderplex (El Paso and Las Cruces combined) fintech or regtech developer postings from the agentic_era period.",
+    ),
+    (
+        "gq-049",
+        "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows.",
+    ),
+    (
+        "gq-050",
+        "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU or UTEP.",
+    ),
+]
+
+
+@pytest.mark.parametrize("gq_id,question", _GQ_GEOGRAPHIC_GOLD)
+@patch("analytics.query_engine.intent.complete")
+def test_geographic_gold_questions_parse_correctly(mock_complete, gq_id, question):
+    """Regression guard (JIE #305): all 10 geographic gold questions must parse
+    to 'geographic' when the LLM returns the expected JSON.  Tests the parsing
+    and validation layers — not the LLM itself.
+    """
+    payload = {
+        "intent": "geographic",
+        "confidence": 0.95,
+        "extracted_entities": {
+            "geographic_terms": ["El Paso, TX"],
+            "role_names": [],
+            "skill_names": [],
+            "time_references": [],
+        },
+    }
+    mock_complete.return_value = _ok_llm_response(payload)
+    out = classify_workforce_question(question)
+    assert out["intent"] == "geographic", (
+        f"{gq_id}: expected 'geographic', got {out['intent']!r}. "
+        "Check _normalize_intent aliases and _INTENT_SET membership."
+    )
+    assert out["confidence"] >= 0.5, f"{gq_id}: confidence too low: {out['confidence']}"
+    assert out["needs_clarification"] is False, f"{gq_id}: unexpected clarification flag"
+
+
+def test_geographic_intent_in_prompt_has_borderplex_rule():
+    """Smoke-test that the system prompt still contains the geographic tie-breaker rule.
+
+    If someone refactors _SYSTEM_PROMPT and accidentally removes the GEOGRAPHIC vs
+    EMPLOYER disambiguation, this test fails fast — before a scorecard run captures it.
+    """
+    from analytics.query_engine.intent import _SYSTEM_PROMPT
+
+    required_phrases = [
+        "geographic",
+        "POSTINGS",
+        "EMPLOYERS",
+        "Borderplex",
+        "El Paso",
+        "Las Cruces",
+    ]
+    for phrase in required_phrases:
+        assert phrase in _SYSTEM_PROMPT, (
+            f"_SYSTEM_PROMPT is missing required phrase {phrase!r}. "
+            "The geographic-primacy tie-breaker rule may have been removed."
+        )
+
+
+@pytest.mark.live_llm
+def test_live_geographic_gold_per_intent_floor():
+    """CI-gated live floor: per-intent accuracy on gq-041..050 must be ≥ 0.8.
+
+    Run with: pytest -m live_llm analytics/tests/test_intent_classification.py
+
+    Per JIE #305: geographic regressions must be caught here (at PR time) not at
+    the next scorecard.  Floor of 0.8 allows for 2 stochastic misses out of 10
+    before the gate trips.
+    """
+    correct = 0
+    misses: list[str] = []
+    for gq_id, question in _GQ_GEOGRAPHIC_GOLD:
+        out = classify_workforce_question(question)
+        if out["intent"] == "geographic":
+            correct += 1
+        else:
+            misses.append(f"{gq_id}: got {out['intent']!r} (conf={out['confidence']:.2f})")
+
+    accuracy = correct / len(_GQ_GEOGRAPHIC_GOLD)
+    floor = float(os.getenv("GEOGRAPHIC_INTENT_MIN_ACCURACY", "0.8"))
+    assert accuracy >= floor, (
+        f"Geographic intent accuracy {accuracy:.2f} < floor {floor:.2f}. "
+        f"Misses ({len(misses)}): {misses}"
+    )
+
+
 @pytest.mark.live_llm
 def test_live_intent_classification_mini_benchmark():
     # Optional: run with --live and configured LLM credentials.
