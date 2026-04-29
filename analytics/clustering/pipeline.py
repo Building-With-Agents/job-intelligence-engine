@@ -150,6 +150,12 @@ def _top_tools(feature_rows: Sequence[PostingClusterFeatures]) -> list[RankedToo
 
 
 def _cluster_centroid(embedded_rows: Sequence[EmbeddedPostingText]) -> list[float]:
+    """Compute the cluster centroid by averaging raw (non-normalized) embeddings.
+
+    Downstream consumers that need cosine proximity should L2-normalize
+    the returned vector before comparing, since the arithmetic mean of
+    unit vectors is not itself unit-length.
+    """
     matrix = np.asarray([embedded_row.embedding for embedded_row in embedded_rows], dtype=float)
     centroid = np.mean(matrix, axis=0)
     return [float(value) for value in centroid.tolist()]

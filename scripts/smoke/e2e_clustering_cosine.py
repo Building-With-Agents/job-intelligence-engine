@@ -3,9 +3,9 @@
 Verifies that:
 1. The clustering config reads ``distance_metric: cosine`` (not euclidean).
 2. ``canonical_roles`` table has ≥ 10 distinct labels in the DB.
-3. Noise fraction is < 20 % (if freshness data is available via the
-   ``dbo.posting_freshness`` table, used as a proxy for cluster assignment
-   quality — otherwise this check is skipped gracefully).
+3. Noise fraction is < 20 % (uses ``dbo.job_postings`` rows without a
+   ``canonical_role_id`` as a proxy for unassigned / noise observations
+   — skipped gracefully when no DB connection is configured).
 4. The Q&A pipeline resolves a "software developer" role-evolution question
    without returning a refused / zero-row response.
 
