@@ -1,22 +1,22 @@
 [
   {
     "posting_id": "demo-1",
-    "first_seen": "2026-04-18T00:27:23.135242+00:00",
-    "last_seen": "2026-04-23T00:27:23.135242+00:00",
+    "first_seen": "2026-04-23T22:32:54.636802+00:00",
+    "last_seen": "2026-04-28T22:32:54.636802+00:00",
     "duration_days": 5,
     "is_repost": false,
     "repost_count": 0,
     "fill_proxy": false,
-    "computed_at": "2026-04-23T00:27:23.135242+00:00"
+    "computed_at": "2026-04-28T22:32:54.636802+00:00"
   },
   {
     "posting_id": "demo-2",
-    "first_seen": "2026-03-09T00:27:23.135242+00:00",
-    "last_seen": "2026-04-23T00:27:23.135242+00:00",
+    "first_seen": "2026-03-14T22:32:54.636802+00:00",
+    "last_seen": "2026-04-28T22:32:54.636802+00:00",
     "duration_days": 45,
     "is_repost": true,
     "repost_count": 2,
     "fill_proxy": false,
-    "computed_at": "2026-04-23T00:27:23.135242+00:00"
+    "computed_at": "2026-04-28T22:32:54.636802+00:00"
   }
 ]

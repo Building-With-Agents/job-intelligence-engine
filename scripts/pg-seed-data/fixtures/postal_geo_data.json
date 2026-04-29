@@ -17541,15 +17541,6 @@
     "lng": -83.68972
   },
   {
-    "zip": "45160",
-    "city": "Owensville",
-    "county": "Clermont",
-    "state_code": "OH",
-    "state": "Ohio",
-    "lat": 39.12358,
-    "lng": -84.13725
-  },
-  {
     "zip": "45162",
     "city": "Pleasant Plain",
     "county": "Warren",
@@ -40455,15 +40446,6 @@
     "lng": -155.23985
   },
   {
-    "zip": "96765",
-    "city": "Lawai",
-    "county": "Kauai",
-    "state_code": "HI",
-    "state": "Hawaii",
-    "lat": 21.92608,
-    "lng": -159.49831
-  },
-  {
     "zip": "96766",
     "city": "Lihue",
     "county": "Kauai",
@@ -60237,15 +60219,6 @@
     "lng": -121.9097
   },
   {
-    "zip": "95111",
-    "city": "San Jose",
-    "county": "Santa Clara",
-    "state_code": "CA",
-    "state": "California",
-    "lat": 37.28401,
-    "lng": -121.82731
-  },
-  {
     "zip": "95112",
     "city": "San Jose",
     "county": "Santa Clara",
@@ -63394,15 +63367,6 @@
     "state": "West Virginia",
     "lat": 38.85778,
     "lng": -80.94187
-  },
-  {
-    "zip": "25268",
-    "city": "Orma",
-    "county": "Calhoun",
-    "state_code": "WV",
-    "state": "West Virginia",
-    "lat": 38.73969,
-    "lng": -81.107
   },
   {
     "zip": "25270",
@@ -94372,15 +94336,6 @@
     "state": "Texas",
     "lat": 29.27903,
     "lng": -94.83502
-  },
-  {
-    "zip": "77554",
-    "city": "Galveston",
-    "county": "Galveston",
-    "state_code": "TX",
-    "state": "Texas",
-    "lat": 29.23187,
-    "lng": -94.92544
   },
   {
     "zip": "77555",
@@ -127575,15 +127530,6 @@
     "lng": -90.26492
   },
   {
-    "zip": "72340",
-    "city": "Goodwin",
-    "county": "St. Francis",
-    "state_code": "AR",
-    "state": "Arkansas",
-    "lat": 34.95687,
-    "lng": -91.03202
-  },
-  {
     "zip": "72341",
     "city": "Haynes",
     "county": "Lee",
@@ -128995,15 +128941,6 @@
     "state": "Arkansas",
     "lat": 36.35047,
     "lng": -93.55736
-  },
-  {
-    "zip": "72617",
-    "city": "Big Flat",
-    "county": "Baxter",
-    "state_code": "AR",
-    "state": "Arkansas",
-    "lat": 36.0208,
-    "lng": -92.36566
   },
   {
     "zip": "72619",
@@ -155655,15 +155592,6 @@
     "lng": -94.71522
   },
   {
-    "zip": "64402",
-    "city": "Albany",
-    "county": "Gentry",
-    "state_code": "MO",
-    "state": "Missouri",
-    "lat": 40.25201,
-    "lng": -94.32276
-  },
-  {
     "zip": "64420",
     "city": "Allendale",
     "county": "Worth",
@@ -164338,15 +164266,6 @@
     "state": "Alaska",
     "lat": 65.67807,
     "lng": -145.54055
-  },
-  {
-    "zip": "99732",
-    "city": "Chicken",
-    "county": "Southeast Fairbanks",
-    "state_code": "AK",
-    "state": "Alaska",
-    "lat": 64.07945,
-    "lng": -141.97039
   },
   {
     "zip": "99733",
@@ -183744,15 +183663,6 @@
     "lng": -94.07576
   },
   {
-    "zip": "50134",
-    "city": "Kelley",
-    "county": "Story",
-    "state_code": "IA",
-    "state": "Iowa",
-    "lat": 41.93992,
-    "lng": -93.67429
-  },
-  {
     "zip": "50135",
     "city": "Kellogg",
     "county": "Jasper",
@@ -198360,15 +198270,6 @@
     "lng": -105.43228
   },
   {
-    "zip": "82081",
-    "city": "Meriden",
-    "county": "Laramie",
-    "state_code": "WY",
-    "state": "Wyoming",
-    "lat": 41.52319,
-    "lng": -104.40653
-  },
-  {
     "zip": "82082",
     "city": "Pine Bluffs",
     "county": "Laramie",
@@ -199357,15 +199258,6 @@
     "state": "Wyoming",
     "lat": 44.83701,
     "lng": -107.57589
-  },
-  {
-    "zip": "82837",
-    "city": "Leiter",
-    "county": "Sheridan",
-    "state_code": "WY",
-    "state": "Wyoming",
-    "lat": 44.72549,
-    "lng": -106.28169
   },
   {
     "zip": "82838",
@@ -210141,15 +210033,6 @@
     "lng": -79.22109
   },
   {
-    "zip": "21539",
-    "city": "Lonaconing",
-    "county": "Garrett",
-    "state_code": "MD",
-    "state": "Maryland",
-    "lat": 39.59828,
-    "lng": -79.01074
-  },
-  {
     "zip": "21540",
     "city": "Luke",
     "county": "Allegany",
@@ -218295,15 +218178,6 @@
     "lng": -119.02992
   },
   {
-    "zip": "93222",
-    "city": "Pine Mountain Club",
-    "county": "Kern",
-    "state_code": "CA",
-    "state": "California",
-    "lat": 34.89835,
-    "lng": -119.25983
-  },
-  {
     "zip": "93223",
     "city": "Farmersville",
     "county": "Tulare",
@@ -224098,15 +223972,6 @@
     "state": "Tennessee",
     "lat": 35.88185,
     "lng": -89.48065
-  },
-  {
-    "zip": "38041",
-    "city": "Henning",
-    "county": "Lauderdale",
-    "state_code": "TN",
-    "state": "Tennessee",
-    "lat": 35.64397,
-    "lng": -89.70204
   },
   {
     "zip": "38042",
@@ -244710,15 +244575,6 @@
     "lng": -106.76522
   },
   {
-    "zip": "87121",
-    "city": "Albuquerque",
-    "county": "Bernalillo",
-    "state_code": "NM",
-    "state": "New Mexico",
-    "lat": 35.01031,
-    "lng": -106.87816
-  },
-  {
     "zip": "87122",
     "city": "Albuquerque",
     "county": "Bernalillo",
@@ -245716,15 +245572,6 @@
     "state": "New York",
     "lat": 41.08626,
     "lng": -73.78097
-  },
-  {
-    "zip": "10596",
-    "city": "Verplanck",
-    "county": "Westchester",
-    "state_code": "NY",
-    "state": "New York",
-    "lat": 41.25552,
-    "lng": -73.95854
   },
   {
     "zip": "10597",
@@ -249514,15 +249361,6 @@
     "state": "New York",
     "lat": 42.42794,
     "lng": -73.8931
-  },
-  {
-    "zip": "12090",
-    "city": "Hoosick Falls",
-    "county": "Rensselaer",
-    "state_code": "NY",
-    "state": "New York",
-    "lat": 42.88073,
-    "lng": -73.35624
   },
   {
     "zip": "12092",
@@ -270621,15 +270459,6 @@
     "lng": -97.88533
   },
   {
-    "zip": "68847",
-    "city": "Kearney",
-    "county": "Buffalo",
-    "state_code": "NE",
-    "state": "Nebraska",
-    "lat": 40.73465,
-    "lng": -99.02272
-  },
-  {
     "zip": "68849",
     "city": "Kearney",
     "county": "Buffalo",
@@ -273690,15 +273519,6 @@
     "lng": -92.19569
   },
   {
-    "zip": "70512",
-    "city": "Arnaudville",
-    "county": "St. Landry",
-    "state_code": "LA",
-    "state": "Louisiana",
-    "lat": 30.41333,
-    "lng": -91.92337
-  },
-  {
     "zip": "70513",
     "city": "Avery Island",
     "county": "Iberia",
@@ -274831,15 +274651,6 @@
     "state": "Louisiana",
     "lat": 30.37204,
     "lng": -91.53468
-  },
-  {
-    "zip": "70759",
-    "city": "Morganza",
-    "county": "Pointe Coupee",
-    "state_code": "LA",
-    "state": "Louisiana",
-    "lat": 30.71346,
-    "lng": -91.58762
   },
   {
     "zip": "70760",
@@ -279088,15 +278899,6 @@
     "state": "Nevada",
     "lat": 39.43783,
     "lng": -114.8188
-  },
-  {
-    "zip": "89319",
-    "city": "Ruth",
-    "county": "White Pine",
-    "state_code": "NV",
-    "state": "Nevada",
-    "lat": 39.27915,
-    "lng": -114.98724
   },
   {
     "zip": "89402",
@@ -283849,15 +283651,6 @@
     "state": "New York",
     "lat": 44.33451,
     "lng": -74.23829
-  },
-  {
-    "zip": "12946",
-    "city": "Lake Placid",
-    "county": "Essex",
-    "state_code": "NY",
-    "state": "New York",
-    "lat": 44.23162,
-    "lng": -73.98903
   },
   {
     "zip": "12950",
@@ -300598,15 +300391,6 @@
     "state": "South Dakota",
     "lat": 45.4284,
     "lng": -100.10393
-  },
-  {
-    "zip": "57473",
-    "city": "Seneca",
-    "county": "Faulk",
-    "state_code": "SD",
-    "state": "South Dakota",
-    "lat": 44.98993,
-    "lng": -99.483
   },
   {
     "zip": "57474",
