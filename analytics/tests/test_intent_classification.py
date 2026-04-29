@@ -274,7 +274,7 @@ _GQ_GEOGRAPHIC_GOLD: list[tuple[str, str]] = [
     ),
     (
         "gq-043",
-        "Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, and clinical data analyst roles.",
+        "Pull all El Paso, TX healthcare-IT postings \u2014 including EHR analyst, health informatics specialist, and clinical data analyst roles \u2014 that require AI or ML skills.",
     ),
     (
         "gq-044",
@@ -286,7 +286,7 @@ _GQ_GEOGRAPHIC_GOLD: list[tuple[str, str]] = [
     ),
     (
         "gq-046",
-        "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification.",
+        "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification such as CISSP, CISA, or CompTIA Security+.",
     ),
     (
         "gq-047",
@@ -298,11 +298,11 @@ _GQ_GEOGRAPHIC_GOLD: list[tuple[str, str]] = [
     ),
     (
         "gq-049",
-        "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows.",
+        "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows flagged.",
     ),
     (
         "gq-050",
-        "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU or UTEP.",
+        "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC.",
     ),
 ]
 
