@@ -87,10 +87,10 @@ def check_canonical_roles_count() -> None:
         return
 
     if count >= 10:
-        _ok(f"canonical_roles count={count} (≥ 10)")
+        _ok(f"canonical_roles count={count} (>= 10)")
     else:
         _fail(
-            f"canonical_roles has only {count} rows — expected ≥ 10 coherent clusters "
+            f"canonical_roles has only {count} rows - expected >= 10 coherent clusters "
             f"after cosine-distance re-clustering (JIE #297)"
         )
 
@@ -138,7 +138,7 @@ def check_noise_fraction() -> None:
         _ok(f"noise_fraction={noise_pct:.1f}% (< {threshold}%)")
     else:
         _fail(
-            f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold — "
+            f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold - "
             f"re-run clustering pipeline after applying cosine metric fix (JIE #297)"
         )
 
@@ -175,7 +175,7 @@ def check_qna_software_developer() -> None:
 
         if refused and row_count == 0:
             _fail(
-                "Q&A refused with 0 rows for 'software developer' role-evolution question — "
+                "Q&A refused with 0 rows for 'software developer' role-evolution question - "
                 "canonical_roles label vocabulary does not contain matching clusters yet. "
                 "Re-run analytics clustering pipeline after the cosine-metric fix. (JIE #297)"
             )
@@ -192,19 +192,19 @@ def check_qna_software_developer() -> None:
 
 
 def main() -> int:
-    print("=== JIE #297 — cosine clustering smoke checks ===\n")
+    print("=== JIE #297 - cosine clustering smoke checks ===\n")
     check_config_metric()
     check_canonical_roles_count()
     check_noise_fraction()
     check_qna_software_developer()
 
     if _FAILURES:
-        print(f"\n❌  {len(_FAILURES)} check(s) FAILED:")
+        print(f"\n[FAIL] {len(_FAILURES)} check(s) FAILED:")
         for f in _FAILURES:
             print(f"  - {f}")
         return 1
 
-    print("\n✓  All checks passed.")
+    print("\n[OK] All checks passed.")
     return 0
 
 
