@@ -161,9 +161,7 @@ class TestRoutingRoleHintGuards:
         assert post_filter_rows == []
         # The hint condition must check router_row_count, not post-filter len(rows).
         hint_would_fire = router_row_count == 0 and intent_label in _ROLE_FILTERED_INTENTS
-        assert not hint_would_fire, (
-            "Bug 1: hint fired because it checked post-filter rows instead of router_row_count"
-        )
+        assert not hint_would_fire, "Bug 1: hint fired because it checked post-filter rows instead of router_row_count"
 
     def test_role_query_uses_extracted_entities_not_raw_question(self) -> None:
         """Bug 2 regression: role_query must be extracted role_names, not question text."""
@@ -181,10 +179,6 @@ class TestRoutingRoleHintGuards:
 
         # The message must contain the role name, not sentence fragments from the question.
         assert "data analyst" in msg
-        assert "What skills" not in msg, (
-            "Bug 2: raw question text leaked into the role_query argument"
-        )
-        assert "need for upskilling" not in msg, (
-            "Bug 2: raw question text leaked into the role_query argument"
-        )
+        assert "What skills" not in msg, "Bug 2: raw question text leaked into the role_query argument"
+        assert "need for upskilling" not in msg, "Bug 2: raw question text leaked into the role_query argument"
         assert full_question not in msg
