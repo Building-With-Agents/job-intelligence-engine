@@ -35,7 +35,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import Text, cast, or_, select
+from sqlalchemy import Text, cast, or_, select, text
 from sqlalchemy.orm import Session
 
 from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
@@ -75,6 +75,10 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
         "sector_summary_weekly",
         "employer_profiles",
         "companies",
+        # JIE #306 — list-style geographic queries join job_postings to
+        # postal_geo_data for sub-region filtering on per-posting results.
+        "job_postings",
+        "postal_geo_data",
     }
 )
 
@@ -129,6 +133,88 @@ _TIME_PATTERNS: list[tuple[re.Pattern[str], int]] = [
 ]
 
 _DEFAULT_WEEKS_BACK: int = 12
+
+
+# JIE #306 — list-style geographic detection. Matches the verbs that indicate
+# the user wants per-posting detail rather than an aggregate count. False
+# negatives are safer than false positives here: an aggregate-style question
+# wrongly flagged as list-style will still hit a valid SELECT, just with more
+# rows than the user asked for; a list-style question routed to
+# ``geo_demand_weekly`` returns "No data in scope" and the user gets nothing.
+_LIST_STYLE_PATTERN: re.Pattern[str] = re.compile(
+    r"\b(show|list|find|pull|retrieve|display|give\s+me|all\s+postings|every\s+posting|"
+    r"all\s+(?:el\s+paso|las\s+cruces|borderplex)\s+postings)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_list_style(question: str) -> bool:
+    """Heuristic: does the question ask for per-posting detail rather than an aggregate?"""
+    return bool(question and _LIST_STYLE_PATTERN.search(question))
+
+
+# Tokens that carry no role signal (filtered out before ILIKE matching).
+_ROLE_TOKEN_STOPWORDS: frozenset[str] = frozenset(
+    {"and", "or", "the", "of", "for", "with", "at", "in", "to", "a", "an", "any", "all"}
+)
+
+
+def _tokenize_role_name(role: str) -> list[str]:
+    """Split a free-text role name into ILIKE-friendly tokens.
+
+    Multi-word role phrases extracted from user questions ("AI/ML researcher",
+    "applied-scientist", "AI agent developer") rarely substring-match a single
+    posting's ``job_title`` or ``role_classification``. Tokenizing widens the
+    net: an "AI/ML researcher" query can match "AI Scientist", "Applied ML
+    Researcher", or "Senior Applied AI Researcher".
+
+    Tokens shorter than 2 characters and common English stopwords are dropped.
+    """
+    if not role:
+        return []
+    raw_tokens = re.split(r"[\s/,\-_]+", role.strip())
+    return [t.strip() for t in raw_tokens if len(t.strip()) >= 2 and t.strip().lower() not in _ROLE_TOKEN_STOPWORDS]
+
+
+# US state-code lookup for the small set we expect in Borderplex / Puget queries.
+# Full dictionary lives in ``normalization.mappers.jsearch._STATE_NAME_TO_CODE``;
+# the router only needs the handful of forms it sees in geo_terms.
+_GEO_STATE_CODES: dict[str, str] = {
+    "tx": "TX",
+    "texas": "TX",
+    "nm": "NM",
+    "new mexico": "NM",
+    "wa": "WA",
+    "washington": "WA",
+}
+
+
+def _split_geo_term(term: str) -> tuple[str | None, str | None]:
+    """Parse a geo term like 'El Paso, TX' or 'Las Cruces NM' into (city, state_code).
+
+    Returns ``(None, None)`` if no state hint is found; callers should fall
+    back to county / city-ILIKE matching.
+    """
+    if not term:
+        return (None, None)
+    cleaned = term.strip().rstrip(".")
+    # split on comma first — "El Paso, TX"
+    if "," in cleaned:
+        city_part, state_part = cleaned.rsplit(",", 1)
+        state_code = _GEO_STATE_CODES.get(state_part.strip().lower())
+        return (city_part.strip(), state_code)
+    # otherwise the last token may be the state — "El Paso TX" / "Las Cruces NM"
+    parts = cleaned.split()
+    if len(parts) >= 2:
+        last = parts[-1].lower()
+        state_code = _GEO_STATE_CODES.get(last)
+        if state_code:
+            return (" ".join(parts[:-1]), state_code)
+    # try the whole term as a state name
+    state_code = _GEO_STATE_CODES.get(cleaned.lower())
+    if state_code:
+        return (None, state_code)
+    return (cleaned, None)
 
 
 def _parse_weeks_back(time_refs: list[str]) -> int:
@@ -232,6 +318,7 @@ class QueryRouter:
         session: Session,
         *,
         tenant: TenantAccess | None = None,
+        question: str = "",
     ) -> RouteResult:
         """Dispatch a classification dict to the appropriate query handler.
 
@@ -242,6 +329,9 @@ class QueryRouter:
             session: Open SQLAlchemy ``Session`` (read path; the router never
                 issues write statements).
             tenant: Entitled subregions + aggregate exposure (JIE #224 / ``X-Tenant-Id``).
+            question: Original user question text. Forwarded to handlers that
+                need to inspect user wording (e.g. ``_route_geographic`` uses
+                this to detect list-style vs aggregate-style — JIE #306).
 
         Returns:
             :class:`RouteResult` with result rows or structured error details.
@@ -288,6 +378,7 @@ class QueryRouter:
                 week_floor=wfloor,
                 session=session,
                 tenant=taccess,
+                question=question,
             )
 
         try:
@@ -301,6 +392,7 @@ class QueryRouter:
                 week_floor=wfloor,
                 session=session,
                 tenant=taccess,
+                question=question,
             )
         except Exception as exc:
             log.error(
@@ -410,6 +502,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """trend → ``skill_demand_weekly`` ordered by demand, optionally filtered by skill."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -456,6 +549,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """role_evolution → ``canonical_roles`` ordered by posting volume."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -500,6 +594,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """disruption → ``skill_velocity`` rows with declining or volatile trends."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -550,6 +645,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """emergence → ``skill_velocity`` rows with emerging or accelerating trends."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -600,6 +696,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """curriculum → top demanded skills from ``skill_demand_weekly`` for upskilling."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -646,6 +743,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """employer → ``employer_profiles`` JOIN ``companies``."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -696,6 +794,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -744,8 +843,10 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
-        """geographic → ``geo_demand_weekly`` filtered by borderplex_subregion."""
+        """geographic — list-style → ``job_postings JOIN postal_geo_data``;
+        aggregate-style → ``geo_demand_weekly`` (JIE #306)."""
         allowed = list(tenant.allowed_subregions)
         if not allowed:
             return RouteResult(
@@ -756,6 +857,19 @@ class QueryRouter:
                 row_count=0,
                 confidence=confidence,
             )
+
+        if _is_list_style(question):
+            return self._route_geographic_list(
+                intent=intent,
+                confidence=confidence,
+                skill_names=skill_names,
+                role_names=role_names,
+                geo_terms=geo_terms,
+                week_floor=week_floor,
+                session=session,
+                tenant=tenant,
+            )
+
         gd = GeoDemandWeekly
         stmt = (
             select(
@@ -791,6 +905,178 @@ class QueryRouter:
             confidence=confidence,
         )
 
+    def _route_geographic_list(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        skill_names: list[str],
+        role_names: list[str],
+        geo_terms: list[str],
+        week_floor: date,
+        session: Session,
+        tenant: TenantAccess,
+    ) -> RouteResult:
+        """List-style geographic — per-posting query against ``job_postings``
+        joined to ``postal_geo_data`` (JIE #306).
+
+        ``job_postings`` is Prisma-managed (no SQLAlchemy ORM model), so this
+        path uses ``text()`` with bind parameters. Filtering: tenant subregion
+        via ``borderplex_subregion`` allowlist + city/state derived from
+        ``geo_terms`` + optional ILIKE on ``role_classification`` for role
+        names. Skill filtering is intentionally not wired in this PR — the
+        JSONB unnest path is more invasive and belongs in a follow-up.
+        """
+        # Parse geo_terms for (city, state_code). The first parseable term wins;
+        # downstream callers can re-issue with a refined term if needed.
+        parsed_city: str | None = None
+        parsed_state: str | None = None
+        for term in geo_terms:
+            city, state_code = _split_geo_term(term)
+            if city or state_code:
+                parsed_city = city
+                parsed_state = state_code
+                break
+
+        # tenant subregion allowlist enforcement (JIE #224 carry-over).
+        # job_postings.borderplex_subregion is canonical (el_paso / las_cruces / ...).
+        allowed_subregions = list(tenant.allowed_subregions)
+
+        params: dict[str, Any] = {
+            "week_floor": week_floor,
+            "subregions": allowed_subregions,
+        }
+        # ``is_spam = FALSE`` is the strict, intentional filter. Rows with
+        # ``is_spam IS NULL`` are *unclassified* — they need HITL or batch
+        # spam-tier verification before they're safe to surface in a
+        # user-facing answer. Rows with ``is_spam = TRUE`` are confirmed
+        # spam. Only confirmed-clean rows flow through the natural list-style
+        # path. Subregions whose postings are largely unclassified (e.g.
+        # ~1,400 Las Cruces rows as of 2026-04-28) will return 0 rows from
+        # this path until the spam classifier backfill runs — that data gap
+        # is tracked separately and is the correct UX, not a router bug.
+        where_parts: list[str] = [
+            "jp.is_spam = FALSE",
+            "jp.date_posted >= :week_floor",
+            "jp.borderplex_subregion = ANY(:subregions)",
+            "jp.zip_code IS NOT NULL",
+        ]
+
+        if parsed_city:
+            where_parts.append("pgd.city ILIKE :city")
+            params["city"] = parsed_city
+        if parsed_state:
+            where_parts.append("pgd.state_code = :state_code")
+            params["state_code"] = parsed_state
+
+        if role_names:
+            # Tokenize each role name and OR-match every token against EITHER
+            # job_title OR role_classification. role_classification is
+            # coarse-grained ("Artificial Intelligence" / "Software Engineering")
+            # while job_title carries niche detail ("AI Scientist", "Prompt
+            # Engineer"). Tokenization handles the semantic gap between the
+            # user's phrasing ("AI/ML researcher") and the data's phrasing
+            # ("AI Scientist", "Applied ML Researcher").
+            role_clauses: list[str] = []
+            seen: set[str] = set()
+            token_index = 0
+            for role in role_names[:5]:
+                for tok in _tokenize_role_name(role):
+                    norm = tok.lower()
+                    if norm in seen:
+                        continue
+                    seen.add(norm)
+                    title_key = f"role_title_{token_index}"
+                    cls_key = f"role_cls_{token_index}"
+                    role_clauses.append(f"(jp.job_title ILIKE :{title_key} OR jp.role_classification ILIKE :{cls_key})")
+                    params[title_key] = f"%{tok}%"
+                    params[cls_key] = f"%{tok}%"
+                    token_index += 1
+                    if token_index >= 12:  # cap parameter explosion
+                        break
+                if token_index >= 12:
+                    break
+            if role_clauses:
+                where_parts.append("(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0])
+                # Issue #197 — exclude misbucketed placeholder when filtering on role.
+                where_parts.append("(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')")
+
+        sql = text(
+            f"""
+            SELECT jp.job_posting_id,
+                   jp.job_title,
+                   jp.role_classification,
+                   jp.borderplex_subregion,
+                   jp.date_posted,
+                   jp.is_remote,
+                   jp.salary_min,
+                   jp.salary_max,
+                   jp.salary_currency,
+                   pgd.city,
+                   pgd.state_code,
+                   pgd.county,
+                   c.company_name
+            FROM dbo.job_postings AS jp
+            JOIN dbo.postal_geo_data AS pgd ON pgd.zip = jp.zip_code
+            LEFT JOIN dbo.companies AS c ON c.company_id = jp.company_id
+            WHERE {" AND ".join(where_parts)}
+            ORDER BY jp.date_posted DESC NULLS LAST
+            LIMIT :row_limit
+            """
+        )
+        params["row_limit"] = _QUERY_LIMIT
+
+        label_parts = ["per-posting list"]
+        if geo_terms:
+            label_parts.append(", ".join(geo_terms[:2]))
+        if role_names:
+            label_parts.append(f"role={', '.join(role_names[:2])}")
+        label = "geographic demand — " + " · ".join(label_parts)
+
+        try:
+            result = session.execute(
+                sql,
+                params,
+                execution_options={"timeout": _QUERY_TIMEOUT_SECONDS},
+            )
+            rows = [dict(row._mapping) for row in result]
+            is_partial = len(rows) >= _QUERY_LIMIT
+            log.info(
+                "query_router_result",
+                intent=intent,
+                query_label=label,
+                row_count=len(rows),
+                is_partial=is_partial,
+                tables_used=["job_postings", "postal_geo_data", "companies"],
+                routing_path="list_style",
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings", "postal_geo_data", "companies"],
+                query_label=label,
+                rows=rows,
+                row_count=len(rows),
+                is_partial=is_partial,
+                confidence=confidence,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_execute_error",
+                intent=intent,
+                query_label=label,
+                error_type=type(exc).__name__,
+                error=str(exc),
+                routing_path="list_style",
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings", "postal_geo_data"],
+                query_label=label,
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
+
     def _route_comparison(
         self,
         *,
@@ -802,6 +1088,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """comparison → ``skill_demand_weekly`` for skill vs skill; ``sector_summary_weekly`` otherwise."""
         if not tenant.can_query_borderplex_skill_tables:
@@ -869,6 +1156,7 @@ class QueryRouter:
         week_floor: date,
         session: Session,
         tenant: TenantAccess,
+        question: str = "",
     ) -> RouteResult:
         """other / unrecognised intent — return an unrouted result without executing SQL."""
         log.info(

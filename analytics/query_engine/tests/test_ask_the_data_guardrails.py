@@ -146,7 +146,10 @@ def test_cte_with_aggregate_table() -> None:
         "analytics_pipeline_state",
         "normalization_quarantine",
         "trajectory_map",
-        "postal_geo_data",
+        # ``postal_geo_data`` was added to the allowlist by JIE #306 to enable
+        # list-style geographic queries; the corresponding "must allow" test
+        # lives at ``test_validate_accepts_postal_geo_data_join`` in
+        # ``analytics/tests/test_sql_guardrails.py``.
         "socc",
         "naics",
         "job_ingestion_runs",

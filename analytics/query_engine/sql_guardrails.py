@@ -52,6 +52,10 @@ ASK_THE_DATA_ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
         "job_postings",
         "normalized_jobs",
         "extracted_intelligence",
+        # Geographic reference — JIE #306: enables sub-region filtering on
+        # list-style geographic queries (e.g. "show all El Paso postings"
+        # via JOIN postal_geo_data ON pgd.zip = jp.zip_code).
+        "postal_geo_data",
         # Legacy / reference (kept for backward-compat; _SCHEMA_HINT does not direct LLM here)
         "company_addresses",
         "technology_areas",
