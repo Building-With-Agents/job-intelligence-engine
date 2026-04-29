@@ -43,6 +43,7 @@ except ImportError:
     def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
         def _decorator(fn: Any) -> Any:
             return fn
+
         return _decorator
 
     class _FakeLangfuseContext:

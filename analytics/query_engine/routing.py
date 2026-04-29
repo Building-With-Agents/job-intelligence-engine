@@ -61,6 +61,7 @@ except ImportError:
     def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
         def _decorator(fn: Any) -> Any:
             return fn
+
         return _decorator
 
     class _FakeLangfuseContext:
@@ -113,6 +114,7 @@ def _call_sql_generation_llm(
         _lf_ctx.update_current_observation(**update_kwargs)
     _lf_ctx.update_current_observation(output=result.get("content") or "")
     return result
+
 
 _SQL_EXEC_ERR_DETAIL_MAX = 400
 

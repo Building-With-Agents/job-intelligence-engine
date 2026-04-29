@@ -57,6 +57,7 @@ except ImportError:
     def _lf_observe(**_kwargs: Any):  # type: ignore[misc]
         def _decorator(fn: Any) -> Any:
             return fn
+
         return _decorator
 
     class _FakeLangfuseContext:
@@ -86,6 +87,7 @@ def _report_llm_usage(llm_result: dict[str, Any]) -> None:
         update_kwargs["cost_details"] = {"total": float(cost_usd)}
     if update_kwargs:
         langfuse_context.update_current_observation(**update_kwargs)
+
 
 _DEFAULT_REFUSAL = "Insufficient evidence to produce a grounded answer."
 _SAFE_FALLBACK_ANSWER = (
