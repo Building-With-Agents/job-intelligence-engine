@@ -34,8 +34,13 @@ clustering:
   selection_epsilon: 0.0
 
   # Distance metric passed to HDBSCAN. Lowercased on read.
+  # Changed from euclidean to cosine (JIE #297): 1536-dim embeddings collapse
+  # to 3 mega-clusters under euclidean because L2 distances concentrate near a
+  # constant value in high dimensions (curse of dimensionality). Cosine distance
+  # measures angular separation, which is meaningful for unit-normalised text
+  # embeddings and produces coherent job-role clusters.
   # Env override: CLUSTER_DISTANCE_METRIC
-  distance_metric: euclidean
+  distance_metric: cosine
 
   # Min fraction of postings inside a cluster sharing the dominant SOC label
   # for that label to be assigned. Range 0.0–1.0.

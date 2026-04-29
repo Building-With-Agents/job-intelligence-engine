@@ -95,7 +95,11 @@ def _aligned_rows(
     return aligned
 
 
-def _embedding_matrix(aligned_rows: Sequence[tuple[PostingClusterFeatures, EmbeddedPostingText]]) -> np.ndarray | None:
+def _embedding_matrix(
+    aligned_rows: Sequence[tuple[PostingClusterFeatures, EmbeddedPostingText]],
+    *,
+    distance_metric: str = "cosine",
+) -> np.ndarray | None:
     if not aligned_rows:
         return None
     try:
@@ -109,6 +113,13 @@ def _embedding_matrix(aligned_rows: Sequence[tuple[PostingClusterFeatures, Embed
             matrix_shape=list(matrix.shape),
         )
         return None
+    # L2-normalise when using cosine distance so HDBSCAN's internal distance
+    # computation is numerically stable (unit vectors avoid the edge case where
+    # a near-zero-norm row produces NaN cosine distances).
+    if distance_metric == "cosine":
+        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+        norms = np.where(norms == 0, 1.0, norms)  # guard against zero-norm rows
+        matrix = matrix / norms
     return matrix
 
 
@@ -197,7 +208,12 @@ def run_clustering(
             skip_reason="insufficient_total_postings",
         )
 
-    matrix = _embedding_matrix(aligned_rows)
+    minimum_cluster_size = cluster_min_cluster_size()
+    minimum_samples = cluster_min_samples()
+    selection_epsilon = cluster_selection_epsilon()
+    distance_metric = cluster_distance_metric()
+
+    matrix = _embedding_matrix(aligned_rows, distance_metric=distance_metric)
     if matrix is None:
         return ClusteringResult(
             total_input_postings=total_input_postings,
@@ -208,10 +224,10 @@ def run_clustering(
             skip_reason="embedding_generation_failed",
         )
 
-    minimum_cluster_size = cluster_min_cluster_size()
-    minimum_samples = cluster_min_samples()
-    selection_epsilon = cluster_selection_epsilon()
-    distance_metric = cluster_distance_metric()
+    # KD-tree and ball-tree indices only support Euclidean-family metrics.
+    # For cosine (or any other non-Euclidean metric), fall back to brute-force
+    # pairwise distance computation so HDBSCAN doesn't silently use the wrong index.
+    algorithm = "brute" if distance_metric != "euclidean" else "best"
 
     effective_clusterer_factory = clusterer_factory or _default_clusterer_factory
     clusterer = effective_clusterer_factory(
@@ -219,6 +235,7 @@ def run_clustering(
         min_samples=minimum_samples,
         cluster_selection_epsilon=selection_epsilon,
         metric=distance_metric,
+        algorithm=algorithm,
     )
 
     raw_labels = clusterer.fit_predict(matrix)
@@ -308,6 +325,7 @@ def run_clustering(
         minimum_samples=minimum_samples,
         selection_epsilon=selection_epsilon,
         distance_metric=distance_metric,
+        algorithm=algorithm,
     )
 
     return ClusteringResult(
