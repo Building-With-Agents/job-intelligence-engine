@@ -174,15 +174,13 @@ def _parse_week(raw: str) -> date:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Backfill dbo.role_snapshot_weekly across every week_start that has "
-            "job_postings with canonical_role_id."
+            "Backfill dbo.role_snapshot_weekly across every week_start that has job_postings with canonical_role_id."
         ),
     )
     parser.add_argument(
         "--week",
         default=None,
-        help="ISO date of the target Monday UTC (e.g. 2026-04-13). When omitted, "
-        "all populated weeks are backfilled.",
+        help="ISO date of the target Monday UTC (e.g. 2026-04-13). When omitted, all populated weeks are backfilled.",
     )
     parser.add_argument(
         "--dry-run",
