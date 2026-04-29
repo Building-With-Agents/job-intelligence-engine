@@ -760,14 +760,6 @@
     "computed_at": "2026-04-17T03:27:57.792379+00:00"
   },
   {
-    "id": 962,
-    "skill_a": "English",
-    "skill_b": "Python",
-    "co_occurrence_count": 2,
-    "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
-  },
-  {
     "id": 496,
     "skill_a": "Coding",
     "skill_b": "Malware Analysis",
@@ -1608,1595 +1600,1603 @@
     "computed_at": "2026-04-17T03:27:57.792379+00:00"
   },
   {
-    "id": 801,
+    "id": 1001,
     "skill_a": "Code Review",
     "skill_b": "Software Development",
     "co_occurrence_count": 4,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 802,
+    "id": 1002,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Data Visualization",
     "co_occurrence_count": 4,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 803,
+    "id": 1003,
     "skill_a": "Code Review",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 804,
+    "id": 1004,
     "skill_a": "Code Review",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 805,
+    "id": 1005,
     "skill_a": "Code Review",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 806,
+    "id": 1006,
     "skill_a": "Code Review",
     "skill_b": "Written Communication",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 807,
+    "id": 1007,
     "skill_a": "Communication",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 808,
+    "id": 1008,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 809,
+    "id": 1009,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Machine Learning",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 810,
+    "id": 1010,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Software Development",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 811,
+    "id": 1011,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 812,
+    "id": 1012,
     "skill_a": "Data Analysis",
     "skill_b": "Data Visualization",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 813,
+    "id": 1013,
     "skill_a": "Data Analysis",
     "skill_b": "Statistical Analysis",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 814,
+    "id": 1014,
     "skill_a": "Data Visualization",
     "skill_b": "Statistical Analysis",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 815,
+    "id": 1015,
     "skill_a": "Full Stack Development",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 3,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 816,
+    "id": 1016,
     "skill_a": "AI Model Training",
     "skill_b": "Code Review",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 817,
+    "id": 1017,
     "skill_a": "AI Model Training",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 818,
+    "id": 1018,
     "skill_a": "AI Model Training",
     "skill_b": "Data Visualization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 819,
+    "id": 1019,
     "skill_a": "AI Model Training",
     "skill_b": "Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 820,
+    "id": 1020,
     "skill_a": "AI Model Training",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 821,
+    "id": 1021,
     "skill_a": "AI Model Training",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 822,
+    "id": 1022,
     "skill_a": "AI Model Training",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 823,
+    "id": 1023,
     "skill_a": "AI Model Training",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 824,
+    "id": 1024,
     "skill_a": "API Design",
     "skill_b": "Code Review",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 825,
+    "id": 1025,
     "skill_a": "API Design",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 826,
+    "id": 1026,
     "skill_a": "API Design",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 827,
+    "id": 1027,
     "skill_a": "Agile Methodology",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 828,
+    "id": 1028,
     "skill_a": "Artificial Intelligence",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 829,
+    "id": 1029,
     "skill_a": "Artificial Intelligence",
     "skill_b": "Machine Learning",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 830,
+    "id": 1030,
     "skill_a": "Artificial Intelligence",
     "skill_b": "REST APIs",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 831,
+    "id": 1031,
     "skill_a": "Authentication",
     "skill_b": "Authorization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 832,
+    "id": 1032,
     "skill_a": "Authentication",
     "skill_b": "Linux",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 833,
+    "id": 1033,
     "skill_a": "Authentication",
     "skill_b": "Shell Scripting",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 834,
+    "id": 1034,
     "skill_a": "Authorization",
     "skill_b": "Linux",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 835,
+    "id": 1035,
     "skill_a": "Authorization",
     "skill_b": "Shell Scripting",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 836,
+    "id": 1036,
     "skill_a": "Automated Testing",
     "skill_b": "Continuous Integration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 837,
+    "id": 1037,
     "skill_a": "Automated Testing",
     "skill_b": "Test Automation Frameworks",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 838,
+    "id": 1038,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Bootloader Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 839,
+    "id": 1039,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 840,
+    "id": 1040,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "C++",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 841,
+    "id": 1041,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Communication Protocols",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 842,
+    "id": 1042,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Device Drivers",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 843,
+    "id": 1043,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 844,
+    "id": 1044,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 845,
+    "id": 1045,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 846,
+    "id": 1046,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 847,
+    "id": 1047,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 848,
+    "id": 1048,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 849,
+    "id": 1049,
     "skill_a": "Board Support Package (BSP) Development",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 850,
+    "id": 1050,
     "skill_a": "Bootloader Development",
     "skill_b": "C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 851,
+    "id": 1051,
     "skill_a": "Bootloader Development",
     "skill_b": "C++",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 852,
+    "id": 1052,
     "skill_a": "Bootloader Development",
     "skill_b": "Communication Protocols",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 853,
+    "id": 1053,
     "skill_a": "Bootloader Development",
     "skill_b": "Device Drivers",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 854,
+    "id": 1054,
     "skill_a": "Bootloader Development",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 855,
+    "id": 1055,
     "skill_a": "Bootloader Development",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 856,
+    "id": 1056,
     "skill_a": "Bootloader Development",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 857,
+    "id": 1057,
     "skill_a": "Bootloader Development",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 858,
+    "id": 1058,
     "skill_a": "Bootloader Development",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 859,
+    "id": 1059,
     "skill_a": "Bootloader Development",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 860,
+    "id": 1060,
     "skill_a": "Bootloader Development",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 861,
+    "id": 1061,
     "skill_a": "C",
     "skill_b": "C++",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 862,
+    "id": 1062,
     "skill_a": "C",
     "skill_b": "Communication Protocols",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 863,
+    "id": 1063,
     "skill_a": "C",
     "skill_b": "Device Drivers",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 864,
+    "id": 1064,
     "skill_a": "C",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 865,
+    "id": 1065,
     "skill_a": "C",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 866,
+    "id": 1066,
     "skill_a": "C",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 867,
+    "id": 1067,
     "skill_a": "C",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 868,
+    "id": 1068,
     "skill_a": "C",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 869,
+    "id": 1069,
     "skill_a": "C",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 870,
+    "id": 1070,
     "skill_a": "C",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 871,
+    "id": 1071,
     "skill_a": "C++",
     "skill_b": "Code Review",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 872,
+    "id": 1072,
     "skill_a": "C++",
     "skill_b": "Communication Protocols",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 873,
+    "id": 1073,
     "skill_a": "C++",
     "skill_b": "Device Drivers",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 874,
+    "id": 1074,
     "skill_a": "C++",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 875,
+    "id": 1075,
     "skill_a": "C++",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 876,
+    "id": 1076,
     "skill_a": "C++",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 877,
+    "id": 1077,
     "skill_a": "C++",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 878,
+    "id": 1078,
     "skill_a": "C++",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 879,
+    "id": 1079,
     "skill_a": "C++",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 880,
+    "id": 1080,
     "skill_a": "C++",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 881,
+    "id": 1081,
     "skill_a": "C++",
     "skill_b": "Linux",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 882,
+    "id": 1082,
     "skill_a": "Civil Engineering",
     "skill_b": "English",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 883,
+    "id": 1083,
     "skill_a": "Cloud Computing",
     "skill_b": "Communication",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 884,
+    "id": 1084,
     "skill_a": "Cloud Computing",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 885,
+    "id": 1085,
     "skill_a": "Code Review",
     "skill_b": "Data Visualization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 886,
+    "id": 1086,
     "skill_a": "Code Review",
     "skill_b": "Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 887,
+    "id": 1087,
     "skill_a": "Code Review",
     "skill_b": "Generative AI",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 888,
+    "id": 1088,
     "skill_a": "Code Review",
     "skill_b": "Large Language Models",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 889,
+    "id": 1089,
     "skill_a": "Code Review",
     "skill_b": "Logic Error Detection",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 890,
+    "id": 1090,
     "skill_a": "Code Review",
     "skill_b": "Performance Optimization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 891,
+    "id": 1091,
     "skill_a": "Code Review",
     "skill_b": "Programming Languages",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 892,
+    "id": 1092,
     "skill_a": "Code Review",
     "skill_b": "Python",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 893,
+    "id": 1093,
     "skill_a": "Code Review",
     "skill_b": "Reading Technical Documentation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 894,
+    "id": 1094,
     "skill_a": "Code Review",
     "skill_b": "Security Analysis",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 895,
+    "id": 1095,
     "skill_a": "Code Review",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 896,
+    "id": 1096,
     "skill_a": "Code Review",
     "skill_b": "System Performance Evaluation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 897,
+    "id": 1097,
     "skill_a": "Collaboration",
     "skill_b": "Communication",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 898,
+    "id": 1098,
     "skill_a": "Collaboration",
     "skill_b": "Requirements Gathering",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 899,
+    "id": 1099,
     "skill_a": "Communication",
     "skill_b": "Data Visualization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 900,
+    "id": 1100,
     "skill_a": "Communication",
     "skill_b": "Inventory Management",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 901,
+    "id": 1101,
     "skill_a": "Communication",
     "skill_b": "Python",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 902,
+    "id": 1102,
     "skill_a": "Communication",
     "skill_b": "SQL",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 903,
+    "id": 1103,
     "skill_a": "Communication",
     "skill_b": "Scheduling",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 904,
+    "id": 1104,
     "skill_a": "Communication",
     "skill_b": "Teamwork",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 905,
+    "id": 1105,
     "skill_a": "Communication Protocols",
     "skill_b": "Device Drivers",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 906,
+    "id": 1106,
     "skill_a": "Communication Protocols",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 907,
+    "id": 1107,
     "skill_a": "Communication Protocols",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 908,
+    "id": 1108,
     "skill_a": "Communication Protocols",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 909,
+    "id": 1109,
     "skill_a": "Communication Protocols",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 910,
+    "id": 1110,
     "skill_a": "Communication Protocols",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 911,
+    "id": 1111,
     "skill_a": "Communication Protocols",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 912,
+    "id": 1112,
     "skill_a": "Communication Protocols",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 913,
+    "id": 1113,
     "skill_a": "Continuous Integration",
     "skill_b": "Cross-functional Collaboration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 914,
+    "id": 1114,
     "skill_a": "Continuous Integration",
     "skill_b": "Multithreading",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 915,
+    "id": 1115,
     "skill_a": "Continuous Integration",
     "skill_b": "Software Design Principles",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 916,
+    "id": 1116,
     "skill_a": "Continuous Integration",
     "skill_b": "Swift",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 917,
+    "id": 1117,
     "skill_a": "Continuous Integration",
     "skill_b": "SwiftUI",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 918,
+    "id": 1118,
     "skill_a": "Continuous Integration",
     "skill_b": "Test Automation Frameworks",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 919,
+    "id": 1119,
     "skill_a": "Contract Management",
     "skill_b": "Team Leadership",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 920,
+    "id": 1120,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Cybersecurity",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 921,
+    "id": 1121,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Data Analysis",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 922,
+    "id": 1122,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Data Science",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 923,
+    "id": 1123,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 924,
+    "id": 1124,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Model Deployment",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 925,
+    "id": 1125,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Multithreading",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 926,
+    "id": 1126,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Program Management",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 927,
+    "id": 1127,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Project Management",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 928,
+    "id": 1128,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 929,
+    "id": 1129,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Statistical Analysis",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 930,
+    "id": 1130,
     "skill_a": "Cross-functional Collaboration",
     "skill_b": "Teamwork",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 931,
+    "id": 1131,
     "skill_a": "Data Science",
     "skill_b": "Machine Learning",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 932,
+    "id": 1132,
     "skill_a": "Data Science",
     "skill_b": "Predictive Modeling",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 933,
+    "id": 1133,
     "skill_a": "Data Visualization",
     "skill_b": "Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 934,
+    "id": 1134,
     "skill_a": "Data Visualization",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 935,
+    "id": 1135,
     "skill_a": "Data Visualization",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 936,
+    "id": 1136,
     "skill_a": "Data Visualization",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 937,
+    "id": 1137,
     "skill_a": "Data Visualization",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 938,
+    "id": 1138,
     "skill_a": "Debugging",
     "skill_b": "Full Stack Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 939,
+    "id": 1139,
     "skill_a": "Debugging",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 940,
+    "id": 1140,
     "skill_a": "Debugging",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 941,
+    "id": 1141,
     "skill_a": "Debugging",
     "skill_b": "Software Engineering",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 942,
+    "id": 1142,
     "skill_a": "Device Drivers",
     "skill_b": "Device Tree Configuration",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 943,
+    "id": 1143,
     "skill_a": "Device Drivers",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 944,
+    "id": 1144,
     "skill_a": "Device Drivers",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 945,
+    "id": 1145,
     "skill_a": "Device Drivers",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 946,
+    "id": 1146,
     "skill_a": "Device Drivers",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 947,
+    "id": 1147,
     "skill_a": "Device Drivers",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 948,
+    "id": 1148,
     "skill_a": "Device Drivers",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 949,
+    "id": 1149,
     "skill_a": "Device Tree Configuration",
     "skill_b": "Embedded Systems",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 950,
+    "id": 1150,
     "skill_a": "Device Tree Configuration",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 951,
+    "id": 1151,
     "skill_a": "Device Tree Configuration",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 952,
+    "id": 1152,
     "skill_a": "Device Tree Configuration",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 953,
+    "id": 1153,
     "skill_a": "Device Tree Configuration",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 954,
+    "id": 1154,
     "skill_a": "Device Tree Configuration",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 955,
+    "id": 1155,
     "skill_a": "Electrical Engineering",
     "skill_b": "Troubleshooting",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 956,
+    "id": 1156,
     "skill_a": "Embedded Systems",
     "skill_b": "Firmware Debugging",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 957,
+    "id": 1157,
     "skill_a": "Embedded Systems",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 958,
+    "id": 1158,
     "skill_a": "Embedded Systems",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 959,
+    "id": 1159,
     "skill_a": "Embedded Systems",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 960,
+    "id": 1160,
     "skill_a": "Embedded Systems",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 961,
+    "id": 1161,
     "skill_a": "English",
     "skill_b": "Problem Design",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 963,
+    "id": 1162,
+    "skill_a": "English",
+    "skill_b": "Python",
+    "co_occurrence_count": 2,
+    "week_start": "2026-04-20",
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
+  },
+  {
+    "id": 1163,
     "skill_a": "English",
     "skill_b": "Scientific Computing",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 964,
+    "id": 1164,
     "skill_a": "Firmware Debugging",
     "skill_b": "Firmware Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 965,
+    "id": 1165,
     "skill_a": "Firmware Debugging",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 966,
+    "id": 1166,
     "skill_a": "Firmware Debugging",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 967,
+    "id": 1167,
     "skill_a": "Firmware Debugging",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 968,
+    "id": 1168,
     "skill_a": "Firmware Development",
     "skill_b": "Hardware Abstraction Layer",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 969,
+    "id": 1169,
     "skill_a": "Firmware Development",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 970,
+    "id": 1170,
     "skill_a": "Firmware Development",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 971,
+    "id": 1171,
     "skill_a": "Full Stack Development",
     "skill_b": "Software Architecture",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 972,
+    "id": 1172,
     "skill_a": "Full Stack Development",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 973,
+    "id": 1173,
     "skill_a": "Generative AI",
     "skill_b": "Large Language Models",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 974,
+    "id": 1174,
     "skill_a": "Generative AI",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 975,
+    "id": 1175,
     "skill_a": "Generative AI",
     "skill_b": "System Performance Evaluation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 976,
+    "id": 1176,
     "skill_a": "Hardware Abstraction Layer",
     "skill_b": "Hardware Specifications",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 977,
+    "id": 1177,
     "skill_a": "Hardware Abstraction Layer",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 978,
+    "id": 1178,
     "skill_a": "Hardware Specifications",
     "skill_b": "I2C",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 979,
+    "id": 1179,
     "skill_a": "Inventory Management",
     "skill_b": "Safety Management",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 980,
+    "id": 1180,
     "skill_a": "Inventory Management",
     "skill_b": "Scheduling",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 981,
+    "id": 1181,
     "skill_a": "Large Language Models",
     "skill_b": "Software Development",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 982,
+    "id": 1182,
     "skill_a": "Large Language Models",
     "skill_b": "System Performance Evaluation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 983,
+    "id": 1183,
     "skill_a": "Linux",
     "skill_b": "Shell Scripting",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 984,
+    "id": 1184,
     "skill_a": "Logic Error Detection",
     "skill_b": "Performance Optimization",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 985,
+    "id": 1185,
     "skill_a": "Logic Error Detection",
     "skill_b": "Reading Technical Documentation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 986,
+    "id": 1186,
     "skill_a": "Logic Error Detection",
     "skill_b": "Security Analysis",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 987,
+    "id": 1187,
     "skill_a": "Logic Error Detection",
     "skill_b": "Written Communication",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 988,
+    "id": 1188,
     "skill_a": "Machine Learning",
     "skill_b": "Model Deployment",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 989,
+    "id": 1189,
     "skill_a": "Mentoring",
     "skill_b": "Performance Testing",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 990,
+    "id": 1190,
     "skill_a": "Mentoring",
     "skill_b": "Problem Solving",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 991,
+    "id": 1191,
     "skill_a": "Multithreading",
     "skill_b": "Software Design Principles",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 992,
+    "id": 1192,
     "skill_a": "Multithreading",
     "skill_b": "Swift",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 993,
+    "id": 1193,
     "skill_a": "Multithreading",
     "skill_b": "SwiftUI",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 994,
+    "id": 1194,
     "skill_a": "Node.js",
     "skill_b": "REST APIs",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 995,
+    "id": 1195,
     "skill_a": "Performance Optimization",
     "skill_b": "Reading Technical Documentation",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 996,
+    "id": 1196,
     "skill_a": "Performance Optimization",
     "skill_b": "Security Analysis",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 997,
+    "id": 1197,
     "skill_a": "Performance Optimization",
     "skill_b": "Written Communication",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 998,
+    "id": 1198,
     "skill_a": "Performance Testing",
     "skill_b": "Problem Solving",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 999,
+    "id": 1199,
     "skill_a": "Problem Design",
     "skill_b": "Python",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   },
   {
-    "id": 1000,
+    "id": 1200,
     "skill_a": "Problem Design",
     "skill_b": "Scientific Computing",
     "co_occurrence_count": 2,
     "week_start": "2026-04-20",
-    "computed_at": "2026-04-28T23:43:21.614325+00:00"
+    "computed_at": "2026-04-29T05:53:53.846456+00:00"
   }
 ]
