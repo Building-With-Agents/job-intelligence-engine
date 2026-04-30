@@ -231,9 +231,10 @@ def run_clustering(
         )
 
     # KD-tree and ball-tree indices only support Euclidean-family metrics.
-    # For cosine (or any other non-Euclidean metric), fall back to brute-force
-    # pairwise distance computation so HDBSCAN doesn't silently use the wrong index.
-    algorithm = "brute" if distance_metric != "euclidean" else "best"
+    # For cosine (or any other non-Euclidean metric), force HDBSCAN's `generic`
+    # backend so it falls back to a precomputed pairwise distance matrix instead
+    # of silently using the wrong spatial index.
+    algorithm = "generic" if distance_metric != "euclidean" else "best"
 
     effective_clusterer_factory = clusterer_factory or _default_clusterer_factory
     clusterer = effective_clusterer_factory(
