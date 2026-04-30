@@ -17,9 +17,7 @@ VOLUME_WARNING_POSTING_THRESHOLD: int = 30
 SKILL_TAXONOMY_GATE_CONFIDENCE_CAP: float = 0.35
 
 # Generic refusal copy (no skill examples — keep in sync with product/legal review).
-NO_DATA_SKILL_TAXONOMY_REFUSAL: str = (
-    "No postings are tagged with the requested skill labels in the dataset taxonomy."
-)
+NO_DATA_SKILL_TAXONOMY_REFUSAL: str = "No postings are tagged with the requested skill labels in the dataset taxonomy."
 
 NO_DATA_GEO_SKILL_SCOPE_REFUSAL: str = (
     "Aggregate geographic demand here is not broken out by skill label; "

@@ -477,9 +477,7 @@ class QueryRouter:
             geo_terms=geo_terms[:3],
         )
 
-        blocked = _apply_skill_taxonomy_and_geo_scope_gates(
-            session, intent, confidence, skill_names, question
-        )
+        blocked = _apply_skill_taxonomy_and_geo_scope_gates(session, intent, confidence, skill_names, question)
         if blocked is not None:
             return blocked
 
