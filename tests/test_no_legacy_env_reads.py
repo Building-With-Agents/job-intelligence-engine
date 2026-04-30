@@ -95,6 +95,11 @@ _MIGRATED_VARS: set[str] = {
     # llm.yaml
     "GEMINI_MODEL",
     "EXTRACTION_MODEL_TIER",
+    # #279: LLM role tier env vars are read via common.llm_adapter.resolve_llm_route()
+    # so per-call routing overrides (e.g. LLM_SYNTHESIS=gemini:gemini-2.5-pro) are
+    # honored. Direct os.getenv reads bypass provider-prefix parsing.
+    "LLM_DEFAULT",
+    "LLM_SYNTHESIS",
     # llm_costs.yaml
     "SONNET_INPUT_COST_PER_TOKEN",
     "SONNET_OUTPUT_COST_PER_TOKEN",
@@ -124,6 +129,12 @@ _ALLOWED_PATH_FRAGMENTS = (
     "\\config_loader.py",
     "/common/llm_adapter.py",  # _per_token_from_yaml uses os.getenv to detect legacy env presence
     "\\common\\llm_adapter.py",
+    # #279: standalone diagnostic CLIs that intentionally inspect raw env to display
+    # what's configured (presence check, not LLM routing). Not a production code path.
+    "/run_soc_demo.py",
+    "\\run_soc_demo.py",
+    "/scripts/test_llm_connection.py",
+    "\\scripts\\test_llm_connection.py",
     "/tests/",
     "\\tests\\",
     "test_",

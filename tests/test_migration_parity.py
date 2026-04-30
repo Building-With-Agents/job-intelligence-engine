@@ -210,6 +210,10 @@ def test_every_legacy_env_is_covered_by_parity_table() -> None:
         # llm.yaml — exercised via resolve_llm_route() and adapter integration tests
         "GEMINI_MODEL",
         "EXTRACTION_MODEL_TIER",
+        # #279: LLM tier env vars are exercised via common.llm_adapter.resolve_llm_route()
+        # in common/tests/test_llm_adapter.py — no plain YAML default to parity-check.
+        "LLM_DEFAULT",
+        "LLM_SYNTHESIS",
     }
     expected = _MIGRATED_VARS - skipped
     missing = expected - parity_envs

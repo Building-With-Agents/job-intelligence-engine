@@ -38,6 +38,7 @@ load_dotenv(_REPO_ROOT / ".env")
 
 from analytics.query_engine.routing import run_analytics_qna  # noqa: E402
 from common.data_store.database import session_scope  # noqa: E402
+from common.llm_adapter import resolve_llm_route  # noqa: E402
 from eval.qa_eval_laborpulse_headers import laborpulse_analytics_query_headers  # noqa: E402
 from eval.qa_scoring import (  # noqa: E402
     QAItemScores,
@@ -193,6 +194,12 @@ def _task_factory(
             classified_intent=classified or None,
             intent_accuracy=scores.intent_accuracy,
         )
+        # #279: audit-log strings come from common.llm_adapter.resolve_llm_route()
+        # (not direct os.getenv) so per-call routing overrides — e.g. LLM_SYNTHESIS=
+        # gemini:gemini-2.5-pro — show up in the audit. Direct env reads bypass
+        # provider-prefix parsing and would silently log the wrong deployment.
+        default_provider, default_deployment = resolve_llm_route(None)
+        synthesis_provider, synthesis_deployment = resolve_llm_route("synthesis")
         return {
             "prompt_version": prompt_version,
             "gq_id": gq_id,
@@ -200,8 +207,8 @@ def _task_factory(
             "response": response,
             "latency_seconds": latency,
             "pipeline_error": err,
-            "llm_default": os.getenv("LLM_DEFAULT", ""),
-            "llm_synthesis": os.getenv("LLM_SYNTHESIS", ""),
+            "llm_default": default_deployment,
+            "llm_synthesis": synthesis_deployment,
             "difficulty": str(golden.get("difficulty") or ""),
             "expected_intent": str(golden.get("intent") or ""),
             **trace,
@@ -767,11 +774,15 @@ def main(argv: list[str] | None = None) -> int:
     ev_fn = _evaluator_factory(sla_seconds)
     run_evals = _run_evaluators_average()
     desc = f"Golden QA eval prompt_version={args.prompt_version}"
+    # #279: see comment in _task_factory above — same reason for using
+    # resolve_llm_route() instead of os.getenv.
+    _, run_default_deployment = resolve_llm_route(None)
+    _, run_synthesis_deployment = resolve_llm_route("synthesis")
     meta = {
         "prompt_version": args.prompt_version,
         "eval": "qa_golden",
-        "llm_default": os.getenv("LLM_DEFAULT", ""),
-        "llm_synthesis": os.getenv("LLM_SYNTHESIS", ""),
+        "llm_default": run_default_deployment,
+        "llm_synthesis": run_synthesis_deployment,
     }
 
     # Hosted dataset run only when using the full uploaded dataset (--limit uses local JSON experiment).
