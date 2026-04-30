@@ -10,12 +10,20 @@ import numpy as np
 import structlog
 
 from analytics.clustering.config import (
+    cluster_dim_reduction_method,
+    cluster_dim_reduction_n_components,
     cluster_distance_metric,
     cluster_min_cluster_size,
     cluster_min_samples,
     cluster_min_total_postings,
     cluster_selection_epsilon,
+    cluster_selection_method,
+    cluster_umap_metric,
+    cluster_umap_min_dist,
+    cluster_umap_n_neighbors,
+    cluster_umap_random_state,
 )
+from analytics.clustering.dimensionality_reduction import reduce_dimensions
 from analytics.clustering.emergence import detect_emergence_candidates
 from analytics.clustering.labeling import ClusterLabeler, label_clusters
 from analytics.clustering.types import (
@@ -217,7 +225,10 @@ def run_clustering(
     minimum_cluster_size = cluster_min_cluster_size()
     minimum_samples = cluster_min_samples()
     selection_epsilon = cluster_selection_epsilon()
+    selection_method = cluster_selection_method()
     distance_metric = cluster_distance_metric()
+    dim_reduction_method = cluster_dim_reduction_method()
+    dim_reduction_n_components = cluster_dim_reduction_n_components()
 
     matrix = _embedding_matrix(aligned_rows, distance_metric=distance_metric)
     if matrix is None:
@@ -230,19 +241,47 @@ def run_clustering(
             skip_reason="embedding_generation_failed",
         )
 
-    # KD-tree and ball-tree indices only support Euclidean-family metrics.
-    # For cosine (or any other non-Euclidean metric), force HDBSCAN's `generic`
-    # backend so it falls back to a precomputed pairwise distance matrix instead
-    # of silently using the wrong spatial index.
-    algorithm = "generic" if distance_metric != "euclidean" else "best"
+    # #327 Phase 1: optionally reduce dimensionality before HDBSCAN. UMAP /
+    # PCA project the matrix to a lower-D space where density-based clustering
+    # actually works. Post-reduction the metric flips to euclidean (the new
+    # space is L2 by construction) and HDBSCAN's algorithm="best" (KD-tree)
+    # becomes available for speed.
+    input_dim = matrix.shape[1]
+    if dim_reduction_method != "none":
+        matrix = reduce_dimensions(
+            matrix,
+            method=dim_reduction_method,
+            n_components=dim_reduction_n_components,
+            umap_n_neighbors=cluster_umap_n_neighbors(),
+            umap_min_dist=cluster_umap_min_dist(),
+            umap_metric=cluster_umap_metric(),
+            umap_random_state=cluster_umap_random_state(),
+        )
+        log.info(
+            "clustering_dimensionality_reduction_completed",
+            method=dim_reduction_method,
+            input_dimensionality=input_dim,
+            output_dimensionality=matrix.shape[1],
+            n_postings=matrix.shape[0],
+        )
+        effective_metric = "euclidean"
+        effective_algorithm = "best"
+    else:
+        # KD-tree and ball-tree indices only support Euclidean-family metrics.
+        # For cosine (or any other non-Euclidean metric), force HDBSCAN's `generic`
+        # backend so it falls back to a precomputed pairwise distance matrix instead
+        # of silently using the wrong spatial index.
+        effective_metric = distance_metric
+        effective_algorithm = "generic" if distance_metric != "euclidean" else "best"
 
     effective_clusterer_factory = clusterer_factory or _default_clusterer_factory
     clusterer = effective_clusterer_factory(
         min_cluster_size=minimum_cluster_size,
         min_samples=minimum_samples,
         cluster_selection_epsilon=selection_epsilon,
-        metric=distance_metric,
-        algorithm=algorithm,
+        cluster_selection_method=selection_method,
+        metric=effective_metric,
+        algorithm=effective_algorithm,
     )
 
     raw_labels = clusterer.fit_predict(matrix)
@@ -331,8 +370,12 @@ def run_clustering(
         minimum_cluster_size=minimum_cluster_size,
         minimum_samples=minimum_samples,
         selection_epsilon=selection_epsilon,
+        selection_method=selection_method,
         distance_metric=distance_metric,
-        algorithm=algorithm,
+        effective_metric=effective_metric,
+        algorithm=effective_algorithm,
+        dim_reduction_method=dim_reduction_method,
+        dim_reduction_n_components=dim_reduction_n_components if dim_reduction_method != "none" else None,
     )
 
     return ClusteringResult(

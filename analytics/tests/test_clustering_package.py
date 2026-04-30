@@ -228,7 +228,34 @@ def test_run_clustering_builds_cluster_summaries_with_fake_clusterer(
     monkeypatch.setenv("CLUSTER_MIN_CLUSTER_SIZE", "2")
     monkeypatch.setenv("CLUSTER_MIN_SAMPLES", "1")
     monkeypatch.setenv("CLUSTER_SELECTION_EPSILON", "0.15")
+    monkeypatch.setenv("CLUSTER_SELECTION_METHOD", "eom")
     monkeypatch.setenv("CLUSTER_DISTANCE_METRIC", "cosine")
+    # 2-D synthetic embeddings can't be reduced further; disable for this unit test.
+    monkeypatch.setenv("CLUSTER_DIM_REDUCTION_METHOD", "none")
+    # Clear cached_accessor lru_cache so env vars take effect even if a prior test
+    # already invoked the accessors with different values.
+    from analytics.clustering.config import (
+        cluster_dim_reduction_method,
+        cluster_distance_metric,
+        cluster_min_cluster_size,
+        cluster_min_samples,
+        cluster_min_total_postings,
+        cluster_selection_epsilon,
+        cluster_selection_method,
+    )
+
+    for fn in (
+        cluster_min_total_postings,
+        cluster_min_cluster_size,
+        cluster_min_samples,
+        cluster_selection_epsilon,
+        cluster_selection_method,
+        cluster_distance_metric,
+        cluster_dim_reduction_method,
+    ):
+        cache_clear = getattr(fn, "cache_clear", None)
+        if cache_clear is not None:
+            cache_clear()
 
     features_rows = [
         _make_feature("posting-1", title="Data Engineer", skills=["Python", "SQL"], tools=["dbt"]),
@@ -275,6 +302,7 @@ def test_run_clustering_builds_cluster_summaries_with_fake_clusterer(
         "min_cluster_size": 2,
         "min_samples": 1,
         "cluster_selection_epsilon": 0.15,
+        "cluster_selection_method": "eom",
         "metric": "cosine",
         "algorithm": "generic",
     }
@@ -460,6 +488,26 @@ def test_run_clustering_pipeline_applies_labels_and_emergence_filters(
     monkeypatch.setenv("EMERGENCE_MIN_QUALITY_SCORE", "0.7")
     monkeypatch.setenv("EMERGENCE_MIN_NOVEL_SKILLS", "3")
     monkeypatch.setenv("EMERGENCE_MIN_DISTINCT_EMPLOYERS", "2")
+    # 2-D synthetic embeddings; disable dim reduction so UMAP doesn't try to
+    # reduce a (5, 2) matrix below the (n_components < min(N, D)) constraint.
+    monkeypatch.setenv("CLUSTER_DIM_REDUCTION_METHOD", "none")
+    from analytics.clustering.config import (
+        cluster_dim_reduction_method as _cdr_method,
+    )
+    from analytics.clustering.config import (
+        cluster_min_cluster_size as _cmcs,
+    )
+    from analytics.clustering.config import (
+        cluster_min_samples as _cms,
+    )
+    from analytics.clustering.config import (
+        cluster_min_total_postings as _cmtp,
+    )
+
+    for fn in (_cmtp, _cmcs, _cms, _cdr_method):
+        cache_clear = getattr(fn, "cache_clear", None)
+        if cache_clear is not None:
+            cache_clear()
 
     features_rows = [
         _make_feature(
@@ -545,8 +593,121 @@ def test_hdbscan_accepts_cosine_generic_kwargs() -> None:
         min_cluster_size=2,
         min_samples=1,
         cluster_selection_epsilon=0.0,
+        cluster_selection_method="leaf",
         metric="cosine",
         algorithm="generic",
     )
     labels = clusterer.fit_predict(matrix)
     assert labels.shape == (20,)
+
+
+def test_pca_accepts_configured_kwargs() -> None:
+    # Regression for #327 Phase 1: dimensionality_reduction.reduce_dimensions
+    # passes (n_components, random_state) to sklearn.decomposition.PCA. The
+    # package-level mock tests above use a fake clusterer factory, so they
+    # cannot catch invalid PCA kwargs. This test instantiates the real
+    # library to ensure the kwargs we pass remain accepted.
+    sklearn_decomposition = pytest.importorskip("sklearn.decomposition")
+    from analytics.clustering.dimensionality_reduction import reduce_dimensions
+
+    rng = np.random.default_rng(seed=0)
+    matrix = rng.standard_normal(size=(50, 32)).astype(np.float64)
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    matrix = matrix / np.where(norms == 0.0, 1.0, norms)
+
+    reduced = reduce_dimensions(
+        matrix,
+        method="pca",
+        n_components=8,
+        umap_n_neighbors=10,
+        umap_min_dist=0.0,
+        umap_metric="cosine",
+        umap_random_state=42,
+    )
+    assert reduced.shape == (50, 8)
+    assert reduced.dtype == np.float64
+    # Confirm sklearn surface is what we expect (catches version-skew API drift).
+    assert hasattr(sklearn_decomposition, "PCA")
+
+
+def test_umap_accepts_configured_kwargs() -> None:
+    # Regression for #327 Phase 1: dimensionality_reduction.reduce_dimensions
+    # passes (n_components, n_neighbors, min_dist, metric, random_state) to
+    # umap.UMAP. The package-level mock tests above use a fake clusterer
+    # factory, so they cannot catch invalid UMAP kwargs. This test
+    # instantiates the real library to ensure the kwargs we pass remain
+    # accepted.
+    pytest.importorskip("umap")
+    from analytics.clustering.dimensionality_reduction import reduce_dimensions
+
+    rng = np.random.default_rng(seed=0)
+    # UMAP needs ~n_neighbors+1 samples to fit. 50 rows with 32 dims is plenty.
+    matrix = rng.standard_normal(size=(50, 32)).astype(np.float64)
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    matrix = matrix / np.where(norms == 0.0, 1.0, norms)
+
+    reduced = reduce_dimensions(
+        matrix,
+        method="umap",
+        n_components=8,
+        umap_n_neighbors=10,
+        umap_min_dist=0.0,
+        umap_metric="cosine",
+        umap_random_state=42,
+    )
+    assert reduced.shape == (50, 8)
+    assert reduced.dtype == np.float64
+
+
+def test_reduce_dimensions_none_returns_input_unchanged() -> None:
+    from analytics.clustering.dimensionality_reduction import reduce_dimensions
+
+    rng = np.random.default_rng(seed=0)
+    matrix = rng.standard_normal(size=(10, 5)).astype(np.float64)
+
+    reduced = reduce_dimensions(
+        matrix,
+        method="none",
+        n_components=3,
+        umap_n_neighbors=5,
+        umap_min_dist=0.0,
+        umap_metric="cosine",
+        umap_random_state=0,
+    )
+    assert reduced is matrix
+
+
+def test_reduce_dimensions_rejects_unknown_method() -> None:
+    from analytics.clustering.dimensionality_reduction import reduce_dimensions
+
+    rng = np.random.default_rng(seed=0)
+    matrix = rng.standard_normal(size=(10, 5))
+
+    with pytest.raises(ValueError, match="Unknown dimensionality reduction method"):
+        reduce_dimensions(
+            matrix,
+            method="bogus",
+            n_components=3,
+            umap_n_neighbors=5,
+            umap_min_dist=0.0,
+            umap_metric="cosine",
+            umap_random_state=0,
+        )
+
+
+def test_reduce_dimensions_rejects_oversize_n_components() -> None:
+    from analytics.clustering.dimensionality_reduction import reduce_dimensions
+
+    rng = np.random.default_rng(seed=0)
+    matrix = rng.standard_normal(size=(5, 3))
+
+    with pytest.raises(ValueError, match="n_components"):
+        reduce_dimensions(
+            matrix,
+            method="pca",
+            n_components=10,
+            umap_n_neighbors=5,
+            umap_min_dist=0.0,
+            umap_metric="cosine",
+            umap_random_state=0,
+        )
