@@ -101,6 +101,14 @@ class QueryResultPayload(BaseModel):
             "for volume policy; overrides row-sum heuristics in build_evidence_bundle."
         ),
     )
+    role_suggestion_hint: str | None = Field(
+        default=None,
+        description=(
+            "JIE #298 — set by the router when a role-filtered curriculum / workflow / "
+            "role_evolution query returns 0 rows. Replaces the generic 'No data in scope' "
+            "refusal with a live-fetched suggestion from dbo.canonical_roles."
+        ),
+    )
 
 
 class EvidenceCitation(BaseModel):
