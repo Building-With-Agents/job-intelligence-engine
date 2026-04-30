@@ -47,11 +47,20 @@ PARITY: list[tuple[str, str | None, Any]] = [
         "analytics-clustering",
     ),
     ("analytics.clustering.config:cluster_min_total_postings", "CLUSTER_MIN_TOTAL_POSTINGS", 500),
-    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 10),
+    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 5),
+    # #327 Phase 1: 10 → 5 (Tier 2's 10 over-tightened raw 1536-D space; UMAP reduction makes 5 correct).
     ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 5),
     ("analytics.clustering.config:cluster_selection_epsilon", "CLUSTER_SELECTION_EPSILON", 0.0),
-    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "euclidean"),
+    ("analytics.clustering.config:cluster_selection_method", "CLUSTER_SELECTION_METHOD", "leaf"),
+    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "cosine"),
     ("analytics.clustering.config:cluster_label_dominance_threshold", "CLUSTER_LABEL_DOMINANCE_THRESHOLD", 0.30),
+    # #327 Phase 1: dimensionality reduction before HDBSCAN.
+    ("analytics.clustering.config:cluster_dim_reduction_method", "CLUSTER_DIM_REDUCTION_METHOD", "umap"),
+    ("analytics.clustering.config:cluster_dim_reduction_n_components", "CLUSTER_DIM_REDUCTION_N_COMPONENTS", 15),
+    ("analytics.clustering.config:cluster_umap_n_neighbors", "CLUSTER_UMAP_N_NEIGHBORS", 10),
+    ("analytics.clustering.config:cluster_umap_min_dist", "CLUSTER_UMAP_MIN_DIST", 0.0),
+    ("analytics.clustering.config:cluster_umap_metric", "CLUSTER_UMAP_METRIC", "cosine"),
+    ("analytics.clustering.config:cluster_umap_random_state", "CLUSTER_UMAP_RANDOM_STATE", 42),
     ("analytics.clustering.config:emergence_min_quality_score", "EMERGENCE_MIN_QUALITY_SCORE", 0.70),
     ("analytics.clustering.config:emergence_min_novel_skills", "EMERGENCE_MIN_NOVEL_SKILLS", 3),
     ("analytics.clustering.config:emergence_min_distinct_employers", "EMERGENCE_MIN_DISTINCT_EMPLOYERS", 2),
@@ -114,6 +123,7 @@ PARITY: list[tuple[str, str | None, Any]] = [
     # ---------- eval.yaml ----------
     ("eval._config:extraction_fuzzy_threshold", "EVAL_EXTRACTION_FUZZY_THRESHOLD", 85),
     ("eval._config:qa_latency_sla_seconds", "QA_EVAL_LATENCY_SLA_SECONDS", 45.0),
+    ("eval._config:qa_answerability_gate_threshold", "QA_EVAL_ANSWERABILITY_GATE_THRESHOLD", 0.2),
     ("eval._config:soc_demo_skip_llm", "SOC_DEMO_SKIP_LLM", False),
     ("eval._config:exp004_comparison_csv", "EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"),
     ("eval._config:week8_intent_min_accuracy", "WEEK8_INTENT_MIN_ACCURACY", 0.7),
@@ -209,6 +219,10 @@ def test_every_legacy_env_is_covered_by_parity_table() -> None:
         # llm.yaml — exercised via resolve_llm_route() and adapter integration tests
         "GEMINI_MODEL",
         "EXTRACTION_MODEL_TIER",
+        # #279: LLM tier env vars are exercised via common.llm_adapter.resolve_llm_route()
+        # in common/tests/test_llm_adapter.py — no plain YAML default to parity-check.
+        "LLM_DEFAULT",
+        "LLM_SYNTHESIS",
     }
     expected = _MIGRATED_VARS - skipped
     missing = expected - parity_envs

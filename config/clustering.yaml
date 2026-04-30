@@ -22,10 +22,15 @@ clustering:
   min_total_postings: 500
 
   # HDBSCAN min_cluster_size. Smaller = more, tighter clusters. Min 1.
+  # Tier 2 (#321): 10 → 5 to split mega-clusters (e.g. "Data Center
+  # Infrastructure Engineer" absorbed 1,046 postings at size=10).
   # Env override: CLUSTER_MIN_CLUSTER_SIZE
-  min_cluster_size: 10
+  min_cluster_size: 5
 
   # HDBSCAN min_samples (density floor). Min 1.
+  # Phase 1 of #327: reverted 10 → 5. Tier 2's value of 10 over-tightened
+  # density requirements on raw 1536-D space; with UMAP reduction in front
+  # of HDBSCAN, the lower value is correct.
   # Env override: CLUSTER_MIN_SAMPLES
   min_samples: 5
 
@@ -33,14 +38,66 @@ clustering:
   # Env override: CLUSTER_SELECTION_EPSILON
   selection_epsilon: 0.0
 
+  # HDBSCAN cluster_selection_method. "eom" (excess of mass) prefers fewer,
+  # larger, more stable clusters — biased toward mega-clusters. "leaf" returns
+  # homogeneous leaves of the condensed tree — more, smaller clusters with
+  # less noise.
+  # Phase 1 of #327: changed from "eom" (HDBSCAN default) to "leaf" because
+  # the product goal is 20+ canonical roles, not the few stable mega-clusters
+  # eom produces.
+  # Env override: CLUSTER_SELECTION_METHOD
+  selection_method: leaf
+
   # Distance metric passed to HDBSCAN. Lowercased on read.
+  # Changed from euclidean to cosine (JIE #297): 1536-dim embeddings collapse
+  # to 3 mega-clusters under euclidean because L2 distances concentrate near a
+  # constant value in high dimensions (curse of dimensionality). Cosine distance
+  # measures angular separation, which is meaningful for unit-normalised text
+  # embeddings and produces coherent job-role clusters.
   # Env override: CLUSTER_DISTANCE_METRIC
-  distance_metric: euclidean
+  distance_metric: cosine
 
   # Min fraction of postings inside a cluster sharing the dominant SOC label
   # for that label to be assigned. Range 0.0–1.0.
   # Env override: CLUSTER_LABEL_DOMINANCE_THRESHOLD
   label_dominance_threshold: 0.30
+
+  # Dimensionality reduction applied to embeddings BEFORE HDBSCAN.
+  # Phase 1 of #327. HDBSCAN density estimation degrades on 1536-D embeddings
+  # (curse of dimensionality); reducing to ~15 dims while preserving local
+  # neighborhood structure restores meaningful density gradients. UMAP is
+  # the BERTopic / top2vec consensus for transformer embeddings; PCA is
+  # available as an ablation alternative.
+  dimensionality_reduction:
+    # One of "none", "pca", "umap".
+    # Env override: CLUSTER_DIM_REDUCTION_METHOD
+    method: umap
+
+    # Target dimensionality. 15 is the BERTopic default; sweep 10/15/20/30
+    # in Phase 2 of #327 if the first run underperforms. Min 1.
+    # Env override: CLUSTER_DIM_REDUCTION_N_COMPONENTS
+    n_components: 15
+
+    umap:
+      # Local neighborhood size. Smaller = preserve local structure (more
+      # distinguishable clusters). Min 2.
+      # Env override: CLUSTER_UMAP_N_NEIGHBORS
+      n_neighbors: 10
+
+      # Minimum distance between embedded points in the low-D space.
+      # 0.0 produces the tightest clusters — required for density-based
+      # downstream methods like HDBSCAN. Range 0.0–1.0.
+      # Env override: CLUSTER_UMAP_MIN_DIST
+      min_dist: 0.0
+
+      # Distance metric in the original (1536-D) space. Cosine matches what
+      # we already L2-normalize for, and is the standard for text embeddings.
+      # Env override: CLUSTER_UMAP_METRIC
+      metric: cosine
+
+      # Reproducibility seed. Min 0.
+      # Env override: CLUSTER_UMAP_RANDOM_STATE
+      random_state: 42
 
   emergence:
     # Cluster quality score floor for emergence detection. Range 0.0–1.0.

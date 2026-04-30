@@ -331,7 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         "--langfuse-host",
-        default=os.getenv("LANGFUSE_HOST") or os.getenv("LANGFUSE_BASE_URL", "http://localhost:3000"),
+        default=os.getenv("LANGFUSE_BASE_URL", "http://localhost:3000"),
         help="Langfuse host URL",
     )
     p.add_argument(

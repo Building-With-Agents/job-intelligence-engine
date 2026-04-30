@@ -30,3 +30,10 @@ matplotlib>=3.8
 rapidfuzz>=3.0
 pyyaml>=6.0
 hdbscan==0.8.42
+# Phase 1 of #327 — dimensionality reduction before HDBSCAN.
+# scikit-learn was already a transitive dep (1.8.0 observed); pinning explicitly.
+scikit-learn==1.8.0
+# UMAP is the textbook fix for HDBSCAN on transformer embeddings (BERTopic pattern).
+# pynndescent is UMAP's kNN backend.
+umap-learn==0.5.12
+pynndescent==0.5.13

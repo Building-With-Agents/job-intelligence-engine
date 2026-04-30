@@ -10,12 +10,20 @@ import numpy as np
 import structlog
 
 from analytics.clustering.config import (
+    cluster_dim_reduction_method,
+    cluster_dim_reduction_n_components,
     cluster_distance_metric,
     cluster_min_cluster_size,
     cluster_min_samples,
     cluster_min_total_postings,
     cluster_selection_epsilon,
+    cluster_selection_method,
+    cluster_umap_metric,
+    cluster_umap_min_dist,
+    cluster_umap_n_neighbors,
+    cluster_umap_random_state,
 )
+from analytics.clustering.dimensionality_reduction import reduce_dimensions
 from analytics.clustering.emergence import detect_emergence_candidates
 from analytics.clustering.labeling import ClusterLabeler, label_clusters
 from analytics.clustering.types import (
@@ -95,7 +103,11 @@ def _aligned_rows(
     return aligned
 
 
-def _embedding_matrix(aligned_rows: Sequence[tuple[PostingClusterFeatures, EmbeddedPostingText]]) -> np.ndarray | None:
+def _embedding_matrix(
+    aligned_rows: Sequence[tuple[PostingClusterFeatures, EmbeddedPostingText]],
+    *,
+    distance_metric: str = "cosine",
+) -> np.ndarray | None:
     if not aligned_rows:
         return None
     try:
@@ -109,6 +121,13 @@ def _embedding_matrix(aligned_rows: Sequence[tuple[PostingClusterFeatures, Embed
             matrix_shape=list(matrix.shape),
         )
         return None
+    # L2-normalise when using cosine distance so HDBSCAN's internal distance
+    # computation is numerically stable (unit vectors avoid the edge case where
+    # a near-zero-norm row produces NaN cosine distances).
+    if distance_metric == "cosine":
+        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+        norms = np.where(norms == 0, 1.0, norms)  # guard against zero-norm rows
+        matrix = matrix / norms
     return matrix
 
 
@@ -139,6 +158,12 @@ def _top_tools(feature_rows: Sequence[PostingClusterFeatures]) -> list[RankedToo
 
 
 def _cluster_centroid(embedded_rows: Sequence[EmbeddedPostingText]) -> list[float]:
+    """Compute the cluster centroid by averaging raw (non-normalized) embeddings.
+
+    Downstream consumers that need cosine proximity should L2-normalize
+    the returned vector before comparing, since the arithmetic mean of
+    unit vectors is not itself unit-length.
+    """
     matrix = np.asarray([embedded_row.embedding for embedded_row in embedded_rows], dtype=float)
     centroid = np.mean(matrix, axis=0)
     return [float(value) for value in centroid.tolist()]
@@ -197,7 +222,15 @@ def run_clustering(
             skip_reason="insufficient_total_postings",
         )
 
-    matrix = _embedding_matrix(aligned_rows)
+    minimum_cluster_size = cluster_min_cluster_size()
+    minimum_samples = cluster_min_samples()
+    selection_epsilon = cluster_selection_epsilon()
+    selection_method = cluster_selection_method()
+    distance_metric = cluster_distance_metric()
+    dim_reduction_method = cluster_dim_reduction_method()
+    dim_reduction_n_components = cluster_dim_reduction_n_components()
+
+    matrix = _embedding_matrix(aligned_rows, distance_metric=distance_metric)
     if matrix is None:
         return ClusteringResult(
             total_input_postings=total_input_postings,
@@ -208,17 +241,47 @@ def run_clustering(
             skip_reason="embedding_generation_failed",
         )
 
-    minimum_cluster_size = cluster_min_cluster_size()
-    minimum_samples = cluster_min_samples()
-    selection_epsilon = cluster_selection_epsilon()
-    distance_metric = cluster_distance_metric()
+    # #327 Phase 1: optionally reduce dimensionality before HDBSCAN. UMAP /
+    # PCA project the matrix to a lower-D space where density-based clustering
+    # actually works. Post-reduction the metric flips to euclidean (the new
+    # space is L2 by construction) and HDBSCAN's algorithm="best" (KD-tree)
+    # becomes available for speed.
+    input_dim = matrix.shape[1]
+    if dim_reduction_method != "none":
+        matrix = reduce_dimensions(
+            matrix,
+            method=dim_reduction_method,
+            n_components=dim_reduction_n_components,
+            umap_n_neighbors=cluster_umap_n_neighbors(),
+            umap_min_dist=cluster_umap_min_dist(),
+            umap_metric=cluster_umap_metric(),
+            umap_random_state=cluster_umap_random_state(),
+        )
+        log.info(
+            "clustering_dimensionality_reduction_completed",
+            method=dim_reduction_method,
+            input_dimensionality=input_dim,
+            output_dimensionality=matrix.shape[1],
+            n_postings=matrix.shape[0],
+        )
+        effective_metric = "euclidean"
+        effective_algorithm = "best"
+    else:
+        # KD-tree and ball-tree indices only support Euclidean-family metrics.
+        # For cosine (or any other non-Euclidean metric), force HDBSCAN's `generic`
+        # backend so it falls back to a precomputed pairwise distance matrix instead
+        # of silently using the wrong spatial index.
+        effective_metric = distance_metric
+        effective_algorithm = "generic" if distance_metric != "euclidean" else "best"
 
     effective_clusterer_factory = clusterer_factory or _default_clusterer_factory
     clusterer = effective_clusterer_factory(
         min_cluster_size=minimum_cluster_size,
         min_samples=minimum_samples,
         cluster_selection_epsilon=selection_epsilon,
-        metric=distance_metric,
+        cluster_selection_method=selection_method,
+        metric=effective_metric,
+        algorithm=effective_algorithm,
     )
 
     raw_labels = clusterer.fit_predict(matrix)
@@ -307,7 +370,12 @@ def run_clustering(
         minimum_cluster_size=minimum_cluster_size,
         minimum_samples=minimum_samples,
         selection_epsilon=selection_epsilon,
+        selection_method=selection_method,
         distance_metric=distance_metric,
+        effective_metric=effective_metric,
+        algorithm=effective_algorithm,
+        dim_reduction_method=dim_reduction_method,
+        dim_reduction_n_components=dim_reduction_n_components if dim_reduction_method != "none" else None,
     )
 
     return ClusteringResult(
