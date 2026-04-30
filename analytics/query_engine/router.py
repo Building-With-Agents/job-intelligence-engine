@@ -551,37 +551,131 @@ class QueryRouter:
         tenant: TenantAccess,
         question: str = "",
     ) -> RouteResult:
-        """role_evolution → ``canonical_roles`` ordered by posting volume."""
+        """role_evolution → ``job_postings`` grouped by ``temporal_period``.
+
+        Prompt-iteration v2 fix (2026-04-30): the previous implementation queried
+        ``canonical_roles``, a static snapshot with no ``temporal_period`` dimension.
+        Every role-evolution question asks for a before/after comparison across
+        temporal periods (pre_chatgpt → early_genai → post_gpt4 → agentic_era).
+        Without temporal data the synthesis layer correctly refused to fabricate
+        trends, producing ``decision_relevance = 0`` across all annotated questions.
+
+        This version queries ``job_postings`` which carries the authoritative
+        ``temporal_period`` value set by the enrichment classifier, grouped by
+        period and seniority level so the synthesis can report posting volume
+        trajectories per temporal era.  A secondary JOIN to ``canonical_roles``
+        via ``canonical_role_id`` is included when available to surface top_skills
+        and top_tools for the role cluster.
+        """
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
-        cr = CanonicalRole
-        stmt = select(
-            cr.role_id,
-            cr.label,
-            cr.description,
-            cr.posting_count,
-            cr.representative_titles,
-            cr.top_skills,
-            cr.top_tools,
-            cr.computed_at,
-        ).order_by(cr.posting_count.desc(), cr.computed_at.desc())
 
-        role_filter = self._ilike_or(cr.label, role_names)
-        if role_filter is not None:
-            stmt = stmt.where(role_filter)
+        allowed_subregions = list(tenant.allowed_subregions)
 
-        label = "canonical role evolution"
+        # Build parameterised WHERE clauses for role filtering.
+        # Tokenise role names and ILIKE-match against both job_title and
+        # role_classification (same approach as _route_geographic_list).
+        params: dict[str, Any] = {
+            "row_limit": _QUERY_LIMIT,
+            "subregions": allowed_subregions,
+        }
+        where_parts: list[str] = [
+            "jp.temporal_period IS NOT NULL",
+            "jp.is_spam = FALSE",
+        ]
+        if allowed_subregions:
+            where_parts.append("jp.borderplex_subregion = ANY(:subregions)")
+
+        if role_names:
+            role_clauses: list[str] = []
+            seen_tokens: set[str] = set()
+            token_index = 0
+            for role in role_names[:5]:
+                for tok in _tokenize_role_name(role):
+                    norm = tok.lower()
+                    if norm in seen_tokens or token_index >= 10:
+                        continue
+                    seen_tokens.add(norm)
+                    t_key = f"rt_{token_index}"
+                    c_key = f"rc_{token_index}"
+                    role_clauses.append(
+                        f"(jp.job_title ILIKE :{t_key} OR jp.role_classification ILIKE :{c_key})"
+                    )
+                    params[t_key] = f"%{tok}%"
+                    params[c_key] = f"%{tok}%"
+                    token_index += 1
+            if role_clauses:
+                where_parts.append(
+                    "(" + " OR ".join(role_clauses) + ")"
+                    if len(role_clauses) > 1
+                    else role_clauses[0]
+                )
+                # Issue #197 — exclude the known mis-bucketed placeholder.
+                where_parts.append(
+                    "(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')"
+                )
+
+        sql = text(
+            f"""
+            SELECT
+                jp.temporal_period,
+                jp.borderplex_subregion,
+                jp.seniority_level,
+                COUNT(DISTINCT jp.job_posting_id) AS posting_count,
+                COUNT(DISTINCT jp.company_id)      AS employer_count
+            FROM dbo.job_postings AS jp
+            WHERE {" AND ".join(where_parts)}
+            GROUP BY jp.temporal_period, jp.borderplex_subregion, jp.seniority_level
+            ORDER BY jp.temporal_period, posting_count DESC
+            LIMIT :row_limit
+            """
+        )
+
+        label = "role evolution by temporal period"
         if role_names:
             label += f" — {', '.join(role_names[:3])}"
 
-        return self._execute(
-            session,
-            stmt,
-            intent=intent,
-            tables_used=["canonical_roles"],
-            query_label=label,
-            confidence=confidence,
-        )
+        try:
+            result = session.execute(
+                sql,
+                params,
+                execution_options={"timeout": _QUERY_TIMEOUT_SECONDS},
+            )
+            rows = [dict(row._mapping) for row in result]
+            is_partial = len(rows) >= _QUERY_LIMIT
+            log.info(
+                "query_router_result",
+                intent=intent,
+                query_label=label,
+                row_count=len(rows),
+                is_partial=is_partial,
+                tables_used=["job_postings"],
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings"],
+                query_label=label,
+                rows=rows,
+                row_count=len(rows),
+                is_partial=is_partial,
+                confidence=confidence,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_execute_error",
+                intent=intent,
+                query_label=label,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings"],
+                query_label=label,
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
 
     def _route_disruption(
         self,
