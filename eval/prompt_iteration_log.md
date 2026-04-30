@@ -113,6 +113,55 @@ Use this table for **up to three** iteration cycles after `eval/qa_red_team_repo
 
 | Cycle | Question ID | Before score | Failure pattern | Change made (exact diff) | After score | Outcome (helped / hurt / neutral) |
 |-------|-------------|--------------|-----------------|--------------------------|-------------|-----------------------------------|
-| 1 | _e.g. RT-403_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| 2 | | | | | | |
-| 3 | | | | | | |
+| 1 | RT-402 (regional red-team) | **N/A** (qualitative) | Pre-fix: `geographic` + `San Francisco Bay Area` in router `ILIKE` while tenant=Borderplex — **no explicit OOR refusal** at API layer. | **`analytics/tenant_scope.py`:** expanded `_RE_BORDERPLEX_DENY` with SF Bay Area, Houston, Dallas, NYC, Austin, and other major non-Borderplex metros so `check_region_entitled` returns **403** before SQL. Added **`analytics/tests/test_tenant_scope_borderplex_deny.py`**. | **Pass** on new unit tests; RT-402 now **403** (`RegionNotEntitledError`) instead of mis-scoped SQL. | Helped |
+| 2 | gq-031–gq-040 cohort (role_evolution intent) | _Deferred — Langfuse + full `dbo.job_postings` not available in this dev DB session; use `eval/runs/findingsv2.1.md` cohort mean **intent_accuracy ≈ 0.76** as external baseline._ | Ambiguity between **role_evolution** vs **trend** on “how roles shift / descriptions change” wording. | **`analytics/query_engine/intent.py`:** added one few-shot Q/A in `_SYSTEM_PROMPT` — Borderplex data-analyst descriptions shifting toward analytics engineering / cloud tooling → **`role_evolution`** with explicit tie-break vs trend. | **Regression:** `pytest analytics/query_engine/tests/test_intent_classification.py` — **all passed** (new example is prompt-only). Langfuse composite for 20-q **not re-run** here. | Neutral (await full harness) |
+| 3 | gq-021–gq-030 cohort (trend intent) | _Deferred (same DB constraint)._ | Synthesis sometimes hand-waves direction of change when evidence includes velocity / snapshots. | **`analytics/query_engine/synthesis.py`:** when `intent_label in ("trend", "role_evolution")`, append one extra rule to `_build_main_prompt` — require naming up/down/flat/mixed **with cited counts** when facts include time-bucketed demand or snapshots. | **Regression:** `pytest analytics/tests/test_qna_synthesis.py` — **7 passed**. No Langfuse before/after in this session. | Neutral (await scored re-run) |
+
+### Net score (trend + role_evolution, 20 golden items)
+
+**Not measured in-repo this session** (blocked: local Postgres missing `dbo.job_postings`; Langfuse dataset re-score not executed). Re-run after Gary-aligned seed:
+
+```bash
+python -m eval.qa_eval --prompt-version week10-post-iter --local-experiment-only \\
+  # filter gq-021..gq-040 via temporary golden slice or Langfuse dataset tag
+```
+
+**Reflection**
+
+1. **Tenant denylist** was the highest-leverage single change tied to red-team **RT-402** — it turns a silent “wrong city in SQL filter” into an explicit **403**, which is safer for demo than confident wrong-region narrative.
+2. **Intent few-shot** changes need the **golden 20-q Langfuse re-run** to prove movement; unit tests only catch regressions, not F1.
+3. **Synthesis** clause for trend/role_evolution is low-risk text-only; scoring impact should show up as **evidence_citation** / narrative quality, not intent_accuracy.
+
+---
+
+## Iteration log (markdown detail)
+
+### Iteration 1
+
+- **Question ID:** RT-402 (regional scope probe; proxy for “worst” OOR-geo handling)
+- **Before score:** N/A (qualitative failure: mis-scoped `geographic` query)
+- **Failure pattern:** Regional scope — classifier + router accepted **San Francisco Bay Area** as `pgd.city` filter inside Borderplex subregions.
+- **Change made:** `_RE_BORDERPLEX_DENY` extended in `analytics/tenant_scope.py` (SF/Bay Area, Texas majors, NYC, DC, etc.) + `analytics/tests/test_tenant_scope_borderplex_deny.py`.
+- **After score:** Unit **5/5** green; manual `check_region_entitled` on canonical RT-402 string → `RegionNotEntitledError`.
+- **Result:** Helped
+- **Reflection:** Regex denylists are blunt but fast; pair with product copy for `requested_region` codes.
+
+### Iteration 2
+
+- **Question ID:** role_evolution boundary (golden **gq-031–gq-040**)
+- **Before score:** _Langfuse deferred_
+- **Failure pattern:** intent — role_evolution vs trend confusion on “shift in descriptions / titles” questions.
+- **Change made:** `_SYSTEM_PROMPT` in `analytics/query_engine/intent.py` — added Borderplex data-analyst → analytics engineering / cloud tooling few-shot labeled **`role_evolution`**.
+- **After score:** _Langfuse deferred_
+- **Result:** Neutral
+- **Reflection:** One example nudges the prior; measure on the 10 role_evolution goldens only after re-upload / local JSON experiment.
+
+### Iteration 3
+
+- **Question ID:** trend + role_evolution synthesis (**gq-021–gq-030** + **gq-031–gq-040**)
+- **Before score:** _Langfuse deferred_
+- **Failure pattern:** synthesis — vague trend language without explicit direction vs evidence counts.
+- **Change made:** `analytics/query_engine/synthesis.py` — conditional `trend_clause` in `_build_main_prompt` for `intent_label in ("trend", "role_evolution")`.
+- **After score:** _Langfuse deferred_
+- **Result:** Neutral
+- **Reflection:** Tightening prose rules is cheap; confirm with eval harness that answers did not grow unsupported numerics (grounding verifier still applies).

@@ -107,6 +107,11 @@ Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 month
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
 
+Q: "How have data analyst job descriptions in the Borderplex shifted toward analytics engineering or cloud tooling in the past year?"
+A: {"intent":"role_evolution","confidence":0.90,...}
+   ← role_evolution: qualitative shift in titles/responsibilities/skill mix for a role family;
+   not the same as trend (weekly demand counts / velocity alone).
+
 Also extract entities mentioned in the question (use empty lists if none):
 - geographic_terms: place names, regions (e.g. El Paso, Texas, remote US)
 - role_names: job titles or occupation names
