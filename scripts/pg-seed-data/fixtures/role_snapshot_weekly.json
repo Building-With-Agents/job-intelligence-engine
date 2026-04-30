@@ -1,1 +1,80 @@
-[]
+[
+  {
+    "id": 2,
+    "week_start": "2026-04-27",
+    "canonical_role_id": "8bd787fe-ce86-5043-aad5-4ea90e88dd43",
+    "posting_count": 1,
+    "role_title": "Cloud DevOps Engineer",
+    "avg_salary": null,
+    "median_salary": null,
+    "salary_p25": null,
+    "salary_p50": null,
+    "salary_p75": null,
+    "salary_p95": null,
+    "top_skills": [
+      {
+        "count": 194,
+        "skill_name": "Cross-functional Collaboration"
+      },
+      {
+        "count": 181,
+        "skill_name": "Machine Learning"
+      },
+      {
+        "count": 153,
+        "skill_name": "Cloud Computing"
+      },
+      {
+        "count": 151,
+        "skill_name": "Artificial Intelligence"
+      },
+      {
+        "count": 115,
+        "skill_name": "Continuous Integration"
+      },
+      {
+        "count": 114,
+        "skill_name": "Infrastructure as Code"
+      },
+      {
+        "count": 97,
+        "skill_name": "Data Engineering"
+      },
+      {
+        "count": 94,
+        "skill_name": "Python"
+      },
+      {
+        "count": 91,
+        "skill_name": "Incident Response"
+      },
+      {
+        "count": 89,
+        "skill_name": "Data Modeling"
+      }
+    ],
+    "top_tools": [
+      {
+        "count": 391,
+        "tool_name": "Python"
+      },
+      {
+        "count": 326,
+        "tool_name": "AWS"
+      },
+      {
+        "count": 284,
+        "tool_name": "Azure"
+      },
+      {
+        "count": 233,
+        "tool_name": "SQL"
+      },
+      {
+        "count": 153,
+        "tool_name": "Java"
+      }
+    ],
+    "computed_at": "2026-04-30T02:09:12.391263+00:00"
+  }
+]
