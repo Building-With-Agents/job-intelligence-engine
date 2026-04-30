@@ -29,6 +29,9 @@ from analytics.conversation_memory import append_conversation_turn, load_prior_c
 from analytics.query_engine import audit_log, qna
 from analytics.query_engine.curriculum_synthesis import no_resolved_role_message
 from analytics.query_engine.intent import classify_workforce_question
+from analytics.query_engine.langfuse_utils import lf_context as _lf_ctx
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
@@ -47,6 +50,35 @@ from common.llm_adapter import complete
 from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
+
+
+@_lf_observe(as_type="generation", name="sql_generation")
+def _call_sql_generation_llm(
+    prompt: str,
+    *,
+    query_fingerprint: str,
+    correlation_id: str | None,
+) -> dict[str, Any]:
+    """SQL generation LLM call; wrapped as a named Langfuse generation (JIE #258).
+
+    Each call appears as a separate generation observation inside the parent Q&A
+    trace, enabling per-stage cost attribution and latency breakdown.
+    """
+    _lf_ctx.update_current_observation(
+        input=prompt,
+        metadata={"agent_name": AGENT_SQL, "role": "analytics", "query_fingerprint": query_fingerprint},
+    )
+    result = complete(
+        prompt,
+        agent_name=AGENT_SQL,
+        role="analytics",
+        max_tokens=500,
+        correlation_id=correlation_id,
+    )
+    report_langfuse_usage(result)
+    _lf_ctx.update_current_observation(output=result.get("content") or "")
+    return result
+
 
 _SQL_EXEC_ERR_DETAIL_MAX = 400
 
@@ -343,11 +375,9 @@ def run_guardrailed_analytics_query(
 
     classification_confidence = max(0.0, min(1.0, classification_confidence))
 
-    sql_res = complete(
+    sql_res = _call_sql_generation_llm(
         _sql_prompt(request.query, intent_label),
-        agent_name=AGENT_SQL,
-        role="analytics",
-        max_tokens=500,
+        query_fingerprint=fp,
         correlation_id=correlation_id,
     )
     append_leg_from_complete(ledger, "sql_generation", sql_res, model_fallback=None)
