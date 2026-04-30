@@ -204,16 +204,8 @@ def _unique_signals(
         sibling_skills.update(s.skill_name.casefold() for s in sib.top_skills)
         sibling_tools.update(t.tool_name.casefold() for t in sib.top_tools)
 
-    unique_skills = [
-        s.skill_name
-        for s in cluster.top_skills
-        if s.skill_name.casefold() not in sibling_skills
-    ]
-    unique_tools = [
-        t.tool_name
-        for t in cluster.top_tools
-        if t.tool_name.casefold() not in sibling_tools
-    ]
+    unique_skills = [s.skill_name for s in cluster.top_skills if s.skill_name.casefold() not in sibling_skills]
+    unique_tools = [t.tool_name for t in cluster.top_tools if t.tool_name.casefold() not in sibling_tools]
     return unique_skills, unique_tools
 
 
