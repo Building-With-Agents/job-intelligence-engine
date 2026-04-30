@@ -385,19 +385,22 @@ def _apply_skill_taxonomy_and_geo_scope_gates(
             refusal_reason=NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
         )
 
-    if intent in _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY and skill_names:
-        if not _skill_terms_all_in_dbo_skills(session, skill_names):
-            log.info(
-                "skill_taxonomy_gate_blocked",
-                intent=intent,
-                reason="taxonomy_miss",
-                skill_preview=skill_names[:5],
-            )
-            return _skill_taxonomy_block_result(
-                intent,
-                classification_confidence,
-                refusal_reason=NO_DATA_SKILL_TAXONOMY_REFUSAL,
-            )
+    if (
+        intent in _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY
+        and skill_names
+        and not _skill_terms_all_in_dbo_skills(session, skill_names)
+    ):
+        log.info(
+            "skill_taxonomy_gate_blocked",
+            intent=intent,
+            reason="taxonomy_miss",
+            skill_preview=skill_names[:5],
+        )
+        return _skill_taxonomy_block_result(
+            intent,
+            classification_confidence,
+            refusal_reason=NO_DATA_SKILL_TAXONOMY_REFUSAL,
+        )
     return None
 
 

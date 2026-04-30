@@ -339,9 +339,7 @@ def test_sql_guardrails(intent: str, extra_entities: dict) -> None:
     """
     sn = extra_entities.get("skill_names") or []
     taxonomy: tuple[str, ...] | None = None
-    if intent == "trend" and sn:
-        taxonomy = tuple(str(s).strip().lower() for s in sn)
-    elif intent == "comparison" and sn:
+    if intent in ("trend", "comparison") and sn:
         taxonomy = tuple(str(s).strip().lower() for s in sn)
     session = _make_session(taxonomy_lower_matches=taxonomy) if taxonomy else _make_session()
     result = QueryRouter().route(_mk_classification(intent, **extra_entities), session)
