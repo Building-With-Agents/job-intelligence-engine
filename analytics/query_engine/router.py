@@ -990,9 +990,12 @@ class QueryRouter:
         ``job_postings`` is Prisma-managed (no SQLAlchemy ORM model), so this
         path uses ``text()`` with bind parameters. Filtering: tenant subregion
         via ``borderplex_subregion`` allowlist + city/state derived from
-        ``geo_terms`` + optional ILIKE on ``role_classification`` for role
-        names. Skill filtering is intentionally not wired in this PR — the
-        JSONB unnest path is more invasive and belongs in a follow-up.
+        ``geo_terms`` + role match via ``canonical_role_id`` (pgvector on
+        ``dbo.canonical_roles.label_embedding``, same as
+        ``_resolve_role_names_to_canonical_ids``) with tokenized ILIKE fallback
+        on ``job_title`` / ``role_classification`` when no IDs resolve (JIE
+        #309). Skill filtering is intentionally not wired — the JSONB unnest
+        path is more invasive and belongs in a follow-up.
         """
         # Parse geo_terms for (city, state_code). The first parseable term wins;
         # downstream callers can re-issue with a refined term if needed.
@@ -1037,36 +1040,66 @@ class QueryRouter:
             params["state_code"] = parsed_state
 
         if role_names:
-            # Tokenize each role name and OR-match every token against EITHER
-            # job_title OR role_classification. role_classification is
-            # coarse-grained ("Artificial Intelligence" / "Software Engineering")
-            # while job_title carries niche detail ("AI Scientist", "Prompt
-            # Engineer"). Tokenization handles the semantic gap between the
-            # user's phrasing ("AI/ML researcher") and the data's phrasing
-            # ("AI Scientist", "Applied ML Researcher").
-            role_clauses: list[str] = []
-            seen: set[str] = set()
-            token_index = 0
-            for role in role_names[:5]:
-                for tok in _tokenize_role_name(role):
-                    norm = tok.lower()
-                    if norm in seen:
-                        continue
-                    seen.add(norm)
-                    title_key = f"role_title_{token_index}"
-                    cls_key = f"role_cls_{token_index}"
-                    role_clauses.append(f"(jp.job_title ILIKE :{title_key} OR jp.role_classification ILIKE :{cls_key})")
-                    params[title_key] = f"%{tok}%"
-                    params[cls_key] = f"%{tok}%"
-                    token_index += 1
-                    if token_index >= 12:  # cap parameter explosion
-                        break
-                if token_index >= 12:
-                    break
-            if role_clauses:
-                where_parts.append("(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0])
-                # Issue #197 — exclude misbucketed placeholder when filtering on role.
+            # JIE #309 — prefer pgvector resolution to canonical_roles (same pattern as
+            # role_evolution / workflow). Filter job_postings by canonical_role_id when
+            # we get hits; fall back to token ILIKE when embeddings or DB rows are
+            # unavailable (sparse jp.canonical_role_id coverage per #229).
+            resolved_ids = self._resolve_role_names_to_canonical_ids(
+                role_names[:5],
+                session,
+                top_k=5,
+            )
+            if resolved_ids:
+                placeholders = ", ".join(f":crid{i}" for i in range(len(resolved_ids)))
+                for i, rid in enumerate(resolved_ids):
+                    params[f"crid{i}"] = rid
+                where_parts.append(f"jp.canonical_role_id IN ({placeholders})")
                 where_parts.append("(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')")
+                log.info(
+                    "query_router_geographic_list_embedding_route",
+                    resolved_count=len(resolved_ids),
+                )
+            else:
+                # Tokenize each role name and OR-match every token against EITHER
+                # job_title OR role_classification. role_classification is
+                # coarse-grained ("Artificial Intelligence" / "Software Engineering")
+                # while job_title carries niche detail ("AI Scientist", "Prompt
+                # Engineer"). Tokenization handles the semantic gap between the
+                # user's phrasing ("AI/ML researcher") and the data's phrasing
+                # ("AI Scientist", "Applied ML Researcher").
+                role_clauses: list[str] = []
+                seen: set[str] = set()
+                token_index = 0
+                for role in role_names[:5]:
+                    for tok in _tokenize_role_name(role):
+                        norm = tok.lower()
+                        if norm in seen:
+                            continue
+                        seen.add(norm)
+                        title_key = f"role_title_{token_index}"
+                        cls_key = f"role_cls_{token_index}"
+                        role_clauses.append(
+                            f"(jp.job_title ILIKE :{title_key} OR jp.role_classification ILIKE :{cls_key})"
+                        )
+                        params[title_key] = f"%{tok}%"
+                        params[cls_key] = f"%{tok}%"
+                        token_index += 1
+                        if token_index >= 12:  # cap parameter explosion
+                            break
+                    if token_index >= 12:
+                        break
+                if role_clauses:
+                    where_parts.append(
+                        "(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0]
+                    )
+                    # Issue #197 — exclude misbucketed placeholder when filtering on role.
+                    where_parts.append(
+                        "(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')"
+                    )
+                    log.info(
+                        "query_router_geographic_list_token_fallback",
+                        role_names_count=len(role_names),
+                    )
 
         sql = text(
             f"""

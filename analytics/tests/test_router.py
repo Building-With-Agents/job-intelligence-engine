@@ -574,8 +574,19 @@ class TestSplitGeoTerm:
 
 
 class TestRouteGeographicListStyle:
-    def test_list_style_question_routes_to_per_posting_path(self) -> None:
-        """JIE #306: list-style geographic question must hit job_postings, not geo_demand_weekly."""
+    def test_list_style_question_routes_to_per_posting_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #306: list-style geographic question must hit job_postings, not geo_demand_weekly.
+
+        Force embedding resolution to return no IDs so this test exercises the
+        JIE #309 token ILIKE fallback (deterministic without Azure embeddings).
+        """
+        monkeypatch.setattr(
+            "analytics.query_engine.router._embed_texts_azure",
+            lambda *args, **kwargs: None,
+        )
         session = _make_session(rows=[])
         cls = _mk_classification(
             "geographic",
@@ -613,6 +624,54 @@ class TestRouteGeographicListStyle:
         assert cls_keys, "expected at least one role_cls bind param"
         title_values = {params[k].strip("%") for k in title_keys}
         assert {"frontend", "developer"}.issubset(title_values)
+
+    def test_list_style_geographic_uses_canonical_role_id_when_embedding_resolves(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #309: geographic list-style matches roles via canonical_role_id when pgvector resolves."""
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-canonical-role-id",)]
+
+        list_result = MagicMock()
+        list_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, list_result]
+
+        cls = _mk_classification(
+            "geographic",
+            geo_terms=["El Paso, TX"],
+            role_names=["software developer"],
+            time_refs=["last 90 days"],
+        )
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="Show all El Paso, TX postings for software developer roles posted in the last 90 days.",
+        )
+
+        assert result.routed is True
+        assert session.execute.call_count == 2
+
+        raw_resolve = str(session.execute.call_args_list[0].args[0])
+        assert "<=>" in raw_resolve
+
+        raw_list = str(session.execute.call_args_list[1].args[0])
+        assert "canonical_role_id IN" in raw_list
+        assert "resolved-canonical-role-id" not in raw_list
+
+        list_params = session.execute.call_args_list[1].args[1]
+        assert list_params.get("crid0") == "resolved-canonical-role-id"
+        assert list_params.get("city") == "El Paso"
+        title_keys = [k for k in list_params if k.startswith("role_title_")]
+        assert not title_keys
 
     def test_aggregate_style_question_keeps_geo_demand_routing(self) -> None:
         """Non-list-style geographic question must continue routing to geo_demand_weekly."""
