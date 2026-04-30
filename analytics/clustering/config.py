@@ -2,20 +2,30 @@
 
 Reads ``config/clustering.yaml`` via ``common.config_loader``. Legacy env
 vars (``CLUSTER_*``, ``EMERGENCE_*``) still override per-accessor during the
-deprecation window. Defaults live in YAML — there are none in this file.
+deprecation window.
+
+The ``DEFAULT_*`` module constants below are the canonical declaration of
+clustering defaults — they MUST mirror the YAML at all times. The accessors
+read YAML at runtime (the constants are not used as fallbacks), but the
+constants document what the YAML should hold so out-of-band tools, prompts,
+and reviewers see one source of truth. Drift between the two is caught by
+``analytics/tests/test_clustering_config_parity.py``.
 """
 
 from __future__ import annotations
 
 from common.config_loader import cached_accessor, get_float, get_int, get_str
 
-# Module-level constants kept for backwards compatibility with existing
-# imports (analytics/clustering/__init__.py re-exports these). Values mirror
-# the YAML defaults; they are NOT used as fallbacks — the loader reads YAML.
+# Module-level constants are the canonical declaration of clustering defaults.
+# They MUST stay in sync with config/clustering.yaml — see
+# analytics/tests/test_clustering_config_parity.py which asserts
+# DEFAULT_* == <accessor>() for every entry below. The accessors read YAML
+# at runtime; these constants document what the YAML should hold.
+# When tuning (e.g. issue #321 Tier 2), update BOTH the YAML AND this file.
 DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE = 50
 DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS = 500
-DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 10
-DEFAULT_CLUSTER_MIN_SAMPLES = 5
+DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 5  # #321 Tier 2: was 10 (Tier 1 cosine)
+DEFAULT_CLUSTER_MIN_SAMPLES = 10  # #321 Tier 2: was 5 (Tier 1 cosine)
 DEFAULT_CLUSTER_SELECTION_EPSILON = 0.0
 DEFAULT_CLUSTER_DISTANCE_METRIC = "cosine"
 DEFAULT_CLUSTER_LABEL_DOMINANCE_THRESHOLD = 0.30
