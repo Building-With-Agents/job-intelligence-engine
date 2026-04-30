@@ -28,14 +28,67 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from enrichment.classifiers.borderplex_subregion import classify_borderplex_subregion
+from enrichment.classifiers.quality import score_quality
 from enrichment.classifiers.spam_preview import apply_spam_tiers
 from enrichment.classifiers.temporal_period import classify_temporal_period
 from enrichment.dedup import run_fuzzy_dedup
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 from enrichment.resolvers.sector_resolver import resolve_sector
+from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
+
+# JIE #328 — derive deterministic quality when the promotion payload omits it
+# (legacy partial payloads / skipped promotions left job_postings.quality_score NULL).
+_NJ_EI_QUALITY_SQL = text(
+    """
+    SELECT nj.title AS title,
+           nj.description AS description,
+           ei.skills AS skills,
+           ei.tools AS tools,
+           ei.tasks AS tasks,
+           ei.responsibilities AS responsibilities,
+           ei.context AS context,
+           COALESCE(ei.extraction_failed, false) AS extraction_failed
+    FROM dbo.normalized_jobs nj
+    LEFT JOIN LATERAL (
+        SELECT skills, tools, tasks, responsibilities, context, extraction_failed
+        FROM dbo.extracted_intelligence
+        WHERE normalized_job_id = nj.id
+        ORDER BY extracted_at DESC NULLS LAST, id DESC
+        LIMIT 1
+    ) ei ON true
+    WHERE nj.id = :nj_id
+    """
+)
+
+
+def _derive_quality_from_normalized_job(
+    session: Session,
+    normalized_job_id: int,
+) -> tuple[float, dict[str, float]] | None:
+    """Load nj + latest EI and compute ``score_quality`` when payload has no score."""
+    row = session.execute(_NJ_EI_QUALITY_SQL, {"nj_id": normalized_job_id}).mappings().first()
+    if not row:
+        return None
+    title = str(row.get("title") or "").strip()
+    desc_raw = row.get("description")
+    desc_str = desc_raw if isinstance(desc_raw, str) else None
+    extraction = build_extraction_dict(
+        row.get("skills"),
+        row.get("tools"),
+        row.get("tasks"),
+        row.get("responsibilities"),
+        row.get("context"),
+    )
+    q_res = score_quality(
+        job_title=title,
+        job_description=desc_str,
+        extraction=extraction,
+        extraction_failed=bool(row.get("extraction_failed")),
+    )
+    return (float(q_res.quality_score), dict(q_res.components))
 
 _RESOLVE_JOB_POSTING_SQL = text(
     """
@@ -604,6 +657,21 @@ def apply_enrichment_to_job_postings(
         return False
 
     quality_score = record_enriched_payload.get("quality_score")
+    merged_payload_for_confidence: dict[str, Any] = record_enriched_payload
+    if quality_score is None:
+        derived = _derive_quality_from_normalized_job(session, normalized_job_id)
+        if derived is not None:
+            quality_score, q_components = derived
+            merged_payload_for_confidence = {
+                **record_enriched_payload,
+                "quality_score": quality_score,
+                "quality_components": q_components,
+            }
+            log.info(
+                "enrichment_promotion_derived_quality_score",
+                normalized_job_id=normalized_job_id,
+                quality_score=quality_score,
+            )
     if quality_score is None:
         log.info(
             "enrichment_promotion_skipped_no_quality_score",
@@ -616,9 +684,9 @@ def apply_enrichment_to_job_postings(
     except (TypeError, ValueError):
         return False
 
-    fc_merged = merge_field_confidence_for_storage(record_enriched_payload)
+    fc_merged = merge_field_confidence_for_storage(merged_payload_for_confidence)
     fc_json = json.dumps(fc_merged)
-    oc = _overall_confidence_for_storage(record_enriched_payload)
+    oc = _overall_confidence_for_storage(merged_payload_for_confidence)
     derived_output_fields = derive_enrichment_output_fields(resolved)
 
     naics_raw = record_enriched_payload.get("naics_code")

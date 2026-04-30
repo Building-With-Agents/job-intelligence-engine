@@ -717,6 +717,44 @@ def test_apply_enrichment_binds_date_posted_none_when_missing_from_resolved_row(
     assert params["date_posted"] is None
 
 
+def test_apply_enrichment_derives_quality_when_payload_omits_score_jsearch_null_date() -> None:
+    """JIE #328: NULL date_posted must not block promotion; missing quality_score is derived from nj+EI."""
+    session = MagicMock()
+    resolve_result = MagicMock()
+    resolve_result.mappings.return_value.first.return_value = _resolved_row_with_qna_fields(date_posted=None)
+    ei_result = MagicMock()
+    ei_result.mappings.return_value.first.return_value = {
+        "title": "Warehouse Supervisor",
+        "description": ("Lead daily operations. " * 80)
+        + "\n\nResponsibilities:\n- Staffing\n- Safety compliance\n- KPI reporting",
+        "skills": [{"skill_name": "Leadership", "type": "Soft"}],
+        "tools": [],
+        "tasks": [{"text": "Supervise crew"}],
+        "responsibilities": [{"responsibility_description": "Ensure on-time fulfillment"}],
+        "context": [],
+        "extraction_failed": False,
+    }
+    update_result = MagicMock()
+    session.execute.side_effect = [
+        resolve_result,
+        ei_result,
+        update_result,
+        *[MagicMock() for _ in range(10)],
+    ]
+    payload: dict[str, object] = {
+        "spam_tier": "clean",
+        "spam_score": 0.2,
+    }
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = apply_enrichment_to_job_postings(session, 4242, payload)
+    assert out is True
+    assert session.execute.call_count >= 3
+    _stmt, params = session.execute.call_args_list[2][0]
+    assert "quality_score" in params
+    assert params["date_posted"] is None
+    assert 0.0 < float(params["quality_score"]) <= 1.0
+
+
 def test_apply_enrichment_binds_seniority_level_from_seniority_key() -> None:
     """seniority_level param must be populated from the 'seniority' payload key (RecordEnriched contract)."""
     session = MagicMock()
