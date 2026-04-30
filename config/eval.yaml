@@ -16,6 +16,11 @@ eval:
     # Env override: QA_EVAL_LATENCY_SLA_SECONDS
     latency_sla_seconds: 45.0
 
+    # Mean answerability below this (data-backed cohort) sets subcomposite
+    # ``gated`` in JIE #268 summaries. Range 0.0–1.0.
+    # Env override: QA_EVAL_ANSWERABILITY_GATE_THRESHOLD
+    answerability_gate_threshold: 0.2
+
   soc_demo:
     # Skip the LLM call in run_soc_demo.py and return a fixture/"unclassified"
     # response. Useful for offline demos.
