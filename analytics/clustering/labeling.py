@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 
 import structlog
@@ -25,6 +25,7 @@ _RESPONSIBILITY_SAMPLE_LIMIT = 6
 _REPRESENTATIVE_TITLE_LIMIT = 6
 _DESCRIPTION_SKILL_LIMIT = 3
 _DESCRIPTION_TOOL_LIMIT = 2
+_DISAMBIGUATION_QUALIFIER_LIMIT = 3
 
 ClusterLabeler = Callable[[ClusterSummary, Sequence[PostingClusterFeatures]], str | None]
 
@@ -192,6 +193,143 @@ def _default_llm_labeler(cluster: ClusterSummary, feature_rows: Sequence[Posting
     return _normalize_label_output(result.get("content"))
 
 
+def _unique_signals(
+    cluster: ClusterSummary,
+    siblings: Sequence[ClusterSummary],
+) -> tuple[list[str], list[str]]:
+    """Return skills and tools present in *cluster* but absent from all *siblings*."""
+    sibling_skills: set[str] = set()
+    sibling_tools: set[str] = set()
+    for sib in siblings:
+        sibling_skills.update(s.skill_name.casefold() for s in sib.top_skills)
+        sibling_tools.update(t.tool_name.casefold() for t in sib.top_tools)
+
+    unique_skills = [
+        s.skill_name
+        for s in cluster.top_skills
+        if s.skill_name.casefold() not in sibling_skills
+    ]
+    unique_tools = [
+        t.tool_name
+        for t in cluster.top_tools
+        if t.tool_name.casefold() not in sibling_tools
+    ]
+    return unique_skills, unique_tools
+
+
+def _deterministic_qualifier(
+    cluster: ClusterSummary,
+    siblings: Sequence[ClusterSummary],
+) -> str | None:
+    """Build a parenthetical qualifier from unique skills/tools to break a label tie."""
+    unique_skills, unique_tools = _unique_signals(cluster, siblings)
+    tokens = (unique_tools + unique_skills)[:_DISAMBIGUATION_QUALIFIER_LIMIT]
+    if not tokens:
+        tokens = [s.skill_name for s in cluster.top_skills[:_DISAMBIGUATION_QUALIFIER_LIMIT]]
+    return "/".join(tokens) if tokens else None
+
+
+def _disambiguation_prompt(
+    base_label: str,
+    cluster: ClusterSummary,
+    feature_rows: Sequence[PostingClusterFeatures],
+    siblings: Sequence[ClusterSummary],
+) -> str:
+    """Build a prompt that asks the LLM to produce a unique variant of *base_label*."""
+    titles = _representative_title_samples(cluster, feature_rows)
+    responsibilities = _responsibility_samples(feature_rows)
+    unique_skills, unique_tools = _unique_signals(cluster, siblings)
+
+    lines = [
+        f'Multiple distinct clusters share the label "{base_label}".',
+        "Generate a more specific role label that distinguishes THIS cluster.",
+        "Use a parenthetical qualifier or an adjective — e.g. "
+        '"Senior Data Engineer (Snowflake/dbt)" not just "Senior Data Engineer".',
+        "Return only the role label with no explanation.",
+        f"Representative titles: {', '.join(titles) or 'n/a'}",
+        f"All skills: {', '.join(s.skill_name for s in cluster.top_skills[:7]) or 'n/a'}",
+        f"All tools: {', '.join(t.tool_name for t in cluster.top_tools[:5]) or 'n/a'}",
+    ]
+    if unique_skills:
+        lines.append(f"Unique skills (absent from sibling clusters): {', '.join(unique_skills[:5])}")
+    if unique_tools:
+        lines.append(f"Unique tools (absent from sibling clusters): {', '.join(unique_tools[:5])}")
+    if responsibilities:
+        lines.append(f"Responsibilities: {', '.join(responsibilities)}")
+    return "\n".join(lines)
+
+
+def _disambiguate_collisions(
+    clusters: list[ClusterSummary],
+    feature_map: dict[str, PostingClusterFeatures],
+    *,
+    allow_llm: bool,
+) -> tuple[list[ClusterSummary], int]:
+    """Detect duplicate labels and re-label colliding clusters.
+
+    Returns the (possibly updated) cluster list and the count of labels that
+    were successfully disambiguated.
+    """
+    label_to_indices: dict[str, list[int]] = defaultdict(list)
+    for idx, cluster in enumerate(clusters):
+        if cluster.label:
+            label_to_indices[cluster.label.casefold()].append(idx)
+
+    collisions = {lbl: idxs for lbl, idxs in label_to_indices.items() if len(idxs) > 1}
+    if not collisions:
+        return clusters, 0
+
+    updated = list(clusters)
+    disambiguated_count = 0
+
+    for _label_key, indices in collisions.items():
+        collision_clusters = [clusters[i] for i in indices]
+        base_label = clusters[indices[0]].label or ""
+
+        for pos, idx in enumerate(indices):
+            cluster = clusters[idx]
+            siblings = [c for j, c in enumerate(collision_clusters) if j != pos]
+            cluster_features = _cluster_feature_rows(cluster, feature_map)
+
+            new_label: str | None = None
+
+            if allow_llm:
+                prompt = _disambiguation_prompt(base_label, cluster, cluster_features, siblings)
+                try:
+                    result = complete(prompt, agent_name=_LABEL_AGENT_NAME, max_tokens=_LABEL_MAX_TOKENS)
+                    if result.get("success") and not result.get("extraction_failed"):
+                        candidate = _normalize_label_output(result.get("content"))
+                        if candidate and candidate.casefold() != base_label.casefold():
+                            new_label = candidate
+                except Exception as exc:
+                    log.warning(
+                        "clustering_disambiguation_llm_exception",
+                        cluster_id=cluster.cluster_id,
+                        error_type=type(exc).__name__,
+                    )
+
+            if new_label is None:
+                qualifier = _deterministic_qualifier(cluster, siblings)
+                if qualifier:
+                    new_label = f"{base_label} ({qualifier})"
+
+            if new_label and new_label.casefold() != base_label.casefold():
+                updated[idx] = cluster.model_copy(
+                    update={
+                        "label": new_label,
+                        "description": _cluster_description(cluster, new_label),
+                    }
+                )
+                disambiguated_count += 1
+
+    log.info(
+        "clustering_label_disambiguation_complete",
+        collision_groups=len(collisions),
+        disambiguated_count=disambiguated_count,
+    )
+    return updated, disambiguated_count
+
+
 def label_clusters(
     result: ClusteringResult,
     features_rows: Sequence[PostingClusterFeatures],
@@ -214,7 +352,6 @@ def label_clusters(
     effective_llm_labeler = llm_labeler or _default_llm_labeler
 
     updated_clusters: list[ClusterSummary] = []
-    label_by_cluster_id: dict[str, str] = {}
     dominant_title_count = 0
     llm_generated_count = 0
     fallback_count = 0
@@ -253,7 +390,16 @@ def label_clusters(
             }
         )
         updated_clusters.append(updated_cluster)
-        label_by_cluster_id[cluster.cluster_id] = label
+
+    updated_clusters, disambiguated_count = _disambiguate_collisions(
+        updated_clusters,
+        feature_map,
+        allow_llm=allow_llm_fallback,
+    )
+
+    label_by_cluster_id: dict[str, str] = {}
+    for cluster in updated_clusters:
+        label_by_cluster_id[cluster.cluster_id] = cluster.label or cluster.cluster_id
 
     updated_assignments: list[ClusteredPosting] = []
     for assignment in result.assignments:
@@ -274,6 +420,7 @@ def label_clusters(
         dominant_title_count=dominant_title_count,
         llm_generated_count=llm_generated_count,
         fallback_count=fallback_count,
+        disambiguated_count=disambiguated_count,
         dominance_threshold=effective_dominance_threshold,
     )
 
