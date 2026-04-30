@@ -22,12 +22,16 @@ clustering:
   min_total_postings: 500
 
   # HDBSCAN min_cluster_size. Smaller = more, tighter clusters. Min 1.
+  # Tier 2 (#321): 10 → 5 to split mega-clusters (e.g. "Data Center
+  # Infrastructure Engineer" absorbed 1,046 postings at size=10).
   # Env override: CLUSTER_MIN_CLUSTER_SIZE
-  min_cluster_size: 10
+  min_cluster_size: 5
 
   # HDBSCAN min_samples (density floor). Min 1.
+  # Tier 2 (#321): 5 → 10 to raise the density bar and suppress
+  # over-fragmentation into noisy 5-7 posting micro-clusters.
   # Env override: CLUSTER_MIN_SAMPLES
-  min_samples: 5
+  min_samples: 10
 
   # HDBSCAN cluster_selection_epsilon. 0.0 = pure tree split. Min 0.0.
   # Env override: CLUSTER_SELECTION_EPSILON
