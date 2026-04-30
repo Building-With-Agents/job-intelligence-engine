@@ -186,3 +186,17 @@ docs/findings/generate-*.cjs
 # canonical seed set. Safe to delete locally once the backfills are
 # verified merged on `development`.
 scripts/pg-seed-data/fixtures-pre-*/
+
+# Heavy seed fixtures — distributed via GitHub Release bundle (#322).
+# Devs run `python scripts/pg-seed-data/sync_fixtures.py` to populate
+# these locally; they must NEVER be committed to git.
+scripts/pg-seed-data/fixtures/extracted_intelligence.json
+scripts/pg-seed-data/fixtures/raw_ingested_jobs.json
+scripts/pg-seed-data/fixtures/job_postings.json
+scripts/pg-seed-data/fixtures/normalized_jobs.json
+scripts/pg-seed-data/fixtures/llm_audit_log.json
+scripts/pg-seed-data/fixtures/postal_geo_data.json
+
+# Local bundle artifact produced by publish_fixtures.py before upload.
+# Cleaned up automatically on success; gitignored as belt + suspenders.
+fixtures-v*.tar.zst
