@@ -50,7 +50,7 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 10),
     ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 5),
     ("analytics.clustering.config:cluster_selection_epsilon", "CLUSTER_SELECTION_EPSILON", 0.0),
-    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "euclidean"),
+    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "cosine"),
     ("analytics.clustering.config:cluster_label_dominance_threshold", "CLUSTER_LABEL_DOMINANCE_THRESHOLD", 0.30),
     ("analytics.clustering.config:emergence_min_quality_score", "EMERGENCE_MIN_QUALITY_SCORE", 0.70),
     ("analytics.clustering.config:emergence_min_novel_skills", "EMERGENCE_MIN_NOVEL_SKILLS", 3),
