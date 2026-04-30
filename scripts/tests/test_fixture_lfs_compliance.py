@@ -85,11 +85,16 @@ def test_heavy_fixtures_are_lfs_tracked() -> None:
         pytest.fail(msg)
 
 
+@pytest.mark.requires_lfs
 def test_no_lfs_pointer_files_committed() -> None:
     """No fixture should be present as a tiny LFS pointer file in the working tree.
 
     If this fails, the dev cloned without `git lfs install` and the fixture is the
     133-byte pointer instead of real content. Seeding will silently load `[]`.
+
+    Marked `requires_lfs` so CI can skip it (CI does not pull LFS to conserve the
+    GitHub LFS bandwidth budget). Devs must run `git lfs install` + `git lfs pull`
+    locally and run pytest without `-m "not requires_lfs"` to exercise this guard.
     """
     pointers: list[str] = []
     for fixture in _fixture_files():
