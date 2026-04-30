@@ -793,6 +793,10 @@ def run_analytics_qna(
         router = QueryRouter()
         route_result = router.route(classification, session, tenant=taccess, question=q)
 
+        route_conf = float(getattr(route_result, "confidence", conf))
+        effective_classification_confidence = min(float(conf), route_conf)
+        no_data_override = getattr(route_result, "empty_rows_refusal_reason", None)
+
         rows = _json_safe_rows(route_result.rows)
         # Capture the router's raw row count before any post-processing filter so
         # JIE #298's role-hint logic can distinguish "router found nothing" from
@@ -825,7 +829,7 @@ def run_analytics_qna(
         q_payload = QueryResultPayload(
             request=QueryRequest(query=q, prior_turns_context=pctx),
             intent_label=intent_label,
-            classification_confidence=conf,
+            classification_confidence=effective_classification_confidence,
             executed_sql=None,
             columns=col_names,
             rows=rows,
@@ -835,6 +839,7 @@ def run_analytics_qna(
             router_error=router_error,
             correlation_id=cid,
             role_suggestion_hint=role_hint,
+            no_data_refusal_override=no_data_override,
         )
 
         syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)
@@ -861,7 +866,7 @@ def run_analytics_qna(
             syn,
             sql_generated=sql_line,
             intent_label=intent_label,
-            classification_confidence=conf,
+            classification_confidence=effective_classification_confidence,
             row_count_returned=int(q_payload.row_count_returned),
         )
         if laborpulse_conversation_id and laborpulse_conversation_id.strip() and tid and uem:

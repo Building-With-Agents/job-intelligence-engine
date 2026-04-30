@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from analytics.query_engine.constants import NO_DATA_SKILL_TAXONOMY_REFUSAL
 from analytics.query_engine.evidence import build_evidence_bundle
 from analytics.query_engine.fixtures import sample_query_request, sample_query_result_payload_ok
 from analytics.query_engine.schemas import DataSufficiency, QueryResultPayload
@@ -29,6 +30,38 @@ def test_build_evidence_bundle_refuses_zero_rows() -> None:
     assert bundle.period_coverage == "period unknown"
     assert bundle.blended_confidence == 0.0
     assert "No rows matched the current filters" in bundle.confidence_explanation
+
+
+def test_build_evidence_bundle_jie330_no_data_refusal_override() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="geographic",
+        classification_confidence=0.35,
+        columns=[],
+        rows=[],
+        row_count_returned=0,
+        tables_referenced=["skills"],
+        no_data_refusal_override=NO_DATA_SKILL_TAXONOMY_REFUSAL,
+    )
+    bundle = build_evidence_bundle(payload)
+    assert bundle.refusal_reason == NO_DATA_SKILL_TAXONOMY_REFUSAL
+    assert bundle.refuse_synthesis is True
+
+
+def test_build_evidence_bundle_role_hint_preempts_no_data_override() -> None:
+    payload = QueryResultPayload(
+        request=sample_query_request(),
+        intent_label="curriculum",
+        classification_confidence=0.88,
+        columns=[],
+        rows=[],
+        row_count_returned=0,
+        tables_referenced=["canonical_roles"],
+        role_suggestion_hint="Resolved role hint from dbo.canonical_roles.",
+        no_data_refusal_override=NO_DATA_SKILL_TAXONOMY_REFUSAL,
+    )
+    bundle = build_evidence_bundle(payload)
+    assert bundle.refusal_reason == "Resolved role hint from dbo.canonical_roles."
 
 
 def test_build_evidence_bundle_marks_sparse_low_volume() -> None:
