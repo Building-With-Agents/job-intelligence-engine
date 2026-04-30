@@ -90,6 +90,7 @@ def _derive_quality_from_normalized_job(
     )
     return (float(q_res.quality_score), dict(q_res.components))
 
+
 _RESOLVE_JOB_POSTING_SQL = text(
     """
     SELECT jp.job_posting_id::text AS job_posting_id,

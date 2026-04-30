@@ -162,9 +162,7 @@ def load_posting_cluster_features(
     params: dict[str, Any] = {}
     min_q = cluster_input_min_quality_score()
     if min_q > 0.0:
-        quality_filter = (
-            " AND jp.quality_score IS NOT NULL AND jp.quality_score >= :min_quality_score "
-        )
+        quality_filter = " AND jp.quality_score IS NOT NULL AND jp.quality_score >= :min_quality_score "
         params["min_quality_score"] = float(min_q)
     if week_start is not None:
         week_filter = (

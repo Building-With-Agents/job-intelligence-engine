@@ -78,17 +78,21 @@ def _unique_word_block(n: int) -> str:
 def test_score_quality_perfect_non_ai_posting_high() -> None:
     """JIE #329 — strong ops posting without AI keywords should not be capped ~0.65."""
     desc = (
-        "Regional Warehouse Operations Manager\n\n"
-        "Responsibilities:\n"
-        "- Lead safety program for forty associates\n"
-        "- Coordinate inbound scheduling with vendors\n"
-        "- Maintain inventory accuracy targets\n\n"
-        "Qualifications:\n"
-        "- Five years supervisory experience\n"
-        "- Strong communication and coaching skills\n\n"
-        "About the role\n"
-        "We operate distribution centers across the southwest region.\n"
-    ) + "\n" + _unique_word_block(120)
+        (
+            "Regional Warehouse Operations Manager\n\n"
+            "Responsibilities:\n"
+            "- Lead safety program for forty associates\n"
+            "- Coordinate inbound scheduling with vendors\n"
+            "- Maintain inventory accuracy targets\n\n"
+            "Qualifications:\n"
+            "- Five years supervisory experience\n"
+            "- Strong communication and coaching skills\n\n"
+            "About the role\n"
+            "We operate distribution centers across the southwest region.\n"
+        )
+        + "\n"
+        + _unique_word_block(120)
+    )
     ext = {
         "skills": [
             {"skill_name": "Forklift"},
@@ -115,14 +119,18 @@ def test_score_quality_perfect_non_ai_posting_high() -> None:
 def test_score_quality_perfect_ai_posting_high() -> None:
     """JIE #329 — AI-heavy tech posting should reach the top of the rubric."""
     desc = (
-        "Senior Machine Learning Engineer\n\n"
-        "Responsibilities:\n"
-        "- Train large language models and deploy PyTorch on Azure\n"
-        "- Build ML pipelines with Kubernetes and Kafka\n"
-        "- Collaborate on NLP and generative AI initiatives\n\n"
-        "Requirements\n"
-        "Deep learning, TensorFlow, AWS and SQL experience required.\n"
-    ) + "\n" + _unique_word_block(400)
+        (
+            "Senior Machine Learning Engineer\n\n"
+            "Responsibilities:\n"
+            "- Train large language models and deploy PyTorch on Azure\n"
+            "- Build ML pipelines with Kubernetes and Kafka\n"
+            "- Collaborate on NLP and generative AI initiatives\n\n"
+            "Requirements\n"
+            "Deep learning, TensorFlow, AWS and SQL experience required.\n"
+        )
+        + "\n"
+        + _unique_word_block(400)
+    )
     ext = {
         "skills": [
             {"skill_name": "PyTorch"},

@@ -139,10 +139,7 @@ def check_noise_fraction() -> None:
     if noise_pct < threshold:
         _ok(f"noise_fraction={noise_pct:.1f}% (< {threshold}%)")
     else:
-        _fail(
-            f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold (#327) — "
-            f"re-run clustering after tuning"
-        )
+        _fail(f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold (#327) — re-run clustering after tuning")
 
 
 # ---------------------------------------------------------------------------
