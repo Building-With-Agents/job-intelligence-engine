@@ -788,7 +788,26 @@ class EnrichmentAgent(BaseAgent):
                         nj_promo = _coerce_normalized_job_id(
                             enriched.get("normalized_job_id") or posting.get("normalized_job_id")
                         )
-                        if session is not None and nj_promo is not None:
+                        # JIE #289: do NOT silently skip when nj_promo is None or
+                        # session is None. Both produced 469 orphan rows over multiple
+                        # batches before this fix. Log loud at ERROR so the bug is
+                        # observable; sweeper picks up the row after the grace window.
+                        if nj_promo is None:
+                            log.error(
+                                "promotion_skipped_missing_normalized_job_id",
+                                source=posting.get("source"),
+                                external_id=posting.get("external_id"),
+                                call_site="batch_serial",
+                                enriched_has_key="normalized_job_id" in enriched,
+                                posting_has_key="normalized_job_id" in posting,
+                            )
+                        elif session is None:
+                            log.error(
+                                "promotion_skipped_session_unavailable",
+                                normalized_job_id=nj_promo,
+                                call_site="batch_serial",
+                            )
+                        else:
                             try:
                                 apply_enrichment_to_job_postings(
                                     session,
@@ -812,13 +831,25 @@ class EnrichmentAgent(BaseAgent):
                     with session_scope() as db_session:
                         run_batch(db_session)
                 except Exception as exc:
-                    log.warning(
-                        "enrichment_session_scope_failed",
+                    # JIE #289: this fall-through used to silently produce orphans
+                    # for every row in the batch. Now it logs ERROR with the batch
+                    # size so operators can correlate orphan spikes with session
+                    # failures. The rows still get enriched (via run_batch(None))
+                    # but promotion is skipped — sweeper picks them up after grace.
+                    log.error(
+                        "promotion_skipped_session_scope_failed",
                         agent=self.agent_id,
                         error=str(exc),
+                        affected_records=len(rows) if rows else 0,
                     )
                     run_batch(None)
             else:
+                # JIE #289: same observability concern when DB is unreachable.
+                log.error(
+                    "promotion_skipped_db_unavailable",
+                    agent=self.agent_id,
+                    affected_records=len(rows) if rows else 0,
+                )
                 run_batch(None)
 
             # Log enrichment output to Langfuse
@@ -1043,6 +1074,20 @@ class EnrichmentAgent(BaseAgent):
                 triggered_by_event_type=event.payload.get("event_type"),
                 reason=degraded_reason,
                 extraction_note=spam_result.extraction_note,
+            )
+
+        # JIE #289: log loud at ERROR when nj_id is None on the single-record path.
+        # Unlike the batch paths, this path skips DB writes entirely when nj_id is
+        # missing — the sweeper cannot rescue these (no normalized_jobs row was
+        # ever persisted via this code path), so the goal here is observability
+        # for upstream callers that drop normalized_job_id from the payload.
+        if nj_id is None and _db_url_configured():
+            log.error(
+                "promotion_skipped_missing_normalized_job_id",
+                source=event.payload.get("source"),
+                external_id=event.payload.get("external_id"),
+                call_site="single_record",
+                payload_has_key="normalized_job_id" in event.payload,
             )
 
         if nj_id is not None and _db_url_configured():
@@ -1479,7 +1524,18 @@ class EnrichmentAgent(BaseAgent):
                         nj_promo = _coerce_normalized_job_id(
                             enriched.get("normalized_job_id") or posting.get("normalized_job_id")
                         )
-                        if nj_promo is not None:
+                        # JIE #289: log loud at ERROR when nj_promo is None so the bug
+                        # is observable. Sweeper picks up the orphaned row after grace.
+                        if nj_promo is None:
+                            log.error(
+                                "promotion_skipped_missing_normalized_job_id",
+                                source=posting.get("source"),
+                                external_id=posting.get("external_id"),
+                                call_site="batch_parallel",
+                                enriched_has_key="normalized_job_id" in enriched,
+                                posting_has_key="normalized_job_id" in posting,
+                            )
+                        else:
                             try:
                                 apply_enrichment_to_job_postings(
                                     job_session,

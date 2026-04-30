@@ -527,7 +527,11 @@ def build_evidence_bundle(payload: QueryResultPayload) -> EvidenceBundle:
         )
 
     if not payload.rows:
-        refusal_reason = "No data in scope for the selected filters."
+        refusal_reason = (
+            payload.role_suggestion_hint
+            if payload.role_suggestion_hint
+            else "No data in scope for the selected filters."
+        )
         return EvidenceBundle(
             facts=[],
             period_coverage=period_coverage,

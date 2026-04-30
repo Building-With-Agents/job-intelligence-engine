@@ -2,25 +2,32 @@
 
 Seed a fresh PostgreSQL container with reference data for the watechcoalition platform.
 
-## Prerequisites: Git LFS
+## Prerequisites: heavy fixture sync (issue #322)
 
-Five fixtures (`extracted_intelligence.json`, `raw_ingested_jobs.json`,
-`job_postings.json`, `normalized_jobs.json`, `llm_audit_log.json`) are stored
-via [Git LFS](https://git-lfs.com/) because they exceed GitHub's 50 MB
-recommendation. **Install Git LFS once before cloning** or your seed will
-silently load empty arrays from 133-byte pointer files:
+Six heavy fixtures (`extracted_intelligence.json`, `raw_ingested_jobs.json`,
+`job_postings.json`, `normalized_jobs.json`, `llm_audit_log.json`,
+`postal_geo_data.json`) are **not** in git — they're published as a single
+zstd-compressed bundle on a [GitHub Release](https://github.com/Building-With-Agents/job-intelligence-engine/releases)
+because they exceed GitHub's plain-git limits and the org-wide LFS bandwidth
+budget is exhausted.
+
+**Run once after cloning, and every time you pull a `fixtures-manifest.json` change:**
 
 ```bash
-# Install (one-time, system-level)
-git lfs install                     # macOS / Linux (with git-lfs already on PATH)
-# Windows: included with Git for Windows; if missing, run: winget install GitHub.GitLFS
-
-# If you already cloned without LFS, fetch the real files:
-git lfs pull
+python scripts/pg-seed-data/sync_fixtures.py
 ```
 
+That script reads `fixtures-manifest.json`, downloads the pinned bundle from
+the GitHub Release via `gh release download`, verifies the SHA256, and
+extracts the JSON files into `scripts/pg-seed-data/fixtures/`. Idempotent —
+re-running is a no-op if the local files are already in sync (use `--force`
+to re-download).
+
+**Prerequisite: `gh` authenticated.** Run `gh auth status` to verify; if not,
+`gh auth login` first.
+
 Verify with `ls -la scripts/pg-seed-data/fixtures/extracted_intelligence.json` —
-you should see ~120 MB, not ~133 bytes.
+you should see ~120 MB after sync.
 
 ## Quick Start (Junior Devs)
 
@@ -135,7 +142,7 @@ scripts/pg-seed-data/
 
 ## For Admins: Re-exporting Fixtures
 
-If the admin database changes, re-export fixtures:
+If the admin database changes, re-export fixtures and publish a new bundle:
 
 ```bash
 # 1. Ensure PYTHON_DATABASE_URL points to the admin PostgreSQL instance
@@ -143,8 +150,8 @@ If the admin database changes, re-export fixtures:
 python scripts/pg-seed-data/export_fixtures.py
 
 # Or export individual scopes (all output to fixtures/):
-python scripts/pg-seed-data/export_fixtures.py --scope reference  # 40 reference tables only
-python scripts/pg-seed-data/export_fixtures.py --scope agent      # 10 agent pipeline tables only
+python scripts/pg-seed-data/export_fixtures.py --scope reference  # reference tables only
+python scripts/pg-seed-data/export_fixtures.py --scope agent      # agent pipeline tables only
 python scripts/pg-seed-data/export_fixtures.py --limit 500        # cap rows per table
 
 # 3. Optionally regenerate schema.sql
@@ -153,10 +160,20 @@ docker exec postgres-server pg_dump -U postgres -d talent_finder \
   > scripts/pg-seed-data/schema_raw.sql
 python scripts/pg-seed-data/clean_schema.py
 
-# 5. Commit updated fixtures
-git add scripts/pg-seed-data/fixtures/ scripts/pg-seed-data/schema.sql
-git commit -m "Update PostgreSQL seed fixtures"
+# 4. Publish the heavy-fixture bundle as a new GitHub Release.
+#    This bundles the 6 heavy fixtures into a tar.zst, runs `gh release create`,
+#    and rewrites scripts/pg-seed-data/fixtures-manifest.json with the new tag + SHA256.
+python scripts/pg-seed-data/publish_fixtures.py            # auto-bumps to next fixtures-vN
+python scripts/pg-seed-data/publish_fixtures.py --tag fixtures-v3  # explicit tag
+python scripts/pg-seed-data/publish_fixtures.py --dry-run  # build + verify SHA without publishing
+
+# 5. Commit small fixtures + the updated manifest. Heavy fixtures are gitignored.
+git add scripts/pg-seed-data/fixtures/ scripts/pg-seed-data/fixtures-manifest.json scripts/pg-seed-data/schema.sql
+git commit -m "Update PostgreSQL seed fixtures + bundle vN"
 ```
+
+Devs pull the manifest change in their next `git pull` and run
+`python scripts/pg-seed-data/sync_fixtures.py` to refresh local heavy fixtures.
 
 ### Adding a column to `UPSERT_UPDATE_COLUMNS`
 

@@ -47,10 +47,10 @@ PARITY: list[tuple[str, str | None, Any]] = [
         "analytics-clustering",
     ),
     ("analytics.clustering.config:cluster_min_total_postings", "CLUSTER_MIN_TOTAL_POSTINGS", 500),
-    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 10),
-    ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 5),
+    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 5),
+    ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 10),
     ("analytics.clustering.config:cluster_selection_epsilon", "CLUSTER_SELECTION_EPSILON", 0.0),
-    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "euclidean"),
+    ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "cosine"),
     ("analytics.clustering.config:cluster_label_dominance_threshold", "CLUSTER_LABEL_DOMINANCE_THRESHOLD", 0.30),
     ("analytics.clustering.config:emergence_min_quality_score", "EMERGENCE_MIN_QUALITY_SCORE", 0.70),
     ("analytics.clustering.config:emergence_min_novel_skills", "EMERGENCE_MIN_NOVEL_SKILLS", 3),
@@ -114,6 +114,7 @@ PARITY: list[tuple[str, str | None, Any]] = [
     # ---------- eval.yaml ----------
     ("eval._config:extraction_fuzzy_threshold", "EVAL_EXTRACTION_FUZZY_THRESHOLD", 85),
     ("eval._config:qa_latency_sla_seconds", "QA_EVAL_LATENCY_SLA_SECONDS", 45.0),
+    ("eval._config:qa_answerability_gate_threshold", "QA_EVAL_ANSWERABILITY_GATE_THRESHOLD", 0.2),
     ("eval._config:soc_demo_skip_llm", "SOC_DEMO_SKIP_LLM", False),
     ("eval._config:exp004_comparison_csv", "EXP004_COMPARISON_CSV", "data/output/exp004_comparison.csv"),
     ("eval._config:week8_intent_min_accuracy", "WEEK8_INTENT_MIN_ACCURACY", 0.7),
@@ -209,6 +210,10 @@ def test_every_legacy_env_is_covered_by_parity_table() -> None:
         # llm.yaml — exercised via resolve_llm_route() and adapter integration tests
         "GEMINI_MODEL",
         "EXTRACTION_MODEL_TIER",
+        # #279: LLM tier env vars are exercised via common.llm_adapter.resolve_llm_route()
+        # in common/tests/test_llm_adapter.py — no plain YAML default to parity-check.
+        "LLM_DEFAULT",
+        "LLM_SYNTHESIS",
     }
     expected = _MIGRATED_VARS - skipped
     missing = expected - parity_envs

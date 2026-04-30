@@ -276,6 +276,7 @@ def test_run_clustering_builds_cluster_summaries_with_fake_clusterer(
         "min_samples": 1,
         "cluster_selection_epsilon": 0.15,
         "metric": "cosine",
+        "algorithm": "generic",
     }
 
 
@@ -525,3 +526,27 @@ def test_run_clustering_pipeline_applies_labels_and_emergence_filters(
     assert [cluster.label for cluster in result.clusters] == ["Data Engineer"]
     assert result.emergence_candidates[0].candidate_role_label == "AI Workflow Engineer"
     assert result.emergence_candidates[0].posting_ids == ["posting-4", "posting-5"]
+
+
+def test_hdbscan_accepts_cosine_generic_kwargs() -> None:
+    # Regression for JIE #297: pipeline.py passes algorithm="generic" with
+    # metric="cosine" to hdbscan.HDBSCAN. The package-level mock tests above
+    # use a fake clusterer factory, so they cannot catch invalid algorithm
+    # strings. This test instantiates the real library to ensure the kwargs
+    # we pass remain accepted.
+    hdbscan = pytest.importorskip("hdbscan")
+
+    rng = np.random.default_rng(seed=0)
+    matrix = rng.standard_normal(size=(20, 8)).astype(np.float64)
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    matrix = matrix / np.where(norms == 0.0, 1.0, norms)
+
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=2,
+        min_samples=1,
+        cluster_selection_epsilon=0.0,
+        metric="cosine",
+        algorithm="generic",
+    )
+    labels = clusterer.fit_predict(matrix)
+    assert labels.shape == (20,)

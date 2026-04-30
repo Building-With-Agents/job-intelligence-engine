@@ -38,12 +38,15 @@ load_dotenv(_REPO_ROOT / ".env")
 
 from analytics.query_engine.routing import run_analytics_qna  # noqa: E402
 from common.data_store.database import session_scope  # noqa: E402
+from common.llm_adapter import resolve_llm_route  # noqa: E402
 from eval.qa_eval_laborpulse_headers import laborpulse_analytics_query_headers  # noqa: E402
 from eval.qa_scoring import (  # noqa: E402
     QAItemScores,
     composite_score,
     compute_item_scores,
     confusion_rows,
+    intent_classification_report,
+    intent_eval_trace_metadata,
     run_subcomposites_and_gates,
     subcomposites_from_means,
 )
@@ -164,6 +167,7 @@ def _task_factory(
     golden_by_id: dict[str, dict[str, Any]],
     use_http: bool,
     analytics_base_url: str,
+    sla_seconds: float | None,
 ):
     def task(*, item: Any, **kwargs: Any) -> dict[str, Any]:
         question, gq_id, meta = _resolve_question_input(item)
@@ -177,6 +181,25 @@ def _task_factory(
             analytics_base_url=analytics_base_url,
         )
         latency = time.perf_counter() - t0
+        scores = compute_item_scores(
+            golden=golden,
+            response=response,
+            latency_seconds=latency,
+            pipeline_error=err,
+            sla_seconds=sla_seconds,
+        )
+        classified = str((response or {}).get("classified_intent") or "") if response else ""
+        trace = intent_eval_trace_metadata(
+            expected_intent=str(golden.get("intent") or ""),
+            classified_intent=classified or None,
+            intent_accuracy=scores.intent_accuracy,
+        )
+        # #279: audit-log strings come from common.llm_adapter.resolve_llm_route()
+        # (not direct os.getenv) so per-call routing overrides — e.g. LLM_SYNTHESIS=
+        # gemini:gemini-2.5-pro — show up in the audit. Direct env reads bypass
+        # provider-prefix parsing and would silently log the wrong deployment.
+        default_provider, default_deployment = resolve_llm_route(None)
+        synthesis_provider, synthesis_deployment = resolve_llm_route("synthesis")
         return {
             "prompt_version": prompt_version,
             "gq_id": gq_id,
@@ -184,8 +207,11 @@ def _task_factory(
             "response": response,
             "latency_seconds": latency,
             "pipeline_error": err,
-            "llm_default": os.getenv("LLM_DEFAULT", ""),
-            "llm_synthesis": os.getenv("LLM_SYNTHESIS", ""),
+            "llm_default": default_deployment,
+            "llm_synthesis": synthesis_deployment,
+            "difficulty": str(golden.get("difficulty") or ""),
+            "expected_intent": str(golden.get("intent") or ""),
+            **trace,
         }
 
     return task
@@ -244,6 +270,8 @@ def _evaluator_factory(sla_seconds: float | None):
         for name in (
             "intent_accuracy",
             "evidence_citation",
+            "must_include_recall",
+            "evidence_overlap",
             "confidence_self_consistency",
             "correct_refusal",
             "confidence_in_expected_range",
@@ -275,6 +303,8 @@ def _run_evaluators_average() -> list:
         sums: dict[str, list[float]] = {
             "intent_accuracy": [],
             "evidence_citation": [],
+            "must_include_recall": [],
+            "evidence_overlap": [],
             "confidence_self_consistency": [],
             "confidence_in_expected_range": [],
             "latency_sla": [],
@@ -289,7 +319,14 @@ def _run_evaluators_average() -> list:
                     sums[name].append(float(val))
         n_total = len(item_results)
         out: list[Any] = []
-        for k in ("intent_accuracy", "evidence_citation", "confidence_self_consistency", "latency_sla"):
+        for k in (
+            "intent_accuracy",
+            "evidence_citation",
+            "must_include_recall",
+            "evidence_overlap",
+            "confidence_self_consistency",
+            "latency_sla",
+        ):
             vals = sums[k]
             if vals:
                 n_excl = n_total - len(vals)
@@ -672,6 +709,8 @@ def main(argv: list[str] | None = None) -> int:
                     "scores": {
                         "intent_accuracy": sc.intent_accuracy,
                         "evidence_citation": sc.evidence_citation,
+                        "must_include_recall": sc.must_include_recall,
+                        "evidence_overlap": sc.evidence_overlap,
                         "confidence_self_consistency": sc.confidence_self_consistency,
                         "confidence_in_expected_range": sc.confidence_in_expected_range,
                         "latency_sla": sc.latency_sla,
@@ -707,6 +746,7 @@ def main(argv: list[str] | None = None) -> int:
             payload_local["intent_confusion"] = {
                 f"{e}->{p}": c for (e, p), c in sorted(confusion_rows(intent_pairs).items())
             }
+            payload_local["intent_classification"] = intent_classification_report(intent_pairs)
 
         if args.json:
             sys.stdout.write(json.dumps(payload_local, indent=2) + "\n")
@@ -729,15 +769,20 @@ def main(argv: list[str] | None = None) -> int:
         golden_by_id=golden_by_id,
         use_http=args.use_http,
         analytics_base_url=args.analytics_base_url,
+        sla_seconds=sla_seconds,
     )
     ev_fn = _evaluator_factory(sla_seconds)
     run_evals = _run_evaluators_average()
     desc = f"Golden QA eval prompt_version={args.prompt_version}"
+    # #279: see comment in _task_factory above — same reason for using
+    # resolve_llm_route() instead of os.getenv.
+    _, run_default_deployment = resolve_llm_route(None)
+    _, run_synthesis_deployment = resolve_llm_route("synthesis")
     meta = {
         "prompt_version": args.prompt_version,
         "eval": "qa_golden",
-        "llm_default": os.getenv("LLM_DEFAULT", ""),
-        "llm_synthesis": os.getenv("LLM_SYNTHESIS", ""),
+        "llm_default": run_default_deployment,
+        "llm_synthesis": run_synthesis_deployment,
     }
 
     # Hosted dataset run only when using the full uploaded dataset (--limit uses local JSON experiment).
