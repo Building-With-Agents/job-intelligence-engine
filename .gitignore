@@ -203,3 +203,4 @@ fixtures-v*.tar.zst
 
 # Red-team live `/ask` captures (may contain sensitive model output)
 eval/redteam_raw_responses.json
+src/*.egg-info/
