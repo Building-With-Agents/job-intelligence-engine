@@ -184,7 +184,26 @@ def persist_clustering_result(
 
 
 def cleanup_orphan_canonical_roles(session: Session) -> int:
-    """Delete canonical roles that are no longer referenced by postings or snapshots."""
+    """Delete canonical roles (and their stale snapshots) that no postings reference.
+
+    Snapshots are derived aggregates — they must not prevent removal of a
+    canonical role that no posting uses.  Step 1 removes snapshot rows whose
+    ``canonical_role_id`` has zero FK references from ``job_postings``.  Step 2
+    then deletes the now-unreferenced ``canonical_roles`` rows.
+    """
+    stale_snapshots = session.execute(
+        text(
+            """
+            DELETE FROM dbo.role_snapshot_weekly rsw
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dbo.job_postings jp
+                WHERE jp.canonical_role_id = rsw.canonical_role_id
+            )
+            """
+        )
+    )
+    stale_snapshot_count = stale_snapshots.rowcount or 0
+
     orphan_result = session.execute(
         text(
             """
@@ -201,5 +220,9 @@ def cleanup_orphan_canonical_roles(session: Session) -> int:
         )
     )
     orphans_deleted = orphan_result.rowcount or 0
-    log.info("canonical_roles_orphan_cleanup_complete", orphans_deleted=orphans_deleted)
+    log.info(
+        "canonical_roles_orphan_cleanup_complete",
+        orphans_deleted=orphans_deleted,
+        stale_snapshots_deleted=stale_snapshot_count,
+    )
     return orphans_deleted
