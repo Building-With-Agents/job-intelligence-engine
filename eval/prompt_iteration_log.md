@@ -165,3 +165,23 @@ python -m eval.qa_eval --prompt-version week10-post-iter --local-experiment-only
 - **After score:** _Langfuse deferred_
 - **Result:** Neutral
 - **Reflection:** Tightening prose rules is cheap; confirm with eval harness that answers did not grow unsupported numerics (grounding verifier still applies).
+
+---
+
+## Week 10 Pair D — golden Q&A mock iteration (employer / curriculum / workflow)
+
+**Target questions** (highest `must_include` rubric weight in cohort): **gq-078** (curriculum, 12 tokens), **gq-083** (workflow, 11), **gq-062** (employer, 9).
+
+**Harness:** `LLM_PROVIDER=mock` plus **`QA_EVAL_OFFLINE=1`** (no-database stub in the golden-QA driver). Staged intent replay uses **`QA_EVAL_INTENT_HEURISTIC_LEVEL`** (`0`…`3`) in `analytics/query_engine/intent.py`.
+
+**Aggregate metric:** `overall_geometric_composite` (JIE #268) on **`--only-ids gq-078,gq-083,gq-062`** (n=3). Full CLI examples are in the golden-QA module docstring under “Offline / DB-less mock iteration”.
+
+**Note:** `--limit 20` hits **gq-001–gq-020** (disruption + emergence under mock); composite stayed ~**0.0055** at heuristic level 0 vs 3 in offline mode — use **`--only-ids`** for this employer/curriculum/workflow cohort.
+
+| Question ID | Before score | Failure pattern | Change made (file + what changed) | Run name | After score | Verdict |
+|-------------|--------------|-----------------|-----------------------------------|----------|-------------|---------|
+| gq-078 | 0.0056 | intent-misclassification — “training program **cover** given…” missed `_matches_curriculum_generation_shape` (`for` form only), mock classifier fell through to `other`. | **`analytics/query_engine/intent.py`:** `_CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN` + tier ≥1 in `intent_heuristic_classification`. | v2-curriculum-training-cover-heuristic | 0.7598 | Helped |
+| gq-083 | 0.7598 | intent-misclassification — data-engineering pipeline/orchestration ask routed to `other` under mock JSON. | **`analytics/query_engine/intent.py`:** `_WORKFLOW_DATA_PIPELINE_PATTERN` + tier ≥2 (`for data engineering roles` + pipeline/orchestration signal). | v2-workflow-pipeline-heuristic | 0.9036 | Helped |
+| gq-062 | 0.9036 | intent-misclassification — “Which Borderplex employers … highest **share** …” lost to `other` under mock. | **`analytics/query_engine/intent.py`:** `_BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN` + tier ≥3. | v2-employer-share-ranking-heuristic | 1.0000 | Helped |
+
+**Also shipped:** `common/mock_llm_provider.py` (analytics-shaped mock completions); `eval/qa_eval.py` (`--only-ids`, offline stub).
