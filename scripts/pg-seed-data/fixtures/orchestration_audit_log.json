@@ -494,5 +494,285 @@
       "needs_clarification": false,
       "classification_confidence": 0.95
     }
+  },
+  {
+    "id": 26,
+    "created_at": "2026-04-29T05:55:28.261481+00:00",
+    "correlation_id": "gq-041-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "a2e3dc2ef0c28787623cfc5a02370d0d533a67dea54bca82089d46f633e60d9d",
+    "sql_hash": "e3588f699e8f27f6e6c17805e5a431ae498f376707ca24ddc4cc6e42dc7d70b7",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 27,
+    "created_at": "2026-04-29T05:55:38.219929+00:00",
+    "correlation_id": "gq-042-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "3582ae6d772dddbbc453f1d0ed2aabde5bf51e5e82c6dc4ac6b464a10fdb0d2f",
+    "sql_hash": "6e1ea41458c69c4ef665c8787bbf86a2b0768d733f5fda667002abc494bca580",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 28,
+    "created_at": "2026-04-29T05:55:50.130516+00:00",
+    "correlation_id": "gq-043-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "f06207d4ab2a87680bbccf1f1d4e8874f1ce7c84df22363ccc6db8f4598dd814",
+    "sql_hash": "068312e997e89271b38a5b8a7bc4301ac4e29a78bfa979d22e9ec3e516e175f1",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 29,
+    "created_at": "2026-04-29T05:56:00.057108+00:00",
+    "correlation_id": "gq-044-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "00043d813c18b70312e50debcfe1f2800d3998806097adff463e305325aa1e28",
+    "sql_hash": "810475e0a7a97e334ced230ee25d50e5bb443b7bc816792ac5d98cf5c17e7b08",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 30,
+    "created_at": "2026-04-29T05:56:08.242142+00:00",
+    "correlation_id": "gq-045-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "2840936fedcddb0b98363e5863a1b36186e752cdc13a3f799f6ce63c18904ee5",
+    "sql_hash": "9a30d00637bf2d6748a89de5f5add769c2df393dff1ec42ced8a2d58f7484417",
+    "confidence": 0.867,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 43,
+      "row_count": 43,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 31,
+    "created_at": "2026-04-29T05:56:15.596593+00:00",
+    "correlation_id": "gq-046-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "4459b44342a90ddea49d27797378e70f2ee2504104bf4159faad6a81b73c633b",
+    "sql_hash": "8553757e0db9aee2d07555b30a1bb441525ce592de763b520df1112358e85178",
+    "confidence": 0.83,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 12,
+      "row_count": 12,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 32,
+    "created_at": "2026-04-29T05:56:25.623966+00:00",
+    "correlation_id": "gq-047-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "988e687564becda97b42a4e8739f733df777a516e0e74b32e03457a95163ac71",
+    "sql_hash": "7b211c58d7a40a250aed7369a38361cf4aaa4755cea0e94d6081b54f4760fd52",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 33,
+    "created_at": "2026-04-29T05:56:28.514583+00:00",
+    "correlation_id": "gq-048-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "e87beab33d7f6f355dc1e2b5cab41dba3c496d2e6ef7b37411d06a69c2dc329e",
+    "sql_hash": "b4150792e9a29e11fc9e9ff2da947174e496616f718b2361b31945e4787b4e34",
+    "confidence": 0.0,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": true,
+      "citations": 0,
+      "row_count": 0,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.9
+    }
+  },
+  {
+    "id": 34,
+    "created_at": "2026-04-29T05:56:42.936721+00:00",
+    "correlation_id": "gq-049-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "dc2877deba130c51e84fff404585777ed380aa16b7373ab89de6be771237ff3b",
+    "sql_hash": "0bc7c8ba395c86dde5eedac68d7d68e802cb19afa964e8776c965be3c6fea5ce",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 35,
+    "created_at": "2026-04-29T05:56:53.381264+00:00",
+    "correlation_id": "gq-050-v2.3-post-spam-backfill",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "3f789860e2ba5715d0b60712655892815c840dbbcf64c82403be479439c56085",
+    "sql_hash": "1b06f9dc8d2c50b19d9541e448970e420d484938f17c88145c6a7090a604a8a1",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 36,
+    "created_at": "2026-04-29T05:57:26.778665+00:00",
+    "correlation_id": "probe-v23-gq041",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "10ccad1b34dce7f88587ffb7288535060a5bfef2738ba57dd58d3d7cd6b589ed",
+    "sql_hash": "e3588f699e8f27f6e6c17805e5a431ae498f376707ca24ddc4cc6e42dc7d70b7",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 37,
+    "created_at": "2026-04-29T05:57:35.422712+00:00",
+    "correlation_id": "probe-v23-gq050",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "3f789860e2ba5715d0b60712655892815c840dbbcf64c82403be479439c56085",
+    "sql_hash": "1b06f9dc8d2c50b19d9541e448970e420d484938f17c88145c6a7090a604a8a1",
+    "confidence": 0.852,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "geographic",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 38,
+    "created_at": "2026-04-30T02:09:37.618931+00:00",
+    "correlation_id": "smoke-e2e-clustering-cosine",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "455189cce3e29d48caafc66048018f2f969c03ec3a27f6fd3f70fcb1ddd78223",
+    "sql_hash": "cade709a0cf735dac756ae4c76c6d6c3a507b5181edc6d2c12193521d3ad355b",
+    "confidence": 0.0,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "role_evolution",
+      "refused": true,
+      "citations": 0,
+      "row_count": 0,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 39,
+    "created_at": "2026-04-30T04:22:33.025508+00:00",
+    "correlation_id": "smoke-e2e-clustering-cosine",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "455189cce3e29d48caafc66048018f2f969c03ec3a27f6fd3f70fcb1ddd78223",
+    "sql_hash": "cade709a0cf735dac756ae4c76c6d6c3a507b5181edc6d2c12193521d3ad355b",
+    "confidence": 0.755,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "role_evolution",
+      "refused": false,
+      "citations": 1,
+      "row_count": 1,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
   }
 ]
