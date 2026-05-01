@@ -25,7 +25,8 @@ from common.config_loader import cached_accessor, get_float, get_int, get_str
 DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE = 50
 DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS = 500
 DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 5  # #321 Tier 2: was 10 (Tier 1 cosine)
-DEFAULT_CLUSTER_MIN_SAMPLES = 5  # #327 Phase 1: reverted 10 → 5; Tier 2's 10 over-tightened in raw 1536-D
+DEFAULT_CLUSTER_MIN_SAMPLES = 3  # #327 Phase 2: 5 → 3 (more permissive density floor on UMAP-reduced space)
+DEFAULT_CLUSTER_INPUT_MIN_QUALITY_SCORE = 0.0  # #327 Phase 4 gate; 0.0 = disabled until live tuning
 DEFAULT_CLUSTER_SELECTION_EPSILON = 0.0
 DEFAULT_CLUSTER_SELECTION_METHOD = "leaf"  # #327 Phase 1: "eom" → "leaf" for many fine-grained roles
 DEFAULT_CLUSTER_DISTANCE_METRIC = "cosine"
@@ -94,6 +95,21 @@ def cluster_min_samples() -> int:
         key="clustering.min_samples",
         env="CLUSTER_MIN_SAMPLES",
         minimum=1,
+    )
+
+
+@cached_accessor
+def cluster_input_min_quality_score() -> float:
+    """Minimum ``job_postings.quality_score`` for clustering input rows.
+
+    ``0.0`` disables the SQL predicate (legacy behaviour including NULL scores).
+    """
+    return get_float(
+        file="clustering",
+        key="clustering.cluster_input_min_quality_score",
+        env="CLUSTER_INPUT_MIN_QUALITY_SCORE",
+        minimum=0.0,
+        maximum=1.0,
     )
 
 
@@ -254,6 +270,7 @@ __all__ = [
     "cluster_embedding_batch_size",
     "cluster_label_dominance_threshold",
     "cluster_min_cluster_size",
+    "cluster_input_min_quality_score",
     "cluster_min_samples",
     "cluster_min_total_postings",
     "cluster_selection_epsilon",
@@ -269,6 +286,7 @@ __all__ = [
     "DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME",
     "DEFAULT_CLUSTER_LABEL_DOMINANCE_THRESHOLD",
     "DEFAULT_CLUSTER_MIN_CLUSTER_SIZE",
+    "DEFAULT_CLUSTER_INPUT_MIN_QUALITY_SCORE",
     "DEFAULT_CLUSTER_MIN_SAMPLES",
     "DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS",
     "DEFAULT_CLUSTER_SELECTION_EPSILON",

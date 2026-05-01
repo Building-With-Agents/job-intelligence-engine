@@ -100,7 +100,7 @@ DEFAULT_METADATA_JSON = (
 DEFAULT_GENAI_EXTENSION_JSON = (
     Path(__file__).parent.parent / "agents" / "skills_extraction" / "taxonomy" / "genai_extension.json"
 )
-DEFAULT_DB_TABLE = "esco_digital_skills"
+DEFAULT_DB_TABLE = "dbo.esco_digital_skills"
 
 
 KEEP_PARENT_LABELS = {
@@ -630,7 +630,7 @@ def parse_schema_and_table(qualified_name: str) -> tuple[str, str]:
     if "." in qualified_name:
         schema, table = qualified_name.split(".", 1)
         return schema, table
-    return "public", qualified_name
+    return "dbo", qualified_name
 
 
 def seed_postgres(records: list[dict[str, Any]], db_url: str, db_table: str) -> None:

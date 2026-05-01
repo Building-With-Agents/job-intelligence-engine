@@ -1,13 +1,14 @@
-"""Smoke test for JIE #297 — cosine-distance HDBSCAN clustering.
+"""Smoke test for JIE #297 cosine HDBSCAN + JIE #327 clustering acceptance targets.
 
 Verifies that:
 1. The clustering config reads ``distance_metric: cosine`` (not euclidean).
-2. ``canonical_roles`` table has ≥ 10 distinct labels in the DB.
-3. Noise fraction is < 20 % (uses ``dbo.job_postings`` rows without a
-   ``canonical_role_id`` as a proxy for unassigned / noise observations
-   — skipped gracefully when no DB connection is configured).
-4. The Q&A pipeline resolves a "software developer" role-evolution question
-   without returning a refused / zero-row response.
+2. ``canonical_roles`` table has **≥ 20** distinct labels in the DB (#327 Phase 5).
+3. Noise fraction is **< 30 %** among non-spam ``job_postings`` (``canonical_role_id``
+   NULL = noise proxy — same population as historical #297 check, relaxed per #327).
+4. **Mega-cluster share** < 10 %: ``MAX(cluster_size) / COUNT(*)`` over postings with a
+   non-null ``canonical_role_id`` in the same non-spam slice (SQL-computed; see #327).
+5. The Q&A pipeline resolves a "software developer" role-evolution question without
+   returning a refused / zero-row response.
 
 Usage (repo root, venv active)::
 
@@ -63,7 +64,7 @@ def check_config_metric() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Check 2 — canonical_roles has ≥ 10 labels
+# Check 2 — canonical_roles has ≥ 20 labels (#327)
 # ---------------------------------------------------------------------------
 
 
@@ -86,17 +87,18 @@ def check_canonical_roles_count() -> None:
         log.warning("smoke_db_error", error=str(exc))
         return
 
-    if count >= 10:
-        _ok(f"canonical_roles count={count} (>= 10)")
+    min_roles = 20
+    if count >= min_roles:
+        _ok(f"canonical_roles count={count} (>= {min_roles})")
     else:
         _fail(
-            f"canonical_roles has only {count} rows - expected >= 10 coherent clusters "
-            f"after cosine-distance re-clustering (JIE #297)"
+            f"canonical_roles has only {count} rows - expected >={min_roles} after #327 "
+            f"UMAP + leaf clustering roadmap (JIE #327)"
         )
 
 
 # ---------------------------------------------------------------------------
-# Check 3 — noise fraction (best-effort; skipped if no freshness proxy)
+# Check 3 — noise fraction (#327: < 30 %)
 # ---------------------------------------------------------------------------
 
 
@@ -133,13 +135,71 @@ def check_noise_fraction() -> None:
         return
 
     noise_pct = noise / total * 100
-    threshold = 20.0
+    threshold = 30.0
     if noise_pct < threshold:
         _ok(f"noise_fraction={noise_pct:.1f}% (< {threshold}%)")
     else:
+        _fail(f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold (#327) — re-run clustering after tuning")
+
+
+# ---------------------------------------------------------------------------
+# Check 3b — mega-cluster share (#327)
+# ---------------------------------------------------------------------------
+
+
+def check_mega_cluster_share() -> None:
+    """Largest canonical_role bucket / assigned postings in the non-spam slice."""
+    db_url = os.getenv("PYTHON_DATABASE_URL")
+    if not db_url:
+        return
+
+    try:
+        from sqlalchemy import create_engine, text  # noqa: PLC0415
+        from sqlalchemy.orm import Session  # noqa: PLC0415
+
+        engine = create_engine(db_url, pool_pre_ping=True)
+        with Session(engine) as session:
+            result = session.execute(
+                text(
+                    """
+                    SELECT COALESCE(
+                        (SELECT MAX(cnt) FROM (
+                            SELECT COUNT(*) AS cnt
+                            FROM dbo.job_postings jp
+                            WHERE (jp.is_spam = FALSE OR jp.is_spam IS NULL)
+                              AND jp.canonical_role_id IS NOT NULL
+                            GROUP BY jp.canonical_role_id
+                        ) z),
+                        0
+                    ) AS max_cluster,
+                    (SELECT COUNT(*)
+                     FROM dbo.job_postings jp
+                     WHERE (jp.is_spam = FALSE OR jp.is_spam IS NULL)
+                       AND jp.canonical_role_id IS NOT NULL
+                    ) AS assigned
+                    """
+                )
+            )
+            row = result.fetchone()
+            if row is None:
+                return
+            max_cluster, assigned = int(row[0]), int(row[1])
+    except Exception as exc:  # noqa: BLE001
+        log.warning("smoke_mega_cluster_skipped", error=str(exc))
+        return
+
+    if assigned == 0:
+        log.warning("smoke_mega_cluster_skipped", reason="no assigned canonical_role_id rows")
+        return
+
+    mega_pct = max_cluster / assigned * 100
+    threshold = 10.0
+    if mega_pct < threshold:
+        _ok(f"mega_cluster_share={mega_pct:.1f}% (< {threshold}%) max={max_cluster} assigned={assigned}")
+    else:
         _fail(
-            f"noise_fraction={noise_pct:.1f}% exceeds {threshold}% threshold - "
-            f"re-run clustering pipeline after applying cosine metric fix (JIE #297)"
+            f"mega_cluster_share={mega_pct:.1f}% exceeds {threshold}% (#327) — "
+            f"max_cluster={max_cluster} assigned={assigned}"
         )
 
 
@@ -192,10 +252,11 @@ def check_qna_software_developer() -> None:
 
 
 def main() -> int:
-    print("=== JIE #297 - cosine clustering smoke checks ===\n")
+    print("=== JIE #297 / #327 — clustering smoke checks ===\n")
     check_config_metric()
     check_canonical_roles_count()
     check_noise_fraction()
+    check_mega_cluster_share()
     check_qna_software_developer()
 
     if _FAILURES:
