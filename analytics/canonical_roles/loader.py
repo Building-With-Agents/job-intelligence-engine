@@ -10,6 +10,7 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from analytics.clustering.config import cluster_input_min_quality_score
 from analytics.clustering.types import PostingClusterFeatures
 
 log = structlog.get_logger()
@@ -50,6 +51,7 @@ WHERE jp.company_id IS NOT NULL
     AND (jp.is_spam IS NOT TRUE)
     AND (jp.spam_score IS NULL OR jp.spam_score < 0.9)
     AND le.extraction_failed = false
+    {quality_filter}
     {week_filter}
 ORDER BY jp.job_posting_id
 {limit_clause}
@@ -156,7 +158,12 @@ def load_posting_cluster_features(
     package; the global analytics #179 50-posting guard is not implemented here.
     """
     week_filter = ""
+    quality_filter = ""
     params: dict[str, Any] = {}
+    min_q = cluster_input_min_quality_score()
+    if min_q > 0.0:
+        quality_filter = " AND jp.quality_score IS NOT NULL AND jp.quality_score >= :min_quality_score "
+        params["min_quality_score"] = float(min_q)
     if week_start is not None:
         week_filter = (
             " AND jp.date_posted IS NOT NULL "
@@ -169,7 +176,13 @@ def load_posting_cluster_features(
         limit_clause = " LIMIT :load_limit "
         params["load_limit"] = limit
 
-    sql = text(_CLUSTERING_LOAD_SQL.format(week_filter=week_filter, limit_clause=limit_clause))
+    sql = text(
+        _CLUSTERING_LOAD_SQL.format(
+            quality_filter=quality_filter,
+            week_filter=week_filter,
+            limit_clause=limit_clause,
+        )
+    )
     result = session.execute(sql, params)
     rows = result.mappings().all()
     features = [_row_to_features(dict(r)) for r in rows]

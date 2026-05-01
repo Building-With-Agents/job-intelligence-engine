@@ -31,8 +31,9 @@ clustering:
   # Phase 1 of #327: reverted 10 → 5. Tier 2's value of 10 over-tightened
   # density requirements on raw 1536-D space; with UMAP reduction in front
   # of HDBSCAN, the lower value is correct.
+  # Phase 2 (#327): 5 → 3 for a more permissive density floor (one-knob run).
   # Env override: CLUSTER_MIN_SAMPLES
-  min_samples: 5
+  min_samples: 3
 
   # HDBSCAN cluster_selection_epsilon. 0.0 = pure tree split. Min 0.0.
   # Env override: CLUSTER_SELECTION_EPSILON
@@ -61,6 +62,13 @@ clustering:
   # for that label to be assigned. Range 0.0–1.0.
   # Env override: CLUSTER_LABEL_DOMINANCE_THRESHOLD
   label_dominance_threshold: 0.30
+
+  # Phase 4 (#327) — minimum job_postings.quality_score to include a row in the
+  # clustering feature load. **0.0 disables** (keeps NULL / low scores in the
+  # pool). Raise only after #329 distribution + live re-score validate a cut
+  # (see eval/runs/findings-329-post-change-distribution.md).
+  # Env override: CLUSTER_INPUT_MIN_QUALITY_SCORE
+  cluster_input_min_quality_score: 0.0
 
   # Dimensionality reduction applied to embeddings BEFORE HDBSCAN.
   # Phase 1 of #327. HDBSCAN density estimation degrades on 1536-D embeddings
