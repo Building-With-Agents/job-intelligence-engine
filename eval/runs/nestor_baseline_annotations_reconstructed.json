@@ -1,0 +1,187 @@
+{
+  "annotation_trace": "84ab514155f87ac26912526e7c53ebd6",
+  "annotation_source": "reconstructed_chronological",
+  "note": "All 30 annotations landed on one trace. Mapped nth occurrence of each score name to nth question (gq-031..gq-040 in order).",
+  "questions": [
+    {
+      "gq_id": "gq-031",
+      "correctness": {
+        "value": 0,
+        "comment": "Safe refusal, but failed to answer the prompt because SQL generation broke and returned 0 rows.",
+        "createdAt": "2026-04-30T18:08:45.306Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Refusal provides no value for the workforce director's curriculum planning",
+        "createdAt": "2026-04-30T18:09:30.396Z"
+      },
+      "followup_quality": {
+        "value": 0,
+        "comment": "No follow-up questions generated",
+        "createdAt": "2026-04-30T18:10:16.068Z"
+      }
+    },
+    {
+      "gq_id": "gq-032",
+      "correctness": {
+        "value": 0,
+        "comment": "Pipeline failed to retrieve data due to broken SQL generation.",
+        "createdAt": "2026-04-30T18:12:05.354Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Refusal provides zero intelligence for the director's cloud curriculum planning.",
+        "createdAt": "2026-04-30T18:12:33.474Z"
+      },
+      "followup_quality": {
+        "value": 0,
+        "comment": "No follow-up questions generated",
+        "createdAt": "2026-04-30T18:12:48.755Z"
+      }
+    },
+    {
+      "gq_id": "gq-033",
+      "correctness": {
+        "value": 0.5,
+        "comment": "Safely refused to hallucinate time trends based on limited data and accurately summarized static roles, but failed to answer the core evolution question because SQL generation remained broken",
+        "createdAt": "2026-04-30T18:56:27.031Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "The director cannot update a curriculum based on static data that fails to identify emerging vs. obsolete skills",
+        "createdAt": "2026-04-30T18:56:51.801Z"
+      },
+      "followup_quality": {
+        "value": 0.5,
+        "comment": "First two questions invite the user into a failure loop asking for temporal data the system lacks, but the third question is a great pivot to cross-sector comparison using available static data.",
+        "createdAt": "2026-04-30T18:59:20.165Z"
+      }
+    },
+    {
+      "gq_id": "gq-034",
+      "correctness": {
+        "value": 0.5,
+        "comment": "Safely refused to hallucinate time trends based on limited data and accurately summarized static roles, but failed to answer the core evolution question because SQL generation remained broken",
+        "createdAt": "2026-04-30T19:01:41.495Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Not actionable. The director cannot update a curriculum based on static data that fails to identify emerging vs. obsolete skills.",
+        "createdAt": "2026-04-30T19:02:10.543Z"
+      },
+      "followup_quality": {
+        "value": 0.5,
+        "comment": "First two questions invite the user into a failure loop asking for temporal data the system lacks, but the third question is a great pivot to cross-sector comparison using available static data",
+        "createdAt": "2026-04-30T19:02:31.466Z"
+      }
+    },
+    {
+      "gq_id": "gq-035",
+      "correctness": {
+        "value": 0,
+        "comment": "Safe refusal with helpful alternative role suggestions, but a complete failure to answer the prompt because SQL generation is outputting a template string instead of valid SQL",
+        "createdAt": "2026-04-30T19:03:39.668Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Refusal provides zero actionable intelligence for the director's cloud credential curriculum planning",
+        "createdAt": "2026-04-30T19:04:00.783Z"
+      },
+      "followup_quality": {
+        "value": 0,
+        "comment": "o follow-up questions generated",
+        "createdAt": "2026-04-30T19:04:13.177Z"
+      }
+    },
+    {
+      "gq_id": "gq-036",
+      "correctness": {
+        "value": 0.5,
+        "comment": "andled the lack of temporal data safely without hallucinating, but failed to answer the timeline prompt because SQL generation is still outputting a broken template string",
+        "createdAt": "2026-04-30T19:05:10.943Z"
+      },
+      "decision_relevance": {
+        "value": 0.5,
+        "comment": "Somewhat useful. Failed to provide the evolutionary trend, but the static comparison showing 'comparable posting counts' between AI and traditional roles offers a baseline snapshot for curriculum weighting",
+        "createdAt": "2026-04-30T19:05:28.227Z"
+      },
+      "followup_quality": {
+        "value": 1,
+        "comment": "Good follow-ups. The questions smartly avoided the missing temporal data and instead pivoted the user to explore the specific tools, languages, and hybrid overlaps present in the successfully retrieved static data",
+        "createdAt": "2026-04-30T19:05:46.232Z"
+      }
+    },
+    {
+      "gq_id": "gq-037",
+      "correctness": {
+        "value": 0.5,
+        "comment": "Did not fabricate numbers, but dangerously inferred that a temporal shift is 'limited' based entirely on a static, all-time data snapshot",
+        "createdAt": "2026-04-30T19:07:29.470Z"
+      },
+      "decision_relevance": {
+        "value": 0.5,
+        "comment": "Advises the director not to rename programs based on 'predominant' titles, but this advice is based on a static snapshot rather than the requested 'agentic_era' trend data.",
+        "createdAt": "2026-04-30T19:07:47.772Z"
+      },
+      "followup_quality": {
+        "value": 0.5,
+        "comment": "Q2 traps the user into asking for missing temporal data again, but Q3 is a strong pivot to compare static skill requirements between the roles",
+        "createdAt": "2026-04-30T19:08:08.969Z"
+      }
+    },
+    {
+      "gq_id": "gq-038",
+      "correctness": {
+        "value": 0,
+        "comment": "Pipeline failed to retrieve data due to broken SQL generation. Safe refusal, but failed to answer the prompt",
+        "createdAt": "2026-04-30T19:09:17.058Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Refusal provides zero actionable intelligence for the director's cybersecurity curriculum audit.",
+        "createdAt": "2026-04-30T19:09:26.462Z"
+      },
+      "followup_quality": {
+        "value": 0,
+        "comment": "No follow-up questions generated.",
+        "createdAt": "2026-04-30T19:09:37.532Z"
+      }
+    },
+    {
+      "gq_id": "gq-039",
+      "correctness": {
+        "value": 0,
+        "comment": "he pipeline safely avoided hallucinating fake percentages for TypeScript or Next.js, which is a positive safety behavior. However, the golden question is answerable (refusal_appropriate: false), and the system completely failed its objective because the data retrieval step is fundamentally broken.",
+        "createdAt": "2026-04-30T19:10:25.228Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Refusal provides zero actionable intelligence for the director's React curriculum decisions",
+        "createdAt": "2026-04-30T19:10:48.350Z"
+      },
+      "followup_quality": {
+        "value": 0,
+        "comment": "No follow-up questions generated",
+        "createdAt": "2026-04-30T19:11:05.454Z"
+      }
+    },
+    {
+      "gq_id": "gq-040",
+      "correctness": {
+        "value": 0.5,
+        "comment": "Safely refused to hallucinate temporal trends from static data, but failed the core objective because the SQL generator",
+        "createdAt": "2026-04-30T19:12:09.155Z"
+      },
+      "decision_relevance": {
+        "value": 0,
+        "comment": "Not actionable. The director cannot calibrate cohort priorities without the temporal trend data.",
+        "createdAt": "2026-04-30T19:12:30.424Z"
+      },
+      "followup_quality": {
+        "value": 0.5,
+        "comment": "Q1 and Q3 trap the user by asking for missing temporal data, but Q2 is a decent pivot to compare static skill requirements.",
+        "createdAt": "2026-04-30T19:12:43.586Z"
+      }
+    }
+  ]
+}

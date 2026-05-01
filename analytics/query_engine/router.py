@@ -518,6 +518,33 @@ class QueryRouter:
         return [str(row[0]) for row in rows]
 
     @staticmethod
+    def _build_role_token_ilike_clauses(role_names: list[str], params: dict[str, Any]) -> list[str]:
+        """Build OR'd token-ILIKE clauses against ``jp.job_title``/``jp.role_classification``.
+
+        Tokenises up to 5 role names (max 10 unique tokens), populates ``params``
+        with bind values keyed ``rt_<i>`` / ``rc_<i>``, and returns the list of
+        clause fragments. Caller is responsible for OR-joining the fragments.
+        Used by ``_route_role_evolution`` to widen recall on postings whose
+        ``canonical_role_id`` is NULL.
+        """
+        clauses: list[str] = []
+        seen_tokens: set[str] = set()
+        token_index = 0
+        for role in role_names[:5]:
+            for tok in _tokenize_role_name(role):
+                norm = tok.lower()
+                if norm in seen_tokens or token_index >= 10:
+                    continue
+                seen_tokens.add(norm)
+                t_key = f"rt_{token_index}"
+                c_key = f"rc_{token_index}"
+                clauses.append(f"(jp.job_title ILIKE :{t_key} OR jp.role_classification ILIKE :{c_key})")
+                params[t_key] = f"%{tok}%"
+                params[c_key] = f"%{tok}%"
+                token_index += 1
+        return clauses
+
+    @staticmethod
     def _no_borderplex_market_aggregates(intent: str, confidence: float) -> RouteResult:
         """Subregion-only tenant: no Borderplex-wide skill/role/sector tables (JIE #224)."""
         return RouteResult(
@@ -591,51 +618,129 @@ class QueryRouter:
         tenant: TenantAccess,
         question: str = "",
     ) -> RouteResult:
-        """role_evolution → ``canonical_roles`` ordered by posting volume."""
+        """role_evolution → ``job_postings`` grouped by ``temporal_period``.
+
+        Prompt-iteration v2 fix (2026-04-30): the previous implementation queried
+        ``canonical_roles``, a static snapshot with no ``temporal_period`` dimension.
+        Every role-evolution question asks for a before/after comparison across
+        temporal periods (pre_chatgpt → early_genai → post_gpt4 → agentic_era).
+        Without temporal data the synthesis layer correctly refused to fabricate
+        trends, producing ``decision_relevance = 0`` across all annotated questions.
+
+        This version queries ``job_postings`` which carries the authoritative
+        ``temporal_period`` value set by the enrichment classifier, grouped by
+        period and seniority level so the synthesis can report posting volume
+        trajectories per temporal era.  A secondary JOIN to ``canonical_roles``
+        via ``canonical_role_id`` is included when available to surface top_skills
+        and top_tools for the role cluster.
+        """
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
-        cr = CanonicalRole
-        stmt = select(
-            cr.role_id,
-            cr.label,
-            cr.description,
-            cr.posting_count,
-            cr.representative_titles,
-            cr.top_skills,
-            cr.top_tools,
-            cr.computed_at,
-        ).order_by(cr.posting_count.desc(), cr.computed_at.desc())
 
-        # Embedding resolution first; ILIKE only when resolved_ids is empty (no prior ILIKE).
+        allowed_subregions = list(tenant.allowed_subregions)
+
+        # Consolidated role-name resolution (#229 + #294 v2 redesign):
+        #   - Pair A's pgvector resolver (drift-proof, paraphrase-tolerant) returns
+        #     canonical_role_ids when role_names match a cluster centroid.
+        #   - Pair B's token-ILIKE on jp.job_title / jp.role_classification catches
+        #     postings whose canonical_role_id is still NULL (audit found ~68% of
+        #     dbo.job_postings have NULL canonical_role_id today).
+        # The two predicates are OR'd so we don't lose recall on either side.
+        params: dict[str, Any] = {
+            "subregions": allowed_subregions,
+        }
+        where_parts: list[str] = [
+            "jp.temporal_period IS NOT NULL",
+            "jp.is_spam = FALSE",
+        ]
+        if allowed_subregions:
+            where_parts.append("jp.borderplex_subregion = ANY(:subregions)")
+
         if role_names:
             resolved_ids = self._resolve_role_names_to_canonical_ids(role_names, session)
+            role_clauses = self._build_role_token_ilike_clauses(role_names, params)
+
+            predicates: list[str] = []
             if resolved_ids:
-                stmt = stmt.where(cr.role_id.in_(resolved_ids))
+                params["resolved_role_ids"] = resolved_ids
+                predicates.append("jp.canonical_role_id = ANY(:resolved_role_ids)")
                 log.info(
                     "query_router_role_evolution_embedding_route",
                     resolved_count=len(resolved_ids),
                 )
-            else:
-                role_filter = self._ilike_or(cr.label, role_names)
-                if role_filter is not None:
-                    stmt = stmt.where(role_filter)
-                log.info(
-                    "query_router_role_evolution_ilike_fallback",
-                    role_names_count=len(role_names),
-                )
+            if role_clauses:
+                predicates.append("(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0])
+                if not resolved_ids:
+                    log.info(
+                        "query_router_role_evolution_ilike_fallback",
+                        role_names_count=len(role_names),
+                    )
+            if predicates:
+                where_parts.append("(" + " OR ".join(predicates) + ")" if len(predicates) > 1 else predicates[0])
+                # Issue #197 — exclude the known mis-bucketed placeholder.
+                where_parts.append("(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')")
 
-        label = "canonical role evolution"
+        sql = text(
+            f"""
+            SELECT
+                jp.temporal_period,
+                jp.borderplex_subregion,
+                jp.seniority_level,
+                COUNT(DISTINCT jp.job_posting_id) AS posting_count,
+                COUNT(DISTINCT jp.company_id)      AS employer_count
+            FROM dbo.job_postings AS jp
+            WHERE {" AND ".join(where_parts)}
+            GROUP BY jp.temporal_period, jp.borderplex_subregion, jp.seniority_level
+            ORDER BY jp.temporal_period, posting_count DESC
+            LIMIT {_QUERY_LIMIT}
+            """
+        )
+
+        label = "role evolution by temporal period"
         if role_names:
             label += f" — {', '.join(role_names[:3])}"
 
-        return self._execute(
-            session,
-            stmt,
-            intent=intent,
-            tables_used=["canonical_roles"],
-            query_label=label,
-            confidence=confidence,
-        )
+        try:
+            result = session.execute(
+                sql,
+                params,
+                execution_options={"timeout": _QUERY_TIMEOUT_SECONDS},
+            )
+            rows = [dict(row._mapping) for row in result]
+            is_partial = len(rows) >= _QUERY_LIMIT
+            log.info(
+                "query_router_result",
+                intent=intent,
+                query_label=label,
+                row_count=len(rows),
+                is_partial=is_partial,
+                tables_used=["job_postings"],
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings"],
+                query_label=label,
+                rows=rows,
+                row_count=len(rows),
+                is_partial=is_partial,
+                confidence=confidence,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_execute_error",
+                intent=intent,
+                query_label=label,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings"],
+                query_label=label,
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
 
     def _route_disruption(
         self,

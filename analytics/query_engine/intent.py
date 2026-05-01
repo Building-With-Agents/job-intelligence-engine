@@ -182,6 +182,11 @@ A: {"intent":"disruption","confidence":0.90,...}
       (DevOps / SRE) measures structural AI/automation penetration, not generic posting
       demand → disruption, not trend. No era bucket required when the subject is AI adoption.
 
+Q: "How have data analyst job descriptions in the Borderplex shifted toward analytics engineering or cloud tooling in the past year?"
+A: {"intent":"role_evolution","confidence":0.90,...}
+   ← role_evolution: qualitative shift in titles/responsibilities/skill mix for a role family;
+   not the same as trend (weekly demand counts / velocity alone).
+
 Also extract entities mentioned in the question (use empty lists if none):
 - geographic_terms: place names, regions (e.g. El Paso, Texas, remote US)
 - role_names: job titles or occupation names

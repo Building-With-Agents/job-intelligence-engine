@@ -1,6 +1,8 @@
 """Deterministic job posting quality score [0–1] for Phase 1 enrichment-lite.
 
-Composite of four signals (each 0–1), equally weighted:
+Composite of four signals (each 0–1), weighted **30% / 30% / 10% / 30%**
+(completeness / clarity / AI-keyword density / structural coherence) — JIE #329:
+down-weights the AI-keyword axis so non-AI postings are not systematically compressed.
 - **Completeness** — title length, description length, populated extraction dimensions
 - **Clarity** — token count and lexical diversity (thin / repetitive text scores lower)
 - **AI / tech keyword density** — relevant terms vs corpus size (capped; weak floor when absent)
@@ -131,7 +133,8 @@ def _ai_keyword_score(corpus: str) -> float:
     hits = phrase_hits + token_hits
     # Floor: tech-neutral postings are not penalized to zero.
     density_bonus = min(1.0, (hits * 2.5) / n)
-    return max(0.0, min(1.0, 0.38 + 0.62 * density_bonus))
+    # Neutral floor for postings with zero AI/tech hits — was 0.38 (#329 compression).
+    return max(0.0, min(1.0, 0.58 + 0.42 * density_bonus))
 
 
 def _structural(description: str | None) -> float:
@@ -177,7 +180,7 @@ def score_quality(
     ai = _ai_keyword_score(corpus)
     st = _structural(job_description if isinstance(job_description, str) else None)
 
-    combined = 0.25 * c + 0.25 * cl + 0.25 * ai + 0.25 * st
+    combined = 0.30 * c + 0.30 * cl + 0.10 * ai + 0.30 * st
     if extraction_failed:
         combined *= 0.90
 

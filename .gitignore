@@ -200,3 +200,7 @@ scripts/pg-seed-data/fixtures/postal_geo_data.json
 # Local bundle artifact produced by publish_fixtures.py before upload.
 # Cleaned up automatically on success; gitignored as belt + suspenders.
 fixtures-v*.tar.zst
+
+# Red-team live `/ask` captures (may contain sensitive model output)
+eval/redteam_raw_responses.json
+src/*.egg-info/

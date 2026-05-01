@@ -26,6 +26,15 @@ def api_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def test_load_api_keys_invalid_json_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    from analytics.api.analytics_api_keys import load_api_keys
+
+    monkeypatch.setenv("JIE_API_KEYS", "[{key_id:x,secret:y}]")
+    monkeypatch.delenv("JIE_API_KEYS_FILE", raising=False)
+    with pytest.raises(ValueError, match="jie_api_keys_invalid_json"):
+        load_api_keys()
+
+
 def test_missing_x_api_key_401(api_key_env: None) -> None:
     from analytics.api.app import create_app
 
