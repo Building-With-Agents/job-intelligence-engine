@@ -1,0 +1,125 @@
+Run: dev-verify-2026-05-01  |  90 items  |  composite = mean(intent_accuracy, evidence_citation, confidence_self_consistency, latency_sla)
+
+=== TOP 15 by composite ===
+rk   comp  int   ev  cnf  lat  intent         gq_id     question
+ 1  1.000    1 1.00 1.00 1.00  trend          gq-030    In Borderplex cybersecurity postings, how has the mix of required skills evolved over the 
+ 2  1.000    1 1.00 1.00 1.00  trend          gq-024    Which Borderplex IT role families have shown the steepest volume growth in the agentic_era
+ 3  0.996    1 0.98 1.00 1.00  workflow       gq-087    What MLOps and model-lifecycle steps (training → deploy → monitor) appear in Borderplex IT
+ 4  0.991    1 0.96 1.00 1.00  workflow       gq-081    What is the typical software delivery pipeline (build, test, deploy) that Borderplex IT em
+ 5  0.988    1 0.95 1.00 1.00  trend          gq-022    Which skills in Borderplex data engineering postings have grown the most over the last 18 
+ 6  0.985    1 0.94 1.00 1.00  geographic     gq-047    Retrieve all El Paso, TX entry-level IT postings that have a published salary range, group
+ 7  0.980    1 0.92 1.00 1.00  workflow       gq-084    What is the incident and on-call operating model (DevOps / SRE) that large Borderplex empl
+ 8  0.980    1 0.92 1.00 1.00  role_evolution gq-037    How has the seniority-level mix for Borderplex data engineer postings shifted between the 
+ 9  0.972    1 0.89 1.00 1.00  trend          gq-023    How has the median posted salary for Borderplex software engineer roles shifted across the
+10  0.971    1 0.88 1.00 1.00  geographic     gq-043    Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics sp
+11  0.971    1 0.88 1.00 1.00  geographic     gq-042    List every Las Cruces, NM data engineer posting from the last 90 days with required skills
+12  0.968    1 0.87 1.00 1.00  curriculum     gq-073    What should a cybersecurity training program cover given current Borderplex cybersecurity 
+13  0.968    1 0.87 1.00 1.00  emergence      gq-014    Which Borderplex IT roles had fewer than five postings before ChatGPT's release but have g
+14  0.962    1 0.85 1.00 1.00  curriculum     gq-079    What should a fintech developer training program cover given current Borderplex fintech an
+15  0.961    1 0.84 1.00 1.00  geographic     gq-050    List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any 
+
+=== Demo-eligible (composite >= 0.85): 51/90 ===
+
+  1.000  ev=1.00  trend          gq-030    In Borderplex cybersecurity postings, how has the mix of required skills evolved over the last 18 mo
+  1.000  ev=1.00  trend          gq-024    Which Borderplex IT role families have shown the steepest volume growth in the agentic_era period co
+  0.996  ev=0.98  workflow       gq-087    What MLOps and model-lifecycle steps (training → deploy → monitor) appear in Borderplex IT postings,
+  0.991  ev=0.96  workflow       gq-081    What is the typical software delivery pipeline (build, test, deploy) that Borderplex IT employers de
+  0.988  ev=0.95  trend          gq-022    Which skills in Borderplex data engineering postings have grown the most over the last 18 months? Na
+  0.985  ev=0.94  geographic     gq-047    Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job 
+  0.980  ev=0.92  workflow       gq-084    What is the incident and on-call operating model (DevOps / SRE) that large Borderplex employers desc
+  0.980  ev=0.92  role_evolution gq-037    How has the seniority-level mix for Borderplex data engineer postings shifted between the early_gena
+  0.972  ev=0.89  trend          gq-023    How has the median posted salary for Borderplex software engineer roles shifted across the four temp
+  0.971  ev=0.88  geographic     gq-043    Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, 
+  0.971  ev=0.88  geographic     gq-042    List every Las Cruces, NM data engineer posting from the last 90 days with required skills including
+  0.968  ev=0.87  curriculum     gq-073    What should a cybersecurity training program cover given current Borderplex cybersecurity postings —
+  0.968  ev=0.87  emergence      gq-014    Which Borderplex IT roles had fewer than five postings before ChatGPT's release but have grown to 50
+  0.962  ev=0.85  curriculum     gq-079    What should a fintech developer training program cover given current Borderplex fintech and payments
+  0.961  ev=0.84  geographic     gq-050    List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university
+  0.959  ev=0.84  emergence      gq-013    What new skills have appeared in Borderplex IT postings for the first time in the last 12 months tha
+  0.956  ev=0.82  geographic     gq-044    Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraf
+  0.956  ev=0.82  geographic     gq-041    Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the 
+  0.955  ev=0.82  trend          gq-027    How has the experience-requirement bar changed for Borderplex entry-level IT roles over the past two
+  0.954  ev=0.82  emergence      gq-011    Which job titles have appeared in Borderplex postings only since the agentic_era period (post-2024) 
+  0.952  ev=0.81  curriculum     gq-072    What should an AI agent developer training program cover given current Borderplex postings — which L
+  0.952  ev=0.81  comparison     gq-052    How does Borderplex demand for Cloud Computing skills compare to Cybersecurity skills — which domain
+  0.951  ev=0.81  emergence      gq-012    Among Borderplex AI-core roles (AI agent developer, prompt engineer, AI safety engineer), which titl
+  0.951  ev=0.80  geographic     gq-046    List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearan
+  0.942  ev=0.77  geographic     gq-045    Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt
+  0.940  ev=0.76  comparison     gq-060    How does Borderplex demand for Continuous Integration skills compare to CI/CD skills — are employers
+  0.933  ev=0.73  workflow       gq-083    For data engineering roles, what end-to-end data pipeline and orchestration patterns (ETL, scheduler
+  0.931  ev=0.72  comparison     gq-059    Compare overall Borderplex demand for Artificial Intelligence skills versus Machine Learning skills 
+  0.928  ev=0.71  role_evolution gq-034    How has the typical job-title wording for Borderplex ML roles drifted — is "machine learning enginee
+  0.922  ev=0.69  role_evolution gq-035    For Borderplex cybersecurity analyst roles, how have required tools and frameworks evolved since the
+  0.917  ev=0.67  comparison     gq-051    Compare demand for Python versus Machine Learning skills in Borderplex IT postings — which skill is 
+  0.913  ev=0.65  role_evolution gq-040    How have Borderplex quality-engineering (QA, SDET, test-automation) role requirements evolved — is t
+  0.909  ev=0.64  role_evolution gq-031    How has the Borderplex "data analyst" role evolved between the early_genai and agentic_era periods —
+  0.896  ev=0.59  role_evolution gq-038    For Borderplex DevOps engineer postings, how have infrastructure-as-code tool requirements evolved (
+  0.892  ev=0.57  geographic     gq-049    Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any th
+  0.889  ev=0.56  trend          gq-028    Which Borderplex IT sectors (healthcare-IT, fintech, legal-tech, manufacturing-software) have shown 
+  0.885  ev=0.54  trend          gq-025    How has demand for cloud skills (AWS, Azure, GCP) in Borderplex IT postings evolved over the last tw
+  0.885  ev=0.54  disruption     gq-008    For Borderplex DevOps and SRE postings, what share of current-period postings reference AI-assisted 
+  0.882  ev=0.53  disruption     gq-002    For Borderplex software engineer postings, what share now lists AI-assistant tools (Copilot, Claude,
+  0.880  ev=0.52  disruption     gq-005    What percentage of Borderplex QA and test-automation postings now mention AI-assisted testing tools 
+  0.880  ev=0.52  disruption     gq-001    Which Borderplex IT roles have shown the largest skill-composition shift between the pre_chatgpt and
+  0.879  ev=0.52  emergence      gq-018    Which "AI-native" roles in the Borderplex have more than 25% AI skill-density from their first posti
+  0.878  ev=0.51  disruption     gq-010    Across all Borderplex IT postings, which roles cross the 25% AI-density threshold in the agentic_era
+  0.877  ev=0.51  disruption     gq-003    Which Borderplex IT roles show declining posting volume alongside increasing automation or RPA keywo
+  0.876  ev=0.51  disruption     gq-004    Among Borderplex data analyst postings, how has the role transformed between the early_genai and age
+  0.874  ev=0.50  disruption     gq-009    Which Borderplex IT roles in the legal-tech or regtech sectors show evidence of displacement â€” pos
+  0.874  ev=0.50  disruption     gq-007    In Borderplex data engineering postings, which skills have the highest "new in the last 12 months" r
+  0.874  ev=0.50  disruption     gq-006    Which Borderplex IT roles with 2+ years of pre_chatgpt posting history have seen the steepest volume
+  0.862  ev=0.45  emergence      gq-020    What new certifications or credentials (e.g., prompt-engineering certificates, AI-safety training, a
+  0.862  ev=0.45  emergence      gq-019    In Borderplex healthcare-IT and fintech sectors, which emerging AI-adjacent roles show the highest v
+  0.862  ev=0.45  emergence      gq-015    In the Borderplex legal-tech and regtech sectors, which AI-native job titles (e.g., "AI compliance a
+
+=== Top 3 per intent ===
+
+  [comparison]
+    [OK] 0.952  gq-052    How does Borderplex demand for Cloud Computing skills compare to Cybersecurity skills — which domain
+    [OK] 0.940  gq-060    How does Borderplex demand for Continuous Integration skills compare to CI/CD skills — are employers
+    [OK] 0.931  gq-059    Compare overall Borderplex demand for Artificial Intelligence skills versus Machine Learning skills 
+
+  [curriculum]
+    [OK] 0.968  gq-073    What should a cybersecurity training program cover given current Borderplex cybersecurity postings —
+    [OK] 0.962  gq-079    What should a fintech developer training program cover given current Borderplex fintech and payments
+    [OK] 0.952  gq-072    What should an AI agent developer training program cover given current Borderplex postings — which L
+
+  [disruption]
+    [OK] 0.885  gq-008    For Borderplex DevOps and SRE postings, what share of current-period postings reference AI-assisted 
+    [OK] 0.882  gq-002    For Borderplex software engineer postings, what share now lists AI-assistant tools (Copilot, Claude,
+    [OK] 0.880  gq-005    What percentage of Borderplex QA and test-automation postings now mention AI-assisted testing tools 
+
+  [emergence]
+    [OK] 0.968  gq-014    Which Borderplex IT roles had fewer than five postings before ChatGPT's release but have grown to 50
+    [OK] 0.959  gq-013    What new skills have appeared in Borderplex IT postings for the first time in the last 12 months tha
+    [OK] 0.954  gq-011    Which job titles have appeared in Borderplex postings only since the agentic_era period (post-2024) 
+
+  [employer]
+         0.801  gq-068    Which Borderplex employers have introduced AI-native roles (AI agent developer, prompt engineer) for
+         0.801  gq-064    Which Borderplex healthcare-IT employers are hiring for clinical-data-analyst or health-informatics 
+         0.800  gq-070    Which Borderplex employers have the highest repeat-posting rate for the same role family — suggestin
+
+  [geographic]
+    [OK] 0.985  gq-047    Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job 
+    [OK] 0.971  gq-043    Pull all El Paso, TX healthcare-IT postings — including EHR analyst, health informatics specialist, 
+    [OK] 0.971  gq-042    List every Las Cruces, NM data engineer posting from the last 90 days with required skills including
+
+  [role_evolution]
+    [OK] 0.980  gq-037    How has the seniority-level mix for Borderplex data engineer postings shifted between the early_gena
+    [OK] 0.928  gq-034    How has the typical job-title wording for Borderplex ML roles drifted — is "machine learning enginee
+    [OK] 0.922  gq-035    For Borderplex cybersecurity analyst roles, how have required tools and frameworks evolved since the
+
+  [trend]
+    [OK] 1.000  gq-030    In Borderplex cybersecurity postings, how has the mix of required skills evolved over the last 18 mo
+    [OK] 1.000  gq-024    Which Borderplex IT role families have shown the steepest volume growth in the agentic_era period co
+    [OK] 0.988  gq-022    Which skills in Borderplex data engineering postings have grown the most over the last 18 months? Na
+
+  [workflow]
+    [OK] 0.996  gq-087    What MLOps and model-lifecycle steps (training → deploy → monitor) appear in Borderplex IT postings,
+    [OK] 0.991  gq-081    What is the typical software delivery pipeline (build, test, deploy) that Borderplex IT employers de
+    [OK] 0.980  gq-084    What is the incident and on-call operating model (DevOps / SRE) that large Borderplex employers desc
+
+=== Curation flags (Pair D criteria) ===
+  intent_diversity (>=3): 8 -- ['comparison', 'curriculum', 'disruption', 'emergence', 'geographic', 'role_evolution', 'trend', 'workflow']
+  high_evidence (>=3 w/ ev_cit >= 0.80): 24
+  curriculum_eligible: 3
