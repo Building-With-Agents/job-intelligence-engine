@@ -230,7 +230,7 @@ def main() -> int:
 
     import os
 
-    host = os.environ.get("LANGFUSE_HOST") or os.environ.get("LANGFUSE_BASE_URL") or "<unset>"
+    host = os.environ.get("LANGFUSE_BASE_URL") or "<unset>"
     print(f"Host: {host}")
     print()
 

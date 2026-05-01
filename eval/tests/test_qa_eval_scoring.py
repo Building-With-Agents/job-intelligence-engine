@@ -11,6 +11,8 @@ from eval.qa_scoring import (
     composite_score,
     compute_item_scores,
     confusion_rows,
+    intent_classification_report,
+    intent_eval_trace_metadata,
     run_subcomposites_and_gates,
     score_confidence_self_consistency,
     score_evidence_citation,
@@ -48,7 +50,7 @@ def test_intent_mismatch() -> None:
 
 
 def test_evidence_empty_not_refused() -> None:
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="Some answer text here with enough length.",
         evidence=[],
         must_include=[],
@@ -63,7 +65,7 @@ def test_evidence_empty_not_refused() -> None:
 
 def test_evidence_pipeline_error_excluded() -> None:
     """pipeline_error → None (excluded), not 0.0 (JIE #263)."""
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="x",
         evidence=[{"title": "t", "snippet": "n"}],
         must_include=[],
@@ -78,7 +80,7 @@ def test_evidence_pipeline_error_excluded() -> None:
 
 def test_evidence_sql_error_excluded() -> None:
     """sql_execution_error_detail → None (infrastructure failure, JIE #263)."""
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="El Paso employers showed growth.",
         evidence=[{"title": "t", "source": "s", "snippet": "el paso"}],
         must_include=[],
@@ -93,7 +95,7 @@ def test_evidence_sql_error_excluded() -> None:
 
 def test_evidence_empty_answer_excluded() -> None:
     """Empty answer is an input-contract violation → None (JIE #263)."""
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="",
         evidence=[{"title": "t", "snippet": "n"}],
         must_include=[],
@@ -108,7 +110,7 @@ def test_evidence_empty_answer_excluded() -> None:
 
 def test_evidence_refusal_data_backed_strong_penalty() -> None:
     """JIE #260: wrongful refusal on data-backed items gets rubric scaled ~0.35×, not a length floor."""
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="I cannot provide SQL results for this geographic query at this time.",
         evidence=[],
         must_include=["el_paso_subregion_filter_confirmed"],
@@ -124,7 +126,7 @@ def test_evidence_refusal_data_backed_strong_penalty() -> None:
 
 
 def test_evidence_refusal_intent_only_uses_rubric_not_length() -> None:
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="Short",
         evidence=[],
         must_include=[],
@@ -142,7 +144,7 @@ def test_evidence_refusal_intent_only_uses_rubric_not_length() -> None:
 
 def test_evidence_committed_no_evidence_stays_zero() -> None:
     """A non-empty, non-refused answer with no evidence rows is a real quality failure (0.0)."""
-    s, c = score_evidence_citation(
+    s, c, _mir, _eov = score_evidence_citation(
         answer="El Paso employers showed growth.",
         evidence=[],
         must_include=[],
@@ -381,6 +383,8 @@ def test_composite_excludes_answerability() -> None:
         latency_sla=0.5,
         answerability=0.0,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={},
     )
     assert composite_score(base) == 0.5
@@ -392,6 +396,8 @@ def test_composite_excludes_answerability() -> None:
         latency_sla=0.0,
         answerability=1.0,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={},
     )
     assert composite_score(hi) == 0.0
@@ -407,6 +413,8 @@ def test_composite_filters_none_uses_latency_anchor() -> None:
         latency_sla=1.0,
         answerability=None,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={},
     )
     assert composite_score(scores) == 1.0
@@ -422,6 +430,8 @@ def test_composite_filters_none_partial() -> None:
         latency_sla=1.0,
         answerability=None,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={},
     )
     # Only intent_accuracy and latency_sla are scorable → mean((1.0, 1.0)) = 1.0
@@ -435,6 +445,8 @@ def test_composite_filters_none_partial() -> None:
         latency_sla=1.0,
         answerability=None,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={},
     )
     # mean((0.0, 1.0)) = 0.5
@@ -455,6 +467,8 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
         latency_sla=0.8,
         answerability=None,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={
             "intent_accuracy": "excluded: connection reset",
             "evidence_citation": "excluded: connection reset",
@@ -473,6 +487,8 @@ def test_print_console_summary_does_not_crash_with_none_content_metrics() -> Non
         latency_sla=1.0,
         answerability=None,
         correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
         comments={
             "intent_accuracy": "intent matches",
             "evidence_citation": "overlap heuristic",
@@ -525,3 +541,29 @@ def test_confusion_rows() -> None:
     )
     assert c[("geographic", "geographic")] == 2
     assert c[("geographic", "comparison")] == 1
+
+
+def test_intent_classification_report_macro_f1() -> None:
+    rep = intent_classification_report(
+        [
+            ("geographic", "geographic"),
+            ("geographic", "comparison"),
+            ("trend", "trend"),
+        ]
+    )
+    assert rep["macro_f1"] is not None
+    assert rep["weighted_f1"] is not None
+    geo = rep["per_class"].get("geographic")
+    assert geo is not None
+    assert geo["support"] == 2.0
+
+
+def test_intent_eval_trace_metadata_mismatch() -> None:
+    m = intent_eval_trace_metadata(
+        expected_intent="geographic",
+        classified_intent="comparison",
+        intent_accuracy=0.0,
+    )
+    assert m["eval_intent_correct"] == 0.0
+    assert m["eval_intent_false_negative_class"] == "geographic"
+    assert m["eval_intent_false_positive_class"] == "comparison"

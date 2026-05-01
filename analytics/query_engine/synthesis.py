@@ -3,6 +3,12 @@
 Grounded synthesis for Ask the Data (GitHub #117). See
 ``.cursor/rules/analytics-qna-synthesis.mdc``. USD amounts use
 ``common.llm_adapter.compute_extraction_cost`` / adapter-reported costs only.
+
+JIE #258 — per-stage Langfuse observations: the main synthesis call and the
+follow-up generation call are each wrapped with ``@observe(as_type="generation")``
+so they appear as separate named Langfuse generations inside the parent Q&A trace,
+enabling per-stage cost attribution and latency breakdown without changing the
+public ``synthesize_answer`` signature.
 """
 
 from __future__ import annotations
@@ -21,6 +27,9 @@ from analytics.query_engine.grounding import (
     prefix_period_coverage,
     verify_answer_grounding,
 )
+from analytics.query_engine.langfuse_utils import lf_context as langfuse_context
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.schemas import (
     CostLedger,
@@ -36,6 +45,7 @@ log = structlog.get_logger()
 
 AGENT_SYNTHESIS = "analytics-qna-synthesis"
 AGENT_FOLLOWUP = "analytics-qna-followup"
+
 
 _DEFAULT_REFUSAL = "Insufficient evidence to produce a grounded answer."
 _SAFE_FALLBACK_ANSWER = (
@@ -191,6 +201,50 @@ def _parse_followup_json(content: str) -> list[str]:
     return out[:3]
 
 
+@_lf_observe(as_type="generation", name="synthesis")
+def _call_synthesis_llm(
+    prompt: str,
+    *,
+    intent_label: str,
+    max_tokens: int = 800,
+) -> dict[str, Any]:
+    """Inner synthesis LLM call; wrapped as a named Langfuse generation (JIE #258).
+
+    Exposes input prompt and raw LLM output so the generation observation carries
+    per-call token usage and model metadata in the Langfuse trace.
+    """
+    langfuse_context.update_current_observation(
+        input=prompt,
+        metadata={"agent_name": AGENT_SYNTHESIS, "intent_label": intent_label},
+    )
+    result = complete(prompt, agent_name=AGENT_SYNTHESIS, role="synthesis", max_tokens=max_tokens)
+    report_langfuse_usage(result)
+    langfuse_context.update_current_observation(output=result.get("content") or "")
+    return result
+
+
+@_lf_observe(as_type="generation", name="follow_up_generation")
+def _call_followup_llm(
+    prompt: str,
+    *,
+    intent_label: str,
+    max_tokens: int = 400,
+) -> dict[str, Any]:
+    """Inner follow-up LLM call; wrapped as a named Langfuse generation (JIE #258).
+
+    Exposes input prompt and raw LLM output so the generation observation carries
+    per-call token usage and model metadata in the Langfuse trace.
+    """
+    langfuse_context.update_current_observation(
+        input=prompt,
+        metadata={"agent_name": AGENT_FOLLOWUP, "intent_label": intent_label},
+    )
+    result = complete(prompt, agent_name=AGENT_FOLLOWUP, role="classification", max_tokens=max_tokens)
+    report_langfuse_usage(result)
+    langfuse_context.update_current_observation(output=result.get("content") or "")
+    return result
+
+
 def synthesize_answer(
     bundle: EvidenceBundle,
     *,
@@ -242,12 +296,7 @@ def synthesize_answer(
         )
 
     main_prompt = _build_main_prompt(user_query, intent_label, bundle, prior_turns_context=prior_turns_context)
-    main_result = complete(
-        main_prompt,
-        agent_name=AGENT_SYNTHESIS,
-        role="synthesis",
-        max_tokens=800,
-    )
+    main_result = _call_synthesis_llm(main_prompt, intent_label=intent_label, max_tokens=800)
     append_leg_from_complete(ledger, "synthesis", main_result, model_fallback=None)
 
     main_ok = bool(main_result.get("success")) and not bool(main_result.get("extraction_failed"))
@@ -290,12 +339,7 @@ def synthesize_answer(
             gr.unsupported_tokens,
             prior_turns_context=prior_turns_context,
         )
-        retry_result = complete(
-            retry_prompt,
-            agent_name=AGENT_SYNTHESIS,
-            role="synthesis",
-            max_tokens=800,
-        )
+        retry_result = _call_synthesis_llm(retry_prompt, intent_label=intent_label, max_tokens=800)
         append_leg_from_complete(ledger, "synthesis", retry_result, model_fallback=None)
         retry_ok = bool(retry_result.get("success")) and not bool(retry_result.get("extraction_failed"))
         retry_text = (retry_result.get("content") or "").strip()
@@ -314,12 +358,7 @@ def synthesize_answer(
         answer_text,
         prior_turns_context=prior_turns_context,
     )
-    fu_result = complete(
-        follow_prompt,
-        agent_name=AGENT_FOLLOWUP,
-        role="classification",
-        max_tokens=400,
-    )
+    fu_result = _call_followup_llm(follow_prompt, intent_label=intent_label, max_tokens=400)
     append_leg_from_complete(ledger, "follow_up", fu_result, model_fallback=None)
 
     fu_ok = bool(fu_result.get("success")) and not bool(fu_result.get("extraction_failed"))

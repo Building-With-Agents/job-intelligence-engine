@@ -33,9 +33,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true   # fetch LFS-tracked seed fixtures (#251); without this the
-                      # runner sees pointer files and fixture-loading tests fail.
+        # LFS is intentionally NOT fetched in CI to conserve the org-wide LFS
+        # bandwidth budget. Tests that need real fixture content are marked
+        # `requires_lfs` and skipped here; devs run those locally after
+        # `git lfs install` + `git lfs pull`.
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -50,4 +51,4 @@ jobs:
         env:
           PYTHONPATH: .
           LLM_PROVIDER: mock
-        run: python -m pytest tests/ enrichment/tests/ analytics/ scripts/tests/ -m "not live_llm" -v --tb=short
+        run: python -m pytest tests/ enrichment/tests/ analytics/ scripts/tests/ -m "not live_llm and not requires_lfs" -v --tb=short

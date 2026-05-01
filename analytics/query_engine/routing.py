@@ -27,7 +27,11 @@ from sqlalchemy.orm import Session
 from analytics.api.schemas import AnalyticsQueryResponse, EvidenceItem
 from analytics.conversation_memory import append_conversation_turn, load_prior_context_for_llm
 from analytics.query_engine import audit_log, qna
+from analytics.query_engine.curriculum_synthesis import no_resolved_role_message
 from analytics.query_engine.intent import classify_workforce_question
+from analytics.query_engine.langfuse_utils import lf_context as _lf_ctx
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from analytics.query_engine.ledger_utils import append_leg_from_complete
 from analytics.query_engine.router import QueryRouter
 from analytics.query_engine.schemas import CostLedger, QueryResultPayload, SynthesisResponse
@@ -47,6 +51,35 @@ from common.types.query_request import QueryRequest
 
 log = structlog.get_logger()
 
+
+@_lf_observe(as_type="generation", name="sql_generation")
+def _call_sql_generation_llm(
+    prompt: str,
+    *,
+    query_fingerprint: str,
+    correlation_id: str | None,
+) -> dict[str, Any]:
+    """SQL generation LLM call; wrapped as a named Langfuse generation (JIE #258).
+
+    Each call appears as a separate generation observation inside the parent Q&A
+    trace, enabling per-stage cost attribution and latency breakdown.
+    """
+    _lf_ctx.update_current_observation(
+        input=prompt,
+        metadata={"agent_name": AGENT_SQL, "role": "analytics", "query_fingerprint": query_fingerprint},
+    )
+    result = complete(
+        prompt,
+        agent_name=AGENT_SQL,
+        role="analytics",
+        max_tokens=500,
+        correlation_id=correlation_id,
+    )
+    report_langfuse_usage(result)
+    _lf_ctx.update_current_observation(output=result.get("content") or "")
+    return result
+
+
 _SQL_EXEC_ERR_DETAIL_MAX = 400
 
 # Issue #197 — ORM / QueryRouter path parity with guardrailed ``inject_role_classification_issue197_guard``
@@ -58,6 +91,9 @@ _ISSUE197_SQL_GUARD_HINT = (
     "real IT roles are misbucketed."
 )
 _NA_IT_ROLE_PLACEHOLDER = "N/A Not an IT role"
+
+# JIE #298 — intents that filter by canonical role; get live suggestions on 0 rows.
+_ROLE_FILTERED_INTENTS: frozenset[str] = frozenset({"curriculum", "workflow", "role_evolution"})
 
 
 def _get_role_classification_value(row: dict[str, Any]) -> str | None:
@@ -339,11 +375,9 @@ def run_guardrailed_analytics_query(
 
     classification_confidence = max(0.0, min(1.0, classification_confidence))
 
-    sql_res = complete(
+    sql_res = _call_sql_generation_llm(
         _sql_prompt(request.query, intent_label),
-        agent_name=AGENT_SQL,
-        role="analytics",
-        max_tokens=500,
+        query_fingerprint=fp,
         correlation_id=correlation_id,
     )
     append_leg_from_complete(ledger, "sql_generation", sql_res, model_fallback=None)
@@ -615,11 +649,33 @@ def run_analytics_qna(
         route_result = router.route(classification, session, tenant=taccess, question=q)
 
         rows = _json_safe_rows(route_result.rows)
+        # Capture the router's raw row count before any post-processing filter so
+        # JIE #298's role-hint logic can distinguish "router found nothing" from
+        # "issue-197 misbucket guard removed everything."
+        router_row_count = len(rows)
         if intent_label in _ISSUE197_INTENTS:
             rows = _filter_issue197_misbucket_rows(rows)
         col_names = list(rows[0].keys()) if rows else []
         router_error = _router_error_message(route_result)
         sql_line = _sql_generated_line(route_result)
+
+        # JIE #298 — when a role-filtered intent yields 0 rows, surface live
+        # canonical role suggestions instead of the generic "No data in scope" message.
+        # Guards:
+        # - router_row_count == 0: the router itself found nothing (not the misbucket filter).
+        # - not router_error: don't double-diagnose a hard execution failure.
+        # - role_names from extracted_entities: use the structured role names the classifier
+        #   already identified, not the raw question text which produces nonsensical output.
+        role_hint: str | None = None
+        if router_row_count == 0 and not router_error and intent_label in _ROLE_FILTERED_INTENTS:
+            ent = classification.get("extracted_entities") or {}
+            role_names: list[str] = ent.get("role_names") or [] if isinstance(ent, dict) else []
+            role_query_str = ", ".join(role_names) if role_names else ""
+            role_hint = no_resolved_role_message(
+                session,
+                role_query=role_query_str,
+                intent=intent_label,
+            )
 
         q_payload = QueryResultPayload(
             request=QueryRequest(query=q, prior_turns_context=pctx),
@@ -633,6 +689,7 @@ def run_analytics_qna(
             tables_referenced=list(route_result.tables_used),
             router_error=router_error,
             correlation_id=cid,
+            role_suggestion_hint=role_hint,
         )
 
         syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)

@@ -50148,5 +50148,30 @@
     "city": null,
     "state": null,
     "normalized_location": null
+  },
+  {
+    "company_id": "4a9e1b21-28f9-44bb-84d9-211c9383b93f",
+    "industry_sector_id": null,
+    "company_name": "Energy Jobline ZR",
+    "company_logo_url": null,
+    "about_us": null,
+    "company_email": null,
+    "year_founded": null,
+    "company_website_url": null,
+    "company_video_url": null,
+    "company_phone": null,
+    "company_mission": null,
+    "company_vision": null,
+    "size": "1-10",
+    "estimated_annual_hires": null,
+    "is_approved": false,
+    "createdby": null,
+    "createdat": "2026-04-30T00:05:33.387189+00:00",
+    "updatedat": "2026-04-30T00:05:33.387189+00:00",
+    "contact_name": null,
+    "engagementtype": "Lead",
+    "city": null,
+    "state": null,
+    "normalized_location": null
   }
 ]

@@ -30,6 +30,17 @@ def qa_latency_sla_seconds() -> float:
 
 
 @cached_accessor
+def qa_answerability_gate_threshold() -> float:
+    return get_float(
+        file="eval",
+        key="eval.qa.answerability_gate_threshold",
+        env="QA_EVAL_ANSWERABILITY_GATE_THRESHOLD",
+        minimum=0.0,
+        maximum=1.0,
+    )
+
+
+@cached_accessor
 def soc_demo_skip_llm() -> bool:
     return get_bool(
         file="eval",
@@ -71,6 +82,7 @@ def week8_intent_max_latency_ms() -> float:
 __all__ = [
     "exp004_comparison_csv",
     "extraction_fuzzy_threshold",
+    "qa_answerability_gate_threshold",
     "qa_latency_sla_seconds",
     "soc_demo_skip_llm",
     "week8_intent_max_latency_ms",

@@ -6,6 +6,11 @@ and extracts lightweight entities for routing and SQL generation.
 Uses :func:`common.llm_adapter.complete` with ``role="classification"`` so the
 call routes through the provider-agnostic adapter (Azure OpenAI ``chat-gpt41mini``
 via ``LLM_DEFAULT`` by default — see ``.cursor/rules/llm-routing.mdc``).
+
+JIE #258 — per-stage Langfuse observations: ``classify_workforce_question`` is
+wrapped with ``@observe(as_type="generation")`` so each intent-classification call
+appears as its own Langfuse generation nested inside the parent Q&A trace, enabling
+per-stage cost attribution and latency breakdown.
 """
 
 from __future__ import annotations
@@ -17,6 +22,9 @@ from typing import TYPE_CHECKING, Any, Final
 import structlog
 from pydantic import BaseModel, Field, field_validator
 
+from analytics.query_engine.langfuse_utils import lf_context as langfuse_context
+from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
+from analytics.query_engine.langfuse_utils import report_langfuse_usage
 from common.llm_adapter import complete
 
 if TYPE_CHECKING:
@@ -214,6 +222,7 @@ def _fallback_other(reason: str) -> dict[str, Any]:
     }
 
 
+@_lf_observe(as_type="generation", name="intent_classification")
 def classify_workforce_question(
     question: str,
     *,
@@ -248,6 +257,11 @@ def classify_workforce_question(
     else:
         prompt = f"User question:\n{q}\n"
 
+    langfuse_context.update_current_observation(
+        input=q,
+        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    )
+
     try:
         result = complete(
             prompt=prompt,
@@ -263,26 +277,37 @@ def classify_workforce_question(
             append_leg_from_complete(cost_ledger, "intent_classification", result, model_fallback=None)
     except Exception as exc:
         log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
+        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
         return _fallback_other("llm_exception")
 
+    report_langfuse_usage(result)
+
     if not result.get("success") or result.get("extraction_failed"):
+        langfuse_context.update_current_observation(level="WARNING", status_message="llm_failed")
         return _fallback_other("llm_failed")
 
     content = (result.get("content") or "").strip()
     parsed = _parse_llm_json(content)
     if not parsed:
+        langfuse_context.update_current_observation(level="WARNING", status_message="invalid_json")
         return _fallback_other("invalid_json")
 
     try:
         validated = IntentClassification.model_validate(parsed)
     except Exception:
+        langfuse_context.update_current_observation(level="WARNING", status_message="schema_validation")
         return _fallback_other("schema_validation")
 
     out_entities = validated.extracted_entities.model_dump()
     needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
-    return {
+    classification_out = {
         "intent": validated.intent,
         "confidence": float(validated.confidence),
         "needs_clarification": needs_clarification,
         "extracted_entities": out_entities,
     }
+    langfuse_context.update_current_observation(
+        output={"intent": validated.intent, "confidence": float(validated.confidence)},
+        metadata={"needs_clarification": needs_clarification},
+    )
+    return classification_out

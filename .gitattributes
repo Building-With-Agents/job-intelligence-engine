@@ -1,6 +1,4 @@
-scripts/pg-seed-data/fixtures/extracted_intelligence.json filter=lfs diff=lfs merge=lfs -text
-scripts/pg-seed-data/fixtures/raw_ingested_jobs.json filter=lfs diff=lfs merge=lfs -text
-scripts/pg-seed-data/fixtures/job_postings.json filter=lfs diff=lfs merge=lfs -text
-scripts/pg-seed-data/fixtures/normalized_jobs.json filter=lfs diff=lfs merge=lfs -text
-scripts/pg-seed-data/fixtures/llm_audit_log.json filter=lfs diff=lfs merge=lfs -text
-scripts/pg-seed-data/fixtures/postal_geo_data.json filter=lfs diff=lfs merge=lfs -text
+# Heavy seed fixtures used to be tracked in Git LFS. As of issue #322 they are
+# distributed via GitHub Release assets instead — the org-wide LFS bandwidth
+# budget was exhausted. See scripts/pg-seed-data/README.md for the new flow.
+# This file intentionally left near-empty until a future need arises.
