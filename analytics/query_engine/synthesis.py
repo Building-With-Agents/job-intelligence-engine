@@ -122,6 +122,13 @@ def _build_main_prompt(
         payload["prior_conversation"] = (
             "Earlier turns in this session (for continuity only; do not treat as new evidence): " + ctx
         )
+    trend_clause = ""
+    if intent_label in ("trend", "role_evolution"):
+        trend_clause = (
+            "- This question is trend or role_evolution: when citeable_facts_json includes "
+            "time-bucketed demand, velocity, or role snapshots, name the direction of change "
+            "(up / down / flat / mixed) and tie it to the cited counts — do not hand-wave.\n"
+        )
     instructions = (
         "You are an analytics assistant. Write a concise, professional answer for workforce stakeholders.\n"
         "Rules:\n"
@@ -135,6 +142,7 @@ def _build_main_prompt(
         "code on that line (for example `salary=50,000–70,000` with no trailing ISO code), "
         "state the amounts as plain numbers only — do not assume USD or any other currency.\n"
         "- Do not include markdown code fences.\n"
+        f"{trend_clause}"
     )
     return instructions + "Context JSON (for grounding):\n" + json.dumps(payload, ensure_ascii=False)
 

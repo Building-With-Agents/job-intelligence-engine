@@ -12,11 +12,15 @@ adopted from v2 onward per IMP-030 / JIE #287).
 
 ## Version history
 
-| Version | Date | Author | Scorer | Change summary | Composite | Answerability | Findings |
-|---------|------|--------|--------|----------------|:---------:|:-------------:|----------|
-| `v1-baseline` | 2026-04-23 | Bryan + Emilio | v1 (partial-credit intent, lenient refusal) | Initial baseline — 90 golden Qs, unmodified prompts, in-process pipeline | **0.875** | 0.260 (n=50) | `eval/runs/qa-v1-baseline.json` |
-| `v2-scorer-redesign` | 2026-04-24 | Bryan + Emilio | v2 (binary intent, geometric composite, None exclusions) | Scorer redesign (PR #278) — binary intent, stronger refusal penalty, `None` for infra failures; run against empty aggregate tables (pre-#291) | **0.510** geo | 0.060 (n=50) | [`eval/runs/findingsv2.md`](findingsv2.md) |
-| `v2.1-post-seed-fix` | 2026-04-27 | Bryan | v2 (same scorer as v2) | Re-run post-PR #291 aggregate table seed fix; confirms data-seed was sole cause of 0.06 answerability collapse | — | **0.340** (n=50) | [`eval/runs/findingsv2.1.md`](findingsv2.1.md) |
+| Version | Date | Author | Scorer | Change summary | Composite | Answerability | Human scores (Langfuse) | Findings |
+|---------|------|--------|--------|----------------|:---------:|:-------------:|------------------------|----------|
+| `v1-baseline` | 2026-04-23 | Bryan + Emilio | v1 (partial-credit intent, lenient refusal) | Initial baseline — 90 golden Qs, unmodified prompts, in-process pipeline | **0.875** | 0.260 (n=50) | — | `eval/runs/qa-v1-baseline.json` |
+| `v2-scorer-redesign` | 2026-04-24 | Bryan + Emilio | v2 (binary intent, geometric composite, None exclusions) | Scorer redesign (PR #278) — binary intent, stronger refusal penalty, `None` for infra failures; run against empty aggregate tables (pre-#291) | **0.510** geo | 0.060 (n=50) | — | [`eval/runs/findingsv2.md`](findingsv2.md) |
+| `v2.1-post-seed-fix` | 2026-04-27 | Bryan | v2 (same scorer as v2) | Re-run post-PR #291 aggregate table seed fix; confirms data-seed was sole cause of 0.06 answerability collapse | — | **0.340** (n=50) | — | [`eval/runs/findingsv2.1.md`](findingsv2.1.md) |
+| `v2.1-embedding-router` | 2026-04-28 | Pair A / #229 | v2 | `label_embedding` pgvector on `canonical_roles`; backfill + persist sync; Q&A router resolves `role_names` via `<=>` with ILIKE fallback (`role_evolution`, `workflow` only). **Local verification; Langfuse run pending.** Tests: 42 passed; re-cluster env: `CLUSTER_MIN_CLUSTER_SIZE=5`, `CLUSTER_MIN_SAMPLES=2`, `CLUSTER_MIN_TOTAL_POSTINGS=100` + `scripts/run_clustering.py --min-postings 100`. | — | — | — | [`eval/runs/findingsv2.1-embedding-router.md`](findingsv2.1-embedding-router.md) |
+| `v2.1-disruption-intent-prompt` | 2026-04-29 | Pair A | v2 | Intent classifier `_SYSTEM_PROMPT` only; added disruption tie-breakers vs role_evolution/comparison/trend/geographic plus two few-shots for era skill-shift and AI-assistant adoption. **Notes:** `intent_accuracy` improved 0.400 → 0.800 on Pair A 20-question slice; remaining misses were gq-008, gq-014, gq-016, gq-017. | **0.772** geo | — | — | [`eval/runs/qa-v2.1-disruption-intent-prompt.json`](qa-v2.1-disruption-intent-prompt.json) |
+| `nestor-baseline` | 2026-04-30 | Nestor | Langfuse UI annotation | Human annotation of gq-031..gq-040 (10 of 90 items); all 3 scores per question. Reconstructed from chronological order on trace `84ab514155f87ac26` — Langfuse queue applied all annotations to one trace rather than each question's trace. Mapping confirmed by annotator. | — | — | correctness=**0.25** (n=10), decision_relevance=**0.10** (n=10), followup_quality=**0.30** (n=10) | [`eval/runs/nestor_baseline_run_langfuse_annotations.json`](runs/nestor_baseline_run_langfuse_annotations.json) |
+| `nestor-v2-role-evolution-fix` | 2026-04-30 | Nestor | v2 automated scorer | **Atomic fix:** `_route_role_evolution` rewritten to query `job_postings GROUP BY temporal_period` instead of static `canonical_roles` snapshot. On gq-031..040: `correct_refusal` **+0.30** (0.70→1.00), `must_include_recall` **+0.09** (0.68→0.78). Three previously-refusing questions (gq-032, gq-035, gq-036) now produce data-backed answers. `extracted_intelligence` skill data still absent — see DEV-005. Human annotation pending. | — | **0.52** (n=50) | *pending annotation* | — |
 
 > **v2 vs v2.1 note:** scorer logic did not change between v2 and v2.1.
 > The only difference is that aggregate tables were empty during the v2 run
@@ -198,6 +202,38 @@ the request body. Integration tests added to prevent silent regression.
 
 ---
 
+## Human annotation workflow (Langfuse → repo)
+
+Human annotation scores entered in the Langfuse UI are durable only in Langfuse.
+After annotating, run the pull script to snapshot them into the repo:
+
+```bash
+# Pull the three standard annotation scores for the nestor baseline run
+python scripts/pull_langfuse_annotations.py
+
+# Pull all annotation scores (if you add more score names in Langfuse)
+python scripts/pull_langfuse_annotations.py --all-annotations
+
+# Pull annotations for a different run file
+python scripts/pull_langfuse_annotations.py --run-json eval/runs/<run>.json
+
+# After pulling, commit the annotations file
+git add eval/runs/*_annotations.json
+git commit -m "chore(eval): snapshot human annotations from Langfuse <date>"
+```
+
+The output file (`eval/runs/<run>_annotations.json`) contains:
+- `human_scores` — the values you entered in the Langfuse UI (`source: ANNOTATION`)
+- `automated_scores` — the programmatic scorer output from the original run
+- `summary` — mean per score name and coverage percentage
+
+**Score names tracked:** `correctness`, `decision_relevance`, `followup_quality`
+(add new names with `--score-names <name1> <name2> ...`)
+
+> **Langfuse naming note:** the annotation queue score is `followup_quality` (no underscore between "follow" and "up"). The pull script and all downstream files now use this exact name.
+
+---
+
 ## How to add a future run
 
 1. Run `eval/qa_eval.py --prompt-version <semantic-tag> --output-json eval/runs/<tag>.json`.
@@ -214,6 +250,45 @@ on hard questions. At n ≈ 90, a 2-point composite delta is within noise.
 
 ---
 
+### DEV-005 — `role_evolution` router returns volume data only; `extracted_intelligence` skill content absent
+
+**Observed in:** `nestor-v2-role-evolution-fix`
+
+**What happened:**
+After the v2 fix, `_route_role_evolution` queries `job_postings GROUP BY temporal_period`, which
+provides posting and employer counts per era. This resolved the three outright refusals (gq-032,
+gq-035, gq-036) and lifted `correct_refusal` from 0.70 → 1.00.
+
+However, 8 of 10 role-evolution `must_include` rubrics require `extracted_intelligence` — the
+JSONB table that holds per-posting skill names, tool names, tasks, and context signals. Because
+the router does not join to `extracted_intelligence`, the synthesis layer has no skill-level data
+and cannot name specific skills that changed across temporal eras. Questions that ask "which
+skills were added or dropped" still score below ceiling on `must_include_recall`.
+
+**Per-question impact (gq-031..040):**
+
+| GQ | `extracted_intelligence` in rubric? | `must_include_recall` (v2) | ceiling gap |
+|----|:---:|:---:|---|
+| gq-031 | ✅ | 0.81 | skills gap |
+| gq-032 | ✅ | 0.63 | skills gap + was refusal |
+| gq-033 | ✅ | 0.78 | skills gap + grounding retry |
+| gq-034 | — | 0.91 | uses `canonical_roles`/`role_snapshot_weekly` |
+| gq-035 | ✅ | 0.78 | skills + tools gap |
+| gq-036 | ✅ | 0.78 | skills + tools + co-occurrence gap |
+| gq-037 | ✅ | 0.92 | near-ceiling; seniority_level present |
+| gq-038 | ✅ | 0.72 | tools gap |
+| gq-039 | ✅ | 0.74 | skills gap + grounding failure regression |
+| gq-040 | ✅ | 0.70 | skills + tools gap |
+
+**Planned fix (`nestor-v3`):** Replace the `job_postings GROUP BY temporal_period` query with a
+3-table join (`job_postings → normalized_jobs → extracted_intelligence`) that unnests
+`ei.skills JSONB` and groups by `(temporal_period, skill_name)`. This returns the top skills per
+era for the requested role, giving the synthesis the skill-evolution evidence it needs.
+
+**Status:** Open — next atomic iteration.
+
+---
+
 ## Changelog
 
 | Date | Who | Change |
@@ -221,3 +296,4 @@ on hard questions. At n ≈ 90, a 2-point composite delta is within noise.
 | 2026-04-22 | Bryan | Created skeleton; documented DEV-001–DEV-003; v1-baseline section stubbed |
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
+| 2026-04-30 | Nestor | Added `nestor-baseline` human-annotation row (Langfuse reconstruction); added `nestor-v2-role-evolution-fix` row with final automated-score results; created `findings_nestor_v2_role_evolution_fix.md`; documented DEV-005 |

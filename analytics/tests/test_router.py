@@ -165,19 +165,24 @@ class TestIntentRouting:
         assert "skill_demand_weekly" in sql.lower()
         assert "Python" in sql  # entity filter applied
 
-    def test_route_role_evolution(self) -> None:
+    def test_route_role_evolution(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "analytics.query_engine.router._embed_texts_azure",
+            lambda *args, **kwargs: None,
+        )
         session = _make_session()
         cls = _mk_classification("role_evolution", role_names=["Data Analyst"])
         result = QueryRouter().route(cls, session)
 
         assert result.intent == "role_evolution"
         assert result.routed is True
-        assert result.tables_used == ["canonical_roles"]
+        assert result.tables_used == ["job_postings"]
         assert "Data Analyst" in result.query_label
 
         sql = _compiled_sql(session)
         _assert_sql_guardrails(sql)
-        assert "canonical_roles" in sql.lower()
+        assert "job_postings" in sql.lower()
+        assert "temporal_period" in sql.lower()
 
     def test_route_disruption(self) -> None:
         session = _make_session()
@@ -251,7 +256,11 @@ class TestIntentRouting:
         # Must JOIN companies
         assert re.search(r"\bJOIN\b", sql, re.IGNORECASE), "employer query must JOIN companies table"
 
-    def test_route_workflow(self) -> None:
+    def test_route_workflow(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "analytics.query_engine.router._embed_texts_azure",
+            lambda *args, **kwargs: None,
+        )
         session = _make_session()
         cls = _mk_classification("workflow", role_names=["ML Engineer"])
         result = QueryRouter().route(cls, session)
@@ -329,7 +338,11 @@ class TestIntentRouting:
         ("comparison", {"skill_names": ["SQL", "NoSQL"]}),
     ],
 )
-def test_sql_guardrails(intent: str, extra_entities: dict) -> None:
+def test_sql_guardrails(
+    intent: str,
+    extra_entities: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Every routable intent must produce SQL that:
     - is routed successfully
     - contains SELECT
@@ -337,6 +350,10 @@ def test_sql_guardrails(intent: str, extra_entities: dict) -> None:
     - contains no mutating keywords (INSERT/UPDATE/DELETE/DROP/CREATE/ALTER/TRUNCATE/MERGE)
     - only references tables in ALLOWED_TABLES
     """
+    monkeypatch.setattr(
+        "analytics.query_engine.router._embed_texts_azure",
+        lambda *args, **kwargs: None,
+    )
     sn = extra_entities.get("skill_names") or []
     taxonomy: tuple[str, ...] | None = None
     if intent in ("trend", "comparison") and sn:
@@ -422,6 +439,130 @@ class TestEdgeCases:
         assert result.row_count == 0
         assert result.tables_used == []
         session.execute.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# label_embedding role resolution (issue #229)
+# ---------------------------------------------------------------------------
+
+
+class TestRoleEmbeddingResolution:
+    """Embedding path vs ILIKE fallback; _embed_texts_azure is always mocked."""
+
+    def test_workflow_embedding_resolved_role_ids_use_pgvector_then_in_filter(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`workflow` route filters strictly on the resolved canonical_role_ids;
+        no token-ILIKE fallback because canonical_roles itself is the queried table.
+        """
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-role-id-aa",)]
+
+        select_result = MagicMock()
+        select_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, select_result]
+
+        cls = _mk_classification("workflow", role_names=["Some Role Query"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert session.execute.call_count == 2
+
+        raw_sql = str(session.execute.call_args_list[0].args[0])
+        assert "<=>" in raw_sql
+        assert "CAST(:vec AS vector)" in raw_sql
+
+        second_stmt = session.execute.call_args_list[1].args[0]
+        compiled = str(
+            second_stmt.compile(
+                dialect=postgresql.dialect(),
+                compile_kwargs={"literal_binds": True},
+            )
+        )
+        assert "resolved-role-id-aa" in compiled
+        assert "ILIKE" not in compiled.upper()
+
+    def test_role_evolution_embedding_resolved_combines_with_token_ilike(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`role_evolution` consolidates both fixes (#229 + #294 v2 redesign):
+
+        - Embedding-resolved canonical_role_ids → ``jp.canonical_role_id = ANY(:resolved_role_ids)``
+        - Token-ILIKE on ``jp.job_title`` / ``jp.role_classification`` (Pair B's path)
+        - The two predicates are OR'd so postings with NULL canonical_role_id (~68% today)
+          are still recalled via token-ILIKE.
+        """
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-role-id-aa",), ("resolved-role-id-bb",)]
+
+        select_result = MagicMock()
+        select_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, select_result]
+
+        cls = _mk_classification("role_evolution", role_names=["Data Analyst"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert result.tables_used == ["job_postings"]
+        assert session.execute.call_count == 2
+
+        # First call is the pgvector resolution against canonical_roles.
+        raw_resolve_sql = str(session.execute.call_args_list[0].args[0])
+        assert "<=>" in raw_resolve_sql
+        assert "CAST(:vec AS vector)" in raw_resolve_sql
+
+        # Second call is the consolidated role_evolution query against job_postings.
+        second_stmt = session.execute.call_args_list[1].args[0]
+        raw_sql = str(second_stmt)
+        assert "jp.canonical_role_id = ANY(:resolved_role_ids)" in raw_sql
+        assert "jp.job_title ILIKE" in raw_sql  # token-ILIKE still present
+        # Both predicates OR'd inside a single grouping clause.
+        assert " OR " in raw_sql
+
+        # Resolved IDs are passed via execute params, not embedded in the text.
+        passed_params = session.execute.call_args_list[1].args[1]
+        assert passed_params.get("resolved_role_ids") == [
+            "resolved-role-id-aa",
+            "resolved-role-id-bb",
+        ]
+
+    @pytest.mark.parametrize("intent", ["role_evolution", "workflow"])
+    def test_embedding_unavailable_falls_back_to_label_ilike(
+        self,
+        intent: str,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            "analytics.query_engine.router._embed_texts_azure",
+            lambda *args, **kwargs: None,
+        )
+        session = _make_session()
+        role_term = "Data Analyst" if intent == "role_evolution" else "ML Engineer"
+        cls = _mk_classification(intent, role_names=[role_term])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        sql = _compiled_sql(session)
+        _assert_sql_guardrails(sql)
+        assert "ILIKE" in sql.upper()
 
 
 # ---------------------------------------------------------------------------
@@ -532,8 +673,19 @@ class TestSplitGeoTerm:
 
 
 class TestRouteGeographicListStyle:
-    def test_list_style_question_routes_to_per_posting_path(self) -> None:
-        """JIE #306: list-style geographic question must hit job_postings, not geo_demand_weekly."""
+    def test_list_style_question_routes_to_per_posting_path(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #306: list-style geographic question must hit job_postings, not geo_demand_weekly.
+
+        Force embedding resolution to return no IDs so this test exercises the
+        JIE #309 token ILIKE fallback (deterministic without Azure embeddings).
+        """
+        monkeypatch.setattr(
+            "analytics.query_engine.router._embed_texts_azure",
+            lambda *args, **kwargs: None,
+        )
         session = _make_session(rows=[])
         cls = _mk_classification(
             "geographic",
@@ -571,6 +723,54 @@ class TestRouteGeographicListStyle:
         assert cls_keys, "expected at least one role_cls bind param"
         title_values = {params[k].strip("%") for k in title_keys}
         assert {"frontend", "developer"}.issubset(title_values)
+
+    def test_list_style_geographic_uses_canonical_role_id_when_embedding_resolves(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #309: geographic list-style matches roles via canonical_role_id when pgvector resolves."""
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-canonical-role-id",)]
+
+        list_result = MagicMock()
+        list_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, list_result]
+
+        cls = _mk_classification(
+            "geographic",
+            geo_terms=["El Paso, TX"],
+            role_names=["software developer"],
+            time_refs=["last 90 days"],
+        )
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="Show all El Paso, TX postings for software developer roles posted in the last 90 days.",
+        )
+
+        assert result.routed is True
+        assert session.execute.call_count == 2
+
+        raw_resolve = str(session.execute.call_args_list[0].args[0])
+        assert "<=>" in raw_resolve
+
+        raw_list = str(session.execute.call_args_list[1].args[0])
+        assert "canonical_role_id IN" in raw_list
+        assert "resolved-canonical-role-id" not in raw_list
+
+        list_params = session.execute.call_args_list[1].args[1]
+        assert list_params.get("crid0") == "resolved-canonical-role-id"
+        assert list_params.get("city") == "El Paso"
+        title_keys = [k for k in list_params if k.startswith("role_title_")]
+        assert not title_keys
 
     def test_jie330_geographic_aggregate_unknown_skill_taxonomy_blocks(self) -> None:
         """RT-007: unknown skill + aggregate geo must not query geo_demand_weekly."""

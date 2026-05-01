@@ -123,5 +123,91 @@ def test_cleanup_orphan_canonical_roles_checks_snapshots() -> None:
     deleted = cleanup_orphan_canonical_roles(session)
 
     assert deleted == 2
-    stmt = str(session.execute.call_args.args[0])
-    assert "role_snapshot_weekly" in stmt
+    all_stmts = " ".join(str(call.args[0]) for call in session.execute.call_args_list)
+    assert "role_snapshot_weekly" in all_stmts
+
+
+def test_cleanup_orphan_deletes_stale_snapshots_before_roles() -> None:
+    """Stale snapshot rows must be removed first so orphan roles are not shielded.
+
+    Reproduces #334: a canonical role has ``posting_count > 0`` (cached) but
+    zero actual FK references from ``job_postings``.  Old
+    ``role_snapshot_weekly`` rows keep it alive unless we clean them first.
+    """
+    call_count = 0
+    stale_snapshot_rowcount = 3
+    orphan_role_rowcount = 1
+
+    def _execute_side_effect(*_args: object, **_kwargs: object) -> MagicMock:
+        nonlocal call_count
+        call_count += 1
+        result = MagicMock()
+        if call_count == 1:
+            result.rowcount = stale_snapshot_rowcount
+        else:
+            result.rowcount = orphan_role_rowcount
+        return result
+
+    session = MagicMock()
+    session.execute.side_effect = _execute_side_effect
+
+    deleted = cleanup_orphan_canonical_roles(session)
+
+    assert deleted == orphan_role_rowcount
+    assert session.execute.call_count == 2
+    first_stmt = str(session.execute.call_args_list[0].args[0])
+    second_stmt = str(session.execute.call_args_list[1].args[0])
+    assert "role_snapshot_weekly" in first_stmt
+    assert "DELETE" in first_stmt
+    assert "canonical_roles" in second_stmt
+
+
+def test_persist_sync_writes_label_embedding_via_raw_sql() -> None:
+    """After flush, label_embedding UPDATE uses CAST(:vec AS vector)."""
+    vec = [0.01] * 1536
+    cluster = ClusterSummary(
+        cluster_id="cluster-0001",
+        raw_cluster_label=1,
+        label="Data Engineer",
+        label_source="dominant_title",
+        member_posting_ids=["aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"],
+        member_count=1,
+        representative_titles=["Data Engineer"],
+        centroid_embedding=vec,
+    )
+    expected_role_id = _build_cluster_role_ids([cluster])["cluster-0001"]
+    existing_role = CanonicalRole(
+        role_id=expected_role_id,
+        label="Old Label",
+        representative_titles=["Old Label"],
+    )
+
+    select_result = MagicMock()
+    select_result.scalars.return_value.all.return_value = [existing_role]
+    update_result = MagicMock()
+
+    session = MagicMock()
+    session.execute.side_effect = [select_result, update_result]
+
+    result = ClusteringResult(
+        assignments=[],
+        clusters=[cluster],
+        emergence_candidates=[],
+        total_input_postings=1,
+        eligible_posting_count=1,
+        clustered_posting_count=1,
+        noise_posting_count=0,
+        skipped=False,
+        skip_reason=None,
+    )
+
+    persist_clustering_result(session, result, correlation_id="test-corr")
+
+    label_sqls = [
+        str(call.args[0])
+        for call in session.execute.call_args_list
+        if call.args and "label_embedding" in str(call.args[0])
+    ]
+    assert len(label_sqls) == 1
+    assert "label_embedding" in label_sqls[0]
+    assert "CAST(:vec AS vector)" in label_sqls[0]

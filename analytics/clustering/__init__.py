@@ -11,7 +11,7 @@ Production guidelines:
 Environment variables consumed by later modules in this package:
 - ``CLUSTER_MIN_TOTAL_POSTINGS`` (default ``500``)
 - ``CLUSTER_MIN_CLUSTER_SIZE`` (default ``10``)
-- ``CLUSTER_MIN_SAMPLES`` (default ``5``)
+- ``CLUSTER_MIN_SAMPLES`` (default ``3``)
 - ``CLUSTER_SELECTION_EPSILON`` (default ``0.0``)
 - ``CLUSTER_DISTANCE_METRIC`` (default ``"euclidean"``)
 - ``CLUSTER_LABEL_DOMINANCE_THRESHOLD`` (default ``0.30``)

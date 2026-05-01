@@ -48,8 +48,13 @@ PARITY: list[tuple[str, str | None, Any]] = [
     ),
     ("analytics.clustering.config:cluster_min_total_postings", "CLUSTER_MIN_TOTAL_POSTINGS", 500),
     ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 5),
-    # #327 Phase 1: 10 → 5 (Tier 2's 10 over-tightened raw 1536-D space; UMAP reduction makes 5 correct).
-    ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 5),
+    # #327 Phase 2: 5 → 3 (more permissive density floor on UMAP-reduced space).
+    ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 3),
+    (
+        "analytics.clustering.config:cluster_input_min_quality_score",
+        "CLUSTER_INPUT_MIN_QUALITY_SCORE",
+        0.0,
+    ),
     ("analytics.clustering.config:cluster_selection_epsilon", "CLUSTER_SELECTION_EPSILON", 0.0),
     ("analytics.clustering.config:cluster_selection_method", "CLUSTER_SELECTION_METHOD", "leaf"),
     ("analytics.clustering.config:cluster_distance_metric", "CLUSTER_DISTANCE_METRIC", "cosine"),

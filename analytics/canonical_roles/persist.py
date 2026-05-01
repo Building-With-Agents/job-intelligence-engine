@@ -135,6 +135,20 @@ def persist_clustering_result(
 
     session.flush()
 
+    label_embeddings_synced = 0
+    for cluster in result.clusters:
+        if not cluster.centroid_embedding:
+            continue
+        role_id = cluster_id_to_role_id.get(cluster.cluster_id)
+        if role_id is None:
+            continue
+        vec_str = str([float(v) for v in cluster.centroid_embedding])
+        session.execute(
+            text("UPDATE dbo.canonical_roles SET label_embedding = CAST(:vec AS vector) WHERE role_id = :role_id"),
+            {"vec": vec_str, "role_id": role_id},
+        )
+        label_embeddings_synced += 1
+
     postings_updated = 0
     for a in result.assignments:
         pid = a.posting_id
@@ -173,6 +187,7 @@ def persist_clustering_result(
         roles_inserted=roles_inserted,
         postings_updated=postings_updated,
         role_count=len(result.clusters),
+        label_embeddings_synced=label_embeddings_synced,
     )
 
     return {
@@ -184,7 +199,26 @@ def persist_clustering_result(
 
 
 def cleanup_orphan_canonical_roles(session: Session) -> int:
-    """Delete canonical roles that are no longer referenced by postings or snapshots."""
+    """Delete canonical roles (and their stale snapshots) that no postings reference.
+
+    Snapshots are derived aggregates — they must not prevent removal of a
+    canonical role that no posting uses.  Step 1 removes snapshot rows whose
+    ``canonical_role_id`` has zero FK references from ``job_postings``.  Step 2
+    then deletes the now-unreferenced ``canonical_roles`` rows.
+    """
+    stale_snapshots = session.execute(
+        text(
+            """
+            DELETE FROM dbo.role_snapshot_weekly rsw
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dbo.job_postings jp
+                WHERE jp.canonical_role_id = rsw.canonical_role_id
+            )
+            """
+        )
+    )
+    stale_snapshot_count = stale_snapshots.rowcount or 0
+
     orphan_result = session.execute(
         text(
             """
@@ -201,5 +235,9 @@ def cleanup_orphan_canonical_roles(session: Session) -> int:
         )
     )
     orphans_deleted = orphan_result.rowcount or 0
-    log.info("canonical_roles_orphan_cleanup_complete", orphans_deleted=orphans_deleted)
+    log.info(
+        "canonical_roles_orphan_cleanup_complete",
+        orphans_deleted=orphans_deleted,
+        stale_snapshots_deleted=stale_snapshot_count,
+    )
     return orphans_deleted

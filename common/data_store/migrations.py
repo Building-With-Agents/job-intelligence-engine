@@ -23,6 +23,49 @@ from common.data_store.models import Base
 
 log = structlog.get_logger()
 
+# ``job_postings`` is pipeline-owned and not declared on ``Base`` (legacy Prisma shape).
+# ``create_all`` therefore skips it; this shell is created once so ALTER / index steps apply.
+_JOB_POSTINGS_SHELL_DDL = """
+CREATE TABLE IF NOT EXISTS dbo.job_postings (
+    job_posting_id TEXT PRIMARY KEY,
+    company_id TEXT,
+    tech_area_id TEXT,
+    sector_id TEXT,
+    job_title TEXT NOT NULL DEFAULT '',
+    job_description TEXT,
+    employment_type TEXT,
+    location TEXT,
+    salary_range TEXT,
+    county TEXT,
+    zip TEXT,
+    publish_date TIMESTAMPTZ,
+    unpublish_date TIMESTAMPTZ,
+    job_post_url TEXT,
+    occupation_code TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    location_id TEXT,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+
+
+def _ensure_job_postings_shell(engine: Engine) -> None:
+    """Create empty ``dbo.job_postings`` when missing (PostgreSQL only)."""
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.begin() as conn:
+        exists = conn.execute(
+            text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'dbo' AND table_name = 'job_postings' LIMIT 1"
+            )
+        ).scalar()
+        if exists:
+            return
+        conn.execute(text(_JOB_POSTINGS_SHELL_DDL))
+    log.info("migrations_job_postings_shell_created")
+
 
 def _drop_legacy_employer_profiles_if_serial_pk(engine: Engine) -> None:
     """Replace pre-UUID ``employer_profiles`` (SERIAL id) so ORM/create_all can recreate."""
@@ -304,6 +347,12 @@ _SKILL_DEMAND_WEEKLY_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.skill_demand_weekly ADD COLUMN IF NOT EXISTS employer_count INTEGER NOT NULL DEFAULT 0",
 ]
 
+# Week 10 (#229): label_embedding for pgvector role resolution in the Q&A router.
+# Not ORM-mapped — follows the same unmapped-vector pattern as dedup_embedding on job_postings.
+_CANONICAL_ROLES_ALTER_STATEMENTS = [
+    "ALTER TABLE dbo.canonical_roles ADD COLUMN IF NOT EXISTS label_embedding vector(1536)",
+]
+
 # Issue #157: JSearch Pro-plan monthly budget counter — one column on job_ingestion_runs
 _JOB_INGESTION_RUNS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.job_ingestion_runs ADD COLUMN IF NOT EXISTS api_requests_used INTEGER NOT NULL DEFAULT 0",
@@ -451,6 +500,9 @@ def run_migrations(engine: Engine) -> None:
     # 1. Create agent-managed tables via SQLAlchemy metadata
     Base.metadata.create_all(engine)
     log.info("migrations_tables_created")
+
+    # 1a. ``job_postings`` is not on ``Base`` — ensure table exists before ALTER / indexes.
+    _ensure_job_postings_shell(engine)
 
     # 1b. Seed analytics pipeline state singleton (id=1) for DB-backed watermark
     if engine.dialect.name == "postgresql":
@@ -699,6 +751,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
         except Exception as exc:
             log.warning(
                 "migration_skill_demand_weekly_alter_skipped",
+                statement=stmt,
+                error=str(exc),
+            )
+
+    # Week 10 (#229): label_embedding vector column on canonical_roles (pgvector role router)
+    for stmt in _CANONICAL_ROLES_ALTER_STATEMENTS:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(stmt))
+        except Exception as exc:
+            log.warning(
+                "migration_canonical_roles_alter_skipped",
                 statement=stmt,
                 error=str(exc),
             )
