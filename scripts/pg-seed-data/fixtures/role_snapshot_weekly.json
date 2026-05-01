@@ -1,10 +1,10 @@
 [
   {
-    "id": 2,
+    "id": 5,
     "week_start": "2026-04-27",
-    "canonical_role_id": "8bd787fe-ce86-5043-aad5-4ea90e88dd43",
+    "canonical_role_id": "f57d7595-6f4e-5f5b-99d8-e102cb5400db",
     "posting_count": 1,
-    "role_title": "Cloud DevOps Engineer",
+    "role_title": "Senior Software Quality Engineer",
     "avg_salary": null,
     "median_salary": null,
     "salary_p25": null,
@@ -13,68 +13,146 @@
     "salary_p95": null,
     "top_skills": [
       {
-        "count": 194,
-        "skill_name": "Cross-functional Collaboration"
+        "count": 6,
+        "skill_name": "Software Testing"
       },
       {
-        "count": 181,
-        "skill_name": "Machine Learning"
+        "count": 6,
+        "skill_name": "Test Automation"
       },
       {
-        "count": 153,
-        "skill_name": "Cloud Computing"
+        "count": 6,
+        "skill_name": "Agile"
       },
       {
-        "count": 151,
-        "skill_name": "Artificial Intelligence"
+        "count": 4,
+        "skill_name": "Manual Testing"
       },
       {
-        "count": 115,
+        "count": 4,
+        "skill_name": "Regression Testing"
+      },
+      {
+        "count": 4,
+        "skill_name": "Quality Assurance"
+      },
+      {
+        "count": 3,
+        "skill_name": "Integration Testing"
+      },
+      {
+        "count": 3,
         "skill_name": "Continuous Integration"
       },
       {
-        "count": 114,
-        "skill_name": "Infrastructure as Code"
+        "count": 3,
+        "skill_name": "Version Control"
       },
       {
-        "count": 97,
-        "skill_name": "Data Engineering"
-      },
-      {
-        "count": 94,
-        "skill_name": "Python"
-      },
-      {
-        "count": 91,
-        "skill_name": "Incident Response"
-      },
-      {
-        "count": 89,
-        "skill_name": "Data Modeling"
+        "count": 3,
+        "skill_name": "Selenium"
       }
     ],
     "top_tools": [
       {
-        "count": 391,
+        "count": 6,
         "tool_name": "Python"
       },
       {
-        "count": 326,
+        "count": 5,
+        "tool_name": "Git"
+      },
+      {
+        "count": 5,
+        "tool_name": "Java"
+      },
+      {
+        "count": 4,
         "tool_name": "AWS"
       },
       {
-        "count": 284,
+        "count": 3,
         "tool_name": "Azure"
-      },
-      {
-        "count": 233,
-        "tool_name": "SQL"
-      },
-      {
-        "count": 153,
-        "tool_name": "Java"
       }
     ],
-    "computed_at": "2026-04-30T02:09:12.391263+00:00"
+    "computed_at": "2026-04-30T05:02:56.403421+00:00"
+  },
+  {
+    "id": 6,
+    "week_start": "2026-04-27",
+    "canonical_role_id": "97fd2935-015f-5b98-a252-3c3ab641790d",
+    "posting_count": 2,
+    "role_title": "AI Software Engineer",
+    "avg_salary": null,
+    "median_salary": null,
+    "salary_p25": null,
+    "salary_p50": null,
+    "salary_p75": null,
+    "salary_p95": null,
+    "top_skills": [
+      {
+        "count": 14,
+        "skill_name": "Artificial Intelligence"
+      },
+      {
+        "count": 7,
+        "skill_name": "Software Engineering"
+      },
+      {
+        "count": 7,
+        "skill_name": "Full Stack Development"
+      },
+      {
+        "count": 7,
+        "skill_name": "Cross-functional Collaboration"
+      },
+      {
+        "count": 7,
+        "skill_name": "Machine Learning"
+      },
+      {
+        "count": 7,
+        "skill_name": "Automation"
+      },
+      {
+        "count": 7,
+        "skill_name": "Backend Development"
+      },
+      {
+        "count": 6,
+        "skill_name": "API Development"
+      },
+      {
+        "count": 6,
+        "skill_name": "API Integration"
+      },
+      {
+        "count": 5,
+        "skill_name": "Python"
+      }
+    ],
+    "top_tools": [
+      {
+        "count": 19,
+        "tool_name": "Python"
+      },
+      {
+        "count": 11,
+        "tool_name": "JavaScript"
+      },
+      {
+        "count": 9,
+        "tool_name": "TypeScript"
+      },
+      {
+        "count": 7,
+        "tool_name": "React"
+      },
+      {
+        "count": 7,
+        "tool_name": "AWS"
+      }
+    ],
+    "computed_at": "2026-04-30T05:02:56.403421+00:00"
   }
 ]

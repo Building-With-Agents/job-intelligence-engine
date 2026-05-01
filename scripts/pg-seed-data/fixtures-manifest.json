@@ -1,7 +1,7 @@
 {
-  "release_tag": "fixtures-v1",
-  "bundle_filename": "fixtures-v1.tar.zst",
-  "bundle_sha256": "1f8132fd180fbac506d3f2f141e523f4c129839e78ebcbe5a6759e173440c0a4",
+  "release_tag": "fixtures-v3",
+  "bundle_filename": "fixtures-v3.tar.zst",
+  "bundle_sha256": "c3f662407488c77457b6f32affc8f377acc93dc279c6c5cdcf370918f1e0b5f1",
   "included_tables": [
     "extracted_intelligence",
     "raw_ingested_jobs",
@@ -10,6 +10,6 @@
     "llm_audit_log",
     "postal_geo_data"
   ],
-  "exported_at": "2026-04-30T00:43:31.673734+00:00",
+  "exported_at": "2026-04-30T17:03:05.347684+00:00",
   "repo": "Building-With-Agents/job-intelligence-engine"
 }
