@@ -123,5 +123,40 @@ def test_cleanup_orphan_canonical_roles_checks_snapshots() -> None:
     deleted = cleanup_orphan_canonical_roles(session)
 
     assert deleted == 2
-    stmt = str(session.execute.call_args.args[0])
-    assert "role_snapshot_weekly" in stmt
+    all_stmts = " ".join(str(call.args[0]) for call in session.execute.call_args_list)
+    assert "role_snapshot_weekly" in all_stmts
+
+
+def test_cleanup_orphan_deletes_stale_snapshots_before_roles() -> None:
+    """Stale snapshot rows must be removed first so orphan roles are not shielded.
+
+    Reproduces #334: a canonical role has ``posting_count > 0`` (cached) but
+    zero actual FK references from ``job_postings``.  Old
+    ``role_snapshot_weekly`` rows keep it alive unless we clean them first.
+    """
+    call_count = 0
+    stale_snapshot_rowcount = 3
+    orphan_role_rowcount = 1
+
+    def _execute_side_effect(*_args: object, **_kwargs: object) -> MagicMock:
+        nonlocal call_count
+        call_count += 1
+        result = MagicMock()
+        if call_count == 1:
+            result.rowcount = stale_snapshot_rowcount
+        else:
+            result.rowcount = orphan_role_rowcount
+        return result
+
+    session = MagicMock()
+    session.execute.side_effect = _execute_side_effect
+
+    deleted = cleanup_orphan_canonical_roles(session)
+
+    assert deleted == orphan_role_rowcount
+    assert session.execute.call_count == 2
+    first_stmt = str(session.execute.call_args_list[0].args[0])
+    second_stmt = str(session.execute.call_args_list[1].args[0])
+    assert "role_snapshot_weekly" in first_stmt
+    assert "DELETE" in first_stmt
+    assert "canonical_roles" in second_stmt
