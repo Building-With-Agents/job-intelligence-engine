@@ -35,13 +35,22 @@ _DEFAULT_ALLOWLIST: frozenset[str] = frozenset(
     if s.strip()
 )
 
-# Borderplex tenant: explicit out-of-tenant (Pacific NW); JIE #224 403 when user names that market.
+# Borderplex tenant: explicit out-of-tenant U.S./global metros (JIE #224 403).
+# Keep in sync with red-team regional scope cases (Week 10).
 _RE_BORDERPLEX_DENY: re.Pattern[str] = re.compile(
     r"\b("
     r"puget\s*sound|greater\s*seattle|seattle(\s+metro)?|"
     r"tacoma|bellingham|bremerton|spokane|olympia|everett|"
     r"king\s*county|redmond|bellevue|kirkland|renton|vancouver,\s*wa|"
-    r"portland,\s*or|\bportland\s+or\b"
+    r"portland,\s*or|\bportland\s+or\b|"
+    r"san\s*francisco|sf\s+bay|bay\s+area|silicon\s*valley|oakland|san\s*jose|"
+    r"los\s*angeles|la\s+metro|san\s*diego|sacramento|"
+    r"houston|dallas|austin|fort\s+worth|san\s*antonio|"
+    r"new\s+york|nyc|manhattan|brooklyn|queens|bronx|long\s+island|"
+    r"chicago|miami|boston|phoenix|denver|atlanta|philadelphia|detroit|"
+    r"minneapolis|st\.\s*louis|kansas\s+city|nashville|charlotte|orlando|"
+    r"tucson|albuquerque|salt\s+lake|las\s+vegas|honolulu|anchorage|"
+    r"washington,\s*dc|\bdc\b|northern\s+virginia|nova"
     r")\b",
     re.IGNORECASE,
 )

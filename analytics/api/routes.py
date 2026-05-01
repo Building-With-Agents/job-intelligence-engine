@@ -388,7 +388,13 @@ async def post_analytics_query(
 
         from analytics.api._config import allow_no_api_keys
 
-        allowed = load_api_keys()
+        try:
+            allowed = load_api_keys()
+        except ValueError as exc:
+            msg = str(exc)
+            if msg.startswith("jie_api_keys_invalid_json"):
+                raise HTTPException(status_code=500, detail=msg) from exc
+            raise
         if not allowed:
             if allow_no_api_keys():
                 scv.bind_contextvars(key_id="none")

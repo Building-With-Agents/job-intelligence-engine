@@ -15,6 +15,20 @@ class ApiKeyRecord:
     secret: str
 
 
+def _json_load_api_keys_list(raw: str, *, source: str) -> list[object]:
+    """Parse ``JIE_API_KEYS`` / file body; raise :class:`ValueError` with stable code on bad JSON."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "jie_api_keys_invalid_json: "
+            + source
+            + ' must be valid JSON (double-quoted keys). Example: [{"key_id":"local-dev-1",'
+            + '"secret":"local-dev-secret"}]. In bash, wrap the whole value in single quotes '
+            + "when using export (avoids `!` history expansion)."
+        ) from exc
+
+
 def load_api_keys() -> list[ApiKeyRecord]:
     """Load rotate-friendly keys from ``JIE_API_KEYS`` JSON or ``JIE_API_KEYS_FILE`` (YAML/JSON).
 
@@ -22,7 +36,7 @@ def load_api_keys() -> list[ApiKeyRecord]:
     """
     raw = os.getenv("JIE_API_KEYS", "").strip()
     if raw:
-        data = json.loads(raw)
+        data = _json_load_api_keys_list(raw, source="JIE_API_KEYS")
         if not isinstance(data, list):
             raise ValueError("JIE_API_KEYS must be a JSON list of objects with key_id and secret")
         return _records_from_list(data, source="JIE_API_KEYS")
@@ -40,7 +54,7 @@ def load_api_keys() -> list[ApiKeyRecord]:
             raise ValueError("JIE_API_KEYS_FILE requires PyYAML to be installed") from exc
         data = yaml.safe_load(blob) or []
     else:
-        data = json.loads(blob)
+        data = _json_load_api_keys_list(blob, source="JIE_API_KEYS_FILE")
 
     if not isinstance(data, list):
         raise ValueError("JIE_API_KEYS_FILE must contain a JSON/YAML list of objects with key_id and secret")
