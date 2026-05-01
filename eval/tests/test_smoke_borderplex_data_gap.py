@@ -52,10 +52,7 @@ _CLEAN_ROW_MIN_COUNT = 1000  # ≥1,000 confirmed-clean rows post-backfill (was 
 
 def _table_exists(conn, *, schema: str, table: str) -> bool:
     row = conn.execute(
-        text(
-            "SELECT 1 FROM information_schema.tables "
-            "WHERE table_schema = :schema AND table_name = :table LIMIT 1"
-        ),
+        text("SELECT 1 FROM information_schema.tables WHERE table_schema = :schema AND table_name = :table LIMIT 1"),
         {"schema": schema, "table": table},
     ).scalar()
     return row is not None
@@ -65,8 +62,8 @@ def _skip_if_missing_table(conn, *, schema: str, table: str, hint: str) -> None:
     if not _table_exists(conn, schema=schema, table=table):
         pytest.skip(
             f"{schema}.{table} does not exist after migrations — {hint}. "
-            "From repo root: `python -c \"from common.data_store.database import get_engine; "
-            "from common.data_store.migrations import run_migrations; run_migrations(get_engine())\"` "
+            'From repo root: `python -c "from common.data_store.database import get_engine; '
+            'from common.data_store.migrations import run_migrations; run_migrations(get_engine())"` '
             "then `python scripts/pg-seed-data/seed_pg_database.py` when fixtures are present."
         )
 

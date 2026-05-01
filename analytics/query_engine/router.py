@@ -576,7 +576,6 @@ class QueryRouter:
         # Tokenise role names and ILIKE-match against both job_title and
         # role_classification (same approach as _route_geographic_list).
         params: dict[str, Any] = {
-            "row_limit": _QUERY_LIMIT,
             "subregions": allowed_subregions,
         }
         where_parts: list[str] = [
@@ -598,22 +597,14 @@ class QueryRouter:
                     seen_tokens.add(norm)
                     t_key = f"rt_{token_index}"
                     c_key = f"rc_{token_index}"
-                    role_clauses.append(
-                        f"(jp.job_title ILIKE :{t_key} OR jp.role_classification ILIKE :{c_key})"
-                    )
+                    role_clauses.append(f"(jp.job_title ILIKE :{t_key} OR jp.role_classification ILIKE :{c_key})")
                     params[t_key] = f"%{tok}%"
                     params[c_key] = f"%{tok}%"
                     token_index += 1
             if role_clauses:
-                where_parts.append(
-                    "(" + " OR ".join(role_clauses) + ")"
-                    if len(role_clauses) > 1
-                    else role_clauses[0]
-                )
+                where_parts.append("(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0])
                 # Issue #197 — exclude the known mis-bucketed placeholder.
-                where_parts.append(
-                    "(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')"
-                )
+                where_parts.append("(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')")
 
         sql = text(
             f"""
@@ -627,7 +618,7 @@ class QueryRouter:
             WHERE {" AND ".join(where_parts)}
             GROUP BY jp.temporal_period, jp.borderplex_subregion, jp.seniority_level
             ORDER BY jp.temporal_period, posting_count DESC
-            LIMIT :row_limit
+            LIMIT {_QUERY_LIMIT}
             """
         )
 

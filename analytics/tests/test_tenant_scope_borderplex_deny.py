@@ -56,9 +56,7 @@ def test_borderplex_no_place_ok(borderplex: TenantAccess) -> None:
         "Tech hiring trends in New York City for Q1.",
     ],
 )
-def test_check_region_entitled_raises_for_major_out_of_scope_metro(
-    borderplex: TenantAccess, question: str
-) -> None:
+def test_check_region_entitled_raises_for_major_out_of_scope_metro(borderplex: TenantAccess, question: str) -> None:
     with pytest.raises(RegionNotEntitledError):
         check_region_entitled(borderplex, question, {"geographic_terms": []})
 

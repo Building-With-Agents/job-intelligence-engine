@@ -147,12 +147,13 @@ class TestIntentRouting:
 
         assert result.intent == "role_evolution"
         assert result.routed is True
-        assert result.tables_used == ["canonical_roles"]
+        assert result.tables_used == ["job_postings"]
         assert "Data Analyst" in result.query_label
 
         sql = _compiled_sql(session)
         _assert_sql_guardrails(sql)
-        assert "canonical_roles" in sql.lower()
+        assert "job_postings" in sql.lower()
+        assert "temporal_period" in sql.lower()
 
     def test_route_disruption(self) -> None:
         session = _make_session()
