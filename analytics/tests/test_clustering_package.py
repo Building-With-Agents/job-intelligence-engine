@@ -711,3 +711,208 @@ def test_reduce_dimensions_rejects_oversize_n_components() -> None:
             umap_metric="cosine",
             umap_random_state=0,
         )
+
+
+# ---------------------------------------------------------------------------
+# Disambiguation tests (#333)
+# ---------------------------------------------------------------------------
+
+
+def test_label_disambiguation_deterministic_qualifier_on_collision() -> None:
+    """Two clusters sharing a label get deterministic qualifiers from unique tools/skills."""
+    result = ClusteringResult(
+        assignments=[
+            ClusteredPosting(posting_id="p1", cluster_id="c1", raw_cluster_label=0),
+            ClusteredPosting(posting_id="p2", cluster_id="c1", raw_cluster_label=0),
+            ClusteredPosting(posting_id="p3", cluster_id="c2", raw_cluster_label=1),
+            ClusteredPosting(posting_id="p4", cluster_id="c2", raw_cluster_label=1),
+        ],
+        clusters=[
+            _make_cluster_summary(
+                "c1",
+                raw_cluster_label=0,
+                member_posting_ids=["p1", "p2"],
+                representative_titles=["Data Scientist"],
+                top_skills=[("NLP", 2), ("Transformers", 2)],
+                top_tools=[("Hugging Face", 2)],
+            ),
+            _make_cluster_summary(
+                "c2",
+                raw_cluster_label=1,
+                member_posting_ids=["p3", "p4"],
+                representative_titles=["Data Scientist"],
+                top_skills=[("Bioinformatics", 2), ("R", 2)],
+                top_tools=[("Bioconductor", 2)],
+            ),
+        ],
+        total_input_postings=4,
+        eligible_posting_count=4,
+        clustered_posting_count=4,
+        noise_posting_count=0,
+    )
+    features_rows = [
+        _make_feature("p1", title="Data Scientist", skills=["NLP", "Transformers"], tools=["Hugging Face"]),
+        _make_feature("p2", title="Data Scientist", skills=["NLP"], tools=["Hugging Face"]),
+        _make_feature("p3", title="Data Scientist", skills=["Bioinformatics", "R"], tools=["Bioconductor"]),
+        _make_feature("p4", title="Data Scientist", skills=["Bioinformatics"], tools=["Bioconductor"]),
+    ]
+
+    labeled = label_clusters(
+        result,
+        features_rows,
+        allow_llm_fallback=False,
+        dominance_threshold=0.6,
+    )
+
+    labels = {c.cluster_id: c.label for c in labeled.clusters}
+    assert labels["c1"] != labels["c2"], "Collision should be resolved"
+    assert "Hugging Face" in (labels["c1"] or "") or "NLP" in (labels["c1"] or "")
+    assert "Bioconductor" in (labels["c2"] or "") or "Bioinformatics" in (labels["c2"] or "")
+
+
+def test_label_disambiguation_llm_called_for_collisions() -> None:
+    """When LLM is enabled, disambiguation prompts the LLM for colliding clusters."""
+    result = ClusteringResult(
+        assignments=[
+            ClusteredPosting(posting_id="p1", cluster_id="c1", raw_cluster_label=0),
+            ClusteredPosting(posting_id="p2", cluster_id="c2", raw_cluster_label=1),
+        ],
+        clusters=[
+            _make_cluster_summary(
+                "c1",
+                raw_cluster_label=0,
+                member_posting_ids=["p1"],
+                representative_titles=["SRE"],
+                top_skills=[("Kubernetes", 1)],
+                top_tools=[("Terraform", 1)],
+            ),
+            _make_cluster_summary(
+                "c2",
+                raw_cluster_label=1,
+                member_posting_ids=["p2"],
+                representative_titles=["SRE"],
+                top_skills=[("Observability", 1)],
+                top_tools=[("Datadog", 1)],
+            ),
+        ],
+        total_input_postings=2,
+        eligible_posting_count=2,
+        clustered_posting_count=2,
+        noise_posting_count=0,
+    )
+    features_rows = [
+        _make_feature("p1", title="SRE", skills=["Kubernetes"], tools=["Terraform"]),
+        _make_feature("p2", title="SRE", skills=["Observability"], tools=["Datadog"]),
+    ]
+
+    llm_calls: list[str] = []
+
+    def mock_llm_labeler(cluster: ClusterSummary, _features: Sequence[PostingClusterFeatures]) -> str | None:
+        del _features
+        llm_calls.append(cluster.cluster_id)
+        return "SRE"
+
+    labeled = label_clusters(
+        result,
+        features_rows,
+        llm_labeler=mock_llm_labeler,
+        allow_llm_fallback=True,
+        dominance_threshold=1.0,
+    )
+
+    labels = {c.cluster_id: c.label for c in labeled.clusters}
+    assert labels["c1"] != labels["c2"], "Disambiguation should break the collision"
+
+
+def test_label_disambiguation_no_collision_leaves_labels_unchanged() -> None:
+    """When labels are already unique, disambiguation is a no-op."""
+    result = ClusteringResult(
+        assignments=[
+            ClusteredPosting(posting_id="p1", cluster_id="c1", raw_cluster_label=0),
+            ClusteredPosting(posting_id="p2", cluster_id="c2", raw_cluster_label=1),
+        ],
+        clusters=[
+            _make_cluster_summary(
+                "c1",
+                raw_cluster_label=0,
+                member_posting_ids=["p1"],
+                representative_titles=["Data Engineer"],
+                top_skills=[("SQL", 1)],
+                top_tools=[],
+            ),
+            _make_cluster_summary(
+                "c2",
+                raw_cluster_label=1,
+                member_posting_ids=["p2"],
+                representative_titles=["ML Engineer"],
+                top_skills=[("PyTorch", 1)],
+                top_tools=[],
+            ),
+        ],
+        total_input_postings=2,
+        eligible_posting_count=2,
+        clustered_posting_count=2,
+        noise_posting_count=0,
+    )
+    features_rows = [
+        _make_feature("p1", title="Data Engineer", skills=["SQL"]),
+        _make_feature("p2", title="ML Engineer", skills=["PyTorch"]),
+    ]
+
+    labeled = label_clusters(
+        result,
+        features_rows,
+        allow_llm_fallback=False,
+        dominance_threshold=0.5,
+    )
+
+    labels = {c.cluster_id: c.label for c in labeled.clusters}
+    assert labels["c1"] == "Data Engineer"
+    assert labels["c2"] == "ML Engineer"
+
+
+def test_label_disambiguation_assignments_reflect_updated_labels() -> None:
+    """After disambiguation, assignment cluster_label values match the updated labels."""
+    result = ClusteringResult(
+        assignments=[
+            ClusteredPosting(posting_id="p1", cluster_id="c1", raw_cluster_label=0),
+            ClusteredPosting(posting_id="p2", cluster_id="c2", raw_cluster_label=1),
+        ],
+        clusters=[
+            _make_cluster_summary(
+                "c1",
+                raw_cluster_label=0,
+                member_posting_ids=["p1"],
+                representative_titles=["AI Eng"],
+                top_skills=[("LLMOps", 1)],
+                top_tools=[("LangChain", 1)],
+            ),
+            _make_cluster_summary(
+                "c2",
+                raw_cluster_label=1,
+                member_posting_ids=["p2"],
+                representative_titles=["AI Eng"],
+                top_skills=[("Computer Vision", 1)],
+                top_tools=[("OpenCV", 1)],
+            ),
+        ],
+        total_input_postings=2,
+        eligible_posting_count=2,
+        clustered_posting_count=2,
+        noise_posting_count=0,
+    )
+    features_rows = [
+        _make_feature("p1", title="AI Eng", skills=["LLMOps"], tools=["LangChain"]),
+        _make_feature("p2", title="AI Eng", skills=["Computer Vision"], tools=["OpenCV"]),
+    ]
+
+    labeled = label_clusters(
+        result,
+        features_rows,
+        allow_llm_fallback=False,
+        dominance_threshold=0.5,
+    )
+
+    label_map = {c.cluster_id: c.label for c in labeled.clusters}
+    for assignment in labeled.assignments:
+        assert assignment.cluster_label == label_map.get(assignment.cluster_id)
