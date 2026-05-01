@@ -347,6 +347,12 @@ _SKILL_DEMAND_WEEKLY_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.skill_demand_weekly ADD COLUMN IF NOT EXISTS employer_count INTEGER NOT NULL DEFAULT 0",
 ]
 
+# Week 10 (#229): label_embedding for pgvector role resolution in the Q&A router.
+# Not ORM-mapped — follows the same unmapped-vector pattern as dedup_embedding on job_postings.
+_CANONICAL_ROLES_ALTER_STATEMENTS = [
+    "ALTER TABLE dbo.canonical_roles ADD COLUMN IF NOT EXISTS label_embedding vector(1536)",
+]
+
 # Issue #157: JSearch Pro-plan monthly budget counter — one column on job_ingestion_runs
 _JOB_INGESTION_RUNS_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.job_ingestion_runs ADD COLUMN IF NOT EXISTS api_requests_used INTEGER NOT NULL DEFAULT 0",
@@ -745,6 +751,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
         except Exception as exc:
             log.warning(
                 "migration_skill_demand_weekly_alter_skipped",
+                statement=stmt,
+                error=str(exc),
+            )
+
+    # Week 10 (#229): label_embedding vector column on canonical_roles (pgvector role router)
+    for stmt in _CANONICAL_ROLES_ALTER_STATEMENTS:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(stmt))
+        except Exception as exc:
+            log.warning(
+                "migration_canonical_roles_alter_skipped",
                 statement=stmt,
                 error=str(exc),
             )

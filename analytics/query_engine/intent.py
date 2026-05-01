@@ -82,6 +82,61 @@ GEOGRAPHIC vs EMPLOYER — TIE-BREAKER (apply whenever both signals are present)
      to geographic. Ask: "Is the region a filter on POSTINGS or a scope for EMPLOYERS?"
      If it scopes employers → employer.
 
+DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift signals appear):
+  → disruption: Primary ask is structural labor-market change tied to AI, automation,
+     displacement, augmentation, transformation, or era-defined skill/tool mix turnover
+     (e.g. pre_chatgpt vs post_gpt4, early_genai vs agentic_era). Includes demand decline
+     paired with automation/RPA/AI-tool signals, or "how skill composition shifted between
+     temporal buckets" for a role family.
+  → role_evolution: How duties, titles, or responsibilities of a role evolve narratively,
+     without the question centering on automation risk, era-bucket fingerprints, or
+     mix turnover across locked temporal periods — use role_evolution only when that
+     softer "how the job is changing" framing dominates.
+  → comparison: Two symmetric entities (two skills, two regions, two employers) ranked
+     or contrasted on equal footing. Era labels used to measure structural mix or AI
+     intensity change (not a balanced A-vs-B leaderboard of arbitrary peers) → disruption,
+     not comparison.
+  → trend: Demand velocity, growth, or time series "up or down" without era-bucket or
+     transformation/displacement framing. If temporal eras or AI/automation restructuring
+     is central → disruption, not trend.
+  → geographic: Location filters which postings are in scope, but the analytic axis is
+     still era/skill/automation shift → disruption. Use geographic only when listing or
+     filtering postings by place is the main task; a Borderplex (or similar) filter alone
+     does not override disruption when the core question is mix or automation change across eras.
+
+EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / agentic_era appear):
+  → emergence: The subject is something NEW appearing for the first time — net-new roles,
+     novel job families, AI-native titles, newly required tools/credentials/certifications
+     that did NOT exist in the prior era. The question asks "which NEW X appeared?",
+     "what is first-seen / newly emerging / didn't exist before?", or detects roles that
+     were absent (or near-zero) in pre_chatgpt and now appear at meaningful volume in the
+     agentic_era. Threshold-style framing ("<5 postings before ChatGPT, 50+ now") is
+     emergence, not disruption.
+  → disruption: The subject is an EXISTING role whose skill mix, tasks, or composition
+     was TRANSFORMED across eras. The role existed before AND after; the question is how
+     it changed (skills dropped out, AI-adjacent skills entered, automation reshaped duties).
+  RULE: era references alone do not decide between these. Ask: "Is the subject something
+     that DIDN'T EXIST PREVIOUSLY and is now appearing (emergence), or something that
+     EXISTED PREVIOUSLY and was transformed (disruption)?" New tools/credentials/titles
+     framed as "first-seen" or "did not exist in pre_chatgpt" → emergence.
+
+SHARE / GROWTH / VELOCITY of AI-ADOPTION — TIE-BREAKER (disruption vs trend):
+  When the question asks about a SHARE, GROWTH RATE, VELOCITY, or "how fast X is growing"
+  AND the SUBJECT of that share/growth is one of:
+    - AI-tool / AI-assistant adoption inside a role family (Copilot, ChatGPT, Cursor,
+      AIOps, LLM-driven incident triage, Copilot-for-infra-as-code, AI-assisted testing)
+    - automation / RPA penetration in an existing role
+    - displacement or augmentation of humans by AI in tasks
+    - transformation of an existing role's skill or task mix
+    - turnover of the skill / tool mix used by a role family
+  → disruption. The share/velocity here MEASURES structural AI/automation penetration,
+     not generic posting demand. Era buckets are NOT required — "current-period share"
+     plus "how fast is that share growing" is sufficient when the subject is AI adoption.
+  → trend remains the default for share / growth / velocity questions whose subject is
+     GENERIC posting or skill demand WITHOUT AI/automation/displacement/transformation
+     framing (e.g. "how fast is Python demand growing in El Paso?" → trend; "what share
+     of cybersecurity postings are remote and how fast is that growing?" → trend).
+
 Anchoring examples (few-shot):
 Q: "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles."
 A: {"intent":"geographic","confidence":0.95,...}
@@ -106,6 +161,26 @@ A: {"intent":"employer","confidence":0.93,...}
 Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 months."
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
+
+Q: "For Borderplex IT roles, how did skill composition shift between pre_chatgpt and post_gpt4?"
+A: {"intent":"disruption","confidence":0.91,...}
+   ← Era-pair skill-mix / structural turnover; automation-era framing → disruption.
+
+Q: "In Borderplex software engineering postings, how does AI-assistant tool adoption today compare to one year ago?"
+A: {"intent":"disruption","confidence":0.89,...}
+   ← Adoption shift of AI workplace tools over time → disruption, not a simple demand trend.
+
+Q: "Which Borderplex IT roles had fewer than five postings before ChatGPT but have grown to 50+ postings in the agentic_era period, and what skills are driving that growth?"
+A: {"intent":"emergence","confidence":0.88,...}
+   ← Roles essentially did not exist (<5 postings) in the pre_chatgpt era and now appear
+      at meaningful volume → NEW roles appearing → emergence. Era buckets here measure
+      first-appearance / growth-from-near-zero, not transformation of an existing role.
+
+Q: "For Borderplex DevOps and SRE postings, what share of current-period postings reference AI-assisted operations (AIOps, LLM-driven incident triage, Copilot for infra-as-code), and how fast is that share growing?"
+A: {"intent":"disruption","confidence":0.90,...}
+   ← Share + growth-rate of AI-assistant adoption inside an existing role family
+      (DevOps / SRE) measures structural AI/automation penetration, not generic posting
+      demand → disruption, not trend. No era bucket required when the subject is AI adoption.
 
 Q: "How have data analyst job descriptions in the Borderplex shifted toward analytics engineering or cloud tooling in the past year?"
 A: {"intent":"role_evolution","confidence":0.90,...}
