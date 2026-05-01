@@ -109,6 +109,14 @@ class QueryResultPayload(BaseModel):
             "refusal with a live-fetched suggestion from dbo.canonical_roles."
         ),
     )
+    no_data_refusal_override: str | None = Field(
+        default=None,
+        description=(
+            "JIE #330 — deterministic refusal when the router returns empty rows before aggregate "
+            "SQL (skill taxonomy miss or geo/skill scope). Used by evidence instead of the "
+            "generic 'No data in scope' line when set."
+        ),
+    )
 
 
 class EvidenceCitation(BaseModel):

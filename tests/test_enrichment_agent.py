@@ -883,7 +883,12 @@ class TestEnrichmentAgentBatchRecords:
         mock_enrich.assert_called_once()
         assert mock_enrich.call_args.kwargs.get("session") is mock_session
 
-    def test_process_passes_none_session_when_db_unavailable(self, skills_event: EventEnvelope) -> None:
+    def test_process_passes_none_session_when_db_unavailable(
+        self, skills_event: EventEnvelope, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Issue #286: _ensure_refs gates on os.environ PYTHON_DATABASE_URL, not check_db_connection.
+        # CI has no URL set; local devs do — clear it so this test matches CI.
+        monkeypatch.delenv("PYTHON_DATABASE_URL", raising=False)
         payload = {
             **skills_event.payload,
             "records": [_batch_row_from_skills_event(skills_event, is_spam=False)],

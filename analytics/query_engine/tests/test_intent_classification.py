@@ -22,6 +22,7 @@ import pytest
 from analytics.query_engine.intent import (
     _SYSTEM_PROMPT,
     IntentClassification,
+    _matches_curriculum_generation_shape,
     classify_workforce_question,
 )
 
@@ -115,6 +116,63 @@ def test_system_prompt_contains_pure_employer_counterexample() -> None:
 def test_system_prompt_contains_comparison_counterexample() -> None:
     """Prompt must include a comparison counter-example to anchor the boundary."""
     assert "comparison" in _SYSTEM_PROMPT
+
+
+def test_system_prompt_curriculum_has_program_design_nudge() -> None:
+    """Prompt must describe curriculum-generation phrasing and El Paso few-shot."""
+    assert "What should a training program for" in _SYSTEM_PROMPT
+    assert "program design" in _SYSTEM_PROMPT.lower() or "curriculum" in _SYSTEM_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# Curriculum-generation heuristic (Week 10 — stable routing without LLM)
+# ---------------------------------------------------------------------------
+
+
+def test_curriculum_heuristic_shape_examples() -> None:
+    assert _matches_curriculum_generation_shape(
+        "What should a training program for a cloud architect look like over the next 18 months?"
+    )
+    assert _matches_curriculum_generation_shape("Design a curriculum for welders in the Borderplex.")
+    assert _matches_curriculum_generation_shape("What skills should we teach for an entry-level data analyst?")
+
+
+def test_curriculum_classify_short_circuits_without_llm() -> None:
+    """Strong curriculum-generation phrasing returns intent before complete() is called."""
+    with patch("analytics.query_engine.intent.complete") as mock_c:
+        result = classify_workforce_question(
+            "What should a training program for a registered nurse look like?",
+            correlation_id="test-curriculum-heuristic",
+        )
+    mock_c.assert_not_called()
+    assert result["intent"] == "curriculum"
+    assert result["confidence"] == pytest.approx(0.92)
+    assert result["needs_clarification"] is False
+
+
+def test_sanity_routing_non_curriculum_still_uses_llm() -> None:
+    """Disruption, trend, and geographic intents are unchanged when the LLM returns them."""
+    cases = [
+        (
+            "How is generative AI expected to disrupt software engineering roles in the next five years?",
+            "disruption",
+        ),
+        (
+            "What is the week-over-week trend in demand for prompt engineering skills in the post_gpt4 period?",
+            "trend",
+        ),
+        (
+            "Show all El Paso, TX cybersecurity postings from the last 6 months.",
+            "geographic",
+        ),
+    ]
+    for question, expected_intent in cases:
+        with patch(
+            "analytics.query_engine.intent.complete",
+            return_value=_make_complete_result(expected_intent, 0.9),
+        ):
+            result = classify_workforce_question(question, correlation_id=f"sanity-{expected_intent}")
+        assert result["intent"] == expected_intent, f"expected {expected_intent!r} for: {question[:50]}…"
 
 
 # ---------------------------------------------------------------------------

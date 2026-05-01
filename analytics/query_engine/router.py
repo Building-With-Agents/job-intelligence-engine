@@ -35,9 +35,14 @@ from datetime import date, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import Text, cast, or_, select, text
+from sqlalchemy import Text, cast, func, or_, select, text
 from sqlalchemy.orm import Session
 
+from analytics.query_engine.constants import (
+    NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
+    NO_DATA_SKILL_TAXONOMY_REFUSAL,
+    SKILL_TAXONOMY_GATE_CONFIDENCE_CAP,
+)
 from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
 from common.data_store.models import (
     CanonicalRole,
@@ -45,6 +50,7 @@ from common.data_store.models import (
     EmployerProfile,
     GeoDemandWeekly,
     SectorSummaryWeekly,
+    Skill,
     SkillDemandWeekly,
     SkillVelocity,
 )
@@ -66,6 +72,7 @@ _QUERY_TIMEOUT_SECONDS: int = _query_timeout_seconds()
 #: explicit PR review — do not add raw pipeline tables here.
 ALLOWED_TABLES: frozenset[str] = frozenset(
     {
+        "skills",
         "skill_demand_weekly",
         "tool_demand_weekly",
         "skill_velocity",
@@ -281,7 +288,9 @@ class RouteResult:
         routed:       ``False`` if the intent could not be mapped to a query
                       or the query raised an exception.
         error:        Error message when ``routed=False``.
-        confidence:   Forwarded from the intent classifier.
+        confidence:   Forwarded from the intent classifier (may be capped by gates).
+        empty_rows_refusal_reason: When rows are intentionally empty before aggregate
+            SQL (JIE #330), a deterministic user-facing refusal line for evidence.
     """
 
     intent: str
@@ -293,6 +302,107 @@ class RouteResult:
     routed: bool = True
     error: str | None = None
     confidence: float = 0.0
+    empty_rows_refusal_reason: str | None = None
+
+
+# JIE #330 — intents that read skill-scoped aggregates; every extracted skill_name must
+# exist in dbo.skills before we query (case-insensitive full-name equality only).
+_SKILL_AGG_INTENTS_REQUIRING_TAXONOMY: frozenset[str] = frozenset(
+    {"trend", "disruption", "emergence", "comparison", "curriculum"},
+)
+
+
+def _skill_terms_all_in_dbo_skills(session: Session, skill_names: list[str], *, max_terms: int = 5) -> bool:
+    """True iff each distinct extracted skill term matches ``dbo.skills.skill_name`` (ci exact).
+
+    Matching uses **case-insensitive equality on the full stored skill_name** only.
+    Substring or ``ILIKE '%term%'`` is intentionally avoided: short tokens and
+    ambiguous fragments would otherwise match unrelated taxonomy rows and let
+    broad aggregates pass the gate (the RT-007 failure mode).
+    """
+    lowered: list[str] = []
+    for raw in skill_names[:max_terms]:
+        t = str(raw).strip().lower()
+        if t:
+            lowered.append(t)
+    if not lowered:
+        return True
+    distinct = list(dict.fromkeys(lowered))
+    stmt = select(func.lower(Skill.skill_name)).where(func.lower(Skill.skill_name).in_(distinct))
+    matched = set(session.execute(stmt).scalars().all())
+    return all(term in matched for term in distinct)
+
+
+def _skill_taxonomy_block_result(
+    intent: str,
+    classification_confidence: float,
+    *,
+    refusal_reason: str,
+) -> RouteResult:
+    cap = min(float(classification_confidence), SKILL_TAXONOMY_GATE_CONFIDENCE_CAP)
+    return RouteResult(
+        intent=intent,
+        tables_used=["skills"],
+        query_label="skill taxonomy gate",
+        rows=[],
+        row_count=0,
+        routed=True,
+        confidence=cap,
+        empty_rows_refusal_reason=refusal_reason,
+    )
+
+
+def _apply_skill_taxonomy_and_geo_scope_gates(
+    session: Session,
+    intent: str,
+    classification_confidence: float,
+    skill_names: list[str],
+    question: str,
+) -> RouteResult | None:
+    """Pre-handler gate for JIE #330: taxonomy match + geo/skill scope honesty."""
+    qtext = question or ""
+    if intent == "geographic" and skill_names and not _is_list_style(qtext):
+        if not _skill_terms_all_in_dbo_skills(session, skill_names):
+            log.info(
+                "skill_taxonomy_gate_blocked",
+                intent=intent,
+                reason="taxonomy_miss",
+                skill_preview=skill_names[:5],
+            )
+            return _skill_taxonomy_block_result(
+                intent,
+                classification_confidence,
+                refusal_reason=NO_DATA_SKILL_TAXONOMY_REFUSAL,
+            )
+        log.info(
+            "geo_aggregate_skill_scope_blocked",
+            intent=intent,
+            reason="geo_not_scoped_by_skill",
+            skill_preview=skill_names[:5],
+        )
+        return _skill_taxonomy_block_result(
+            intent,
+            classification_confidence,
+            refusal_reason=NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
+        )
+
+    if (
+        intent in _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY
+        and skill_names
+        and not _skill_terms_all_in_dbo_skills(session, skill_names)
+    ):
+        log.info(
+            "skill_taxonomy_gate_blocked",
+            intent=intent,
+            reason="taxonomy_miss",
+            skill_preview=skill_names[:5],
+        )
+        return _skill_taxonomy_block_result(
+            intent,
+            classification_confidence,
+            refusal_reason=NO_DATA_SKILL_TAXONOMY_REFUSAL,
+        )
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -367,6 +477,10 @@ class QueryRouter:
             role_names=role_names[:3],
             geo_terms=geo_terms[:3],
         )
+
+        blocked = _apply_skill_taxonomy_and_geo_scope_gates(session, intent, confidence, skill_names, question)
+        if blocked is not None:
+            return blocked
 
         handler: Callable[..., RouteResult] | None = _INTENT_HANDLERS.get(intent)
         if handler is None:

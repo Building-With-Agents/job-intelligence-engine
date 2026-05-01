@@ -5,7 +5,10 @@ All database I/O is mocked — no real PostgreSQL connection is required.
 Strategy
 --------
 * Each intent test calls ``QueryRouter().route(classification, session)`` with a
-  mocked ``Session`` whose ``execute()`` is intercepted.
+  mocked ``Session`` whose ``execute()`` is intercepted. JIE #330 adds an optional
+  first ``execute()`` for the dbo.skills taxonomy probe when extracted ``skill_names``
+  gate applies; use ``_make_session(..., taxonomy_lower_matches=...)`` so the main
+  query remains the **last** ``execute`` (see ``_compiled_sql``).
 * The SQLAlchemy ``Select`` statement passed into ``execute()`` is compiled
   against the PostgreSQL dialect (in-process, no DB) and the resulting SQL
   string is inspected with ``re`` assertions:
@@ -30,6 +33,10 @@ import pytest
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
+from analytics.query_engine.constants import (
+    NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
+    NO_DATA_SKILL_TAXONOMY_REFUSAL,
+)
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
@@ -84,9 +91,24 @@ def _make_mock_row(**kwargs: Any) -> MagicMock:
     return row
 
 
-def _make_session(rows: list[MagicMock] | None = None) -> MagicMock:
-    """Return a mock ``Session`` whose ``execute()`` yields *rows*."""
+def _make_session(
+    rows: list[MagicMock] | None = None,
+    *,
+    taxonomy_lower_matches: tuple[str, ...] | None = None,
+) -> MagicMock:
+    """Return a mock ``Session`` whose ``execute()`` yields *rows*.
+
+    When ``taxonomy_lower_matches`` is set (JIE #330), the first ``execute()`` is
+    the dbo.skills taxonomy probe (``scalars().all()``); the second yields ORM rows.
+    """
     session = MagicMock(spec=Session)
+    if taxonomy_lower_matches is not None:
+        tax_r = MagicMock()
+        tax_r.scalars.return_value.all.return_value = list(taxonomy_lower_matches)
+        data_r = MagicMock()
+        data_r.__iter__ = MagicMock(return_value=iter(rows or []))
+        session.execute.side_effect = [tax_r, data_r]
+        return session
     mock_result = MagicMock()
     mock_result.__iter__ = MagicMock(return_value=iter(rows or []))
     session.execute.return_value = mock_result
@@ -99,7 +121,10 @@ def _compiled_sql(session: MagicMock) -> str:
     Uses the PostgreSQL dialect with ``literal_binds=True`` so that numeric
     params (e.g. ``LIMIT 100``) and string params appear inline in the SQL.
     """
-    stmt = session.execute.call_args[0][0]
+    calls = session.execute.call_args_list
+    if not calls:
+        raise AssertionError("session.execute was never called")
+    stmt = calls[-1][0][0]
     return str(
         stmt.compile(
             dialect=postgresql.dialect(),
@@ -124,7 +149,7 @@ class TestIntentRouting:
     """10 tests — one per intent in the dispatch table."""
 
     def test_route_trend(self) -> None:
-        session = _make_session()
+        session = _make_session(taxonomy_lower_matches=("python",))
         cls = _mk_classification("trend", skill_names=["Python"])
         result = QueryRouter().route(cls, session)
 
@@ -178,7 +203,7 @@ class TestIntentRouting:
         )
 
     def test_route_emergence(self) -> None:
-        session = _make_session()
+        session = _make_session(taxonomy_lower_matches=("llm", "genai"))
         cls = _mk_classification("emergence", skill_names=["LLM", "GenAI"])
         result = QueryRouter().route(cls, session)
 
@@ -196,7 +221,7 @@ class TestIntentRouting:
         assert "LLM" in sql or "GenAI" in sql
 
     def test_route_curriculum(self) -> None:
-        session = _make_session()
+        session = _make_session(taxonomy_lower_matches=("sql", "tableau"))
         cls = _mk_classification("curriculum", skill_names=["SQL", "Tableau"])
         result = QueryRouter().route(cls, session)
 
@@ -268,7 +293,7 @@ class TestIntentRouting:
         assert "dona_ana" in sql.lower() or "ciudad_juarez" in sql.lower()
 
     def test_route_comparison_with_skills(self) -> None:
-        session = _make_session()
+        session = _make_session(taxonomy_lower_matches=("python", "r"))
         cls = _mk_classification("comparison", skill_names=["Python", "R"])
         result = QueryRouter().route(cls, session)
 
@@ -329,7 +354,11 @@ def test_sql_guardrails(
         "analytics.query_engine.router._embed_texts_azure",
         lambda *args, **kwargs: None,
     )
-    session = _make_session()
+    sn = extra_entities.get("skill_names") or []
+    taxonomy: tuple[str, ...] | None = None
+    if intent in ("trend", "comparison") and sn:
+        taxonomy = tuple(str(s).strip().lower() for s in sn)
+    session = _make_session(taxonomy_lower_matches=taxonomy) if taxonomy else _make_session()
     result = QueryRouter().route(_mk_classification(intent, **extra_entities), session)
 
     assert result.routed, f"[{intent}] expected routed=True"
@@ -347,6 +376,20 @@ def test_sql_guardrails(
 
 
 class TestEdgeCases:
+    def test_jie330_unknown_skill_taxonomy_blocks_trend_before_aggregate(self) -> None:
+        tax_empty = MagicMock()
+        tax_empty.scalars.return_value.all.return_value = []
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_empty
+        result = QueryRouter().route(
+            _mk_classification("trend", skill_names=["quantum computing"]),
+            session,
+        )
+        assert result.routed is True
+        assert result.rows == []
+        assert result.empty_rows_refusal_reason == NO_DATA_SKILL_TAXONOMY_REFUSAL
+        assert session.execute.call_count == 1
+
     def test_is_partial_when_limit_rows_returned(self) -> None:
         """is_partial must be True when the result hits LIMIT 100."""
         rows = [_make_mock_row(skill_label=f"skill_{i}") for i in range(100)]
@@ -728,6 +771,49 @@ class TestRouteGeographicListStyle:
         assert list_params.get("city") == "El Paso"
         title_keys = [k for k in list_params if k.startswith("role_title_")]
         assert not title_keys
+
+    def test_jie330_geographic_aggregate_unknown_skill_taxonomy_blocks(self) -> None:
+        """RT-007: unknown skill + aggregate geo must not query geo_demand_weekly."""
+        tax_empty = MagicMock()
+        tax_empty.scalars.return_value.all.return_value = []
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_empty
+        cls = _mk_classification(
+            "geographic",
+            geo_terms=["El Paso"],
+            skill_names=["quantum computing"],
+            time_refs=["last month"],
+        )
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="How many quantum computing jobs were posted in El Paso last month?",
+        )
+        assert result.routed is True
+        assert result.rows == []
+        assert result.tables_used == ["skills"]
+        assert result.confidence <= 0.35
+        assert result.empty_rows_refusal_reason == NO_DATA_SKILL_TAXONOMY_REFUSAL
+        assert session.execute.call_count == 1
+
+    def test_jie330_geographic_aggregate_known_skill_blocks_geo_scope(self) -> None:
+        """Skill in taxonomy but geo_demand_weekly has no skill dimension — refuse pre-geo."""
+        session = _make_session(taxonomy_lower_matches=("python",))
+        cls = _mk_classification(
+            "geographic",
+            geo_terms=["El Paso"],
+            skill_names=["Python"],
+            time_refs=["last month"],
+        )
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="How many Python developer jobs were posted in El Paso last month?",
+        )
+        assert result.routed is True
+        assert result.rows == []
+        assert result.empty_rows_refusal_reason == NO_DATA_GEO_SKILL_SCOPE_REFUSAL
+        assert session.execute.call_count == 1
 
     def test_aggregate_style_question_keeps_geo_demand_routing(self) -> None:
         """Non-list-style geographic question must continue routing to geo_demand_weekly."""

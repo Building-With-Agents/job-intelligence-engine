@@ -50,6 +50,55 @@ INTENT_CATEGORIES: Final[tuple[str, ...]] = (
 
 _INTENT_SET = frozenset(INTENT_CATEGORIES)
 
+# Heuristic: curriculum *generation* (program/learning design for a role). Runs before the LLM so
+# stable phrasing routes to "curriculum" even when a location or employer is mentioned in passing.
+# Keep patterns tight to avoid misrouting disruption/trend/geography primary intents.
+_CURRICULUM_GENERATION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
+    re.compile(
+        r"\bwhat should (?:a |an |the )?training program for\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bhow should (?:we |I )?structure (?:a |an |the )?training (?:program|curriculum) for\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bdesign (?:a |an |the )?curriculum for\b", re.IGNORECASE),
+    re.compile(
+        r"\bwhat skills should (?:we |I |my (?:org|team|program) )?teach (?:for|to|in)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:recommend|suggest|propose|outline|map|draft|plan|sketch)\b"
+        r".{0,100}?\b(?:a |an |the )?"
+        r"(?:syllabus|workforce (?:curriculum|program)|"
+        r"(?:certificate|vocational|undergraduate|graduate) (?:curriculum|program)|"
+        r"learning (?:path|journey|track|roadmap|plan)|"
+        r"bootcamp (?:curriculum|program|outline)|"
+        r"training (?:path|roadmap|curriculum|program|track|outline))\s+for\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:build|create|develop|architect|shape)\b"
+        r".{0,40}?\b(?:a |an |the )?(?:curriculum|learning path|syllabus|"
+        r"training (?:path|roadmap|program|outline))\s+for\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bprogram design (?:and delivery )?for\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def _matches_curriculum_generation_shape(question: str) -> bool:
+    q = (question or "").strip()
+    if not q or len(q) < 20:
+        return False
+    return any(pat.search(q) for pat in _CURRICULUM_GENERATION_PATTERNS)
+
+
+_CURRICULUM_HEURISTIC_CONFIDENCE = 0.92
+
 _SYSTEM_PROMPT = """You are an intent classifier for workforce and labor-market analytics questions.
 
 Choose exactly ONE primary intent from this closed list (snake_case):
@@ -57,7 +106,12 @@ Choose exactly ONE primary intent from this closed list (snake_case):
 - role_evolution: how a job/role is changing, titles, responsibilities over time
 - disruption: automation, AI impact, displacement, restructuring, risk to occupations
 - emergence: new roles, emerging skills, novel job families, "jobs that didn't exist"
-- curriculum: training, credentials, learning paths, bootcamps, upskilling programs
+- curriculum: training, credentials, learning paths, bootcamps, upskilling programs, **and
+  program design for a target role** — e.g. "What should a training program for [role] look
+  like?", "Design a curriculum for [role]…", "What skills should we teach for [role]?",
+  "Outline a learning path for …". If the user is asking *how to design* or *what to include
+  in* education for a profession (not listing postings or ranking employers by location), use
+  curriculum even when a city/region is mentioned as context.
 - employer: EMPLOYERS are the grammatical subject — ranked, compared, or analyzed by
   hiring behavior, role share, AI adoption, turnover, or other employer-level attributes.
   A region token that scopes which employers are included (e.g. "Borderplex employers",
@@ -161,6 +215,14 @@ A: {"intent":"employer","confidence":0.93,...}
 Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 months."
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
+
+Q: "What should a training program for a cybersecurity analyst in El Paso look like in the next 2 years?"
+A: {"intent":"curriculum","confidence":0.91,...}
+   ← Program/curriculum design for a role; the city is context, not a posting filter.
+
+Q: "Design a curriculum for entry-level data engineers in the Borderplex that emphasizes GenAI toolchains."
+A: {"intent":"curriculum","confidence":0.9,...}
+   ← Curriculum design. Not the same as "show all Borderplex postings" (geographic).
 
 Q: "For Borderplex IT roles, how did skill composition shift between pre_chatgpt and post_gpt4?"
 A: {"intent":"disruption","confidence":0.91,...}
@@ -325,6 +387,20 @@ def classify_workforce_question(
     q = (question or "").strip()
     if not q:
         return _fallback_other("empty_question")
+
+    if _matches_curriculum_generation_shape(q):
+        log.info("intent_classification_curriculum_heuristic", match="curriculum_generation_shape")
+        return {
+            "intent": "curriculum",
+            "confidence": float(_CURRICULUM_HEURISTIC_CONFIDENCE),
+            "needs_clarification": _CURRICULUM_HEURISTIC_CONFIDENCE < _CLARIFICATION_THRESHOLD,
+            "extracted_entities": {
+                "geographic_terms": [],
+                "role_names": [],
+                "skill_names": [],
+                "time_references": [],
+            },
+        }
 
     ctx = (conversation_context or "").strip()
     if ctx:
