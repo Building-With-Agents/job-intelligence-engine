@@ -256,6 +256,24 @@ class TestIntentRouting:
         # Must JOIN companies
         assert re.search(r"\bJOIN\b", sql, re.IGNORECASE), "employer query must JOIN companies table"
 
+    def test_route_employer_jie346_geo_on_location_not_company_name(self) -> None:
+        """JIE #346: Borderplex + kebab role slugs must not ILIKE ``company_name`` (empty evidence)."""
+        session = _make_session()
+        cls = _mk_classification(
+            "employer",
+            role_names=["clinical-data-analyst", "health-informatics"],
+            geo_terms=["Borderplex"],
+        )
+        result = QueryRouter().route(cls, session)
+
+        assert result.intent == "employer"
+        assert result.routed is True
+        sql = _compiled_sql(session).lower()
+        assert "borderplex" in sql
+        assert "clinical-data-analyst" not in sql
+        assert "health-informatics" not in sql
+        assert "normalized_location" in sql or "city" in sql or "state" in sql
+
     def test_route_workflow(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             "analytics.query_engine.router._embed_texts_azure",

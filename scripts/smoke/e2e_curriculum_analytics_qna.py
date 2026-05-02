@@ -1,5 +1,5 @@
 # ruff: noqa: T201
-"""End-to-end smoke: three Borderplex curriculum questions through curriculum Q&A path.
+"""End-to-end smoke: Borderplex curriculum questions through curriculum Q&A path.
 
 Loads repo-root ``.env``, verifies DB connectivity, runs each training-program question
 through the same flow as ``run_analytics_qna`` for ``intent == curriculum`` (classify →
