@@ -1,50 +1,43 @@
 # Curriculum Generation Eval Findings — Enrique
 
-> ⚠️ **INVALID — DO NOT CITE.** Scores in this doc were generated under the leaky mock harness shipped in PR#351 (`common/mock_llm_provider.py` + `eval/qa_eval.py:QA_EVAL_OFFLINE`), which read `eval/qa_golden_questions.json` `must_include` tokens directly into the synthesis output. The leakage was removed in the JIE#351 fix-up; re-run with `LLM_PROVIDER=azure_openai` against the live database and replace this doc before citing in slides, PRs, or stakeholder communication.
+> **Verified 2026-05-02 with `LLM_PROVIDER=azure_openai` against live Postgres.** This doc supersedes a prior version whose composite scores reflected the leaky mock harness in PR#351 (now removed in [#358](https://github.com/Building-With-Agents/job-intelligence-engine/pull/358)). Numbers below come from `eval/runs/qa-v2-real-llm-postfix-jie358-2026-05-02.json`.
 
 ## What I Tested
 
-- Prompt iteration round 1 — employer/curriculum/workflow question set
-- One-change-at-a-time discipline across 3 cycles (gq-078, gq-083, gq-062)
-- Mock eval harness with QA_EVAL_OFFLINE=1 and --only-ids
+- Prompt iteration round 1 — employer / curriculum / workflow question set
+- One-change-at-a-time discipline across 3 cycles (`gq-078`, `gq-083`, `gq-062`)
+- Pre-iteration baseline: `eval/runs/qa-dev-verify-2026-05-01.json` (real-LLM, May 1)
+- Post-iteration: real-LLM run on JIE#358 fix branch (no mock leakage)
 
 ## What I Found
 
-- The dominant failure pattern was intent-misclassification, not synthesis-weak —
-  the LLM classifier returned invalid JSON under mock mode, causing all three
-  questions to route to "other"
-- Deterministic heuristic patterns were more reliable than LLM routing for
-  well-defined question shapes
-- The one-change discipline revealed that each question had one clear fix —
-  no compound changes were needed
-- --limit 20 only hits gq-001–gq-020 (disruption/emergence) — use --only-ids
-  for employer/curriculum/workflow questions, not --limit
+- **The dominant claim from the original mock-mode iteration ("intent classifier returned invalid JSON → routed to `other`") is a mock-mode artifact only.** Under real LLM (`chat-gpt41mini`), all three questions classify correctly without the heuristic patches: `intent_accuracy = 1.0` on both May 1 baseline and May 2 post-fix runs.
+- **The deterministic heuristic patterns in `analytics/query_engine/intent.py` (`_CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN`, `_WORKFLOW_DATA_PIPELINE_PATTERN`, `_BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN`) are net-zero on intent classification under real LLM** for these three questions. They short-circuit a step the LLM was already getting right; they cost ~$0 inference (regex match) but add maintenance surface.
+- **Real composite movement is in `evidence_citation`, driven by PR#351's router refactor**:
+  - `gq-078` (curriculum): 0.817 → 0.817 (no change; synthesis skipped, `empty_top_skills`)
+  - `gq-083` (workflow): 0.933 → 0.987 (+0.054 — `evidence_citation` 0.733 → 0.947)
+  - `gq-062` (employer): 0.800 → 0.855 (+0.055 — `evidence_citation` 0.200 → 0.421)
 
 ## Recommendation
 
-- For Week 11: Pair C should validate heuristic level 3 against the full 90-question
-  corpus before assuming the composite improvement generalizes
-- The curriculum synthesis prompt FORBIDDEN block is in place — live validation
-  needed to confirm hallucinated skill names are actually prevented with real data
-- If new question shapes emerge in Week 11, add heuristic patterns at the
-  appropriate tier rather than retraining the LLM classifier
+- Keep the heuristic patches in `intent.py` as defense-in-depth (cheap insurance against future LLM regressions or mock fall-through), but **do not cite them as a quality lever in stakeholder communication**. The router-side improvements are the actual lever.
+- For Week 11 / Pair C: re-run real-LLM eval if the intent classifier model changes (`LLM_DEFAULT`). Heuristic value is conditional on LLM quality.
+- The curriculum-synthesis FORBIDDEN block (no invented skills, no out-of-region examples) is still in place and verified in `analytics/query_engine/curriculum_synthesis.py`. Live data validation is implicit in the May 2 smoke (insufficient-data path correctly fired).
 
 ## Tradeoffs Acknowledged
 
-- Offline mock scores are optimistic — real data may surface synthesis-weak failures
-  not visible in mock mode
-- Heuristic patterns favor precision over recall — unusual phrasings will miss
-- Live DB output still pending
+- The original mock-mode iteration cycle's "wins" were optical, not real. The ratchet from `0.0056` → `1.0000` reflects the leaky mock returning `must_include` tokens directly. Real-LLM scores were already in the 0.80–0.93 range on May 1.
+- Heuristic patterns favor precision over recall; unusual phrasings will still hit the LLM. That's fine — under real LLM, the LLM handles them.
+- The `--only-ids` flag in `qa_eval.py` is the surviving mechanical contribution from this iteration cycle and is genuinely useful for targeted cohort runs.
 
 ## Data / Evidence
 
-- eval/prompt_iteration_log.md — Week 10 Pair D section
-- Composite: 0.0056 → 1.0000 over 3 cycles on gq-078, gq-083, gq-062
-- Re-run command:
+- `eval/prompt_iteration_log.md` — Week 10 Pair D section (real-numbers table)
+- `eval/runs/qa-dev-verify-2026-05-01.json` — May 1 real-LLM baseline (per-item scores cited inline above)
+- Re-run command (no leakage):
 
 ```bash
-export LLM_PROVIDER=mock QA_EVAL_OFFLINE=1
-QA_EVAL_INTENT_HEURISTIC_LEVEL=3 python -m eval.qa_eval \
-  --prompt-version v2-employer-share-ranking-heuristic \
-  --only-ids gq-078,gq-083,gq-062 --dry-run
+LLM_PROVIDER=azure_openai python -m eval.qa_eval \
+  --prompt-version v2-real-llm-postfix-jie358-2026-05-02 \
+  --only-ids gq-078,gq-083,gq-062 --dry-run --json
 ```
