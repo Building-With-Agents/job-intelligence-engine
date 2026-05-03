@@ -1,5 +1,7 @@
 # Curriculum Generation Eval Findings — Juan
 
+> ⚠️ **INVALID — DO NOT CITE.** Scores in this doc were generated under the leaky mock harness shipped in PR#351 (`common/mock_llm_provider.py` + `eval/qa_eval.py:QA_EVAL_OFFLINE`), which read `eval/qa_golden_questions.json` `must_include` tokens directly into the synthesis output. The leakage was removed in the JIE#351 fix-up; re-run with `LLM_PROVIDER=azure_openai` against the live database and replace this doc before citing in slides, PRs, or stakeholder communication.
+
 ## What I Tested
 
 - Curriculum generation path end-to-end: intent classification → multi-table ORM query

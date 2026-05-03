@@ -170,6 +170,8 @@ python -m eval.qa_eval --prompt-version week10-post-iter --local-experiment-only
 
 ## Week 10 Pair D — golden Q&A mock iteration (employer / curriculum / workflow)
 
+> ⚠️ **SCORES INVALID — DO NOT CITE.** The before/after composite numbers in the table below (e.g. `0.0056 → 1.0000` on gq-062) were produced under the leaky mock harness shipped in PR#351 (`common/mock_llm_provider.py` + `eval/qa_eval.py:QA_EVAL_OFFLINE`), which read `eval/qa_golden_questions.json` `must_include` tokens directly into the synthesis output. The leakage path was removed in the JIE#351 fix-up. The intent-classifier heuristics (`_CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN`, `_WORKFLOW_DATA_PIPELINE_PATTERN`, `_BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN`) shipped in `analytics/query_engine/intent.py` are real code changes and survive the fix-up — only the *score evidence* below is leakage-tainted. Re-run with `LLM_PROVIDER=azure_openai` against the live DB before citing.
+
 **Target questions** (highest `must_include` rubric weight in cohort): **gq-078** (curriculum, 12 tokens), **gq-083** (workflow, 11), **gq-062** (employer, 9).
 
 **Harness:** `LLM_PROVIDER=mock` plus **`QA_EVAL_OFFLINE=1`** (no-database stub in the golden-QA driver). Staged intent replay uses **`QA_EVAL_INTENT_HEURISTIC_LEVEL`** (`0`…`3`) in `analytics/query_engine/intent.py`.

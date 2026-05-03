@@ -1,5 +1,7 @@
 # Curriculum Generation Smoke Test — v1
 
+> ⚠️ **DO NOT CITE.** This run did not actually execute against a database (see capture note below) and any later mock-harness reruns would reflect the leaky harness shipped in PR#351 (`common/mock_llm_provider.py` + `eval/qa_eval.py:QA_EVAL_OFFLINE`), which has now been removed. Re-run the smoke with `LLM_PROVIDER=azure_openai` and a configured `PYTHON_DATABASE_URL` before citing.
+
 Date: 2026-04-30
 
 **Capture note:** This run was executed in an environment where `PYTHON_DATABASE_URL` was not set in the repo-root `.env`, so the smoke script exited during the database connectivity check before any of the three questions ran. Re-run locally after configuring `.env`, then replace the sections below with the new stdout (or pipe the script output here):

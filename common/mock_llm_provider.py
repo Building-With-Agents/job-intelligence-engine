@@ -4,6 +4,11 @@ Returns realistic extraction results from ground truth data
 (eval/extraction_ground_truth.json) without calling any real LLM.
 Generates proper token counts, costs, and latency for Langfuse traces.
 
+This module MUST NOT read ``eval/qa_golden_questions.json`` or any other
+evaluation answer key. Mock responses for synthesis intents (Q&A and
+curriculum) emit a generic structural template only — never content
+derived from a question's expected answer.
+
 Usage: set LLM_PROVIDER=mock in .env
 """
 
@@ -18,7 +23,6 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 _GROUND_TRUTH: list[dict] | None = None
-_QA_GOLDEN: list[dict] | None = None
 _GT_INDEX = 0
 
 TSchema = TypeVar("TSchema", bound=BaseModel)
@@ -47,31 +51,6 @@ def _next_gt_record() -> dict:
     return record
 
 
-def _load_qa_golden() -> list[dict]:
-    global _QA_GOLDEN
-    if _QA_GOLDEN is None:
-        gt_path = Path(__file__).parent.parent / "eval" / "qa_golden_questions.json"
-        with open(gt_path, encoding="utf-8") as f:
-            _QA_GOLDEN = json.load(f)
-    return _QA_GOLDEN
-
-
-def _golden_row_for_user_question(user_question: str) -> dict | None:
-    uq = " ".join((user_question or "").split())
-    if len(uq) < 8:
-        return None
-    best: dict | None = None
-    best_len = 0
-    for row in _load_qa_golden():
-        rq = " ".join(str(row.get("question", "")).split())
-        if not rq:
-            continue
-        if (rq in uq or uq in rq) and len(rq) > best_len:
-            best_len = len(rq)
-            best = row
-    return best
-
-
 def _extract_intent_user_question(prompt: str) -> str:
     if "Current user question (this turn only):" in prompt:
         tail = prompt.split("Current user question (this turn only):", 1)[1].strip()
@@ -80,80 +59,6 @@ def _extract_intent_user_question(prompt: str) -> str:
         tail = prompt.split("User question:", 1)[1].strip()
         return tail.split("\n", 1)[0].strip()
     return ""
-
-
-def _extract_synthesis_context_json(prompt: str) -> dict[str, Any] | None:
-    marker = "Context JSON (for grounding):\n"
-    if marker not in prompt:
-        return None
-    try:
-        ctx = json.loads(prompt.split(marker, 1)[1].strip())
-    except json.JSONDecodeError:
-        return None
-    return ctx if isinstance(ctx, dict) else None
-
-
-def _mock_analytics_synthesis_answer(prompt: str) -> str | None:
-    ctx = _extract_synthesis_context_json(prompt)
-    if not ctx:
-        return None
-    uq = str(ctx.get("user_query") or "").strip()
-    g = _golden_row_for_user_question(uq)
-    if not g:
-        return None
-    parts: list[str] = []
-    pc = str(ctx.get("period_coverage") or "").strip()
-    if pc:
-        parts.append(f"Data period: {pc}.")
-    raw_facts = ctx.get("citeable_facts_json")
-    try:
-        facts = json.loads(raw_facts) if isinstance(raw_facts, str) else []
-    except json.JSONDecodeError:
-        facts = []
-    if isinstance(facts, list):
-        for fact in facts[:14]:
-            if isinstance(fact, dict) and fact.get("summary"):
-                parts.append(str(fact["summary"])[:520])
-    for tok in g.get("must_include") or []:
-        parts.append(str(tok).replace("_", " "))
-    body = "\n\n".join(p for p in parts if p).strip()
-    return body[:8000] if body else None
-
-
-def _mock_curriculum_synthesis_answer(prompt: str) -> str | None:
-    pl = prompt.lower()
-    best: dict | None = None
-    best_sc = 0
-    for row in _load_qa_golden():
-        if row.get("intent") != "curriculum":
-            continue
-        q = str(row.get("question", "")).lower()
-        sc = sum(1 for w in q.split() if len(w) > 4 and w in pl)
-        if sc > best_sc:
-            best_sc = sc
-            best = row
-    if best is None or best_sc < 4:
-        return None
-    lines = [
-        "## Program scope",
-        "Borderplex training program outline derived only from supplied skill-demand inputs.",
-        "## Modules",
-    ]
-    for tok in (best.get("must_include") or [])[:10]:
-        title = str(tok).replace("_", " ").strip()
-        lines.append(f"### {title}")
-        lines.append(
-            f"Instructional emphasis aligned with **{title}** using cited posting and skill-frequency signals."
-        )
-    lines.extend(
-        [
-            "## Evidence",
-            "skill_demand_weekly, extracted_intelligence, and scoped job_postings per inputs.",
-            "## Recommended follow-up",
-            "Confirm sequencing with regional employers after the next analytics refresh.",
-        ]
-    )
-    return "\n\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -268,12 +173,13 @@ def mock_complete(prompt: str, agent_name: str, **kwargs: Any) -> dict[str, Any]
         }
 
     if an == "analytics-qna-synthesis":
-        ans = _mock_analytics_synthesis_answer(prompt)
-        if not ans:
-            gt = _next_gt_record()
-            content = json.dumps({"skills": _map_skills_for_llm(gt)})
-        else:
-            content = ans
+        # Non-leaky stub: emits a generic structural placeholder. Must NOT
+        # incorporate any content from eval/qa_golden_questions.json.
+        content = (
+            "[MOCK SYNTHESIS — no live LLM] The pipeline returned cited evidence; "
+            "running with LLM_PROVIDER=mock so no synthesized answer is generated. "
+            "Set LLM_PROVIDER=azure_openai to evaluate real synthesis quality."
+        )
         metrics = _simulate_metrics(prompt, content)
         time.sleep(metrics["latency_ms"] / 1000.0)
         return {
@@ -304,12 +210,18 @@ def mock_complete(prompt: str, agent_name: str, **kwargs: Any) -> dict[str, Any]
         }
 
     if an == "analytics-curriculum-synthesis":
-        c = _mock_curriculum_synthesis_answer(prompt)
-        if not c:
-            c = (
-                "## Program scope\nBorderplex placeholder curriculum.\n\n"
-                "## Modules\n### Skills module\nUse inputs only.\n"
-            )
+        # Non-leaky stub: a generic markdown skeleton. Must NOT incorporate
+        # anything derived from eval/qa_golden_questions.json (must_include).
+        c = (
+            "## Program scope\n"
+            "[MOCK CURRICULUM — no live LLM] Run with LLM_PROVIDER=azure_openai "
+            "to evaluate real curriculum-synthesis quality.\n\n"
+            "## Modules\n"
+            "### Module placeholder\n"
+            "Synthesis is mocked; module content reflects no scoring signal.\n\n"
+            "## Evidence\n"
+            "## Recommended follow-up\n"
+        )
         metrics = _simulate_metrics(prompt, c)
         time.sleep(metrics["latency_ms"] / 1000.0)
         return {

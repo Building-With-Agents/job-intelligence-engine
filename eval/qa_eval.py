@@ -13,14 +13,6 @@ Usage (repo root, venv active)::
     python -m eval.qa_eval --prompt-version v1-baseline
     python -m eval.qa_eval --prompt-version v1-baseline --limit 3 --dry-run
     python -m eval.qa_eval --prompt-version v1-baseline --dry-run --json > summary.json
-
-Offline / DB-less mock iteration (Week 10 Pair D)::
-
-    QA_EVAL_OFFLINE=1 LLM_PROVIDER=mock python -m eval.qa_eval --prompt-version v2-test --only-ids gq-062,gq-078,gq-083 --dry-run
-
-Replay staged intent heuristics without reverting code (0 = curriculum ``for``-shape only; 3 = all Pair D tiers)::
-
-    QA_EVAL_INTENT_HEURISTIC_LEVEL=1 LLM_PROVIDER=mock QA_EVAL_OFFLINE=1 python -m eval.qa_eval --prompt-version v2-replay --only-ids gq-078 --dry-run
 """
 
 from __future__ import annotations
@@ -28,7 +20,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -136,71 +127,6 @@ def _merge_golden(golden_by_id: dict[str, dict[str, Any]], gq_id: str, meta: dic
     return merged
 
 
-_OFFLINE_GOLDEN_BY_ID: dict[str, dict[str, Any]] | None = None
-
-
-def _offline_golden_by_id() -> dict[str, dict[str, Any]]:
-    global _OFFLINE_GOLDEN_BY_ID
-    if _OFFLINE_GOLDEN_BY_ID is None:
-        _OFFLINE_GOLDEN_BY_ID = {str(r["id"]): r for r in load_golden_questions(DEFAULT_JSON_PATH)}
-    return _OFFLINE_GOLDEN_BY_ID
-
-
-def _gq_id_from_correlation_id(correlation_id: str) -> str | None:
-    m = re.match(r"^(gq-\d+)(?:-|$)", correlation_id)
-    return m.group(1) if m else None
-
-
-def _offline_stub_analytics_response(*, question: str, correlation_id: str) -> dict[str, Any]:
-    """DB-free stub for mock-mode Pair D iteration (``QA_EVAL_OFFLINE=1``)."""
-
-    from analytics.query_engine.intent import classify_workforce_question
-
-    gid = _gq_id_from_correlation_id(correlation_id)
-    golden = dict(_offline_golden_by_id().get(gid or "") or {})
-    cls = classify_workforce_question(question, correlation_id=correlation_id)
-    intent = str(cls.get("intent") or "other")
-    ic = float(cls.get("confidence") or 0.0)
-    must = golden.get("must_include") or []
-    lines = ["Data period: latest Borderplex analytics window."]
-    lines.extend(str(t).replace("_", " ") for t in must)
-    body = "\n\n".join(lines).strip()
-    ev_snip = " ".join(str(t).replace("_", " ") for t in must[:8])
-    evidence = [
-        {
-            "title": "stub_evidence",
-            "source": "dbo.job_postings",
-            "snippet": ev_snip or "borderplex posting rows",
-            "supporting_count": max(8, len(must)),
-            "time_period": "recent",
-        }
-    ]
-    return {
-        "answer": body[:12000],
-        "evidence": evidence,
-        "confidence": 0.82,
-        "classified_intent": intent,
-        "intent_classification_confidence": ic,
-        "periods_described": "recent",
-        "confidence_flagged_low": False,
-        "confidence_explanation": None,
-        "volume_flagged_low": False,
-        "volume_warning": None,
-        "refused": False,
-        "refusal_message": None,
-        "sql_execution_error_detail": None,
-        "follow_up_questions": [
-            "Which employers should we prioritize next?",
-            "How does this compare to last quarter?",
-        ],
-        "sql_generated": "qa_eval_offline_stub",
-        "cost_usd": 0.0,
-        "total_cost_usd": 0.0,
-        "cost_breakdown_usd": {},
-        "row_count_returned": max(1, len(must)),
-    }
-
-
 def execute_qa_item(
     *,
     question: str,
@@ -212,8 +138,6 @@ def execute_qa_item(
     if not question:
         return None, "empty_question"
     try:
-        if os.getenv("QA_EVAL_OFFLINE", "").strip() == "1" and not use_http:
-            return _offline_stub_analytics_response(question=question, correlation_id=correlation_id), None
         if use_http:
             url = f"{analytics_base_url.rstrip('/')}/analytics/query"
             headers = laborpulse_analytics_query_headers(x_request_id=correlation_id)
