@@ -511,34 +511,40 @@ class TestRoleEmbeddingResolution:
         resolve_result = MagicMock()
         resolve_result.fetchall.return_value = [("resolved-role-id-aa",), ("resolved-role-id-bb",)]
 
+        # rep_titles_widening fetches representative_titles for the resolved IDs
+        # (PR#355 C1). Empty list here keeps test focused on the canonical_role_id +
+        # token-ILIKE OR'd predicates this case asserts.
+        rep_titles_result = MagicMock()
+        rep_titles_result.fetchall.return_value = []
+
         select_result = MagicMock()
         select_result.__iter__ = MagicMock(return_value=iter([]))
 
         session = MagicMock(spec=Session)
-        session.execute.side_effect = [resolve_result, select_result]
+        session.execute.side_effect = [resolve_result, rep_titles_result, select_result]
 
         cls = _mk_classification("role_evolution", role_names=["Data Analyst"])
         result = QueryRouter().route(cls, session)
 
         assert result.routed is True
         assert result.tables_used == ["job_postings"]
-        assert session.execute.call_count == 2
+        assert session.execute.call_count == 3
 
         # First call is the pgvector resolution against canonical_roles.
         raw_resolve_sql = str(session.execute.call_args_list[0].args[0])
         assert "<=>" in raw_resolve_sql
         assert "CAST(:vec AS vector)" in raw_resolve_sql
 
-        # Second call is the consolidated role_evolution query against job_postings.
-        second_stmt = session.execute.call_args_list[1].args[0]
-        raw_sql = str(second_stmt)
+        # Third call is the consolidated role_evolution query against job_postings.
+        third_stmt = session.execute.call_args_list[2].args[0]
+        raw_sql = str(third_stmt)
         assert "jp.canonical_role_id = ANY(:resolved_role_ids)" in raw_sql
         assert "jp.job_title ILIKE" in raw_sql  # token-ILIKE still present
         # Both predicates OR'd inside a single grouping clause.
         assert " OR " in raw_sql
 
         # Resolved IDs are passed via execute params, not embedded in the text.
-        passed_params = session.execute.call_args_list[1].args[1]
+        passed_params = session.execute.call_args_list[2].args[1]
         assert passed_params.get("resolved_role_ids") == [
             "resolved-role-id-aa",
             "resolved-role-id-bb",
@@ -738,11 +744,16 @@ class TestRouteGeographicListStyle:
         resolve_result = MagicMock()
         resolve_result.fetchall.return_value = [("resolved-canonical-role-id",)]
 
+        # rep_titles_widening fetches representative_titles for the resolved IDs
+        # (PR#355 C1). Empty list keeps the assertion surface unchanged.
+        rep_titles_result = MagicMock()
+        rep_titles_result.fetchall.return_value = []
+
         list_result = MagicMock()
         list_result.__iter__ = MagicMock(return_value=iter([]))
 
         session = MagicMock(spec=Session)
-        session.execute.side_effect = [resolve_result, list_result]
+        session.execute.side_effect = [resolve_result, rep_titles_result, list_result]
 
         cls = _mk_classification(
             "geographic",
@@ -757,16 +768,16 @@ class TestRouteGeographicListStyle:
         )
 
         assert result.routed is True
-        assert session.execute.call_count == 2
+        assert session.execute.call_count == 3
 
         raw_resolve = str(session.execute.call_args_list[0].args[0])
         assert "<=>" in raw_resolve
 
-        raw_list = str(session.execute.call_args_list[1].args[0])
+        raw_list = str(session.execute.call_args_list[2].args[0])
         assert "canonical_role_id IN" in raw_list
         assert "resolved-canonical-role-id" not in raw_list
 
-        list_params = session.execute.call_args_list[1].args[1]
+        list_params = session.execute.call_args_list[2].args[1]
         assert list_params.get("crid0") == "resolved-canonical-role-id"
         assert list_params.get("city") == "El Paso"
         title_keys = [k for k in list_params if k.startswith("role_title_")]

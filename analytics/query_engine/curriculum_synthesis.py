@@ -194,11 +194,7 @@ def synthesize_curriculum_outline(
         return dict(_INSUFFICIENT_NO_TOP_SKILLS)
 
     user_prompt = _USER_TEMPLATE.format(
-        canonical_role_label=(
-            inputs.canonical_role_label
-            or inputs.canonical_role
-            or "Unknown role"
-        ),
+        canonical_role_label=(inputs.canonical_role_label or inputs.canonical_role or "Unknown role"),
         period=inputs.period,
         region=inputs.region,
         top_skills_json=_json_block(inputs.top_skills),
