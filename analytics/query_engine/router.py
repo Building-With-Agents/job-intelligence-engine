@@ -612,14 +612,7 @@ class QueryRouter:
 
     @staticmethod
     def _employer_company_name_hints(role_names: list[str], *, max_terms: int = 5) -> list[str]:
-        """Role tokens safe for ``company_name`` ILIKE — drop 3+-token kebab-cased occupational slugs (JIE #346).
-
-        Only filters slugs with **3 or more** hyphen-joined alnum tokens (``senior-data-analyst``,
-        ``lead-aws-cloud-solutions-architect``). Two-token hyphenated terms are allowed because real
-        company names commonly use that shape (``coca-cola``, ``wells-fargo``, ``time-warner``); the
-        upstream canonical-roles pipeline emits 3+-token slugs, so the narrow rule does not let
-        occupational slugs through in practice.
-        """
+        """Role tokens safe for ``company_name`` ILIKE — drop kebab-cased occupational slugs (JIE #346)."""
         hints: list[str] = []
         for raw in role_names:
             if len(hints) >= max_terms:
@@ -629,6 +622,13 @@ class QueryRouter:
                 continue
             parts = [p for p in s.split("-") if p]
             if len(parts) >= 3 and all(p.isalnum() for p in parts):
+                continue
+            if (
+                len(parts) == 2
+                and s == s.lower()
+                and all(p.isalnum() for p in parts)
+                and min(len(p) for p in parts) >= 4
+            ):
                 continue
             hints.append(s)
         return hints

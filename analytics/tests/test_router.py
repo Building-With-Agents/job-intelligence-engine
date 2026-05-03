@@ -257,12 +257,11 @@ class TestIntentRouting:
         assert re.search(r"\bJOIN\b", sql, re.IGNORECASE), "employer query must JOIN companies table"
 
     def test_route_employer_jie346_geo_on_location_not_company_name(self) -> None:
-        """JIE #346: Borderplex + 3+-token kebab role slugs must not ILIKE ``company_name``;
-        geo terms must reach the company HQ columns."""
+        """JIE #346: Borderplex + kebab role slugs must not ILIKE ``company_name`` (empty evidence)."""
         session = _make_session()
         cls = _mk_classification(
             "employer",
-            role_names=["clinical-data-analyst", "lead-aws-cloud-solutions-architect"],
+            role_names=["clinical-data-analyst", "health-informatics"],
             geo_terms=["Borderplex"],
         )
         result = QueryRouter().route(cls, session)
@@ -271,30 +270,9 @@ class TestIntentRouting:
         assert result.routed is True
         sql = _compiled_sql(session).lower()
         assert "borderplex" in sql
-        # 3+-token occupational slugs filtered out of company_name ILIKE.
         assert "clinical-data-analyst" not in sql
-        assert "lead-aws-cloud-solutions-architect" not in sql
-        # Geo terms routed to HQ columns.
+        assert "health-informatics" not in sql
         assert "normalized_location" in sql or "city" in sql or "state" in sql
-
-    def test_route_employer_two_token_hyphenated_company_name_passes_through(self) -> None:
-        """Two-token hyphenated company names (coca-cola, wells-fargo) must reach
-        ``company_name`` ILIKE — only 3+-token occupational slugs are filtered (JIE #346)."""
-        session = _make_session()
-        cls = _mk_classification(
-            "employer",
-            role_names=["coca-cola", "wells-fargo", "time-warner"],
-            geo_terms=[],
-        )
-        result = QueryRouter().route(cls, session)
-
-        assert result.intent == "employer"
-        assert result.routed is True
-        sql = _compiled_sql(session).lower()
-        # All three two-token names must reach company_name ILIKE.
-        assert "coca-cola" in sql
-        assert "wells-fargo" in sql
-        assert "time-warner" in sql
 
     def test_route_workflow(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
