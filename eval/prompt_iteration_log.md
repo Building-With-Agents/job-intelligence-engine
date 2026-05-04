@@ -168,20 +168,31 @@ python -m eval.qa_eval --prompt-version week10-post-iter --local-experiment-only
 
 ---
 
-## Week 10 Pair D — golden Q&A mock iteration (employer / curriculum / workflow)
+## Week 10 Pair D — golden Q&A iteration (employer / curriculum / workflow)
+
+> **Verified 2026-05-02 with `LLM_PROVIDER=azure_openai` against live Postgres.** The leakage path that produced the original `0.0056 → 1.0000` curve has been removed; numbers below are real-LLM scores from `--prompt-version v2-real-llm-postfix-jie358-2026-05-02 --only-ids gq-078,gq-083,gq-062`.
 
 **Target questions** (highest `must_include` rubric weight in cohort): **gq-078** (curriculum, 12 tokens), **gq-083** (workflow, 11), **gq-062** (employer, 9).
 
-**Harness:** `LLM_PROVIDER=mock` plus **`QA_EVAL_OFFLINE=1`** (no-database stub in the golden-QA driver). Staged intent replay uses **`QA_EVAL_INTENT_HEURISTIC_LEVEL`** (`0`…`3`) in `analytics/query_engine/intent.py`.
+**Harness:** `LLM_PROVIDER=azure_openai` (Azure OpenAI `chat-gpt41` for synthesis, `chat-gpt41mini` for intent classification + follow-ups), live Postgres, no offline stub. Re-run command:
 
-**Aggregate metric:** `overall_geometric_composite` (JIE #268) on **`--only-ids gq-078,gq-083,gq-062`** (n=3). Full CLI examples are in the golden-QA module docstring under “Offline / DB-less mock iteration”.
+```
+python -m eval.qa_eval --prompt-version v2-real-llm-postfix-jie358-2026-05-02 \
+  --only-ids gq-078,gq-083,gq-062 --dry-run --json
+```
 
-**Note:** `--limit 20` hits **gq-001–gq-020** (disruption + emergence under mock); composite stayed ~**0.0055** at heuristic level 0 vs 3 in offline mode — use **`--only-ids`** for this employer/curriculum/workflow cohort.
+**Aggregate metric:** `overall_geometric_composite` (JIE #268) on `--only-ids gq-078,gq-083,gq-062` (n=3) = **0.808** post-fix.
 
-| Question ID | Before score | Failure pattern | Change made (file + what changed) | Run name | After score | Verdict |
-|-------------|--------------|-----------------|-----------------------------------|----------|-------------|---------|
-| gq-078 | 0.0056 | intent-misclassification — “training program **cover** given…” missed `_matches_curriculum_generation_shape` (`for` form only), mock classifier fell through to `other`. | **`analytics/query_engine/intent.py`:** `_CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN` + tier ≥1 in `intent_heuristic_classification`. | v2-curriculum-training-cover-heuristic | 0.7598 | Helped |
-| gq-083 | 0.7598 | intent-misclassification — data-engineering pipeline/orchestration ask routed to `other` under mock JSON. | **`analytics/query_engine/intent.py`:** `_WORKFLOW_DATA_PIPELINE_PATTERN` + tier ≥2 (`for data engineering roles` + pipeline/orchestration signal). | v2-workflow-pipeline-heuristic | 0.9036 | Helped |
-| gq-062 | 0.9036 | intent-misclassification — “Which Borderplex employers … highest **share** …” lost to `other` under mock. | **`analytics/query_engine/intent.py`:** `_BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN` + tier ≥3. | v2-employer-share-ranking-heuristic | 1.0000 | Helped |
+**Per-item before/after (composite = mean of `intent_accuracy + evidence_citation + confidence_self_consistency + latency_sla`):**
 
-**Also shipped:** `common/mock_llm_provider.py` (analytics-shaped mock completions); `eval/qa_eval.py` (`--only-ids`, offline stub).
+| Question ID | Before<br>(`dev-verify-2026-05-01`) | After<br>(`v2-real-llm-postfix-jie358-2026-05-02`) | Δ composite | What actually moved |
+|-------------|-------------------------------------|----------------------------------------------------|-------------|---------------------|
+| gq-078 (curriculum) | composite **0.817** (intent 1.0, evidence 0.617, conf 0.65, latency 1.0) | composite **0.817** (identical scores) | **0** | Nothing. Curriculum synthesis is **skipped** (`empty_top_skills` data-flag) for this role under live data; the new heuristic short-circuits intent classification but the LLM was already classifying correctly on May 1. |
+| gq-083 (workflow) | composite **0.933** (intent 1.0, evidence 0.733, conf 1.0, latency 1.0) | composite **0.987** (intent 1.0, evidence **0.947**, conf 1.0, latency 1.0) | **+0.054** | `evidence_citation` improvement comes from PR#351's router-side changes (`_ilike_company_location_or` routing geo to company HQ; relaxed company_name hint heuristic). Heuristic patches don't change classification (already 1.0 on May 1). |
+| gq-062 (employer) | composite **0.800** (intent 1.0, evidence 0.200, conf 1.0, latency 1.0) | composite **0.855** (intent 1.0, evidence **0.421**, conf 1.0, latency 1.0) | **+0.055** | Same router-side gain — `must_include_recall` 0.494 → 0.639 from better evidence retrieval. `_BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN` heuristic was active but again no-op on intent since LLM was already correct. |
+
+**What this means:** the `intent.py` heuristic patterns in PR#351 are net-zero effect under real LLM (LLM intent classification was at 100% accuracy on May 1 for these three questions). The real win is in PR#351's router refactor — `_ilike_company_location_or` + `_employer_company_name_hints` lift `evidence_citation` modestly on workflow / employer queries by routing geo terms to company HQ columns and filtering occupational slugs out of `company_name` ILIKE.
+
+**Caveat — gq-078 still returns "Insufficient data".** Curriculum synthesis is gated by the `top_skills` data-flag; the role this question resolves to currently has zero rows in `dbo.skill_demand_weekly` for the latest week. That's a data-density issue (post-2026-05-02 re-cluster), not a prompt-iteration issue. Compare to gq-072 (Autonomous AI Agent Engineer) which returns a rich 8-module outline because its canonical role *does* have skill rows.
+
+**Also shipped (kept):** `eval/qa_eval.py` `--only-ids` argparse flag for targeted-cohort runs. The `QA_EVAL_OFFLINE=1` short-circuit and the answer-key-reading helpers in `common/mock_llm_provider.py` were removed in the JIE#351 fix-up.
