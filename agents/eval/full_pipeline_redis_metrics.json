@@ -1,20 +1,20 @@
 {
   "success": true,
-  "correlation_id": "redis-pipe-ba379477",
+  "correlation_id": "redis-pipe-550817e1",
   "stages": [
     {
       "stage": "ingestion",
       "event_type_in": "PipelineTrigger",
       "event_type_out": "IngestBatch",
-      "event_id_out": "08cdab6d-357b-4496-a394-ec82f853b235",
-      "start_ts": "2026-04-12T13:11:06.190110+00:00",
-      "end_ts": "2026-04-12T13:11:15.237900+00:00",
-      "latency_ms": 9045.04,
+      "event_id_out": "c9acc675-1126-486f-898e-fcf5a25de07d",
+      "start_ts": "2026-05-04T05:26:37.082912+00:00",
+      "end_ts": "2026-05-04T05:27:54.019333+00:00",
+      "latency_ms": 76935.59,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "IngestBatch",
-        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
         "job_ids": null
       }
     },
@@ -22,15 +22,15 @@
       "stage": "normalization",
       "event_type_in": "IngestBatch",
       "event_type_out": "NormalizationComplete",
-      "event_id_out": "8bbfd954-bd5f-4805-a560-d378d690a37d",
-      "start_ts": "2026-04-12T13:11:15.240459+00:00",
-      "end_ts": "2026-04-12T13:11:15.251452+00:00",
-      "latency_ms": 10.14,
+      "event_id_out": "3cf6b0e4-39d3-4de5-8bd5-df3537233bc1",
+      "start_ts": "2026-05-04T05:27:54.022334+00:00",
+      "end_ts": "2026-05-04T05:27:54.189766+00:00",
+      "latency_ms": 167.13,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "NormalizationComplete",
-        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
         "job_ids": null
       }
     },
@@ -38,31 +38,40 @@
       "stage": "skills",
       "event_type_in": "NormalizationComplete",
       "event_type_out": "SkillsExtracted",
-      "event_id_out": "ba51299d-1ee1-4a22-bf72-19e40db3b636",
-      "start_ts": "2026-04-12T13:11:15.252919+00:00",
-      "end_ts": "2026-04-12T13:11:15.259002+00:00",
-      "latency_ms": 7.28,
+      "event_id_out": "4ab51ba6-dea1-4d4a-a1fe-33f720c14958",
+      "start_ts": "2026-05-04T05:27:54.191798+00:00",
+      "end_ts": "2026-05-04T05:28:55.058286+00:00",
+      "latency_ms": 60866.17,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "SkillsExtracted",
-        "batch_id": "490d1a3a-f53c-4fed-8817-13ecae210c7d",
-        "job_ids": []
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
+        "job_ids": [
+          4853,
+          4854,
+          4855,
+          4856,
+          4857,
+          4858,
+          4859,
+          4860
+        ]
       }
     },
     {
       "stage": "enrichment",
       "event_type_in": "SkillsExtracted",
       "event_type_out": "RecordEnriched",
-      "event_id_out": "5c8e7dfb-446e-42ca-b835-1e1dd4608dec",
-      "start_ts": "2026-04-12T13:11:15.263911+00:00",
-      "end_ts": "2026-04-12T13:11:15.265254+00:00",
-      "latency_ms": 4.51,
+      "event_id_out": "042ebfc2-43b1-41b2-ae45-2e5fd0d8f328",
+      "start_ts": "2026-05-04T05:28:55.107750+00:00",
+      "end_ts": "2026-05-04T05:29:41.365777+00:00",
+      "latency_ms": 46258.91,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "RecordEnriched",
-        "batch_id": null,
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
         "job_ids": null
       }
     },
@@ -70,15 +79,15 @@
       "stage": "analytics",
       "event_type_in": "RecordEnriched",
       "event_type_out": "AnalyticsRefreshed",
-      "event_id_out": "d2678993-f7f0-49df-8fd9-3cc601ac013e",
-      "start_ts": "2026-04-12T13:11:15.270131+00:00",
-      "end_ts": "2026-04-12T13:11:15.271469+00:00",
-      "latency_ms": 0.62,
+      "event_id_out": "14245645-eec1-472f-b753-3b8f5abba8be",
+      "start_ts": "2026-05-04T05:29:41.371641+00:00",
+      "end_ts": "2026-05-04T05:29:41.372647+00:00",
+      "latency_ms": 0.63,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "AnalyticsRefreshed",
-        "batch_id": "",
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
         "job_ids": null
       }
     },
@@ -86,9 +95,9 @@
       "stage": "visualization",
       "event_type_in": "AnalyticsRefreshed",
       "event_type_out": "RenderComplete",
-      "event_id_out": "15f70bb4-9ebd-4e58-a3ef-32de0102e761",
-      "start_ts": "2026-04-12T13:11:15.271469+00:00",
-      "end_ts": "2026-04-12T13:11:15.271469+00:00",
+      "event_id_out": "2c04345a-066b-456b-9e07-1311de33e12f",
+      "start_ts": "2026-05-04T05:29:41.374148+00:00",
+      "end_ts": "2026-05-04T05:29:41.374148+00:00",
       "latency_ms": 0.04,
       "success": true,
       "error": null,
@@ -102,21 +111,21 @@
       "stage": "orchestration",
       "event_type_in": "RenderComplete",
       "event_type_out": "OrchestrationAck",
-      "event_id_out": "6b7dafcf-4194-489e-b7b2-c28389c2b9ae",
-      "start_ts": "2026-04-12T13:11:15.274597+00:00",
-      "end_ts": "2026-04-12T13:11:15.274597+00:00",
+      "event_id_out": "eca00491-f927-4622-aaa1-7ed675bc73ba",
+      "start_ts": "2026-05-04T05:29:41.377653+00:00",
+      "end_ts": "2026-05-04T05:29:41.377653+00:00",
       "latency_ms": 0.04,
       "success": true,
       "error": null,
       "payload_summary": {
         "event_type": "OrchestrationAck",
-        "batch_id": "",
+        "batch_id": "6d9542d9-ae18-4e9e-91de-ec019887cb2a",
         "job_ids": null
       }
     }
   ],
-  "e2e_latency_ms": 9193.69,
-  "run_start_iso": "2026-04-12T13:11:15.275600+00:00",
+  "e2e_latency_ms": 184507.13,
+  "run_start_iso": "2026-05-04T05:29:41.377653+00:00",
   "redis_url_used": "(set)",
   "counters": {
     "pipeline:ingestion": {
