@@ -116,7 +116,7 @@ def backfill(*, apply: bool = False, batch_size: int = 1000) -> dict[str, int]:
         for rid, old, new in drift_rows[:5]:
             print(f"  [dry-run] id={rid} old_hash={old[:12]}... -> new_hash={new[:12]}...")
         if len(drift_rows) > 5:
-            print(f"  [dry-run] ... and {len(drift_rows)-5} more")
+            print(f"  [dry-run] ... and {len(drift_rows) - 5} more")
         return counts
 
     # Apply in batches inside a single transaction. ``raw_payload_hash`` has a

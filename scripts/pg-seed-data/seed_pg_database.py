@@ -514,7 +514,7 @@ def seed_database() -> None:
     except Exception as exc:
         print(f"  WARNING: sequence sync failed: {exc}")
         print(
-            "  Run manually: python -c \""
+            '  Run manually: python -c "'
             "from common.data_store.database import get_engine; "
             "from common.data_store.migrations import _sync_agent_serial_sequences; "
             '_sync_agent_serial_sequences(get_engine())"'

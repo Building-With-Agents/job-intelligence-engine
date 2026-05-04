@@ -149,10 +149,7 @@ def fetch_excess_ids() -> dict[str, list[int]]:
             excess_extr = [
                 int(r[0])
                 for r in conn.execute(
-                    text(
-                        "SELECT id FROM dbo.extracted_intelligence "
-                        "WHERE normalized_job_id = ANY(:ids)"
-                    ),
+                    text("SELECT id FROM dbo.extracted_intelligence WHERE normalized_job_id = ANY(:ids)"),
                     {"ids": excess_norm},
                 ).fetchall()
             ]
@@ -200,8 +197,10 @@ def cleanup(*, apply: bool = False) -> dict[str, Any]:
             ("extracted_intelligence", extr_ids),
         ):
             preview = ids[:10]
-            print(f"  [dry-run] {tbl}: {len(ids)} rows would be deleted "
-                  f"(sample ids: {preview}{'...' if len(ids) > 10 else ''})")
+            print(
+                f"  [dry-run] {tbl}: {len(ids)} rows would be deleted "
+                f"(sample ids: {preview}{'...' if len(ids) > 10 else ''})"
+            )
         return summary
 
     # FK order: extracted_intelligence (children) → normalized_jobs → raw_ingested_jobs.
