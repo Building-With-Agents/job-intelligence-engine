@@ -1,0 +1,537 @@
+{"var": "JSEARCH_START_KEY_INDEX", "file": "ingestion", "key": "ingestion.jsearch.start_key_index", "note": "Legacy env override; planned removal post-deprecation (issue #210).", "event": "config_env_override_used", "timestamp": "2026-05-04T06:41:10.438707Z", "level": "warning"}
+{"url": "localhost:5432/talent_finder", "event": "db_engine_created", "timestamp": "2026-05-04T06:41:10.720543Z", "level": "info"}
+{"queries": 47, "expanded_pairs": 328, "total_requests": 6560, "api_keys_available": 7, "api_keys_total": 7, "budget_per_key": 10000, "monthly_budget": 9500, "monthly_used": 0, "monthly_after": 6560, "over_budget": false, "start_key_slot": 1, "dry_run": true, "event": "batch_plan", "timestamp": "2026-05-04T06:41:10.757123Z", "level": "info"}
+
+============================================================
+Batch Ingestion Plan
+  (starting at key slot 1)
+============================================================
+
+  [1] agentic-ai
+      Keywords: ['AI agent developer', 'autonomous systems engineer', 'agentic AI']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'AI agent developer' in El Paso, TX
+        - 'AI agent developer' in Las Cruces, NM
+        - 'autonomous systems engineer' in El Paso, TX
+        - 'autonomous systems engineer' in Las Cruces, NM
+        - 'agentic AI' in El Paso, TX
+        - 'agentic AI' in Las Cruces, NM
+
+  [2] prompt-llm
+      Keywords: ['prompt engineer', 'LLM', 'generative AI']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'prompt engineer' in El Paso, TX
+        - 'prompt engineer' in Las Cruces, NM
+        - 'LLM' in El Paso, TX
+        - 'LLM' in Las Cruces, NM
+        - 'generative AI' in El Paso, TX
+        - 'generative AI' in Las Cruces, NM
+
+  [3] ai-safety
+      Keywords: ['AI safety engineer', 'responsible AI', 'AI ethics']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'AI safety engineer' in El Paso, TX
+        - 'AI safety engineer' in Las Cruces, NM
+        - 'responsible AI' in El Paso, TX
+        - 'responsible AI' in Las Cruces, NM
+        - 'AI ethics' in El Paso, TX
+        - 'AI ethics' in Las Cruces, NM
+
+  [4] ai-research
+      Keywords: ['AI researcher', 'applied scientist', 'research engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'AI researcher' in El Paso, TX
+        - 'AI researcher' in Las Cruces, NM
+        - 'applied scientist' in El Paso, TX
+        - 'applied scientist' in Las Cruces, NM
+        - 'research engineer' in El Paso, TX
+        - 'research engineer' in Las Cruces, NM
+
+  [5] ai-engineering
+      Keywords: ['AI engineer', 'machine learning engineer']
+      Calls: 4 × 20 pages = 80 requests max
+        - 'AI engineer' in El Paso, TX
+        - 'AI engineer' in Las Cruces, NM
+        - 'machine learning engineer' in El Paso, TX
+        - 'machine learning engineer' in Las Cruces, NM
+
+  [6] software-engineering
+      Keywords: ['software engineer', 'backend developer', 'full stack']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'software engineer' in El Paso, TX
+        - 'software engineer' in Las Cruces, NM
+        - 'backend developer' in El Paso, TX
+        - 'backend developer' in Las Cruces, NM
+        - 'full stack' in El Paso, TX
+        - 'full stack' in Las Cruces, NM
+
+  [7] python-developer
+      Keywords: ['Python developer', 'Python engineer']
+      Calls: 4 × 20 pages = 80 requests max
+        - 'Python developer' in El Paso, TX
+        - 'Python developer' in Las Cruces, NM
+        - 'Python engineer' in El Paso, TX
+        - 'Python engineer' in Las Cruces, NM
+
+  [8] product-tech
+      Keywords: ['technical product manager', 'AI product manager']
+      Calls: 4 × 20 pages = 80 requests max
+        - 'technical product manager' in El Paso, TX
+        - 'technical product manager' in Las Cruces, NM
+        - 'AI product manager' in El Paso, TX
+        - 'AI product manager' in Las Cruces, NM
+
+  [9] data-engineering
+      Keywords: ['data engineer', 'data pipeline', 'ETL developer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'data engineer' in El Paso, TX
+        - 'data engineer' in Las Cruces, NM
+        - 'data pipeline' in El Paso, TX
+        - 'data pipeline' in Las Cruces, NM
+        - 'ETL developer' in El Paso, TX
+        - 'ETL developer' in Las Cruces, NM
+
+  [10] data-science
+      Keywords: ['data scientist', 'data analyst', 'data engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'data scientist' in El Paso, TX
+        - 'data scientist' in Las Cruces, NM
+        - 'data analyst' in El Paso, TX
+        - 'data analyst' in Las Cruces, NM
+        - 'data engineer' in El Paso, TX
+        - 'data engineer' in Las Cruces, NM
+
+  [11] ml-scientist
+      Keywords: ['machine learning scientist', 'applied ML', 'ML researcher']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'machine learning scientist' in El Paso, TX
+        - 'machine learning scientist' in Las Cruces, NM
+        - 'applied ML' in El Paso, TX
+        - 'applied ML' in Las Cruces, NM
+        - 'ML researcher' in El Paso, TX
+        - 'ML researcher' in Las Cruces, NM
+
+  [12] deep-learning
+      Keywords: ['deep learning engineer', 'NLP engineer', 'computer vision']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'deep learning engineer' in El Paso, TX
+        - 'deep learning engineer' in Las Cruces, NM
+        - 'NLP engineer' in El Paso, TX
+        - 'NLP engineer' in Las Cruces, NM
+        - 'computer vision' in El Paso, TX
+        - 'computer vision' in Las Cruces, NM
+
+  [13] ml-ops
+      Keywords: ['MLOps engineer', 'ML infrastructure', 'model deployment']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'MLOps engineer' in El Paso, TX
+        - 'MLOps engineer' in Las Cruces, NM
+        - 'ML infrastructure' in El Paso, TX
+        - 'ML infrastructure' in Las Cruces, NM
+        - 'model deployment' in El Paso, TX
+        - 'model deployment' in Las Cruces, NM
+
+  [14] healthcare-it
+      Keywords: ['health informatics specialist', 'EHR analyst', 'clinical systems analyst', 'healthcare application developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'health informatics specialist' in El Paso, TX
+        - 'health informatics specialist' in Las Cruces, NM
+        - 'EHR analyst' in El Paso, TX
+        - 'EHR analyst' in Las Cruces, NM
+        - 'clinical systems analyst' in El Paso, TX
+        - 'clinical systems analyst' in Las Cruces, NM
+        - 'healthcare application developer' in El Paso, TX
+        - 'healthcare application developer' in Las Cruces, NM
+
+  [15] health-data
+      Keywords: ['health data analyst', 'clinical data analyst', 'population health analyst', 'healthcare data engineer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'health data analyst' in El Paso, TX
+        - 'health data analyst' in Las Cruces, NM
+        - 'clinical data analyst' in El Paso, TX
+        - 'clinical data analyst' in Las Cruces, NM
+        - 'population health analyst' in El Paso, TX
+        - 'population health analyst' in Las Cruces, NM
+        - 'healthcare data engineer' in El Paso, TX
+        - 'healthcare data engineer' in Las Cruces, NM
+
+  [16] life-sciences-dev
+      Keywords: ['bioinformatics analyst', 'research software developer', 'pharmaceutical software developer', 'laboratory information systems developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'bioinformatics analyst' in El Paso, TX
+        - 'bioinformatics analyst' in Las Cruces, NM
+        - 'research software developer' in El Paso, TX
+        - 'research software developer' in Las Cruces, NM
+        - 'pharmaceutical software developer' in El Paso, TX
+        - 'pharmaceutical software developer' in Las Cruces, NM
+        - 'laboratory information systems developer' in El Paso, TX
+        - 'laboratory information systems developer' in Las Cruces, NM
+
+  [17] fintech-dev
+      Keywords: ['fintech developer', 'payments developer', 'banking application developer', 'financial systems developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'fintech developer' in El Paso, TX
+        - 'fintech developer' in Las Cruces, NM
+        - 'payments developer' in El Paso, TX
+        - 'payments developer' in Las Cruces, NM
+        - 'banking application developer' in El Paso, TX
+        - 'banking application developer' in Las Cruces, NM
+        - 'financial systems developer' in El Paso, TX
+        - 'financial systems developer' in Las Cruces, NM
+
+  [18] quant-trading
+      Keywords: ['quantitative analyst', 'trading systems engineer', 'algorithmic trading developer', 'risk analyst technology']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'quantitative analyst' in El Paso, TX
+        - 'quantitative analyst' in Las Cruces, NM
+        - 'trading systems engineer' in El Paso, TX
+        - 'trading systems engineer' in Las Cruces, NM
+        - 'algorithmic trading developer' in El Paso, TX
+        - 'algorithmic trading developer' in Las Cruces, NM
+        - 'risk analyst technology' in El Paso, TX
+        - 'risk analyst technology' in Las Cruces, NM
+
+  [19] regtech
+      Keywords: ['compliance technology analyst', 'regulatory technology developer', 'AML analyst technology', 'financial compliance developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'compliance technology analyst' in El Paso, TX
+        - 'compliance technology analyst' in Las Cruces, NM
+        - 'regulatory technology developer' in El Paso, TX
+        - 'regulatory technology developer' in Las Cruces, NM
+        - 'AML analyst technology' in El Paso, TX
+        - 'AML analyst technology' in Las Cruces, NM
+        - 'financial compliance developer' in El Paso, TX
+        - 'financial compliance developer' in Las Cruces, NM
+
+  [20] ecommerce-dev
+      Keywords: ['ecommerce developer', 'digital commerce developer', 'retail systems developer', 'online marketplace developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'ecommerce developer' in El Paso, TX
+        - 'ecommerce developer' in Las Cruces, NM
+        - 'digital commerce developer' in El Paso, TX
+        - 'digital commerce developer' in Las Cruces, NM
+        - 'retail systems developer' in El Paso, TX
+        - 'retail systems developer' in Las Cruces, NM
+        - 'online marketplace developer' in El Paso, TX
+        - 'online marketplace developer' in Las Cruces, NM
+
+  [21] industrial-automation
+      Keywords: ['automation engineer', 'PLC programmer', 'SCADA engineer', 'industrial automation developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'automation engineer' in El Paso, TX
+        - 'automation engineer' in Las Cruces, NM
+        - 'PLC programmer' in El Paso, TX
+        - 'PLC programmer' in Las Cruces, NM
+        - 'SCADA engineer' in El Paso, TX
+        - 'SCADA engineer' in Las Cruces, NM
+        - 'industrial automation developer' in El Paso, TX
+        - 'industrial automation developer' in Las Cruces, NM
+
+  [22] manufacturing-dev
+      Keywords: ['manufacturing software developer', 'quality systems developer', 'MES developer', 'production systems analyst']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'manufacturing software developer' in El Paso, TX
+        - 'manufacturing software developer' in Las Cruces, NM
+        - 'quality systems developer' in El Paso, TX
+        - 'quality systems developer' in Las Cruces, NM
+        - 'MES developer' in El Paso, TX
+        - 'MES developer' in Las Cruces, NM
+        - 'production systems analyst' in El Paso, TX
+        - 'production systems analyst' in Las Cruces, NM
+
+  [23] insurance-tech
+      Keywords: ['insurance technology analyst', 'claims system developer', 'actuarial analyst technology', 'policy management developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'insurance technology analyst' in El Paso, TX
+        - 'insurance technology analyst' in Las Cruces, NM
+        - 'claims system developer' in El Paso, TX
+        - 'claims system developer' in Las Cruces, NM
+        - 'actuarial analyst technology' in El Paso, TX
+        - 'actuarial analyst technology' in Las Cruces, NM
+        - 'policy management developer' in El Paso, TX
+        - 'policy management developer' in Las Cruces, NM
+
+  [24] legal-tech
+      Keywords: ['e-discovery analyst', 'legal technology specialist', 'litigation support analyst', 'contract management developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'e-discovery analyst' in El Paso, TX
+        - 'e-discovery analyst' in Las Cruces, NM
+        - 'legal technology specialist' in El Paso, TX
+        - 'legal technology specialist' in Las Cruces, NM
+        - 'litigation support analyst' in El Paso, TX
+        - 'litigation support analyst' in Las Cruces, NM
+        - 'contract management developer' in El Paso, TX
+        - 'contract management developer' in Las Cruces, NM
+
+  [25] government-tech
+      Keywords: ['government software developer', 'federal software engineer', 'defense software developer', 'public sector data analyst']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'government software developer' in El Paso, TX
+        - 'government software developer' in Las Cruces, NM
+        - 'federal software engineer' in El Paso, TX
+        - 'federal software engineer' in Las Cruces, NM
+        - 'defense software developer' in El Paso, TX
+        - 'defense software developer' in Las Cruces, NM
+        - 'public sector data analyst' in El Paso, TX
+        - 'public sector data analyst' in Las Cruces, NM
+
+  [26] media-gaming-dev
+      Keywords: ['game developer', 'media software engineer', 'streaming platform developer', 'content management developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'game developer' in El Paso, TX
+        - 'game developer' in Las Cruces, NM
+        - 'media software engineer' in El Paso, TX
+        - 'media software engineer' in Las Cruces, NM
+        - 'streaming platform developer' in El Paso, TX
+        - 'streaming platform developer' in Las Cruces, NM
+        - 'content management developer' in El Paso, TX
+        - 'content management developer' in Las Cruces, NM
+
+  [27] edtech-dev
+      Keywords: ['edtech developer', 'learning management system developer', 'education software developer', 'instructional technology developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'edtech developer' in El Paso, TX
+        - 'edtech developer' in Las Cruces, NM
+        - 'learning management system developer' in El Paso, TX
+        - 'learning management system developer' in Las Cruces, NM
+        - 'education software developer' in El Paso, TX
+        - 'education software developer' in Las Cruces, NM
+        - 'instructional technology developer' in El Paso, TX
+        - 'instructional technology developer' in Las Cruces, NM
+
+  [28] energy-utilities-dev
+      Keywords: ['energy software developer', 'utilities technology developer', 'smart grid engineer', 'oil gas software developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'energy software developer' in El Paso, TX
+        - 'energy software developer' in Las Cruces, NM
+        - 'utilities technology developer' in El Paso, TX
+        - 'utilities technology developer' in Las Cruces, NM
+        - 'smart grid engineer' in El Paso, TX
+        - 'smart grid engineer' in Las Cruces, NM
+        - 'oil gas software developer' in El Paso, TX
+        - 'oil gas software developer' in Las Cruces, NM
+
+  [29] logistics-dev
+      Keywords: ['logistics software developer', 'supply chain developer', 'fleet management developer', 'warehouse management developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'logistics software developer' in El Paso, TX
+        - 'logistics software developer' in Las Cruces, NM
+        - 'supply chain developer' in El Paso, TX
+        - 'supply chain developer' in Las Cruces, NM
+        - 'fleet management developer' in El Paso, TX
+        - 'fleet management developer' in Las Cruces, NM
+        - 'warehouse management developer' in El Paso, TX
+        - 'warehouse management developer' in Las Cruces, NM
+
+  [30] real-estate-tech
+      Keywords: ['real estate technology developer', 'property management software developer', 'construction tech developer', 'MLS systems developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'real estate technology developer' in El Paso, TX
+        - 'real estate technology developer' in Las Cruces, NM
+        - 'property management software developer' in El Paso, TX
+        - 'property management software developer' in Las Cruces, NM
+        - 'construction tech developer' in El Paso, TX
+        - 'construction tech developer' in Las Cruces, NM
+        - 'MLS systems developer' in El Paso, TX
+        - 'MLS systems developer' in Las Cruces, NM
+
+  [31] hr-tech-dev
+      Keywords: ['HRIS developer', 'HR technology developer', 'talent management developer', 'payroll systems developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'HRIS developer' in El Paso, TX
+        - 'HRIS developer' in Las Cruces, NM
+        - 'HR technology developer' in El Paso, TX
+        - 'HR technology developer' in Las Cruces, NM
+        - 'talent management developer' in El Paso, TX
+        - 'talent management developer' in Las Cruces, NM
+        - 'payroll systems developer' in El Paso, TX
+        - 'payroll systems developer' in Las Cruces, NM
+
+  [32] robotics-dev
+      Keywords: ['robotics engineer', 'autonomous vehicle software engineer', 'embedded systems developer', 'drone software developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'robotics engineer' in El Paso, TX
+        - 'robotics engineer' in Las Cruces, NM
+        - 'autonomous vehicle software engineer' in El Paso, TX
+        - 'autonomous vehicle software engineer' in Las Cruces, NM
+        - 'embedded systems developer' in El Paso, TX
+        - 'embedded systems developer' in Las Cruces, NM
+        - 'drone software developer' in El Paso, TX
+        - 'drone software developer' in Las Cruces, NM
+
+  [33] threat-intel
+      Keywords: ['threat intelligence analyst', 'incident response engineer', 'digital forensics analyst', 'vulnerability researcher']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'threat intelligence analyst' in El Paso, TX
+        - 'threat intelligence analyst' in Las Cruces, NM
+        - 'incident response engineer' in El Paso, TX
+        - 'incident response engineer' in Las Cruces, NM
+        - 'digital forensics analyst' in El Paso, TX
+        - 'digital forensics analyst' in Las Cruces, NM
+        - 'vulnerability researcher' in El Paso, TX
+        - 'vulnerability researcher' in Las Cruces, NM
+
+  [34] martech-dev
+      Keywords: ['marketing technology developer', 'ad tech developer', 'marketing automation developer', 'digital marketing engineer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'marketing technology developer' in El Paso, TX
+        - 'marketing technology developer' in Las Cruces, NM
+        - 'ad tech developer' in El Paso, TX
+        - 'ad tech developer' in Las Cruces, NM
+        - 'marketing automation developer' in El Paso, TX
+        - 'marketing automation developer' in Las Cruces, NM
+        - 'digital marketing engineer' in El Paso, TX
+        - 'digital marketing engineer' in Las Cruces, NM
+
+  [35] rpa-automation
+      Keywords: ['RPA developer', 'UiPath developer', 'Power Automate developer', 'intelligent automation developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'RPA developer' in El Paso, TX
+        - 'RPA developer' in Las Cruces, NM
+        - 'UiPath developer' in El Paso, TX
+        - 'UiPath developer' in Las Cruces, NM
+        - 'Power Automate developer' in El Paso, TX
+        - 'Power Automate developer' in Las Cruces, NM
+        - 'intelligent automation developer' in El Paso, TX
+        - 'intelligent automation developer' in Las Cruces, NM
+
+  [36] enterprise-ai-deploy
+      Keywords: ['AI integration engineer', 'enterprise AI developer', 'AI solutions architect', 'applied AI engineer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'AI integration engineer' in El Paso, TX
+        - 'AI integration engineer' in Las Cruces, NM
+        - 'enterprise AI developer' in El Paso, TX
+        - 'enterprise AI developer' in Las Cruces, NM
+        - 'AI solutions architect' in El Paso, TX
+        - 'AI solutions architect' in Las Cruces, NM
+        - 'applied AI engineer' in El Paso, TX
+        - 'applied AI engineer' in Las Cruces, NM
+
+  [37] devops-sre
+      Keywords: ['DevOps engineer', 'site reliability engineer', 'platform engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'DevOps engineer' in El Paso, TX
+        - 'DevOps engineer' in Las Cruces, NM
+        - 'site reliability engineer' in El Paso, TX
+        - 'site reliability engineer' in Las Cruces, NM
+        - 'platform engineer' in El Paso, TX
+        - 'platform engineer' in Las Cruces, NM
+
+  [38] cloud-architect
+      Keywords: ['cloud architect', 'cloud solutions architect', 'AWS architect', 'Azure architect']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'cloud architect' in El Paso, TX
+        - 'cloud architect' in Las Cruces, NM
+        - 'cloud solutions architect' in El Paso, TX
+        - 'cloud solutions architect' in Las Cruces, NM
+        - 'AWS architect' in El Paso, TX
+        - 'AWS architect' in Las Cruces, NM
+        - 'Azure architect' in El Paso, TX
+        - 'Azure architect' in Las Cruces, NM
+
+  [39] security-engineer
+      Keywords: ['security engineer', 'application security engineer', 'cloud security engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'security engineer' in El Paso, TX
+        - 'security engineer' in Las Cruces, NM
+        - 'application security engineer' in El Paso, TX
+        - 'application security engineer' in Las Cruces, NM
+        - 'cloud security engineer' in El Paso, TX
+        - 'cloud security engineer' in Las Cruces, NM
+
+  [40] database-admin
+      Keywords: ['database administrator', 'database engineer', 'SQL developer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'database administrator' in El Paso, TX
+        - 'database administrator' in Las Cruces, NM
+        - 'database engineer' in El Paso, TX
+        - 'database engineer' in Las Cruces, NM
+        - 'SQL developer' in El Paso, TX
+        - 'SQL developer' in Las Cruces, NM
+
+  [41] bi-analytics
+      Keywords: ['business intelligence developer', 'BI analyst', 'Tableau developer', 'Power BI developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'business intelligence developer' in El Paso, TX
+        - 'business intelligence developer' in Las Cruces, NM
+        - 'BI analyst' in El Paso, TX
+        - 'BI analyst' in Las Cruces, NM
+        - 'Tableau developer' in El Paso, TX
+        - 'Tableau developer' in Las Cruces, NM
+        - 'Power BI developer' in El Paso, TX
+        - 'Power BI developer' in Las Cruces, NM
+
+  [42] frontend-react
+      Keywords: ['React developer', 'frontend engineer', 'UI developer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'React developer' in El Paso, TX
+        - 'React developer' in Las Cruces, NM
+        - 'frontend engineer' in El Paso, TX
+        - 'frontend engineer' in Las Cruces, NM
+        - 'UI developer' in El Paso, TX
+        - 'UI developer' in Las Cruces, NM
+
+  [43] mobile-developer
+      Keywords: ['iOS developer', 'Android developer', 'mobile engineer', 'React Native developer']
+      Calls: 8 × 20 pages = 160 requests max
+        - 'iOS developer' in El Paso, TX
+        - 'iOS developer' in Las Cruces, NM
+        - 'Android developer' in El Paso, TX
+        - 'Android developer' in Las Cruces, NM
+        - 'mobile engineer' in El Paso, TX
+        - 'mobile engineer' in Las Cruces, NM
+        - 'React Native developer' in El Paso, TX
+        - 'React Native developer' in Las Cruces, NM
+
+  [44] qa-automation
+      Keywords: ['QA automation engineer', 'SDET', 'test automation engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'QA automation engineer' in El Paso, TX
+        - 'QA automation engineer' in Las Cruces, NM
+        - 'SDET' in El Paso, TX
+        - 'SDET' in Las Cruces, NM
+        - 'test automation engineer' in El Paso, TX
+        - 'test automation engineer' in Las Cruces, NM
+
+  [45] network-engineer
+      Keywords: ['network engineer', 'systems administrator', 'infrastructure engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'network engineer' in El Paso, TX
+        - 'network engineer' in Las Cruces, NM
+        - 'systems administrator' in El Paso, TX
+        - 'systems administrator' in Las Cruces, NM
+        - 'infrastructure engineer' in El Paso, TX
+        - 'infrastructure engineer' in Las Cruces, NM
+
+  [46] technical-writer
+      Keywords: ['technical writer', 'API documentation writer', 'developer advocate']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'technical writer' in El Paso, TX
+        - 'technical writer' in Las Cruces, NM
+        - 'API documentation writer' in El Paso, TX
+        - 'API documentation writer' in Las Cruces, NM
+        - 'developer advocate' in El Paso, TX
+        - 'developer advocate' in Las Cruces, NM
+
+  [47] blockchain-web3
+      Keywords: ['blockchain developer', 'smart contract developer', 'Web3 engineer']
+      Calls: 6 × 20 pages = 120 requests max
+        - 'blockchain developer' in El Paso, TX
+        - 'blockchain developer' in Las Cruces, NM
+        - 'smart contract developer' in El Paso, TX
+        - 'smart contract developer' in Las Cruces, NM
+        - 'Web3 engineer' in El Paso, TX
+        - 'Web3 engineer' in Las Cruces, NM
+
+  Total: 6560 API requests across 328 keyword-location pairs
+  Keys available: 7 x 10000 = 70000 legacy budget
+  Monthly Pro budget: 0 used / 9500 cap
+  After this run:     6560 used (69% of cap)
+  Delay: 5s between queries
+
+  Tip: --start-query N to skip first N-1 queries
+       --location-tier TIER to override every query's tier
+       --no-locations to disable geo expansion
+       --queries name1,name2 to run specific queries only
+============================================================
+

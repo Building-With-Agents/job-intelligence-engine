@@ -1,0 +1,18 @@
+2026-05-03 23:29:59 [info     ] db_engine_created              url=localhost:5432/talent_finder
+2026-05-03 23:29:59 [info     ] cleanup_scope                  extracted_intelligence_excess=849 normalized_jobs_excess=849 raw_ingested_jobs_excess=830
+2026-05-03 23:29:59 [info     ] cleanup_deleted_extracted_intelligence expected=849 reason=jie209_dedup_cleanup rowcount=849
+2026-05-03 23:29:59 [info     ] cleanup_deleted_normalized_jobs expected=849 reason=jie209_dedup_cleanup rowcount=849
+2026-05-03 23:29:59 [info     ] cleanup_deleted_raw_ingested_jobs expected=830 reason=jie209_dedup_cleanup rowcount=830
+2026-05-03 23:29:59 [info     ] cleanup_complete               applied=True deleted_extr=849 deleted_norm=849 deleted_raw=830 extracted_intelligence_excess=849 normalized_jobs_excess=849 raw_ingested_jobs_excess=830
+
+================================================================
+JIE #209 cleanup (APPLY):
+  raw_ingested_jobs    excess:    830
+  normalized_jobs      excess:    849
+  extracted_intelligence excess:    849
+  raw_ingested_jobs    deleted:    830
+  normalized_jobs      deleted:    849
+  extracted_intelligence deleted:    849
+  llm_audit_log        : preserved (not touched)
+  job_postings         : preserved (not touched)
+================================================================
