@@ -1,0 +1,1490 @@
+{
+  "prompt_version": "week11-final",
+  "dry_run": true,
+  "langfuse": false,
+  "items": [
+    {
+      "gq_id": "gq-001",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5211666666666666,
+        "must_include_recall": 0.43666666666666654,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7777777777777778,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-002",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5264285714285714,
+        "must_include_recall": 0.4428571428571428,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-003",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5088888888888887,
+        "must_include_recall": 0.4222222222222221,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7777777777777778,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-004",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.505657894736842,
+        "must_include_recall": 0.41842105263157875,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-005",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5211666666666666,
+        "must_include_recall": 0.4366666666666666,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-006",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4977272727272726,
+        "must_include_recall": 0.40909090909090895,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7777777777777778,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-007",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4977272727272726,
+        "must_include_recall": 0.40909090909090895,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-008",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5395833333333333,
+        "must_include_recall": 0.45833333333333326,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-009",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4977272727272726,
+        "must_include_recall": 0.40909090909090895,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-010",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5137999999999998,
+        "must_include_recall": 0.42799999999999977,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-011",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.85375,
+        "must_include_recall": 0.675,
+        "evidence_overlap": 1.0,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-012",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5702777777777777,
+        "must_include_recall": 0.49444444444444435,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-013",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.8699999999999999,
+        "must_include_recall": 0.7111111111111109,
+        "evidence_overlap": 1.0,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.9545454545454545,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-014",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.82625,
+        "must_include_recall": 0.6388888888888888,
+        "evidence_overlap": 0.9750000000000001,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-015",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4475,
+        "must_include_recall": 0.35000000000000003,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-016",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5856250000000001,
+        "must_include_recall": 0.5125000000000001,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-017",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5856250000000001,
+        "must_include_recall": 0.5125000000000001,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-018",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5165625,
+        "must_include_recall": 0.43125,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-019",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4475,
+        "must_include_recall": 0.35000000000000003,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-020",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.4475,
+        "must_include_recall": 0.35000000000000003,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-021",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5264285714285715,
+        "must_include_recall": 0.4428571428571429,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-022",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.9025,
+        "must_include_recall": 0.7833333333333332,
+        "evidence_overlap": 1.0,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-023",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.78625,
+        "must_include_recall": 1.0,
+        "evidence_overlap": 0.5249999999999999,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-024",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 1.0,
+        "must_include_recall": 1.0,
+        "evidence_overlap": 1.0,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-025",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5395833333333333,
+        "must_include_recall": 0.4583333333333333,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-026",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5395833333333333,
+        "must_include_recall": 0.4583333333333333,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-027",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.71875,
+        "must_include_recall": 1.0,
+        "evidence_overlap": 0.375,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-028",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.5579999999999999,
+        "must_include_recall": 0.48,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-029",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.6316666666666667,
+        "must_include_recall": 0.5666666666666668,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-030",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.95125,
+        "must_include_recall": 0.8916666666666666,
+        "evidence_overlap": 1.0,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 1.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-031",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 33, 254692, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-031-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'd232080b58035c6821e9c68de95fdf26d74568a61e12dfe2b62c5116c88637f2', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-032",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.6053571428571429,
+        "must_include_recall": 0.5357142857142858,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-033",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5702777777777777,
+        "must_include_recall": 0.49444444444444435,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-034",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 39, 785330, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-034-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '8630b4fdd16204c96a1992d2c90f93d81c47973b76c9992b93259f08b8e4dca4', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-035",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 42, 103253, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-035-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'b4e2d0b32f401362d95e4b904c1abdcbf8116c194c98d524c0319591b49d498a', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-036",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.5702777777777778,
+        "must_include_recall": 0.49444444444444446,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-037",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 46, 801376, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-037-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'a445f907c636ce3ead9e974e17771dcacf72cd439fcb4feafa87ade81fe4ee8f', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-038",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 49, 101619, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-038-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'ebe1f2b0633f2daef7bd6556b39361aabe5c29c6c4f495b72e20267bbe223bf7', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-039",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.50275,
+        "must_include_recall": 0.41500000000000004,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": 0.0
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-040",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 53, 281846, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-040-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'fbdd0e9b6b18a2e62e7bca7dd01d1946cf040c3dbc012e0be34943d001b1f235', 'sql_hash': '5ca6a57527ca5b036ae4cac1bbfeebb571db48b052dc38a5bb817d168e61ca3d', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"role_evolution\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-041",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 39, 57, 68181, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-041-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'a2e3dc2ef0c28787623cfc5a02370d0d533a67dea54bca82089d46f633e60d9d', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-042",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 2, 566276, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-042-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '3582ae6d772dddbbc453f1d0ed2aabde5bf51e5e82c6dc4ac6b464a10fdb0d2f', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-043",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 4, 850012, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-043-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'f06207d4ab2a87680bbccf1f1d4e8874f1ce7c84df22363ccc6db8f4598dd814', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-044",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 7, 318160, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-044-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '00043d813c18b70312e50debcfe1f2800d3998806097adff463e305325aa1e28', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-045",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 9, 677033, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-045-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '2840936fedcddb0b98363e5863a1b36186e752cdc13a3f799f6ce63c18904ee5', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-046",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 17, 433259, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-046-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '4459b44342a90ddea49d27797378e70f2ee2504104bf4159faad6a81b73c633b', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-047",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 23, 24521, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-047-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '988e687564becda97b42a4e8739f733df777a516e0e74b32e03457a95163ac71', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-048",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 25, 823772, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-048-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'e87beab33d7f6f355dc1e2b5cab41dba3c496d2e6ef7b37411d06a69c2dc329e', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-049",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 30, 841454, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-049-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'dc2877deba130c51e84fff404585777ed380aa16b7373ab89de6be771237ff3b', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-050",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 40, 33, 261302, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-050-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '3f789860e2ba5715d0b60712655892815c840dbbcf64c82403be479439c56085', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-051",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.6942368421052633,
+        "must_include_recall": 0.6100000000000001,
+        "evidence_overlap": 0.7105263157894737,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-052",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7813870967741935,
+        "must_include_recall": 0.74,
+        "evidence_overlap": 0.7741935483870968,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-053",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-054",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-055",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-056",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-057",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-058",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.156625,
+        "must_include_recall": 0.35,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-059",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.8300588235294117,
+        "must_include_recall": 0.74,
+        "evidence_overlap": 0.8823529411764706,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.9272727272727272,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-060",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.6154324324324324,
+        "must_include_recall": 0.74,
+        "evidence_overlap": 0.40540540540540543,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.9945454545454545,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-061",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 41, 13, 915318, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-061-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'e347667f49b314aa1db168445d623f964112d8d3b16a9fba4c84164efc7aab0e', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.95, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-062",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.19959722222222218,
+        "must_include_recall": 0.49444444444444435,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-063",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 41, 18, 250484, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-063-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '1de4be5f39dc47c627d4acc8903fd407ae632d9ee1fc476249ebf02c3061f74e', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-064",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.20496874999999998,
+        "must_include_recall": 0.5125,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-065",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 41, 22, 809521, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-065-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '82cf823614f6341dba050b9798036c15931f03d9d467855354e2eaee476779c0', 'sql_hash': '4d42049517300179932ecd310ee72655e24cc689431b20849685ba5ae38faba8', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"geographic\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-066",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.19959722222222218,
+        "must_include_recall": 0.49444444444444435,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-067",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.180796875,
+        "must_include_recall": 0.43125,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-068",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.20496874999999998,
+        "must_include_recall": 0.5125,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-069",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.180796875,
+        "must_include_recall": 0.43125,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-070",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.19959722222222218,
+        "must_include_recall": 0.49444444444444435,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.0,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-071",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7784090909090909,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-072",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7757499999999999,
+        "must_include_recall": 0.9349999999999999,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-073",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7784090909090909,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-074",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7446590909090909,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.5249999999999999,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-075",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.9134090909090908,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.8999999999999999,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-076",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7784090909090909,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-077",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.7784090909090909,
+        "must_include_recall": 0.9409090909090909,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-078",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.780625,
+        "must_include_recall": 0.9458333333333333,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-079",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.814375,
+        "must_include_recall": 0.9458333333333333,
+        "evidence_overlap": 0.675,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-080",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.780625,
+        "must_include_recall": 0.9458333333333333,
+        "evidence_overlap": 0.6000000000000001,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 1.0,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-081",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 25, 615332, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-081-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '6d420ef7592a1e1559a7b1e62359955275b4cbc4980103c601c3f2140931448f', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-082",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 27, 702561, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-082-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'a941842dcd6e3c40395883bb9bb09d5160bb1c8144ddc4e5226bac0700c61e29', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-083",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 30, 167348, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-083-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'fa404e179044d257996277376d7e93a3881e08100ce67940f6862aab4b755c29', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.92, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-084",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 32, 280531, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-084-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'dd6ab37d9b4097f0d6f70fd3d453ef907ea3ce5c5d969746dabe3ed502e28abc', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-085",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.4946551724137931,
+        "must_include_recall": 0.5666666666666667,
+        "evidence_overlap": 0.3103448275862069,
+        "confidence_self_consistency": 0.65,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-086",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 36, 338526, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-086-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': 'ee5b47ed67c08bbc39426a8db9e8c1d5f91ba4fa2c5025aae67fa047ea1cd842', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-087",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 38, 633968, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-087-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '244153014426dfd45716d7fa666f2ddc0a100805366da3cde48b8f760d2aa766', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.9, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-088",
+      "scores": {
+        "intent_accuracy": null,
+        "evidence_citation": null,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": null,
+        "confidence_in_expected_range": null,
+        "latency_sla": 1.0,
+        "answerability": null,
+        "correct_refusal": null
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: INSERT INTO dbo.orchestration_audit_log (created_at, correlation_id, endpoint, question_hash, sql_hash, confidence, success, error_code, payload) VALUES (%(created_at)s, %(correlation_id)s, %(endpoint)s, %(question_hash)s, %(sql_hash)s, %(confidence)s, %(success)s, %(error_code)s, %(payload)s::JSONB) RETURNING dbo.orchestration_audit_log.id]\n[parameters: {'created_at': datetime.datetime(2026, 5, 4, 18, 43, 41, 214832, tzinfo=datetime.timezone.utc), 'correlation_id': 'gq-088-week11-final', 'endpoint': 'POST /analytics/query', 'question_hash': '4723589023f56cc98528e30c03e897fba8ee59d7188ed18411618acc8b79d07a', 'sql_hash': 'fc8656b3da5c752844a0c3efc9b3d70f962d7dc90dce18bce132eb8fc6d2066b', 'confidence': 0.0, 'success': True, 'error_code': None, 'payload': '{\"intent\": \"workflow\", \"classification_confidence\": 0.85, \"needs_clarification\": false, \"row_count\": 0, \"citations\": 0, \"refused\": true, \"tenant_id\": \"borderplex\"}'}]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    {
+      "gq_id": "gq-089",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.1953,
+        "must_include_recall": 0.4800000000000001,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.7272727272727273,
+        "latency_sla": 1.0,
+        "answerability": 0.0,
+        "correct_refusal": null
+      },
+      "error": null
+    },
+    {
+      "gq_id": "gq-090",
+      "scores": {
+        "intent_accuracy": 0.0,
+        "evidence_citation": 0.4225,
+        "must_include_recall": 0.5666666666666667,
+        "evidence_overlap": 0.15000000000000002,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": 0.8327272727272725,
+        "latency_sla": 1.0,
+        "answerability": 1.0,
+        "correct_refusal": null
+      },
+      "error": null
+    }
+  ],
+  "means": {
+    "intent_accuracy": 0.796875,
+    "evidence_citation": 0.546092,
+    "confidence_self_consistency": 0.939844,
+    "latency_sla": 1.0
+  },
+  "excluded_counts": {
+    "intent_accuracy": 26,
+    "evidence_citation": 26,
+    "confidence_self_consistency": 26
+  },
+  "mean_confidence_in_expected_range": 0.504924,
+  "confidence_in_expected_range_n": 26,
+  "run_ece": null,
+  "answerability_summary": {
+    "mean": 0.5333333333333333,
+    "n_data_backed": 30,
+    "n_intent_only_skipped": 60,
+    "pass_rate": 0.5333333333333333
+  },
+  "refusal_correctness_summary": {
+    "refusal_correctness_rate": 0.23529411764705882,
+    "n_scored": 34,
+    "n_excluded": 56,
+    "mean": 0.23529411764705882
+  },
+  "subcomposites": {
+    "prompt_quality_composite": 0.5460915867223668,
+    "classification_composite": 0.796875,
+    "pipeline_health_composite": 0.6221568627450981,
+    "safety_composite": 0.7876219223484848,
+    "overall_geometric_composite": 0.6795451932655826,
+    "gated": false,
+    "gate_message": "ok"
+  },
+  "intent_confusion": {
+    "comparison->comparison": 10,
+    "curriculum->curriculum": 10,
+    "disruption->disruption": 10,
+    "emergence->disruption": 1,
+    "emergence->emergence": 8,
+    "emergence->employer": 1,
+    "employer->comparison": 1,
+    "employer->employer": 6,
+    "employer->other": 3,
+    "geographic->other": 10,
+    "role_evolution->disruption": 3,
+    "role_evolution->other": 6,
+    "role_evolution->trend": 1,
+    "trend->disruption": 3,
+    "trend->trend": 7,
+    "workflow->curriculum": 1,
+    "workflow->employer": 2,
+    "workflow->other": 7
+  },
+  "intent_classification": {
+    "per_class": {
+      "comparison": {
+        "precision": 0.9090909090909091,
+        "recall": 1.0,
+        "f1": 0.9523809523809523,
+        "support": 10.0
+      },
+      "curriculum": {
+        "precision": 0.9090909090909091,
+        "recall": 1.0,
+        "f1": 0.9523809523809523,
+        "support": 10.0
+      },
+      "disruption": {
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "support": 10.0
+      },
+      "emergence": {
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.888888888888889,
+        "support": 10.0
+      },
+      "employer": {
+        "precision": 0.6666666666666666,
+        "recall": 0.6,
+        "f1": 0.631578947368421,
+        "support": 10.0
+      },
+      "geographic": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10.0
+      },
+      "other": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0.0
+      },
+      "role_evolution": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10.0
+      },
+      "trend": {
+        "precision": 0.875,
+        "recall": 0.7,
+        "f1": 0.7777777777777777,
+        "support": 10.0
+      },
+      "workflow": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10.0
+      }
+    },
+    "macro_f1": 0.4943748259537733,
+    "weighted_f1": 0.5493053621708592,
+    "labels": [
+      "comparison",
+      "curriculum",
+      "disruption",
+      "emergence",
+      "employer",
+      "geographic",
+      "other",
+      "role_evolution",
+      "trend",
+      "workflow"
+    ]
+  }
+}
