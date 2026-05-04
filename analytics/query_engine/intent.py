@@ -107,6 +107,20 @@ Q: "What is Dell's hiring strategy for data scientists?"
 A: {"intent":"employer","confidence":0.93,...}
    ← EMPLOYERS are the subject; no geographic posting filter.
 
+Q: "Show open AI-core roles (AI agent developer, prompt engineer, ML engineer) at UTEP, NMSU, or EPCC in the last 12 months."
+A: {"intent":"employer","confidence":0.91,...}
+   ← EMPLOYERS (named institutions) are the subject; "at <institutions>" is the
+     primary filter. No city/region token scopes the postings — the institutions
+     ARE the scope. Distinct from "Las Cruces postings, highlighting NMSU/UTEP/EPCC"
+     where the city is the filter and institutions are secondary qualifiers.
+
+Q: "List all IT postings from Borderplex federal-contractor employers requiring a security clearance."
+A: {"intent":"employer","confidence":0.90,...}
+   ← EMPLOYERS (federal-contractor cohort, defined by sector / employer_profiles)
+     are the subject. "Borderplex" scopes WHICH employers are included; it is not
+     a posting filter. Same pattern: "Borderplex fintech / payments employers"
+     and "Borderplex healthcare-IT employers" → employer.
+
 Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 months."
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
