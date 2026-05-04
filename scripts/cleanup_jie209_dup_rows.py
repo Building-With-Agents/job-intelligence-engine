@@ -279,19 +279,18 @@ def main() -> int:
         print(f"  raw_ingested_jobs    deleted: {summary['deleted_raw']:>6}")
         print(f"  normalized_jobs      deleted: {summary['deleted_norm']:>6}")
         print(f"  extracted_intelligence deleted: {summary['deleted_extr']:>6}")
-    print(f"  llm_audit_log        : preserved (not touched)")
-    print(f"  job_postings         : preserved (not touched)")
+    print("  llm_audit_log        : preserved (not touched)")
+    print("  job_postings         : preserved (not touched)")
     print("=" * 64)
 
-    if args.apply:
-        # Sanity: deletion counts should match identification counts
-        if (
-            summary["deleted_raw"] != summary["raw_ingested_jobs_excess"]
-            or summary["deleted_norm"] != summary["normalized_jobs_excess"]
-            or summary["deleted_extr"] != summary["extracted_intelligence_excess"]
-        ):
-            print("WARNING: deleted rowcount differs from identified rowcount")
-            return 1
+    # Sanity: deletion counts should match identification counts
+    if args.apply and (
+        summary["deleted_raw"] != summary["raw_ingested_jobs_excess"]
+        or summary["deleted_norm"] != summary["normalized_jobs_excess"]
+        or summary["deleted_extr"] != summary["extracted_intelligence_excess"]
+    ):
+        print("WARNING: deleted rowcount differs from identified rowcount")
+        return 1
     return 0
 
 
