@@ -278,16 +278,20 @@ def load_fixture(table_name: str) -> list[dict]:
 def _build_on_conflict_clause(table_name: str, pk_cols: list[str], columns: list[str]) -> str:
     """Build the ON CONFLICT clause for the upsert.
 
-    For tables in UPSERT_UPDATE_COLUMNS, filter the configured update columns
-    to those present in the fixture, then build:
+    For tables in UPSERT_UPDATE_COLUMNS, the conflict target MUST be specified
+    (Postgres requires it for DO UPDATE):
         ON CONFLICT (pk) DO UPDATE SET col = COALESCE("dbo"."<table>".col, EXCLUDED.col), ...
-    Otherwise:
-        ON CONFLICT (pk) DO NOTHING
+
+    For all other tables, use the no-target form so ANY unique-constraint
+    violation triggers the skip (JIE#182, JIE#183): a target-less
+    ``ON CONFLICT DO NOTHING`` catches the pk uniqueness AND any
+    environment-specific unique constraints (e.g. Azure's unique-on-name on
+    ``companies``) that would otherwise raise a hard error.
     """
-    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
     update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table_name, []) if c in columns]
     if not update_cols:
-        return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+        return "ON CONFLICT DO NOTHING"
+    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
     set_clauses = ", ".join(f'"{c}" = COALESCE("dbo"."{table_name}"."{c}", EXCLUDED."{c}")' for c in update_cols)
     return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
 
@@ -492,6 +496,29 @@ def seed_database() -> None:
         print("  Run separately: python scripts/pg-seed-data/seed_agent_data.py")
 
     conn.close()
+
+    # ── Step 5: Re-sync serial sequences post-seed (JIE#367) ──────
+    # When fixtures contain explicit integer ``id`` values, those INSERTs
+    # bypass ``nextval()`` so the sequence stays at its pre-seed value
+    # (typically 1 on a fresh DB). The first agent insert afterward then
+    # collides on pkey. Sync to MAX(id) here so any subsequent
+    # ``DEFAULT id`` insert allocates a non-colliding value.
+    print("\nStep 5: Syncing serial sequences post-seed (JIE#367)...")
+    try:
+        sys.path.insert(0, str(_REPO_ROOT))
+        from common.data_store.database import get_engine as _get_engine
+        from common.data_store.migrations import _sync_agent_serial_sequences
+
+        _sync_agent_serial_sequences(_get_engine())
+        print("  Sequences synced.")
+    except Exception as exc:
+        print(f"  WARNING: sequence sync failed: {exc}")
+        print(
+            "  Run manually: python -c \""
+            "from common.data_store.database import get_engine; "
+            "from common.data_store.migrations import _sync_agent_serial_sequences; "
+            '_sync_agent_serial_sequences(get_engine())"'
+        )
 
     # ── Summary ──────────────────────────────────────────────────────
     print(f"\n{'=' * 60}")
