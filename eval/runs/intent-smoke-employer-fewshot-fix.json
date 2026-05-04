@@ -1,0 +1,170 @@
+{
+  "summary": {
+    "geographic_pass": "10/10",
+    "employer_fix_pass": "4/4",
+    "employer_prior_pass": "6/6",
+    "total_pass": "20/20"
+  },
+  "results": [
+    {
+      "id": "gq-041",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Show all El Paso, TX postings for AI agent developer, prompt engineer, or LLM engineer roles in the agentic_era period."
+    },
+    {
+      "id": "gq-042",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "List every Las Cruces, NM data engineer posting from the last 90 days with required skills including Python, SQL, and a cloud platform."
+    },
+    {
+      "id": "gq-043",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Pull all El Paso, TX healthcare-IT postings \u2014 including EHR analyst, health informatics specialist, and clinical data analyst roles \u2014 that require AI or ML skills."
+    },
+    {
+      "id": "gq-044",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Show all Las Cruces, NM DevOps and site-reliability engineer postings requiring Kubernetes or Terraform experience."
+    },
+    {
+      "id": "gq-045",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Find all El Paso, TX frontend developer postings mentioning React or Next.js, posted in the post_gpt4 or agentic_era periods."
+    },
+    {
+      "id": "gq-046",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "List every Las Cruces, NM cybersecurity posting from the last 12 months requiring a security clearance or a named industry certification such as CISSP, CISA, or CompTIA Security+."
+    },
+    {
+      "id": "gq-047",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Retrieve all El Paso, TX entry-level IT postings that have a published salary range, grouped by job family."
+    },
+    {
+      "id": "gq-048",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "Find all Borderplex (El Paso and Las Cruces combined) fintech or regtech developer postings from the agentic_era period."
+    },
+    {
+      "id": "gq-049",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Show all El Paso, TX legal-tech and e-discovery analyst postings from the past 6 months, with any that mention AI workflows flagged."
+    },
+    {
+      "id": "gq-050",
+      "expected": "geographic",
+      "got": "geographic",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "List all Las Cruces, NM AI/ML researcher and applied-scientist postings, highlighting any university-affiliated employers such as NMSU, UTEP, or EPCC."
+    },
+    {
+      "id": "gq-061",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Show open AI-core roles (AI agent developer, prompt engineer, ML engineer) at UTEP, NMSU, or EPCC in the last 12 months."
+    },
+    {
+      "id": "gq-062",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Which Borderplex employers have the highest share of postings mentioning AI tools (Copilot, LangChain, LLM APIs) in the agentic_era period?"
+    },
+    {
+      "id": "gq-063",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "List all IT postings from Borderplex federal-contractor employers (defense, aerospace, government-tech) that require a security clearance."
+    },
+    {
+      "id": "gq-064",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.92,
+      "pass": true,
+      "question": "Which Borderplex healthcare-IT employers are hiring for clinical-data-analyst or health-informatics roles with AI-adjacent skill requirements?"
+    },
+    {
+      "id": "gq-065",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "Show all Borderplex fintech and payments-technology employer postings from the post_gpt4 and agentic_era periods."
+    },
+    {
+      "id": "gq-066",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Which Borderplex employers posted the most data-engineer or data-scientist roles in the last 12 months, and what share of their postings require AI-adjacent skills?"
+    },
+    {
+      "id": "gq-067",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "Compare hiring activity between Borderplex academic employers (UTEP, NMSU, EPCC) and private-sector IT employers over the last 18 months."
+    },
+    {
+      "id": "gq-068",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "Which Borderplex employers have introduced AI-native roles (AI agent developer, prompt engineer) for the first time in the agentic_era period, signaling a shift in hiring strategy?"
+    },
+    {
+      "id": "gq-069",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.9,
+      "pass": true,
+      "question": "Show all Borderplex legal-tech and e-discovery employer postings, grouped by employer, in the last 12 months."
+    },
+    {
+      "id": "gq-070",
+      "expected": "employer",
+      "got": "employer",
+      "confidence": 0.95,
+      "pass": true,
+      "question": "Which Borderplex employers have the highest repeat-posting rate for the same role family \u2014 suggesting either high turnover or aggressive expansion?"
+    }
+  ]
+}

@@ -198,6 +198,20 @@ the request body. Integration tests added to prevent silent regression.
 
 ---
 
+## Targeted intent-only smoke runs
+
+Smaller verifications that exercise `classify_workforce_question` directly
+against a subset of the gold corpus, without running the full Q&A pipeline.
+Use these when a prompt change targets intent classification specifically and
+the binding success criterion is the per-question intent matrix. Full
+`--prompt-version` runs still belong in the version-history table above.
+
+| Date | Author | Branch | Scope | Result | Artifacts |
+|------|--------|--------|-------|--------|-----------|
+| 2026-05-03 | Pair (intent prompt iteration) | `fix/intent-employer-disambiguation-gq061-067` | gq-041..050 (geographic, #257 preservation), gq-061/063/065/067 (employer fix), gq-062/064/066/068/069/070 (employer prior spot-check) — 20 questions total | **20/20 pass**: 10/10 geographic, 4/4 employer fix, 6/6 employer prior (all conf ≥ 0.90) | [`runs/findings-intent-employer-fewshot-fix.md`](runs/findings-intent-employer-fewshot-fix.md), [`runs/intent-smoke-employer-fewshot-fix.json`](runs/intent-smoke-employer-fewshot-fix.json) |
+
+---
+
 ## How to add a future run
 
 1. Run `eval/qa_eval.py --prompt-version <semantic-tag> --output-json eval/runs/<tag>.json`.
@@ -221,3 +235,4 @@ on hard questions. At n ≈ 90, a 2-point composite delta is within noise.
 | 2026-04-22 | Bryan | Created skeleton; documented DEV-001–DEV-003; v1-baseline section stubbed |
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
+| 2026-05-03 | Pair (intent prompt iteration) | Added "Targeted intent-only smoke runs" section and recorded the gq-061..067 employer disambiguation smoke (20/20 pass). Refs #257, #340, #346 |
