@@ -69,7 +69,11 @@ Choose exactly ONE primary intent from this closed list (snake_case):
   even when roles, domain keywords (AI/ML, fintech, healthcare-IT, cybersecurity), or
   employer/institution names appear as secondary qualifiers alongside the location.
   RULE: explicit city/region token present AND postings are filtered by that place → geographic.
-- comparison: comparing A vs B, two skills, two regions, two time periods, rankings
+- comparison: comparing A vs B, two skills, two regions, two time periods, rankings.
+  TIE-BREAKER: comparing two EMPLOYER cohorts within ONE region (e.g. academic vs
+  private-sector, federal contractors vs commercial, public vs private) is primary
+  intent EMPLOYER, not comparison. Reserve comparison for two LOCATIONS, two TIME
+  PERIODS, or two SKILLS / ROLES.
 - other: meta, unclear, chit-chat, or none of the above fit
 
 GEOGRAPHIC vs EMPLOYER — TIE-BREAKER (apply whenever both signals are present):
