@@ -1,4 +1,4 @@
-﻿"""Golden-question cohort allowlists for Q&A eval (Pair C Week 10).
+"""Golden-question cohort allowlists for Q&A eval (Pair C Week 10).
 
 ``--golden-ids`` overrides ``--cohort`` when the parsed ID list is non-empty.
 See ``eval/qa_eval.py`` argparse help for precedence.

@@ -705,7 +705,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--prompt-version", required=True, help="Run name / version tag (e.g. v1-baseline)")
     p.add_argument("--json-path", type=Path, default=DEFAULT_JSON_PATH, help="Golden questions JSON")
     p.add_argument("--dataset-name", default=DEFAULT_DATASET_NAME, help="Langfuse dataset name")
-    p.add_argument("--limit", type=int, default=None, help="Evaluate only first N questions (ignored with --cohort/--golden-ids)")
+    p.add_argument(
+        "--limit", type=int, default=None, help="Evaluate only first N questions (ignored with --cohort/--golden-ids)"
+    )
     p.add_argument(
         "--cohort",
         default=None,
