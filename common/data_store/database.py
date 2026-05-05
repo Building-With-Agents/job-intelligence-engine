@@ -1,7 +1,8 @@
 """Database engine, session factory, and connection utilities.
 
 All agents share one engine per process. The connection URL comes from
-``PYTHON_DATABASE_URL`` (``postgresql+psycopg2://...``).
+``PYTHON_DATABASE_URL``, or if unset, ``AZURE_POSTGRES_DATABASE_URL``
+(both ``postgresql+psycopg2://...``).
 """
 
 from __future__ import annotations
@@ -21,14 +22,23 @@ _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
 
 
+def _resolve_primary_database_url() -> str:
+    """Prefer ``PYTHON_DATABASE_URL``; fall back to ``AZURE_POSTGRES_DATABASE_URL``."""
+    url = (os.getenv("PYTHON_DATABASE_URL") or "").strip()
+    if url:
+        return url
+    return (os.getenv("AZURE_POSTGRES_DATABASE_URL") or "").strip()
+
+
 def get_engine() -> Engine:
     """Return a singleton SQLAlchemy engine (created on first call)."""
     global _engine
     if _engine is None:
-        url = os.getenv("PYTHON_DATABASE_URL")
+        url = _resolve_primary_database_url()
         if not url:
             raise RuntimeError(
-                "PYTHON_DATABASE_URL is not set. Expected format: postgresql+psycopg2://user:pass@host:port/db"
+                "Database URL is not set. Set PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL "
+                "(postgresql+psycopg2://user:pass@host:port/db)"
             )
         from common.pipeline_config import db_max_overflow, db_pool_size
 

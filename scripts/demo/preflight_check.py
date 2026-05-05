@@ -29,6 +29,8 @@ from dotenv import load_dotenv
 
 load_dotenv(_ROOT / ".env", override=False)
 
+from common.data_store.database import _resolve_primary_database_url
+
 LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
     "What are the top IT skills Borderplex employers are hiring for right now?",
     "What should a training program for AI agent developers look like given what Borderplex employers are hiring for right now?",
@@ -115,10 +117,13 @@ def main() -> int:
     portal_ok = p_status == 200
     print(f"2. wfd-os GET {args.portal_url} → {'PASS' if portal_ok else 'FAIL'} (HTTP {p_status})")
 
-    # 3 DB
-    py_db = (os.getenv("PYTHON_DATABASE_URL") or "").strip()
-    db_ok = bool(py_db)
-    print(f"3. PYTHON_DATABASE_URL set → {'PASS' if db_ok else 'FAIL'}")
+    # 3 DB (PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL)
+    db_url = _resolve_primary_database_url()
+    db_ok = bool(db_url)
+    print(
+        f"3. Database URL set (PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL) → "
+        f"{'PASS' if db_ok else 'FAIL'}"
+    )
 
     # 4 LLM
     llm = (os.getenv("LLM_PROVIDER") or "").strip().lower()
