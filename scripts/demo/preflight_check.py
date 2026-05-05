@@ -29,6 +29,7 @@ from dotenv import load_dotenv
 
 load_dotenv(_ROOT / ".env", override=False)
 
+from analytics.api._config import allow_no_api_keys
 from common.data_store.database import _resolve_primary_database_url
 
 LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
@@ -130,6 +131,24 @@ def main() -> int:
     llm_ok = bool(llm) and llm != "mock"
     print(f"4. LLM_PROVIDER set and not mock → {'PASS' if llm_ok else 'FAIL'} (value={llm or '(unset)'})")
 
+    jie_keys = bool((os.getenv("JIE_API_KEYS") or "").strip())
+    dev_no_keys = allow_no_api_keys()
+    auth_backend_ok = jie_keys or dev_no_keys
+    print(
+        f"4b. JIE API keys (JIE_API_KEYS non-empty OR LaborPulse allow_no_api_keys) → "
+        f"{'PASS' if auth_backend_ok else 'FAIL'} "
+        f"(JIE_API_KEYS={'set' if jie_keys else 'empty'}, "
+        f"LABORPULSE_ALLOW_NO_API_KEYS={dev_no_keys})"
+    )
+    client_key = bool((os.getenv("ANALYTICS_QUERY_X_API_KEY") or "").strip())
+    client_auth_ok = dev_no_keys or (jie_keys and client_key)
+    print(
+        f"4c. Client X-API-Key (ANALYTICS_QUERY_X_API_KEY) when keys required → "
+        f"{'PASS' if client_auth_ok else 'FAIL'} "
+        f"(header={'set' if client_key else 'missing'}; empty JIE_API_KEYS → HTTP 500 "
+        f"server_misconfigured_no_keys)"
+    )
+
     print()
     print("5. Locked demo questions (POST /analytics/query)")
     questions_pass = 0
@@ -152,6 +171,10 @@ def main() -> int:
             questions_pass += 1
 
         print(f"   Question {i}")
+        print(f"   HTTP {http_st}")
+        if http_st != 200:
+            detail = body.get("detail", body)
+            print(f"   Error detail: {detail}")
         print(f"   Answer received: {'yes' if ok else 'no'}")
         print(f"   Confidence: {confidence if confidence is not None else '(n/a)'}")
         print(f"   Evidence count: {evidence_count}")
@@ -159,7 +182,7 @@ def main() -> int:
         print()
 
     svc_up = sum([jie_ok, portal_ok])
-    env_ok = db_ok and llm_ok
+    env_ok = db_ok and llm_ok and auth_backend_ok and client_auth_ok
     ready = svc_up == 2 and questions_pass == 5 and env_ok
 
     print("=== DEMO PREFLIGHT ===")
