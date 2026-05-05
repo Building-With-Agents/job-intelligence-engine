@@ -572,7 +572,14 @@ def _curriculum_to_analytics_response(
     modules: list[str] = list(synthesis.get("modules") or [])
 
     if is_suff and modules:
-        out_conf = 0.9
+        n_emps = len(ins.top_employers or [])
+        n_top_skills = len(ins.top_skills or [])
+        if n_emps >= 5 and n_top_skills >= 5:
+            out_conf = 0.9
+        elif n_emps >= 2 and n_top_skills >= 3:
+            out_conf = 0.7
+        else:
+            out_conf = 0.5
     elif is_suff:
         out_conf = 0.4
     else:

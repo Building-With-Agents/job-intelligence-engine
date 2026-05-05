@@ -106,6 +106,7 @@ class CurriculumInputs:
     region: str
     role_matched: bool
     data_flags: dict[str, bool]
+    canonical_role_label: str | None = None
 
 
 def _empty_data_flags() -> dict[str, bool]:
@@ -517,7 +518,7 @@ def build_curriculum_inputs(
     flags = _empty_data_flags()
     phrase = _extract_role_phrase(question, role_names)
     try:
-        role_id, _label, matched = _match_canonical_role(session, phrase)
+        role_id, label, matched = _match_canonical_role(session, phrase)
     except Exception as exc:  # noqa: BLE001
         log.warning("curriculum_path_role_resolution_error", error_type=type(exc).__name__)
         return CurriculumInputs(
@@ -599,6 +600,7 @@ def build_curriculum_inputs(
         region=_REGION_LABEL,
         role_matched=True,
         data_flags=flags,
+        canonical_role_label=label,
     )
 
 

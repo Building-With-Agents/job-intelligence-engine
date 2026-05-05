@@ -673,6 +673,58 @@ class QueryRouter:
         return [str(row[0]) for row in rows]
 
     @staticmethod
+    def _resolve_representative_titles(
+        canonical_role_ids: list[str],
+        session: Session,
+        *,
+        max_titles: int = 25,
+    ) -> list[str]:
+        """Return the union of ``representative_titles`` for the given canonical
+        roles, deduplicated and capped at ``max_titles``.
+
+        Used by routes that query ``dbo.job_postings`` directly to widen recall
+        onto postings whose ``canonical_role_id`` is NULL (~48% of the corpus
+        as of 2026-05-02 re-cluster). The clustering pipeline persists the
+        member titles per canonical role; ILIKE-matching those titles against
+        ``jp.job_title`` catches NULL-canonical_role_id postings that genuinely
+        belong to the resolved role family but missed direct assignment.
+
+        Returns an empty list when ``canonical_role_ids`` is empty or no rows
+        have populated ``representative_titles``. Cap of 25 keeps the OR'd
+        ILIKE clause tractable at top_k=5 × ~5 rep titles per role.
+        """
+        if not canonical_role_ids:
+            return []
+        rows = session.execute(
+            text(
+                """
+                SELECT representative_titles
+                FROM dbo.canonical_roles
+                WHERE role_id = ANY(:ids)
+                  AND representative_titles IS NOT NULL
+                """
+            ),
+            {"ids": canonical_role_ids},
+        ).fetchall()
+        seen: set[str] = set()
+        titles: list[str] = []
+        for row in rows:
+            rt = row[0] or []
+            if not isinstance(rt, list):
+                continue
+            for t in rt:
+                if not t or not isinstance(t, str):
+                    continue
+                norm = t.strip()
+                if not norm or norm.lower() in seen:
+                    continue
+                seen.add(norm.lower())
+                titles.append(norm)
+                if len(titles) >= max_titles:
+                    return titles
+        return titles
+
+    @staticmethod
     def _build_role_token_ilike_clauses(role_names: list[str], params: dict[str, Any]) -> list[str]:
         """Build OR'd token-ILIKE clauses against ``jp.job_title``/``jp.role_classification``.
 
@@ -819,9 +871,20 @@ class QueryRouter:
             if resolved_ids:
                 params["resolved_role_ids"] = resolved_ids
                 predicates.append("jp.canonical_role_id = ANY(:resolved_role_ids)")
+                # Widen recall onto NULL-canonical_role_id postings whose title
+                # matches a representative_title of any resolved canonical role.
+                rep_titles = self._resolve_representative_titles(resolved_ids, session)
+                rep_clauses: list[str] = []
+                for i, rep_title in enumerate(rep_titles):
+                    key = f"rep_title_{i}"
+                    params[key] = f"%{rep_title}%"
+                    rep_clauses.append(f"jp.job_title ILIKE :{key}")
+                if rep_clauses:
+                    predicates.append("(" + " OR ".join(rep_clauses) + ")")
                 log.info(
                     "query_router_role_evolution_embedding_route",
                     resolved_count=len(resolved_ids),
+                    rep_titles_count=len(rep_titles),
                 )
             if role_clauses:
                 predicates.append("(" + " OR ".join(role_clauses) + ")" if len(role_clauses) > 1 else role_clauses[0])
@@ -1317,11 +1380,22 @@ class QueryRouter:
                 placeholders = ", ".join(f":crid{i}" for i in range(len(resolved_ids)))
                 for i, rid in enumerate(resolved_ids):
                     params[f"crid{i}"] = rid
-                where_parts.append(f"jp.canonical_role_id IN ({placeholders})")
+                # Widen recall onto NULL-canonical_role_id postings whose title
+                # matches a representative_title of any resolved canonical role.
+                rep_titles = self._resolve_representative_titles(resolved_ids, session)
+                role_predicates: list[str] = [
+                    f"jp.canonical_role_id IN ({placeholders})",
+                ]
+                for i, rep_title in enumerate(rep_titles):
+                    key = f"rep_title_{i}"
+                    params[key] = f"%{rep_title}%"
+                    role_predicates.append(f"jp.job_title ILIKE :{key}")
+                where_parts.append("(" + " OR ".join(role_predicates) + ")")
                 where_parts.append("(jp.role_classification IS NULL OR jp.role_classification <> 'N/A Not an IT role')")
                 log.info(
                     "query_router_geographic_list_embedding_route",
                     resolved_count=len(resolved_ids),
+                    rep_titles_count=len(rep_titles),
                 )
             else:
                 # Tokenize each role name and OR-match every token against EITHER
