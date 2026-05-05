@@ -5,7 +5,7 @@ Mirrors wfd-os → ``POST /analytics/query`` (LaborPulse headers, JIE #222).
 
 Requires JIE running, e.g.::
 
-    uvicorn analytics.api.main:app --host 127.0.0.1 --port 8000
+    uvicorn analytics.api.app:app --host 127.0.0.1 --port 8020
 
 Headers match ``scripts/smoke/api_smoke.py``. Set ``ANALYTICS_QUERY_X_API_KEY`` when
 ``JIE_API_KEYS`` is configured (see ``.env.example``).
@@ -13,7 +13,7 @@ Headers match ``scripts/smoke/api_smoke.py``. Set ``ANALYTICS_QUERY_X_API_KEY`` 
 Usage::
 
     python scripts/smoke/laborpulse/real_query.py
-    python scripts/smoke/laborpulse/real_query.py --base-url http://127.0.0.1:8000
+    python scripts/smoke/laborpulse/real_query.py --base-url http://localhost:8020
 
 Exit code 0 only if every question returns HTTP 200 with a non-empty answer.
 """
@@ -91,7 +91,11 @@ def _likely_refusal(answer: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke the five locked LaborPulse demo questions.")
-    parser.add_argument("--base-url", default=os.environ.get("JIE_BASE_URL", "http://127.0.0.1:8000"))
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("JIE_BASE_URL", "http://localhost:8020"),
+        help="JIE Analytics API base URL (default: http://localhost:8020 or JIE_BASE_URL).",
+    )
     parser.add_argument(
         "--require-non-empty-sql",
         action="store_true",

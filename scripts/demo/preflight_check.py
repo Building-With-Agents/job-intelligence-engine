@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Demo pre-flight: JIE health, portal up, env, and five locked LaborPulse questions.
+
+Run from repo root with venv activated::
+
+    python scripts/demo/preflight_check.py
+
+Optional::
+
+    python scripts/demo/preflight_check.py --jie-base-url http://127.0.0.1:8020
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+import uuid
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from dotenv import load_dotenv
+
+load_dotenv(_ROOT / ".env", override=False)
+
+LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
+    "What are the top IT skills Borderplex employers are hiring for right now?",
+    "What should a training program for AI agent developers look like given what Borderplex employers are hiring for right now?",
+    "What should a training program for cybersecurity analysts look like given what Borderplex employers are hiring for right now?",
+    "What tools and practices do Borderplex employers expect from workflow automation engineers?",
+    "What does an MLOps role look like in the Borderplex job market right now?",
+)
+
+
+def _get(url: str, *, timeout: float = 10.0) -> tuple[int, str]:
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, resp.read()[:200].decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as e:
+        return e.code, (e.read()[:200].decode("utf-8", errors="replace") if e.fp else "")
+    except urllib.error.URLError as e:
+        return 0, str(e.reason)
+
+
+def _laborpulse_headers(*, request_id: str) -> dict[str, str]:
+    h: dict[str, str] = {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": os.environ.get("ANALYTICS_QUERY_X_TENANT_ID", "borderplex").strip() or "borderplex",
+        "X-User-Email": os.environ.get("ANALYTICS_QUERY_X_USER_EMAIL", "smoke@thewaifinder.com").strip()
+        or "smoke@thewaifinder.com",
+        "X-Request-Id": request_id,
+    }
+    xk = os.environ.get("ANALYTICS_QUERY_X_API_KEY", "").strip()
+    if xk:
+        h["X-API-Key"] = xk
+    return h
+
+
+def _post_query(base: str, question: str, *, req_id: str) -> tuple[int, dict]:
+    url = f"{base.rstrip('/')}/analytics/query"
+    data = json.dumps({"question": question}).encode()
+    hdrs = _laborpulse_headers(request_id=req_id)
+    req = urllib.request.Request(url, data=data, headers=hdrs, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            return resp.status, json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode() if e.fp else ""
+        try:
+            return e.code, json.loads(raw)
+        except json.JSONDecodeError:
+            return e.code, {"detail": raw}
+    except urllib.error.URLError as e:
+        return 0, {"error": str(e.reason)}
+
+
+def _likely_refusal(answer: str) -> bool:
+    a = (answer or "").strip().lower()
+    if not a:
+        return True
+    prefixes = (
+        "i cannot",
+        "i can't",
+        "unable to",
+        "cannot answer",
+        "no data",
+        "not enough data",
+    )
+    return any(a.startswith(p) for p in prefixes)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Week 11 demo pre-flight checks.")
+    parser.add_argument("--jie-base-url", default="http://localhost:8020")
+    parser.add_argument("--portal-url", default="http://localhost:3000")
+    args = parser.parse_args()
+    jie_base = args.jie_base_url.rstrip("/")
+
+    print("=== DEMO PREFLIGHT (checks) ===\n")
+
+    # 1 JIE healthz
+    status, _ = _get(f"{jie_base}/healthz")
+    jie_ok = status == 200
+    print(f"1. JIE GET {jie_base}/healthz → {'PASS' if jie_ok else 'FAIL'} (HTTP {status})")
+
+    # 2 Portal
+    p_status, _ = _get(args.portal_url)
+    portal_ok = p_status == 200
+    print(f"2. wfd-os GET {args.portal_url} → {'PASS' if portal_ok else 'FAIL'} (HTTP {p_status})")
+
+    # 3 DB
+    py_db = (os.getenv("PYTHON_DATABASE_URL") or "").strip()
+    db_ok = bool(py_db)
+    print(f"3. PYTHON_DATABASE_URL set → {'PASS' if db_ok else 'FAIL'}")
+
+    # 4 LLM
+    llm = (os.getenv("LLM_PROVIDER") or "").strip().lower()
+    llm_ok = bool(llm) and llm != "mock"
+    print(f"4. LLM_PROVIDER set and not mock → {'PASS' if llm_ok else 'FAIL'} (value={llm or '(unset)'})")
+
+    print()
+    print("5. Locked demo questions (POST /analytics/query)")
+    questions_pass = 0
+    for i, q in enumerate(LOCKED_DEMO_QUESTIONS, start=1):
+        req_id = f"preflight-q{i}-{uuid.uuid4().hex[:8]}"
+        http_st, body = _post_query(jie_base, q, req_id=req_id)
+        answer = ""
+        confidence = None
+        evidence_count = 0
+        if http_st == 200:
+            answer = str(body.get("answer") or "")
+            confidence = body.get("confidence")
+            ev = body.get("evidence")
+            evidence_count = len(ev) if isinstance(ev, list) else 0
+
+        ok = bool(
+            http_st == 200 and answer.strip() and not _likely_refusal(answer),
+        )
+        if ok:
+            questions_pass += 1
+
+        print(f"   Question {i}")
+        print(f"   Answer received: {'yes' if ok else 'no'}")
+        print(f"   Confidence: {confidence if confidence is not None else '(n/a)'}")
+        print(f"   Evidence count: {evidence_count}")
+        print(f"   → {'PASS' if ok else 'FAIL'}")
+        print()
+
+    svc_up = sum([jie_ok, portal_ok])
+    env_ok = db_ok and llm_ok
+    ready = svc_up == 2 and questions_pass == 5 and env_ok
+
+    print("=== DEMO PREFLIGHT ===")
+    print(f"Services: {svc_up}/2 up")
+    print(f"Questions: {questions_pass}/5 answered")
+    print(f"Ready for demo: {'YES' if ready else 'NO'}")
+    return 0 if ready else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

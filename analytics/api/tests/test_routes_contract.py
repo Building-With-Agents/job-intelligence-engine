@@ -25,6 +25,12 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
 
 
+def test_healthz_ok(client: TestClient) -> None:
+    r = client.get("/healthz")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok"}
+
+
 def test_post_query_returns_schema(client: TestClient) -> None:
     body = AnalyticsQueryResponse(
         answer="ok",
