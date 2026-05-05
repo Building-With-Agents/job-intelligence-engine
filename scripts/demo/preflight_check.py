@@ -121,10 +121,7 @@ def main() -> int:
     # 3 DB (PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL)
     db_url = _resolve_primary_database_url()
     db_ok = bool(db_url)
-    print(
-        f"3. Database URL set (PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL) → "
-        f"{'PASS' if db_ok else 'FAIL'}"
-    )
+    print(f"3. Database URL set (PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL) → {'PASS' if db_ok else 'FAIL'}")
 
     # 4 LLM
     llm = (os.getenv("LLM_PROVIDER") or "").strip().lower()
