@@ -22,6 +22,7 @@ adopted from v2 onward per IMP-030 / JIE #287).
 | `nestor-baseline` | 2026-04-30 | Nestor | Langfuse UI annotation | Human annotation of gq-031..gq-040 (10 of 90 items); all 3 scores per question. Reconstructed from chronological order on trace `84ab514155f87ac26` — Langfuse queue applied all annotations to one trace rather than each question's trace. Mapping confirmed by annotator. | — | — | correctness=**0.25** (n=10), decision_relevance=**0.10** (n=10), followup_quality=**0.30** (n=10) | [`eval/runs/nestor_baseline_run_langfuse_annotations.json`](runs/nestor_baseline_run_langfuse_annotations.json) |
 | `nestor-v2-role-evolution-fix` | 2026-04-30 | Nestor | v2 automated scorer | **Atomic fix:** `_route_role_evolution` rewritten to query `job_postings GROUP BY temporal_period` instead of static `canonical_roles` snapshot. On gq-031..040: `correct_refusal` **+0.30** (0.70→1.00), `must_include_recall` **+0.09** (0.68→0.78). Three previously-refusing questions (gq-032, gq-035, gq-036) now produce data-backed answers. `extracted_intelligence` skill data still absent — see DEV-005. Human annotation pending. | — | **0.52** (n=50) | *pending annotation* | — |
 | `dev-verify-2026-05-01` | 2026-05-01 | Gary (post-merge re-audit) | v2 automated scorer | **Post-merge re-audit** of `origin/development` after #288/#294/#295/#335/#336/#337 squash-merged. Run against Gary's SoT DB. Headline: `intent_accuracy` 0.822 (regressed from 1.000 — 16/90 misclassifications), `evidence_citation` 0.571 (regressed from 0.752 — driven by employer 10/10 refusing on `_route_employer` ILIKE bug + disruption 10/10 refusing on `skill_taxonomy_gate_blocked`), `confidence_self_consistency` 0.973 (improved), `latency_sla` 1.000, `answerability` 0.460 (improved). Filed 3 regression-fix issues with regression-discipline pivots: #346 (Pair D, employer router), #347 (Pair A, disruption narrow scoping — includes gq-026 golden label review as a sub-task), #348 (Pair C, geographic add-only fix). Filed #349 backlog (taxonomy expansion). Step-9 ranking: 51/90 demo-eligible, all of Pair D's curation criteria green. | **0.698** geo | **0.460** (n=50) | — | [`eval/runs/findings-dev-verify-2026-05-01.md`](runs/findings-dev-verify-2026-05-01.md) |
+| `pairc-week10-harness` | 2026-05-04 | Pair C | v2 | **#340 harness:** cohort CLI (`--cohort pair-c-geo-comp`, `--golden-ids` precedence), lexicographic run order, per-item + run-level **composite** in JSON, Langfuse `Evaluation(name="composite")` + `mean_composite`. Iteration cycles document methodology; headline scores require a DB-backed `--dry-run` or Langfuse re-run — see Pair C table below and [`eval/runs/qa-pairc-week10-harness-contract.json`](runs/qa-pairc-week10-harness-contract.json). | — | — | — | [`eval/runs/findings-pairc-cycle1-baseline.md`](runs/findings-pairc-cycle1-baseline.md) |
 
 > **v2 vs v2.1 note:** scorer logic did not change between v2 and v2.1.
 > The only difference is that aggregate tables were empty during the v2 run
@@ -290,6 +291,20 @@ era for the requested role, giving the synthesis the skill-evolution evidence it
 
 ---
 
+### Pair C — Week 10 cohort iteration (#340)
+
+Cumulative iteration arc over **`gq-041` … `gq-060`** (geographic + comparison). Each cycle: sort cohort by composite (worst first), inspect top **5** failures, pick **one** primary bucket (intent vs SQL vs synthesis), apply **one** stacked change. Cycles **stack** unless explicitly labeled A/B vs baseline.
+
+| Cycle | Before cohort composite (mean / p25) | Failure pattern (top-5 skew) | Single change (file + summary) | After (mean / p25) | Outcome / link |
+|-------|----------------------------------------|--------------------------------|----------------------------------|--------------------|----------------|
+| 1 | *TBD — run `python -m eval.qa_eval --prompt-version pairc-week10-c1 --cohort pair-c-geo-comp --dry-run --output-json eval/runs/qa-pairc-week10-c1.json`* | Baseline inventory | Document harness + cohort contract only (`eval/qa_eval.py`, `eval/qa_eval_cohorts.py`, composite JSON + Langfuse alignment) | — | [`findings-pairc-cycle1-baseline.md`](runs/findings-pairc-cycle1-baseline.md) |
+| 2 | — | — | *Reserved for first routing / SQL / synthesis fix once baseline numbers captured* | — | [`findings-pairc-cycle2-baseline.md`](runs/findings-pairc-cycle2-baseline.md) |
+| 3 | — | — | *Reserved for follow-on stacked change* | — | [`findings-pairc-cycle3-baseline.md`](runs/findings-pairc-cycle3-baseline.md) |
+
+**Langfuse:** When keys are present, capture **`dataset_run_id` + `dataset_run_url`** per cycle in the JSON artifact comments or iteration notes. CI remains offline for scored runs; local-only capture is acceptable per IMP-030.
+
+---
+
 ## Changelog
 
 | Date | Who | Change |
@@ -298,3 +313,4 @@ era for the requested role, giving the synthesis the skill-evolution evidence it
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
 | 2026-04-30 | Nestor | Added `nestor-baseline` human-annotation row (Langfuse reconstruction); added `nestor-v2-role-evolution-fix` row with final automated-score results; created `findings_nestor_v2_role_evolution_fix.md`; documented DEV-005 |
+| 2026-05-04 | Pair C | #340 harness: cohort + golden-id precedence, composite JSON + Langfuse `composite` / `mean_composite`; Pair C iteration table + cycle findings stubs; contract JSON |

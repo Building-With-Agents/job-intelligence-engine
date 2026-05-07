@@ -1,0 +1,33 @@
+{
+  "_comment": "Contract example for #340 JSON export (scores are illustrative only; regenerate via qa_eval --dry-run --output-json).",
+  "prompt_version": "pairc-week10-contract-example",
+  "dry_run": true,
+  "langfuse": false,
+  "composite_mean": 0.7125,
+  "composite_p25": 0.651,
+  "composite_p25_method": "statistics.quantiles(data, n=4, method='inclusive')[0]",
+  "means": {
+    "intent_accuracy": 0.85,
+    "evidence_citation": 0.62,
+    "confidence_self_consistency": 0.98,
+    "latency_sla": 0.95
+  },
+  "items": [
+    {
+      "gq_id": "gq-041",
+      "scores": {
+        "intent_accuracy": 1.0,
+        "evidence_citation": 0.55,
+        "must_include_recall": null,
+        "evidence_overlap": null,
+        "confidence_self_consistency": 1.0,
+        "confidence_in_expected_range": null,
+        "latency_sla": 0.92,
+        "answerability": 1.0,
+        "correct_refusal": null,
+        "composite": 0.8675
+      },
+      "error": null
+    }
+  ]
+}
