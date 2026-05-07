@@ -706,7 +706,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--json-path", type=Path, default=DEFAULT_JSON_PATH, help="Golden questions JSON")
     p.add_argument("--dataset-name", default=DEFAULT_DATASET_NAME, help="Langfuse dataset name")
     p.add_argument(
-        "--limit", type=int, default=None, help="Evaluate only first N questions (ignored with --cohort/--golden-ids)"
+        "--limit",
+        type=int,
+        default=None,
+        help="Evaluate only first N questions (ignored with --cohort/--golden-ids/--only-ids)",
     )
     p.add_argument(
         "--cohort",
@@ -718,6 +721,13 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         metavar="IDS",
         help="Comma-separated golden question ids; non-empty list overrides --cohort and --limit.",
+    )
+    p.add_argument(
+        "--only-ids",
+        default=None,
+        metavar="IDS",
+        help="Comma-separated question ids (e.g. gq-030,gq-087); order preserved; ignores --limit. "
+        "Overridden by --cohort/--golden-ids when those resolve to a non-empty list.",
     )
     p.add_argument("--dry-run", action="store_true", help="Do not call Langfuse; still run Q&A and print summary")
     p.add_argument(
@@ -772,7 +782,20 @@ def main(argv: list[str] | None = None) -> int:
                 limit=args.limit,
                 msg="--limit ignored when --cohort or non-empty --golden-ids is active",
             )
+        if args.only_ids:
+            log.warning(
+                "cohort_ignores_only_ids",
+                only_ids=args.only_ids,
+                msg="--only-ids ignored when --cohort or non-empty --golden-ids is active",
+            )
         questions = filter_and_sort_golden_questions(all_questions, allowed_ids)
+    elif args.only_ids:
+        wanted = [s.strip() for s in str(args.only_ids).split(",") if s.strip()]
+        missing = [i for i in wanted if i not in golden_by_id]
+        if missing:
+            log.error("only_ids_unknown", missing=missing)
+            return 1
+        questions = [golden_by_id[i] for i in wanted]
     else:
         questions = all_questions[: max(0, args.limit)] if args.limit is not None else all_questions
 
