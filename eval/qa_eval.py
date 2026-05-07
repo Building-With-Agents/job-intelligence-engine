@@ -8,11 +8,17 @@ When applicable, per-item ``answerability`` and ``correct_refusal`` are also
 emitted (not part of the four-metric mean). Run-level includes ``mean_*`` and
 ``refusal_correctness_rate`` / ``mean_answerability`` with cohort comments.
 
+**Pair C cohort (#340):** ``--cohort pair-c-geo-comp`` → ``gq-041``..``gq-060``; optional
+``--golden-ids`` (non-empty overrides cohort and ``--limit``). Filtered questions run in
+lexicographic ``id`` order. JSON adds per-item ``composite`` and run-level ``composite_mean`` /
+``composite_p25`` / ``composite_p25_method`` (see ``eval.qa_scoring.composite_score``).
+
 Usage (repo root, venv active)::
 
     python -m eval.qa_eval --prompt-version v1-baseline
     python -m eval.qa_eval --prompt-version v1-baseline --limit 3 --dry-run
     python -m eval.qa_eval --prompt-version v1-baseline --dry-run --json > summary.json
+    python -m eval.qa_eval --prompt-version pairc-smoke --cohort pair-c-geo-comp --dry-run --json
 """
 
 from __future__ import annotations
@@ -20,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import statistics
 import sys
 import time
 from pathlib import Path
@@ -39,6 +46,10 @@ load_dotenv(_REPO_ROOT / ".env")
 from analytics.query_engine.routing import run_analytics_qna  # noqa: E402
 from common.data_store.database import session_scope  # noqa: E402
 from common.llm_adapter import resolve_llm_route  # noqa: E402
+from eval.qa_eval_cohorts import (  # noqa: E402
+    filter_and_sort_golden_questions,
+    resolve_cohort_allowed_ids,
+)
 from eval.qa_eval_laborpulse_headers import laborpulse_analytics_query_headers  # noqa: E402
 from eval.qa_scoring import (  # noqa: E402
     QAItemScores,
@@ -217,6 +228,36 @@ def _task_factory(
     return task
 
 
+def _composite_distribution(values: list[float]) -> dict[str, Any]:
+    """Run-level composite mean and first quartile (``eval.qa_scoring.composite_score`` per item)."""
+    if not values:
+        return {
+            "composite_mean": None,
+            "composite_p25": None,
+            "composite_p25_method": None,
+        }
+    mean_v = sum(values) / len(values)
+    method = "statistics.quantiles(data, n=4, method='inclusive')[0]"
+    if len(values) == 1:
+        p25_v = values[0]
+        method = "single_item: p25 equals composite (n=1)"
+    else:
+        try:
+            p25_v = statistics.quantiles(values, n=4, method="inclusive")[0]
+        except statistics.StatisticsError:
+            p25_v = mean_v
+            method = "fallback_mean (StatisticsError from quantiles — insufficient distinct values)"
+    return {
+        "composite_mean": round(mean_v, 6),
+        "composite_p25": round(float(p25_v), 6),
+        "composite_p25_method": method,
+    }
+
+
+def _composite_distribution_from_rows(rows: list[tuple[str, QAItemScores, str | None]]) -> dict[str, Any]:
+    return _composite_distribution([composite_score(sc) for _, sc, _ in rows])
+
+
 def _answerability_run_summary(
     item_results: list,
 ) -> tuple[int, int, float | None]:
@@ -285,6 +326,13 @@ def _evaluator_factory(sla_seconds: float | None):
         if scores.answerability is not None:
             ab_c = (scores.comments.get("answerability") or "")[:500]
             evals.append(Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c))
+        evals.append(
+            Evaluation(
+                name="composite",
+                value=float(composite_score(scores)),
+                comment="mean of scorable core four; eval.qa_scoring.composite_score",
+            )
+        )
         return evals
 
     return combined_evaluator
@@ -310,6 +358,7 @@ def _run_evaluators_average() -> list:
             "latency_sla": [],
             "answerability": [],
             "correct_refusal": [],
+            "composite": [],
         }
         for ir in item_results:
             for ev in getattr(ir, "evaluations", []) or []:
@@ -360,6 +409,18 @@ def _run_evaluators_average() -> list:
             pr = sum(ab) / len(ab)
             cmt = f"n={n_scored} intent_only_skipped={n_skip} pass_rate={pr:.4f}"
             out.append(Evaluation(name="mean_answerability", value=pr, comment=cmt))
+
+        comp_vals = sums["composite"]
+        if comp_vals:
+            n_excl = n_total - len(comp_vals)
+            cmt = f"n_scored={len(comp_vals)} n_excluded={n_excl} n_total={n_total}"
+            out.append(
+                Evaluation(
+                    name="mean_composite",
+                    value=sum(comp_vals) / len(comp_vals),
+                    comment=cmt,
+                )
+            )
 
         def _mavg(k: str) -> float | None:
             xs = sums.get(k) or []
@@ -644,7 +705,30 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--prompt-version", required=True, help="Run name / version tag (e.g. v1-baseline)")
     p.add_argument("--json-path", type=Path, default=DEFAULT_JSON_PATH, help="Golden questions JSON")
     p.add_argument("--dataset-name", default=DEFAULT_DATASET_NAME, help="Langfuse dataset name")
-    p.add_argument("--limit", type=int, default=None, help="Evaluate only first N questions")
+    p.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Evaluate only first N questions (ignored with --cohort/--golden-ids/--only-ids)",
+    )
+    p.add_argument(
+        "--cohort",
+        default=None,
+        help="Named golden cohort (e.g. pair-c-geo-comp → gq-041..gq-060). Ignored when --golden-ids is non-empty.",
+    )
+    p.add_argument(
+        "--golden-ids",
+        default=None,
+        metavar="IDS",
+        help="Comma-separated golden question ids; non-empty list overrides --cohort and --limit.",
+    )
+    p.add_argument(
+        "--only-ids",
+        default=None,
+        metavar="IDS",
+        help="Comma-separated question ids (e.g. gq-030,gq-087); order preserved; ignores --limit. "
+        "Overridden by --cohort/--golden-ids when those resolve to a non-empty list.",
+    )
     p.add_argument("--dry-run", action="store_true", help="Do not call Langfuse; still run Q&A and print summary")
     p.add_argument(
         "--use-http",
@@ -669,13 +753,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Print run summary JSON to stdout (suppresses human-readable report)",
     )
     p.add_argument("--worst-n", type=int, default=8, help="How many lowest composite items to print")
-    p.add_argument(
-        "--only-ids",
-        type=str,
-        default=None,
-        help="Comma-separated golden question ids (e.g. gq-062,gq-078). When set, evaluates exactly "
-        "those rows in file order intersection; --limit slices the file first when --only-ids is omitted.",
-    )
     args = p.parse_args(argv)
 
     json_path = args.json_path
@@ -690,17 +767,37 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     golden_by_id = {str(r["id"]): r for r in all_questions}
-    if args.only_ids:
-        order = [x.strip() for x in str(args.only_ids).split(",") if x.strip()]
-        want = set(order)
-        questions = [golden_by_id[i] for i in order if i in golden_by_id]
-        found_ids = {str(r["id"]) for r in questions}
-        if want - found_ids:
-            log.warning("only_ids_missing", ids=sorted(want - found_ids))
-    elif args.limit is not None:
-        questions = all_questions[: max(0, args.limit)]
+
+    try:
+        allowed_ids = resolve_cohort_allowed_ids(cohort=args.cohort, golden_ids_csv=args.golden_ids)
+    except ValueError as exc:
+        log.error("cohort_resolve_failed", error=str(exc))
+        return 1
+
+    cohort_or_golden = allowed_ids is not None
+    if cohort_or_golden:
+        if args.limit is not None:
+            log.warning(
+                "cohort_ignores_limit",
+                limit=args.limit,
+                msg="--limit ignored when --cohort or non-empty --golden-ids is active",
+            )
+        if args.only_ids:
+            log.warning(
+                "cohort_ignores_only_ids",
+                only_ids=args.only_ids,
+                msg="--only-ids ignored when --cohort or non-empty --golden-ids is active",
+            )
+        questions = filter_and_sort_golden_questions(all_questions, allowed_ids)
+    elif args.only_ids:
+        wanted = [s.strip() for s in str(args.only_ids).split(",") if s.strip()]
+        missing = [i for i in wanted if i not in golden_by_id]
+        if missing:
+            log.error("only_ids_unknown", missing=missing)
+            return 1
+        questions = [golden_by_id[i] for i in wanted]
     else:
-        questions = all_questions
+        questions = all_questions[: max(0, args.limit)] if args.limit is not None else all_questions
 
     from eval._config import qa_latency_sla_seconds
 
@@ -733,6 +830,7 @@ def main(argv: list[str] | None = None) -> int:
                         "latency_sla": sc.latency_sla,
                         "answerability": sc.answerability,
                         "correct_refusal": sc.correct_refusal,
+                        "composite": round(composite_score(sc), 6),
                     },
                     "error": err,
                 }
@@ -764,6 +862,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"{e}->{p}": c for (e, p), c in sorted(confusion_rows(intent_pairs).items())
             }
             payload_local["intent_classification"] = intent_classification_report(intent_pairs)
+        payload_local.update(_composite_distribution_from_rows(rows))
 
         if args.json:
             sys.stdout.write(json.dumps(payload_local, indent=2) + "\n")
@@ -802,13 +901,18 @@ def main(argv: list[str] | None = None) -> int:
         "llm_synthesis": run_synthesis_deployment,
     }
 
-    # Hosted dataset run only when using the full uploaded dataset (--limit uses local JSON experiment).
-    use_hosted_dataset = not args.local_experiment_only and args.limit is None
+    # Hosted dataset run only when using the full uploaded dataset (--limit or cohort uses local JSON).
+    use_hosted_dataset = not args.local_experiment_only and args.limit is None and not cohort_or_golden
     if args.limit is not None and not args.dry_run:
         log.warning(
             "limit_forces_local_langfuse_experiment",
             limit=args.limit,
             msg="Dataset run linking to LaborPulse Golden Questions requires full corpus; using local JSON for this run.",
+        )
+    if cohort_or_golden and not args.dry_run and not args.local_experiment_only:
+        log.warning(
+            "cohort_forces_local_langfuse_experiment",
+            msg="Named cohort / golden-ids subset uses local JSON experiment (not hosted dataset items).",
         )
 
     try:
@@ -856,6 +960,12 @@ def main(argv: list[str] | None = None) -> int:
         "n_intent_only_skipped": n_items - len(ab_vals),
         "pass_rate": (sum(ab_vals) / len(ab_vals)) if ab_vals else 0.0,
     }
+    comp_lf: list[float] = []
+    for it in items_out:
+        cv = (it.get("scores") or {}).get("composite")
+        if isinstance(cv, (int, float)):
+            comp_lf.append(float(cv))
+
     payload_lf: dict[str, Any] = {
         "prompt_version": args.prompt_version,
         "dataset_run_id": result.dataset_run_id,
@@ -863,6 +973,7 @@ def main(argv: list[str] | None = None) -> int:
         "answerability_summary": answerability_summary,
         "items": items_out,
     }
+    payload_lf.update(_composite_distribution(comp_lf))
     if args.json:
         sys.stdout.write(json.dumps(payload_lf, indent=2) + "\n")
     else:

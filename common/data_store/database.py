@@ -1,8 +1,13 @@
 """Database engine, session factory, and connection utilities.
 
 All agents share one engine per process. The connection URL comes from
-``PYTHON_DATABASE_URL``, or if unset, ``AZURE_POSTGRES_DATABASE_URL``
-(both ``postgresql+psycopg2://...``).
+``PYTHON_DATABASE_URL`` (``postgresql+psycopg2://...``).
+
+If ``PYTHON_DATABASE_URL`` is unset, ``AZURE_POSTGRES_DATABASE_URL`` is used
+**only when** ``JIE_ALLOW_AZURE_DB_FALLBACK=1`` is set explicitly. This guard
+prevents accidentally pointing the JIE engine at the Azure source-of-truth DB
+on machines that have ``AZURE_POSTGRES_DATABASE_URL`` set for other tooling
+(e.g. ``scripts/sync_embeddings_from_azure.py``).
 """
 
 from __future__ import annotations
@@ -22,12 +27,24 @@ _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
 
 
+def _azure_fallback_enabled() -> bool:
+    """``True`` only when ``JIE_ALLOW_AZURE_DB_FALLBACK=1`` is explicitly set."""
+    return (os.getenv("JIE_ALLOW_AZURE_DB_FALLBACK") or "").strip() == "1"
+
+
 def _resolve_primary_database_url() -> str:
-    """Prefer ``PYTHON_DATABASE_URL``; fall back to ``AZURE_POSTGRES_DATABASE_URL``."""
+    """Return ``PYTHON_DATABASE_URL``; fall back to ``AZURE_POSTGRES_DATABASE_URL`` only with explicit opt-in.
+
+    Opt-in via ``JIE_ALLOW_AZURE_DB_FALLBACK=1``. Without the flag, an unset
+    ``PYTHON_DATABASE_URL`` returns the empty string even if
+    ``AZURE_POSTGRES_DATABASE_URL`` is populated.
+    """
     url = (os.getenv("PYTHON_DATABASE_URL") or "").strip()
     if url:
         return url
-    return (os.getenv("AZURE_POSTGRES_DATABASE_URL") or "").strip()
+    if _azure_fallback_enabled():
+        return (os.getenv("AZURE_POSTGRES_DATABASE_URL") or "").strip()
+    return ""
 
 
 def get_engine() -> Engine:
@@ -37,8 +54,10 @@ def get_engine() -> Engine:
         url = _resolve_primary_database_url()
         if not url:
             raise RuntimeError(
-                "Database URL is not set. Set PYTHON_DATABASE_URL or AZURE_POSTGRES_DATABASE_URL "
-                "(postgresql+psycopg2://user:pass@host:port/db)"
+                "Database URL is not set. Set PYTHON_DATABASE_URL "
+                "(postgresql+psycopg2://user:pass@host:port/db). "
+                "Azure fallback (AZURE_POSTGRES_DATABASE_URL) requires "
+                "JIE_ALLOW_AZURE_DB_FALLBACK=1."
             )
         from common.pipeline_config import db_max_overflow, db_pool_size
 

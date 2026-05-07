@@ -116,15 +116,15 @@ _BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN: Final[re.Pattern[str]] = re.compile(
 
 
 def _intent_heuristic_ablation_level() -> int:
-    """Higher enables more Pair D heuristics. Unset → all on (level 3). Used for mock eval baselines."""
+    """Higher enables more Pair D heuristics. Unset → all off (level 0). Set 1-3 for staged eval baselines."""
 
     raw = os.getenv("QA_EVAL_INTENT_HEURISTIC_LEVEL")
     if raw is None or not str(raw).strip():
-        return 3
+        return 0
     try:
         return max(0, min(3, int(str(raw).strip())))
     except ValueError:
-        return 3
+        return 0
 
 
 def _empty_extracted_entities() -> dict[str, list[str]]:

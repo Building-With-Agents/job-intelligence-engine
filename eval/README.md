@@ -44,6 +44,10 @@ python -m eval.qa_eval --prompt-version v1-baseline
 
 > Corpus is 9 intents × 10 golden questions. The full baseline requires all rubrics authored; rows with empty `must_include` will distort `evidence_citation`.
 
+### Pair C geographic + comparison cohort (`--cohort pair-c-geo-comp`)
+
+Expands to **`gq-041` … `gq-060`** (20 golden rows). Optional **`--golden-ids id1,id2,...`** trims to an explicit list; when that list is **non-empty** after parsing, it **overrides** `--cohort` and **`--limit`**. Filtered questions always run in **lexicographic order by `id`**. Run summaries (`--json` / `--output-json`) include per-item **`composite`** (same definition as `eval.qa_scoring.composite_score`) and run-level **`composite_mean`**, **`composite_p25`**, **`composite_p25_method`**.
+
 ### Smoke (3 questions, no Langfuse)
 
 Runs locally without calling Langfuse (no keys required):
