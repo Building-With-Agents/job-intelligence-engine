@@ -1,0 +1,133 @@
+============================================================
+PostgreSQL Database Seeder (idempotent)
+============================================================
+
+Fixtures: 10 tables, 72,144 total rows in fixtures
+
+Connecting to PostgreSQL...
+  Connected to PostgreSQL (attempt 1)
+
+Step 1: Checking schema...
+  Schema DDL executed successfully (fresh database)
+
+Step 2: Running agent migrations...
+2026-05-03 23:37:35 [info     ] db_engine_created              url=localhost:5432/talent_finder
+2026-05-03 23:37:35 [info     ] migrations_start
+2026-05-03 23:37:36 [info     ] migrations_tables_created
+2026-05-03 23:37:36 [info     ] migrations_analytics_pipeline_state_seeded
+2026-05-03 23:37:36 [info     ] migrations_extracted_intelligence_created
+2026-05-03 23:37:36 [info     ] migrations_llm_audit_log_created
+2026-05-03 23:37:36 [info     ] migrations_naics_created
+2026-05-03 23:37:36 [info     ] migrations_analytics_tables_created
+2026-05-03 23:37:36 [info     ] migrations_week7_analytics_aggregates_created
+2026-05-03 23:37:36 [info     ] migrations_cohort_gap_cache_stub_created
+2026-05-03 23:37:36 [warning  ] migration_orchestration_audit_skipped error='(psycopg2.errors.UndefinedColumn) column "event_type" does not exist\n\n[SQL: \nCREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_event_type\n    ON dbo.orchestration_audit_log (event_type);\n]\n(Background on this error at: https://sqlalche.me/e/20/f405)'
+2026-05-03 23:37:36 [info     ] migrations_cohort_gap_cache_unique_key_created
+2026-05-03 23:37:36 [info     ] migrations_canonical_role_fk_added
+2026-05-03 23:37:36 [info     ] migrations_qna_retrieval_indexes_applied
+2026-05-03 23:37:36 [info     ] migrations_qa_feedback_created
+2026-05-03 23:37:36 [info     ] migrations_conversation_log_created
+2026-05-03 23:37:36 [info     ] migrations_complete
+  Agent migrations completed (agent tables + Phase 1 columns)
+
+Step 3: Loading reference fixtures (ON CONFLICT DO NOTHING)...
+  Found 102 tables in dbo schema
+  industry_sectors: 24 new, 0 existing (of 24 in fixture)
+  technology_areas: 17 new, 0 existing (of 17 in fixture)
+  postal_geo_data: 707 new, 33,000 existing (of 33,707 in fixture)
+  skill_subcategories: 85 new, 0 existing (of 85 in fixture)
+  social_media_platforms: 20 new, 0 existing (of 20 in fixture)
+  cip: 849 new, 2,000 existing (of 2,849 in fixture)
+  socc: 24 new, 1,000 existing (of 1,024 in fixture)
+  socc_2010: 841 new, 0 existing (of 841 in fixture)
+  socc_2018: 868 new, 0 existing (of 868 in fixture)
+  ragrecordmanager: 1 new, 0 existing (of 1 in fixture)
+  pathways: 8 new, 0 existing (of 8 in fixture)
+  skills: 683 new, 5,000 existing (of 5,683 in fixture)
+    BATCH ERROR: insert or update on table "edu_providers" violates foreign key constraint "edu_providers_userid_fkey"
+DETAIL:  Key (userid)=(AA181331-0693-446D-9C2E-134782A4865E) is not present in table "users".
+
+  edu_providers: 265 new, 1 existing (of 266 in fixture)
+  companies: 7 new, 2,000 existing (of 2,007 in fixture)
+  training: 135 new, 0 existing (of 135 in fixture)
+  programs: 757 new, 0 existing (of 757 in fixture)
+  jobrole: 48 new, 0 existing (of 48 in fixture)
+  company_addresses: 149 new, 0 existing (of 149 in fixture)
+  cip_to_socc_map: 97 new, 6,000 existing (of 6,097 in fixture)
+  pathwaytraining: 162 new, 0 existing (of 162 in fixture)
+    BATCH ERROR: insert or update on table "provider_programs" violates foreign key constraint "fk_training_program_training_provider1"
+DETAIL:  Key (edu_provider_id)=(4350C3FA-C066-4FB5-ACD2-2750928D3A6E) is not present in table "edu_providers".
+
+  provider_programs: 742 new, 3 existing (of 745 in fixture)
+  jobroleskill: 826 new, 0 existing (of 826 in fixture)
+  jobroletraining: 276 new, 0 existing (of 276 in fixture)
+    BATCH ERROR: can't adapt type 'dict'
+    Row 1 error: insert or update on table "job_postings" violates foreign key constraint "job_postings_employer_profile_id_fkey"
+DETAIL:  Key (employer_profile_id)=(a5060269-3be9-443a-9e59-ce9d83bd72e3) is not presen
+    Row 2 error: can't adapt type 'dict'
+    Row 3 error: can't adapt type 'dict'
+  job_postings: 156 new, 4,558 existing (of 4,714 in fixture)
+  events: 38 new, 0 existing (of 38 in fixture)
+  employer_profiles: 740 new, 1,000 existing (of 1,740 in fixture)
+    BATCH ERROR: can't adapt type 'dict'
+    Row 1 error: can't adapt type 'dict'
+    Row 2 error: can't adapt type 'dict'
+    Row 3 error: can't adapt type 'dict'
+  extracted_intelligence: 0 new, 3,978 existing (of 3,978 in fixture)
+  job_ingestion_runs: 345 new, 1,000 existing (of 1,345 in fixture)
+  llm_audit_log: 808 new, 47,000 existing (of 47,808 in fixture)
+  naics: 125 new, 2,000 existing (of 2,125 in fixture)
+  normalization_quarantine: 16 new, 0 existing (of 16 in fixture)
+  normalized_jobs: 978 new, 3,000 existing (of 3,978 in fixture)
+    BATCH ERROR: can't adapt type 'dict'
+    Row 1 error: can't adapt type 'dict'
+    Row 2 error: can't adapt type 'dict'
+    Row 3 error: can't adapt type 'dict'
+  raw_ingested_jobs: 0 new, 4,433 existing (of 4,433 in fixture)
+
+Step 4: Seeding agent pipeline data (enriched jobs, companies, NAICS)...
+============================================================
+Agent Pipeline Data Seed
+============================================================
+
+Running migrations...
+2026-05-03 23:37:56 [info     ] migrations_start
+2026-05-03 23:37:56 [info     ] migrations_tables_created
+2026-05-03 23:37:56 [info     ] migrations_analytics_pipeline_state_seeded
+2026-05-03 23:37:56 [info     ] migrations_extracted_intelligence_created
+2026-05-03 23:37:56 [info     ] migrations_llm_audit_log_created
+2026-05-03 23:37:56 [info     ] migrations_naics_created
+2026-05-03 23:37:56 [info     ] migrations_analytics_tables_created
+2026-05-03 23:37:56 [info     ] migrations_week7_analytics_aggregates_created
+2026-05-03 23:37:56 [info     ] migrations_cohort_gap_cache_stub_created
+2026-05-03 23:37:56 [warning  ] migration_orchestration_audit_skipped error='(psycopg2.errors.UndefinedColumn) column "event_type" does not exist\n\n[SQL: \nCREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_event_type\n    ON dbo.orchestration_audit_log (event_type);\n]\n(Background on this error at: https://sqlalche.me/e/20/f405)'
+2026-05-03 23:37:56 [info     ] migrations_cohort_gap_cache_unique_key_created
+2026-05-03 23:37:56 [warning  ] migration_canonical_role_fk_skipped error='(psycopg2.errors.DuplicateObject) constraint "fk_job_postings_canonical_roles" for relation "job_postings" already exists\n\n[SQL: \nALTER TABLE dbo.job_postings\n    ADD CONSTRAINT fk_job_postings_canonical_roles\n    FOREIGN KEY (canonical_role_id) REFERENCES dbo.canonical_roles (role_id)\n]\n(Background on this error at: https://sqlalche.me/e/20/f405)'
+2026-05-03 23:37:56 [info     ] migrations_qna_retrieval_indexes_applied
+2026-05-03 23:37:56 [info     ] migrations_qa_feedback_created
+2026-05-03 23:37:56 [info     ] migrations_conversation_log_created
+2026-05-03 23:37:56 [info     ] migrations_complete
+Migrations: OK
+
+Seeding from: C:\Users\garyl\repos\cfa-projects\building-with-agents-curriculum\job-intelligence-engine\scripts\pg-seed-data\fixtures
+
+  companies: 0 inserted, 2,007 skipped (of 2,007 total)
+  naics: 0 inserted, 2,125 skipped (of 2,125 total)
+  canonical_roles: 202 inserted, 0 skipped (of 202 total)
+  raw_ingested_jobs: 433 inserted, 4,000 skipped (of 4,433 total)
+  job_ingestion_runs: 0 inserted, 1,345 skipped (of 1,345 total)
+  normalized_jobs: 0 inserted, 3,978 skipped (of 3,978 total)
+  normalization_quarantine: 0 inserted, 16 skipped (of 16 total)
+  extracted_intelligence: 978 inserted, 3,000 skipped (of 3,978 total)
+  employer_profiles: 0 inserted, 1,740 skipped (of 1,740 total)
+  job_postings: 714 inserted, 4,000 skipped (of 4,714 total)
+  llm_audit_log: 0 inserted, 47,808 skipped (of 47,808 total)
+
+============================================================
+Seed complete: 2,327 inserted, 70,019 skipped
+============================================================
+
+============================================================
+Seed complete: 10,797 new rows inserted, 115,973 existing rows skipped
+Safe to re-run — existing data is never overwritten or deleted.
+============================================================

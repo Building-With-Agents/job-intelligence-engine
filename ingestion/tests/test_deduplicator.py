@@ -79,6 +79,44 @@ class TestComputeFingerprint:
         }
         assert compute_fingerprint(r1) != compute_fingerprint(r2)
 
+    def test_jie209_date_posted_excluded(self) -> None:
+        """JIE#209 regression: shifting ``date_posted`` does NOT change the fingerprint
+        or the storage hash. JSearch mutates ``job_posted_at_datetime_utc`` between
+        re-fetches for the same job; if it were in the hash, re-fetches would bypass
+        the ``uq_raw_ingested_jobs_hash`` unique constraint.
+        """
+        base = {
+            "source": "jsearch",
+            "external_id": "abc123",
+            "title": "Software Engineer",
+            "company": "Acme Corp",
+            "date_posted": "2026-04-01",
+        }
+        shifted = dict(base, date_posted="2026-04-15")  # later re-fetch
+        also_shifted = dict(base, date_posted=None)  # missing entirely
+
+        assert compute_fingerprint(base) == compute_fingerprint(shifted)
+        assert compute_fingerprint(base) == compute_fingerprint(also_shifted)
+        assert compute_storage_hash(base) == compute_storage_hash(shifted)
+        assert compute_storage_hash(base) == compute_storage_hash(also_shifted)
+
+    def test_jie209_canonical_hash_snapshot(self) -> None:
+        """Pin the hash literals so future hash-input changes are caught.
+
+        If you intentionally change what's hashed (e.g. add ``location`` to the
+        fingerprint), update these literals in the same commit and document the
+        rationale — the cross-batch dedup constraint depends on stable hashes.
+        """
+        canonical = {
+            "source": "jsearch",
+            "external_id": "abc123",
+            "title": "Software Engineer",
+            "company": "Acme Corp",
+            "date_posted": "2026-04-01",
+        }
+        assert compute_fingerprint(canonical) == "96d5a3fe9c0256a0ae465324f4531452cf6e4ff3fc8fde9c9a2a534cb49f1ea0"
+        assert compute_storage_hash(canonical) == "49badcdb24b7d9f066e90c69f87428a5de9b9eca1533250290e5e824a81ae146"
+
 
 class TestDeduplicateBatch:
     """Test batch deduplication."""

@@ -156,16 +156,20 @@ def _convert_value(val):
 def _build_on_conflict_clause(table: str, pk_cols: list[str], columns: list[str]) -> str:
     """Build the ON CONFLICT clause for the upsert.
 
-    For tables in UPSERT_UPDATE_COLUMNS, filter the configured update columns
-    to those present in the fixture, then build:
+    For tables in UPSERT_UPDATE_COLUMNS, the conflict target MUST be specified
+    (Postgres requires it for DO UPDATE):
         ON CONFLICT (pk) DO UPDATE SET col = COALESCE("dbo"."<table>".col, EXCLUDED.col), ...
-    Otherwise:
-        ON CONFLICT (pk) DO NOTHING
+
+    For all other tables, use the no-target form so ANY unique-constraint
+    violation triggers the skip (JIE#182, JIE#183): a target-less
+    ``ON CONFLICT DO NOTHING`` catches the pk uniqueness AND any
+    environment-specific unique constraints (e.g. Azure's unique-on-name on
+    ``companies``) that would otherwise raise a hard error.
     """
-    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
     update_cols = [c for c in UPSERT_UPDATE_COLUMNS.get(table, []) if c in columns]
     if not update_cols:
-        return f"ON CONFLICT ({conflict_cols}) DO NOTHING"
+        return "ON CONFLICT DO NOTHING"
+    conflict_cols = ", ".join(f'"{c}"' for c in pk_cols)
     set_clauses = ", ".join(f'"{c}" = COALESCE("dbo"."{table}"."{c}", EXCLUDED."{c}")' for c in update_cols)
     return f"ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_clauses}"
 
@@ -294,12 +298,23 @@ def seed_all() -> None:
             conn.rollback()
             print(f"  {table}: ERROR — {e}")
 
+    cur.close()
+    conn.close()
+
+    # JIE#367: re-sync serial sequences post-seed so the next agent INSERT
+    # doesn't collide with explicit ids loaded from fixtures.
+    try:
+        from common.data_store.database import get_engine as _get_engine
+        from common.data_store.migrations import _sync_agent_serial_sequences
+
+        _sync_agent_serial_sequences(_get_engine())
+        print("  Serial sequences re-synced (JIE#367).")
+    except Exception as exc:
+        print(f"  WARNING: post-seed sequence sync failed: {exc}")
+
     print(f"\n{'=' * 60}")
     print(f"Seed complete: {total_inserted:,} inserted, {total_skipped:,} skipped")
     print("=" * 60)
-
-    cur.close()
-    conn.close()
 
 
 if __name__ == "__main__":

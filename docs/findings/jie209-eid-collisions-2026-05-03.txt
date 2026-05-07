@@ -1,0 +1,231 @@
+=== external_id collisions: dup groups where company OR title varies ===
+Method: lowercase + strip + drop trailing punctuation; count distinct cleaned companies/titles per (source, external_id).
+
+Total dup groups with material company OR title variance: 55
+
+  eid=wR7KIvSJtud1m_g5AAAAAA==       rows= 4 distinct_companies= 3 distinct_titles= 3
+     companies: Clutch Canada | Energy Jobline ZR | Speechify
+     titles   : Software Engineer, iOS Core Product - El Paso, TX, USA | Software Engineer, iOS Core Product - El Paso, TX, USA in El | Software Engineer, macOS Core Product - El Paso, USA
+
+  eid=AuEV8E1WTalaUaT7AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: DataAnnotation | Mind Rift
+     titles   : Freelance Python Developer - AI Trainer | Optical Engineer with Python - Freelance AI Trainer
+
+  eid=CPqsOsgpRBqx7EfJAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: MAXIMUS | Virtual Vocations Inc
+     titles   : Senior iOS Software Developer | Senior Software Developer
+
+  eid=GejVl8kR-nMvNTeIAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: Maximus | Virtual Vocations Inc
+     titles   : Lead AI/ML Engineer | Senior AI/ML Software Engineer
+
+  eid=ivYPiDiq46Zv2gYTAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: BD | Parsons
+     titles   : Senior Electronic Security Engineer 🏆 | Senior Software Engineer (12 month FTC)
+
+  eid=orSptkP36AYm_acCAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: Hunt | Procession Systems
+     titles   : 4356 Data Scientist | Financial Data Scientist
+
+  eid=OT7AkGOL6v6ZKXwwAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: MAXIMUS | Virtual Vocations Inc
+     titles   : Certificate Management DevOps Engineer | DevOps / Release Management Engineer
+
+  eid=pGrIE1e2VkPbiVx-AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: Maximus | Virtual Vocations Inc
+     titles   : Cloud DevSecOps Engineer | DevSecOps Engineer
+
+  eid=Y1CRNpx5FFwMgoIdAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: Eaton | Jacobs
+     titles   : Senior Data Center Structural Engineer (Hybrid) | Senior Data Center Switchboard Engineer
+
+  eid=ZQF3lFiawjVLquV9AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 2
+     companies: Cummins | DataAnnotation
+     titles   : Quality Assurance Engineer - AI Trainer | Site Customer Quality Assurance Engineer - Senior
+
+  eid=1I9kNLyDjFNjA8iwAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: New Mexico State University | Virtual Vocations Inc
+     titles   : Research Engineer
+
+  eid=5nWxh9XFS-pGNk8kAAAAAA==       rows= 3 distinct_companies= 2 distinct_titles= 1
+     companies: Spectra Defense Technologies | Virtual Vocations Inc
+     titles   : Embedded Software Engineer
+
+  eid=7y_N7tOseVI0sKgdAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: New Mexico State University | New Mexico state Universoty
+     titles   : PSL R&D Engineer,Assc
+
+  eid=awgUa4v91blNFQ4vAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Clutch Canada | Speechify
+     titles   : Senior Software Engineer, Windows/Desktop Applications - El 
+
+  eid=dFNPNW2POwN-TwWsAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: The University of Texas at El Paso | University of Texas at El Paso
+     titles   : Enterprise Systems Admin
+
+  eid=E36l2J8vv4eD71sNAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: FullStack Labs | Full Stack LLC
+     titles   : Principal Software Engineer (.NET + Data) - Remote - USA
+
+  eid=F1YlDu92_RZanrSIAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Outlier AI | SynergisticIT
+     titles   : Software Developer
+
+  eid=fINFiEEjHf5C5_QkAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: X Development LLC | X, the moonshot factory
+     titles   : Research Scientist, Applied AI/ML, X
+
+  eid=GySU0PmKMWxOkDTAAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Maximus | Virtual Vocations Inc
+     titles   : Senior Front End Developer
+
+  eid=HCJ5cjo2-zeJwj-yAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Raytheon | RTX
+     titles   : Senior Analyst, Supply Chain (MPM) (Onsite)
+
+  eid=IKcuXea9RyNO5zs9AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: MANTECH | ManTech International
+     titles   : Linux Systems Administrator
+
+  eid=iPPyn8qSJvpDKPjpAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: City of El Paso | El Paso Water
+     titles   : Cybersecurity Engineer
+
+  eid=iR5YKfIvIdMx8eUXAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Dell | Org_Subtype_BU017_Operations
+     titles   : Manufacturing Test Engineer
+
+  eid=KMM9LmPDuV2qtTSiAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Border States Industries, Inc. | Hubbell Incorporated
+     titles   : Product Manager
+
+  eid=LisB153S-8FsawjmAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Helenoftroy | Helen of Troy
+     titles   : Sr. Business Systems Analyst - Product Management
+
+  eid=no6izhOwdi_27HrbAAAAAA==       rows= 4 distinct_companies= 2 distinct_titles= 1
+     companies: City of El Paso | CITY OF EL PASO, TX
+     titles   : Software Developer II
+
+  eid=-RlsMPbXk45QUvEOAAAAAA==       rows= 4 distinct_companies= 2 distinct_titles= 1
+     companies: Epic | ICR
+     titles   : Software Engineer
+
+  eid=RR3Yj7v3qRxisDw7AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Clutch Canada | Speechify
+     titles   : Software Engineer, Platform - Las Cruces, USA
+
+  eid=uj7vDl1jNinRciV3AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Helen of Troy | Helen of Troy Limited
+     titles   : Principal Data Solution Architect
+
+  eid=ULp5P_gvi-9eruEGAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Becton , Dickinson and Company | Becton Dickinson & Company
+     titles   : Ld Tech, Quality Assurance
+
+  eid=V0dEaJy8Bwal5LlTAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: CPJ Recruitment | Orionyx Enginnering LTD
+     titles   : HR Data Analyst
+
+  eid=viuxa6BA88sIi-vJAAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Hispanic Alliance for Career Enhancement | Virtual Vocations Inc
+     titles   : Senior Software Development Engineer
+
+  eid=VpO4K45g7LdvOpZ-AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: CACI | CACI International
+     titles   : Senior Network Plant Engineer (ISP/OSP)
+
+  eid=XK3KEKeimNY1pPQ2AAAAAA==       rows= 2 distinct_companies= 2 distinct_titles= 1
+     companies: Souder Miller & Associates | Souder, Miller & Associates
+     titles   : Senior Engineer I- General Civil
+
+  eid=6q3KujK6kj9OHt5gAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : MLOps Engineer | Senior MLOps Engineer
+
+  eid=6vOyE92KrH4MMWExAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Cheez
+     titles   : Associate Product Manager @ Social app startup | Product Manager @ Social app startup
+
+  eid=7oXaw7qDiv_0sl9aAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Applied AI Systems Engineer | Applied Scientist, AI Systems
+
+  eid=A8KdUKsQG70bCN9lAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: DataAnnotation
+     titles   : Site Reliability Engineer - AI Trainer | Web Platform Engineer - AI Trainer
+
+  eid=CUs7YaJ1QwA_hASiAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Full Stack LLC
+     titles   : Staff Data Engineer (Databricks) - Remote - USA | Staff Data Engineer Databricks - Remote - USA
+
+  eid=D71Q29pEsSnU5FrlAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: TEKsystems
+     titles   : AWS & Azure Cloud Architect | Cloud Architect (AWS/Azure, Terraform)
+
+  eid=EIDGGC8ZvnEydD7kAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Japanese LQA Game Tester | LQA Game Tester
+
+  eid=EuZ7Vx_jbOiW9r1lAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: DataAnnotation
+     titles   : AI Security Validation Engineer Remote | Remote AI Security Engineer
+
+  eid=gRXJ8fvSExpYMuYdAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Peraton
+     titles   : Service Desk Systems Administrator / Space Programs | Systems Engineer / Space Communications Program
+
+  eid=GXEmL4i1pK0z3n1KAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: DataAnnotation
+     titles   : Full Stack Engineer - AI Trainer | Full Stack Software Engineer - AI Trainer
+
+  eid=HfQtx6PwAsn1rA06AAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Clutch Canada
+     titles   : Backend Platform Engineer – TS​/Node, Cloud APIs | Backend Platform Engineer – TS/Node, Cloud APIs
+
+  eid=HURvcexMCfteboXRAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Principal Software Engineer, Backend | Senior Software Engineer, Backend
+
+  eid=iqLSyRIS3_c4Ti1CAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Associate Data Engineer | Data Engineer Associate
+
+  eid=Lbnryk3ucXRPQC8bAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Senior AI Platform Engineer | Senior BI Platform Engineer
+
+  eid=mv_OUhymaW957UdnAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Cloud Reliability Engineer | Reliability Engineer 2
+
+  eid=ODCVbOdf8_9NCKdDAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Flagstone Foods
+     titles   : Technician I - Quality Assurance | Technician I – Quality Assurance
+
+  eid=oH3cS614vNehH8CnAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Maximus | MAXIMUS
+     titles   : Director of Software Engineering (Data Engineering) | Director of Software Engineering Data Engineering
+
+  eid=QJaeqUbGbz3SXjDqAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Staff DevOps Engineer | Staff DevOps Engineer - Security
+
+  eid=ShrQ7-FSCphTppUtAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Principal Data Security Engineer | Remote Security Engineer
+
+  eid=Y-PwFkEjpWynIXkTAAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: Virtual Vocations Inc
+     titles   : Applied AI Engineer | Staff Applied AI Engineer
+
+  eid=YQ4QhFI2PQJxjqg9AAAAAA==       rows= 2 distinct_companies= 1 distinct_titles= 2
+     companies: DataAnnotation
+     titles   : Computational Scientist - AI Trainer | Machine Learning Scientist - AI Trainer
+
+=== Summary buckets ===
+  same_company_same_title        807
+  same_company_diff_title        21
+  diff_company_same_title        24
+  diff_company_diff_title        10
+  total_dup_groups               862

@@ -1,12 +1,18 @@
 """Deduplicator for the Ingestion Agent.
 
 Two fingerprint types:
-- **Content fingerprint** (``compute_fingerprint``): sha256(external_id | title | company | date_posted)
+- **Content fingerprint** (``compute_fingerprint``): sha256(external_id | title | company)
   — source-agnostic, used for in-batch cross-source dedup.
-- **Storage fingerprint** (``compute_storage_hash``): sha256(source | external_id | title | company | date_posted)
+- **Storage fingerprint** (``compute_storage_hash``): sha256(source | external_id | title | company)
   — source-specific, stored as ``raw_payload_hash`` in the DB for cross-batch dedup.
 
 JSearch wins over crawl4ai when the same job appears in both sources (Product #9).
+
+JIE#209 (2026-05-03): ``date_posted`` was previously included in both fingerprints,
+which let JSearch re-fetches with shifted ``job_posted_at_datetime_utc`` bypass the
+``uq_raw_ingested_jobs_hash`` unique constraint. The cleanup landed
+830 raw / 849 norm / 849 extracted excess rows on the SoT DB; this hash change
+prevents recurrence going forward.
 
 EXP-003 hook: ``compute_fingerprint()`` is the single method that Nestor's
 dedup experiment results would replace.
@@ -47,15 +53,16 @@ def _hash_parts(parts: list[str]) -> str:
 def compute_fingerprint(record: dict) -> str:
     """Compute a source-agnostic content fingerprint for cross-source dedup.
 
-    Fields used: external_id, title, company, date_posted.
+    Fields used: external_id, title, company.
     Excludes ``source`` so the same job from different sources matches.
+    Excludes ``date_posted`` (JIE#209): JSearch mutates ``job_posted_at_datetime_utc``
+    between fetches for the same job, which would let re-fetches bypass dedup.
     """
     return _hash_parts(
         [
             str(record.get("external_id", "")),
             str(record.get("title", "")),
             str(record.get("company", "")),
-            str(record.get("date_posted", "")),
         ]
     )
 
@@ -65,6 +72,7 @@ def compute_storage_hash(record: dict) -> str:
 
     Includes ``source`` so records from different sources are distinct in the DB.
     Used for cross-batch dedup against existing rows.
+    Excludes ``date_posted`` (JIE#209): see ``compute_fingerprint`` for rationale.
     """
     return _hash_parts(
         [
@@ -72,7 +80,6 @@ def compute_storage_hash(record: dict) -> str:
             str(record.get("external_id", "")),
             str(record.get("title", "")),
             str(record.get("company", "")),
-            str(record.get("date_posted", "")),
         ]
     )
 

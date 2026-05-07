@@ -1,0 +1,311 @@
+Strategy B dedup-key partition: (source, external_id, title_clean, company_clean)
+  title_clean   = LOWER(BTRIM(coalesce(title, '')))
+  company_clean = LOWER(BTRIM(REGEXP_REPLACE(coalesce(company, ''), '[[:punct:]]+$', '')))
+
+Total dup groups by bucket:
+  A_same_co_same_title: 807
+  B_same_co_diff_title: 21
+  C_diff_co_same_title: 24
+  D_diff_co_diff_title: 10
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = wR7KIvSJtud1m_g5AAAAAA==
+==============================================================================================================
+  KEEP  id= 3754 ts=2026-04-22T18:54:30.824777+00:00 dp=2026-04-15 00:00:00 title='Software Engineer, macOS Core Product - El Pa'  company='Clutch Canada'              bytes= 5838
+  KEEP  id= 5242 ts=2026-04-27T08:18:04.118133+00:00 dp=2026-04-25 00:00:00 title='Software Engineer, iOS Core Product - El Paso'  company='Speechify'                  bytes= 6474
+  DROP  id= 5251 ts=2026-04-28T22:14:34.702259+00:00 dp=2026-04-24 00:00:00 title='Software Engineer, iOS Core Product - El Paso'  company='Speechify'                  bytes= 6474
+  KEEP  id= 5254 ts=2026-04-30T00:05:25.060261+00:00 dp=2026-04-29 00:00:00 title='Software Engineer, iOS Core Product - El Paso'  company='Energy Jobline ZR'          bytes= 7210
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = AuEV8E1WTalaUaT7AAAAAA==
+==============================================================================================================
+  KEEP  id= 1915 ts=2026-04-15T01:21:38.321422+00:00 dp=2026-04-11 00:00:00 title='Freelance Python Developer - AI Trainer'        company='DataAnnotation'             bytes= 6269
+  KEEP  id= 3699 ts=2026-04-22T18:51:48.531319+00:00 dp=2026-04-20 00:00:00 title='Optical Engineer with Python - Freelance AI T'  company='Mind Rift'                  bytes= 4004
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = CPqsOsgpRBqx7EfJAAAAAA==
+==============================================================================================================
+  KEEP  id= 3391 ts=2026-04-15T02:50:38.667156+00:00 dp=2026-04-14 00:00:00 title='Senior iOS Software Developer'                  company='Virtual Vocations Inc'      bytes= 2144
+  KEEP  id= 3785 ts=2026-04-22T18:54:53.561118+00:00 dp=2026-04-18 00:00:00 title='Senior Software Developer'                      company='MAXIMUS'                    bytes= 6770
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = GejVl8kR-nMvNTeIAAAAAA==
+==============================================================================================================
+  KEEP  id= 2120 ts=2026-04-15T02:09:49.959583+00:00 dp=2026-04-04 00:00:00 title='Senior AI/ML Software Engineer'                 company='Maximus'                    bytes= 8673
+  KEEP  id= 3733 ts=2026-04-22T18:52:58.517907+00:00 dp=2026-04-13 00:00:00 title='Lead AI/ML Engineer'                            company='Virtual Vocations Inc'      bytes= 2245
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = ivYPiDiq46Zv2gYTAAAAAA==
+==============================================================================================================
+  KEEP  id=   11 ts=2026-04-03T03:14:48.535966+00:00 dp=None                title='Senior Software Engineer (12 month FTC)'        company='BD'                         bytes=11699
+  KEEP  id= 3220 ts=2026-04-15T02:45:15.488005+00:00 dp=None                title='Senior Electronic Security Engineer 🏆'          company='Parsons'                    bytes= 8885
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = orSptkP36AYm_acCAAAAAA==
+==============================================================================================================
+  KEEP  id= 2322 ts=2026-04-15T02:14:37.363373+00:00 dp=None                title='Financial Data Scientist'                       company='Hunt'                       bytes=10253
+  KEEP  id= 4111 ts=2026-04-22T19:11:07.674051+00:00 dp=None                title='4356 Data Scientist'                            company='Procession Systems'         bytes= 4672
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = OT7AkGOL6v6ZKXwwAAAAAA==
+==============================================================================================================
+  KEEP  id= 3097 ts=2026-04-15T02:41:10.954535+00:00 dp=2026-04-13 00:00:00 title='Certificate Management DevOps Engineer'         company='Virtual Vocations Inc'      bytes= 2616
+  KEEP  id= 4703 ts=2026-04-22T20:25:16.042160+00:00 dp=2026-03-26 00:00:00 title='DevOps / Release Management Engineer'           company='MAXIMUS'                    bytes= 5432
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = pGrIE1e2VkPbiVx-AAAAAA==
+==============================================================================================================
+  KEEP  id= 3099 ts=2026-04-15T02:41:10.957044+00:00 dp=2026-04-14 00:00:00 title='Cloud DevSecOps Engineer'                       company='Virtual Vocations Inc'      bytes= 2426
+  KEEP  id= 4702 ts=2026-04-22T20:25:16.041160+00:00 dp=2026-04-13 00:00:00 title='DevSecOps Engineer'                             company='Maximus'                    bytes= 4238
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = Y1CRNpx5FFwMgoIdAAAAAA==
+==============================================================================================================
+  KEEP  id= 2280 ts=2026-04-15T02:13:49.256440+00:00 dp=2026-04-12 00:00:00 title='Senior Data Center Switchboard Engineer'        company='Eaton'                      bytes= 3365
+  KEEP  id= 3973 ts=2026-04-22T19:03:11.742479+00:00 dp=2026-04-07 00:00:00 title='Senior Data Center Structural Engineer (Hybri'  company='Jacobs'                     bytes= 2315
+
+==============================================================================================================
+=== D — diff co + diff title (LIKELY DISTINCT JOBS) ===  external_id = ZQF3lFiawjVLquV9AAAAAA==
+==============================================================================================================
+  KEEP  id= 2669 ts=2026-04-15T02:27:21.780635+00:00 dp=2026-04-11 00:00:00 title='Quality Assurance Engineer - AI Trainer'        company='DataAnnotation'             bytes= 4310
+  KEEP  id= 4368 ts=2026-04-22T19:44:39.591124+00:00 dp=2026-04-18 00:00:00 title='Site Customer Quality Assurance Engineer - Se'  company='Cummins'                    bytes= 5314
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = no6izhOwdi_27HrbAAAAAA==
+==============================================================================================================
+  KEEP  id= 3742 ts=2026-04-22T18:54:30.508378+00:00 dp=2026-04-15 00:00:00 title='Software Developer II'                          company='CITY OF EL PASO, TX'        bytes= 5047
+  DROP  id= 5231 ts=2026-04-23T00:03:09.922021+00:00 dp=2026-04-16 00:00:00 title='Software Developer II'                          company='CITY OF EL PASO, TX'        bytes= 5047
+  KEEP  id= 5237 ts=2026-04-27T08:18:04.022126+00:00 dp=2026-04-15 00:00:00 title='Software Developer II'                          company='City of El Paso'            bytes= 4894
+  DROP  id= 5246 ts=2026-04-28T22:14:34.564732+00:00 dp=2026-04-14 00:00:00 title='Software Developer II'                          company='City of El Paso'            bytes= 4872
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = -RlsMPbXk45QUvEOAAAAAA==
+==============================================================================================================
+  KEEP  id= 2137 ts=2026-04-15T02:10:33.777675+00:00 dp=2026-04-14 18:00:00 title='Software Engineer'                              company='Epic'                       bytes= 5075
+  DROP  id= 2717 ts=2026-04-15T02:28:38.133782+00:00 dp=2026-03-24 00:00:00 title='Software Engineer'                              company='Epic'                       bytes= 5408
+  DROP  id= 2816 ts=2026-04-15T02:31:46.788201+00:00 dp=2026-04-14 17:00:00 title='Software Engineer'                              company='Epic'                       bytes= 5075
+  KEEP  id= 3773 ts=2026-04-22T18:54:53.326510+00:00 dp=None                title='Software Engineer'                              company='ICR'                        bytes= 4055
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = 5nWxh9XFS-pGNk8kAAAAAA==
+==============================================================================================================
+  KEEP  id= 2956 ts=2026-04-15T02:37:05.680198+00:00 dp=2026-04-14 00:00:00 title='Embedded Software Engineer'                     company='Virtual Vocations Inc'      bytes= 2260
+  KEEP  id= 4404 ts=2026-04-22T19:47:21.393872+00:00 dp=2026-04-22 17:00:00 title='Embedded Software Engineer'                     company='Spectra Defense Technolog'  bytes= 4339
+  DROP  id= 4590 ts=2026-04-22T20:13:32.193874+00:00 dp=2026-04-22 18:00:00 title='Embedded Software Engineer'                     company='Spectra Defense Technolog'  bytes= 4339
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = 1I9kNLyDjFNjA8iwAAAAAA==
+==============================================================================================================
+  KEEP  id= 2073 ts=2026-04-15T02:09:08.442683+00:00 dp=2026-04-14 00:00:00 title='Research Engineer'                              company='Virtual Vocations Inc'      bytes= 2672
+  KEEP  id= 3666 ts=2026-04-22T18:50:07.878016+00:00 dp=2026-04-14 00:00:00 title='Research Engineer'                              company='New Mexico State Universi'  bytes= 5022
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = 7y_N7tOseVI0sKgdAAAAAA==
+==============================================================================================================
+  KEEP  id= 2076 ts=2026-04-15T02:09:08.446705+00:00 dp=2026-04-03 00:00:00 title='PSL R&D Engineer,Assc'                          company='New Mexico State Universi'  bytes= 6845
+  KEEP  id= 3667 ts=2026-04-22T18:50:07.920563+00:00 dp=2026-04-03 00:00:00 title='PSL R&D Engineer,Assc'                          company='New Mexico state Universo'  bytes= 3980
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = awgUa4v91blNFQ4vAAAAAA==
+==============================================================================================================
+  KEEP  id= 2804 ts=2026-04-15T02:31:34.319238+00:00 dp=2026-03-20 00:00:00 title='Senior Software Engineer, Windows/Desktop App'  company='Speechify'                  bytes= 7419
+  KEEP  id= 3763 ts=2026-04-22T18:54:31.036122+00:00 dp=2026-04-13 00:00:00 title='Senior Software Engineer, Windows/Desktop App'  company='Clutch Canada'              bytes= 7635
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = dFNPNW2POwN-TwWsAAAAAA==
+==============================================================================================================
+  KEEP  id= 3484 ts=2026-04-15T02:53:03.319927+00:00 dp=2026-04-03 00:00:00 title='Enterprise Systems Admin'                       company='University of Texas at El'  bytes=14214
+  KEEP  id= 5115 ts=2026-04-22T20:54:13.494330+00:00 dp=2026-04-16 00:00:00 title='Enterprise Systems Admin'                       company='The University of Texas a'  bytes=13906
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = E36l2J8vv4eD71sNAAAAAA==
+==============================================================================================================
+  KEEP  id= 3750 ts=2026-04-22T18:54:30.728804+00:00 dp=None                title='Principal Software Engineer (.NET + Data) - R'  company='FullStack Labs'             bytes= 6297
+  KEEP  id= 5258 ts=2026-04-30T00:05:25.204121+00:00 dp=2026-04-16 00:00:00 title='Principal Software Engineer (.NET + Data) - R'  company='Full Stack LLC'             bytes= 5654
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = F1YlDu92_RZanrSIAAAAAA==
+==============================================================================================================
+  KEEP  id= 2142 ts=2026-04-15T02:10:33.908476+00:00 dp=2026-04-02 00:00:00 title='Software Developer'                             company='Outlier AI'                 bytes= 5939
+  KEEP  id= 4403 ts=2026-04-22T19:47:21.392874+00:00 dp=None                title='Software Developer'                             company='SynergisticIT'              bytes= 4250
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = fINFiEEjHf5C5_QkAAAAAA==
+==============================================================================================================
+  KEEP  id= 1004 ts=2026-04-03T11:35:16.162957+00:00 dp=None                title='Research Scientist, Applied AI/ML, X'           company='X, the moonshot factory'    bytes= 1904
+  KEEP  id= 1471 ts=2026-04-12T13:49:58.165539+00:00 dp=None                title='Research Scientist, Applied AI/ML, X'           company='X Development LLC'          bytes= 9748
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = GySU0PmKMWxOkDTAAAAAAA==
+==============================================================================================================
+  KEEP  id= 3377 ts=2026-04-15T02:50:25.205711+00:00 dp=2026-04-14 00:00:00 title='Senior Front End Developer'                     company='Virtual Vocations Inc'      bytes= 2383
+  KEEP  id= 4987 ts=2026-04-22T20:45:02.161092+00:00 dp=2026-04-14 00:00:00 title='Senior Front End Developer'                     company='Maximus'                    bytes= 4077
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = HCJ5cjo2-zeJwj-yAAAAAA==
+==============================================================================================================
+  KEEP  id= 2853 ts=2026-04-15T02:33:51.178570+00:00 dp=2026-04-13 00:00:00 title='Senior Analyst, Supply Chain (MPM) (Onsite)'    company='RTX'                        bytes= 8326
+  KEEP  id= 4514 ts=2026-04-22T20:04:01.313132+00:00 dp=2026-04-10 00:00:00 title='Senior Analyst, Supply Chain (MPM) (Onsite)'    company='Raytheon'                   bytes= 8316
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = IKcuXea9RyNO5zs9AAAAAA==
+==============================================================================================================
+  KEEP  id= 3515 ts=2026-04-15T02:53:14.679696+00:00 dp=2026-04-06 00:00:00 title='Linux Systems Administrator'                    company='ManTech International'      bytes=12135
+  KEEP  id= 5131 ts=2026-04-22T20:54:31.436556+00:00 dp=2026-04-02 00:00:00 title='Linux Systems Administrator'                    company='MANTECH'                    bytes= 4723
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = iPPyn8qSJvpDKPjpAAAAAA==
+==============================================================================================================
+  KEEP  id= 1074 ts=2026-04-03T13:43:19.740230+00:00 dp=2026-03-24 00:00:00 title='Cybersecurity Engineer'                         company='City of El Paso'            bytes= 6518
+  KEEP  id= 1974 ts=2026-04-15T01:37:28.099758+00:00 dp=2026-03-29 00:00:00 title='Cybersecurity Engineer'                         company='El Paso Water'              bytes=10829
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = iR5YKfIvIdMx8eUXAAAAAA==
+==============================================================================================================
+  KEEP  id= 2071 ts=2026-04-15T02:08:59.841839+00:00 dp=2026-04-10 00:00:00 title='Manufacturing Test Engineer'                    company='Org_Subtype_BU017_Operati'  bytes= 5743
+  KEEP  id= 5049 ts=2026-04-22T20:50:00.109139+00:00 dp=2026-04-10 00:00:00 title='Manufacturing Test Engineer'                    company='Dell'                       bytes= 5721
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = KMM9LmPDuV2qtTSiAAAAAA==
+==============================================================================================================
+  KEEP  id= 2219 ts=2026-04-15T02:12:41.241160+00:00 dp=2026-04-03 00:00:00 title='Product Manager'                                company='Border States Industries,'  bytes=22145
+  KEEP  id= 3902 ts=2026-04-22T19:00:37.303491+00:00 dp=None                title='Product Manager'                                company='Hubbell Incorporated'       bytes= 3320
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = LisB153S-8FsawjmAAAAAA==
+==============================================================================================================
+  KEEP  id= 2221 ts=2026-04-15T02:12:41.335464+00:00 dp=2026-04-07 00:00:00 title='Sr. Business Systems Analyst - Product Manage'  company='Helenoftroy'                bytes=15978
+  KEEP  id= 3901 ts=2026-04-22T19:00:37.257678+00:00 dp=2026-04-12 00:00:00 title='Sr. Business Systems Analyst - Product Manage'  company='Helen of Troy'              bytes= 7413
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = RR3Yj7v3qRxisDw7AAAAAA==
+==============================================================================================================
+  KEEP  id= 2139 ts=2026-04-15T02:10:33.821385+00:00 dp=2026-03-20 00:00:00 title='Software Engineer, Platform - Las Cruces, USA'  company='Speechify'                  bytes= 5623
+  KEEP  id= 3776 ts=2026-04-22T18:54:53.329961+00:00 dp=2026-04-15 00:00:00 title='Software Engineer, Platform - Las Cruces, USA'  company='Clutch Canada'              bytes= 5427
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = uj7vDl1jNinRciV3AAAAAA==
+==============================================================================================================
+  KEEP  id= 1972 ts=2026-04-15T01:36:54.686755+00:00 dp=None                title='Principal Data Solution Architect'              company='Helen of Troy Limited'      bytes=14400
+  KEEP  id= 4775 ts=2026-04-22T20:28:13.440250+00:00 dp=2026-04-11 00:00:00 title='Principal Data Solution Architect'              company='Helen of Troy'              bytes= 6731
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = ULp5P_gvi-9eruEGAAAAAA==
+==============================================================================================================
+  KEEP  id= 2681 ts=2026-04-15T02:27:22.273066+00:00 dp=2026-03-26 00:00:00 title='Ld Tech, Quality Assurance'                     company='Becton , Dickinson and Co'  bytes= 9468
+  KEEP  id= 4376 ts=2026-04-22T19:44:39.926250+00:00 dp=2026-04-06 00:00:00 title='Ld Tech, Quality Assurance'                     company='Becton Dickinson & Compan'  bytes= 6716
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = V0dEaJy8Bwal5LlTAAAAAA==
+==============================================================================================================
+  KEEP  id= 2354 ts=2026-04-15T02:14:59.213975+00:00 dp=None                title='HR Data Analyst'                                company='CPJ Recruitment'            bytes= 6553
+  KEEP  id= 4058 ts=2026-04-22T19:07:08.935211+00:00 dp=2026-04-15 00:00:00 title='HR Data Analyst'                                company='Orionyx Enginnering LTD'    bytes= 5706
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = viuxa6BA88sIi-vJAAAAAA==
+==============================================================================================================
+  KEEP  id= 2752 ts=2026-04-15T02:30:39.600565+00:00 dp=2026-04-11 00:00:00 title='Senior Software Development Engineer'           company='Hispanic Alliance for Car'  bytes= 7433
+  KEEP  id= 4506 ts=2026-04-22T20:01:13.551315+00:00 dp=2026-04-13 00:00:00 title='Senior Software Development Engineer'           company='Virtual Vocations Inc'      bytes= 2387
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = VpO4K45g7LdvOpZ-AAAAAA==
+==============================================================================================================
+  KEEP  id= 3467 ts=2026-04-15T02:52:43.335278+00:00 dp=2026-03-31 00:00:00 title='Senior Network Plant Engineer (ISP/OSP)'        company='CACI'                       bytes= 6162
+  KEEP  id= 5084 ts=2026-04-22T20:53:34.146648+00:00 dp=2026-03-31 00:00:00 title='Senior Network Plant Engineer (ISP/OSP)'        company='CACI International'         bytes= 6325
+
+==============================================================================================================
+=== C — diff co, same title (aggregator/variant) ===  external_id = XK3KEKeimNY1pPQ2AAAAAA==
+==============================================================================================================
+  KEEP  id= 2818 ts=2026-04-15T02:31:46.836630+00:00 dp=2026-04-04 00:00:00 title='Senior Engineer I- General Civil'               company='Souder, Miller & Associat'  bytes=10297
+  KEEP  id= 4441 ts=2026-04-22T19:52:51.225999+00:00 dp=2026-04-03 00:00:00 title='Senior Engineer I- General Civil'               company='Souder Miller & Associate'  bytes=10479
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = 6q3KujK6kj9OHt5gAAAAAA==
+==============================================================================================================
+  KEEP  id= 2415 ts=2026-04-15T02:18:15.396948+00:00 dp=2026-04-13 00:00:00 title='MLOps Engineer'                                 company='Virtual Vocations Inc'      bytes= 2394
+  KEEP  id= 4131 ts=2026-04-22T19:14:00.636760+00:00 dp=2026-04-13 00:00:00 title='Senior MLOps Engineer'                          company='Virtual Vocations Inc'      bytes= 2917
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = 6vOyE92KrH4MMWExAAAAAA==
+==============================================================================================================
+  KEEP  id= 2239 ts=2026-04-15T02:12:55.560326+00:00 dp=2026-04-11 00:00:00 title='Product Manager @ Social app startup'           company='Cheez'                      bytes= 3394
+  KEEP  id= 3914 ts=2026-04-22T19:01:29.930167+00:00 dp=None                title='Associate Product Manager @ Social app startu'  company='Cheez'                      bytes= 3113
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = 7oXaw7qDiv_0sl9aAAAAAA==
+==============================================================================================================
+  KEEP  id= 2096 ts=2026-04-15T02:09:49.927076+00:00 dp=2026-04-13 00:00:00 title='Applied AI Systems Engineer'                    company='Virtual Vocations Inc'      bytes= 2599
+  KEEP  id= 3645 ts=2026-04-22T18:48:35.334899+00:00 dp=2026-04-13 00:00:00 title='Applied Scientist, AI Systems'                  company='Virtual Vocations Inc'      bytes= 2663
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = A8KdUKsQG70bCN9lAAAAAA==
+==============================================================================================================
+  KEEP  id= 2682 ts=2026-04-15T02:27:22.316978+00:00 dp=2026-04-11 00:00:00 title='Site Reliability Engineer - AI Trainer'         company='DataAnnotation'             bytes= 6589
+  KEEP  id= 3687 ts=2026-04-22T18:51:48.309580+00:00 dp=2026-04-13 00:00:00 title='Web Platform Engineer - AI Trainer'             company='DataAnnotation'             bytes= 4764
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = CUs7YaJ1QwA_hASiAAAAAA==
+==============================================================================================================
+  KEEP  id= 2189 ts=2026-04-15T02:11:08.897575+00:00 dp=2026-04-09 00:00:00 title='Staff Data Engineer Databricks - Remote - USA'  company='Full Stack LLC'             bytes= 6413
+  KEEP  id= 3833 ts=2026-04-22T18:57:00.125507+00:00 dp=2026-04-15 00:00:00 title='Staff Data Engineer (Databricks) - Remote - U'  company='Full Stack LLC'             bytes= 5809
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = D71Q29pEsSnU5FrlAAAAAA==
+==============================================================================================================
+  KEEP  id=  336 ts=2026-04-03T10:31:14.747298+00:00 dp=2026-03-31 00:00:00 title='AWS & Azure Cloud Architect'                    company='TEKsystems'                 bytes= 2039
+  KEEP  id= 1639 ts=2026-04-12T15:27:46.033487+00:00 dp=2026-04-10 00:00:00 title='Cloud Architect (AWS/Azure, Terraform)'         company='TEKsystems'                 bytes=13658
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = EIDGGC8ZvnEydD7kAAAAAA==
+==============================================================================================================
+  KEEP  id= 2800 ts=2026-04-15T02:31:13.611066+00:00 dp=2026-04-14 00:00:00 title='Japanese LQA Game Tester'                       company='Virtual Vocations Inc'      bytes= 2658
+  KEEP  id= 4464 ts=2026-04-22T19:55:12.467519+00:00 dp=2026-04-12 00:00:00 title='LQA Game Tester'                                company='Virtual Vocations Inc'      bytes= 2488
+
+==============================================================================================================
+=== B — same co, diff title (repost edit) ===  external_id = EuZ7Vx_jbOiW9r1lAAAAAA==
+==============================================================================================================
+  KEEP  id= 2024 ts=2026-04-15T02:07:48.161950+00:00 dp=2026-04-14 00:00:00 title='Remote AI Security Engineer'                    company='DataAnnotation'             bytes= 2446
+  KEEP  id= 3607 ts=2026-04-22T18:45:36.459102+00:00 dp=2026-04-18 00:00:00 title='AI Security Validation Engineer Remote'         company='DataAnnotation'             bytes= 2113
+
+==============================================================================================================
+=== A — same co + same title (true dup) ===  external_id = xIzCaEvUfP6JbcOEAAAAAA==
+==============================================================================================================
+  KEEP  id=   13 ts=2026-04-03T03:14:48.623296+00:00 dp=2026-04-02 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes=12875
+  DROP  id= 1976 ts=2026-04-15T01:37:28.189409+00:00 dp=2026-04-07 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes=12520
+  DROP  id= 3747 ts=2026-04-22T18:54:30.626686+00:00 dp=2026-04-16 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes= 8494
+  DROP  id= 5234 ts=2026-04-23T00:03:10.013789+00:00 dp=2026-04-17 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes= 8494
+  DROP  id= 5243 ts=2026-04-27T08:18:04.165540+00:00 dp=2026-04-22 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes= 8599
+  DROP  id= 5252 ts=2026-04-28T22:14:48.195044+00:00 dp=2026-04-21 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes= 8599
+  DROP  id= 5266 ts=2026-05-04T05:27:53.910236+00:00 dp=2026-05-02 00:00:00 title='Software Engineer, Product Security'            company='Johnson & Johnson'          bytes= 8599
+
+==============================================================================================================
+=== A — same co + same title (true dup) ===  external_id = BZpQnOo9_9A8-7zzAAAAAA==
+==============================================================================================================
+  KEEP  id=   15 ts=2026-04-03T03:19:57.794929+00:00 dp=2026-03-27 00:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 6377
+  DROP  id= 3745 ts=2026-04-22T18:54:30.610124+00:00 dp=2026-04-21 23:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 3733
+  DROP  id= 4739 ts=2026-04-22T20:26:20.912310+00:00 dp=2026-04-22 00:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 4086
+  DROP  id= 5253 ts=2026-04-28T22:14:48.198045+00:00 dp=2026-04-23 00:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 3731
+  DROP  id= 5260 ts=2026-04-30T01:50:47.815366+00:00 dp=2026-04-24 00:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 3731
+  DROP  id= 5267 ts=2026-05-04T05:27:53.955442+00:00 dp=2026-05-02 00:00:00 title='Junior/Entry Level Software Engineer - Remote'  company='SynergisticIT'              bytes= 3731
+
+==============================================================================================================
+=== A — same co + same title (true dup) ===  external_id = UnYEuElP8PAU-5mhAAAAAA==
+==============================================================================================================
+  KEEP  id= 2132 ts=2026-04-15T02:10:21.354451+00:00 dp=2026-04-13 00:00:00 title='Java Backend Engineer - RESTful APIs & Scalab'  company='Quest Diagnostics'          bytes= 2409
+  DROP  id= 3752 ts=2026-04-22T18:54:30.775412+00:00 dp=2026-04-12 00:00:00 title='Java Backend Engineer - RESTful APIs & Scalab'  company='Quest Diagnostics'          bytes= 2526
+  DROP  id= 3809 ts=2026-04-22T18:55:46.439454+00:00 dp=2026-04-19 00:00:00 title='Java Backend Engineer - RESTful APIs & Scalab'  company='Quest Diagnostics'          bytes= 2157
+  DROP  id= 5235 ts=2026-04-23T00:03:10.057436+00:00 dp=2026-04-20 00:00:00 title='Java Backend Engineer - RESTful APIs & Scalab'  company='Quest Diagnostics'          bytes= 2157
+
+==============================================================================================================
+=== A — same co + same title (true dup) ===  external_id = FFmMP5Hfonc3GNvwAAAAAA==
+==============================================================================================================
+  KEEP  id= 1071 ts=2026-04-03T13:42:46.857976+00:00 dp=2026-03-25 00:00:00 title='Lead Software Engineer, AI Solutions'           company='Centari'                    bytes= 2950
+  DROP  id= 1903 ts=2026-04-15T01:20:33.497939+00:00 dp=2026-04-10 00:00:00 title='Lead Software Engineer, AI Solutions'           company='Centari'                    bytes= 2828
+  DROP  id= 3697 ts=2026-04-22T18:51:48.531319+00:00 dp=2026-04-09 00:00:00 title='Lead Software Engineer, AI Solutions'           company='Centari'                    bytes= 2606
+
+==============================================================================================================
+=== A — same co + same title (true dup) ===  external_id = FkqjosQxYmO7I1sEAAAAAA==
+==============================================================================================================
+  KEEP  id= 2341 ts=2026-04-15T02:14:58.762096+00:00 dp=2026-04-14 07:00:00 title='Data Analyst for Office of Business, Communit'  company='University of Texas at El'  bytes=10920
+  DROP  id= 4047 ts=2026-04-22T19:07:08.657803+00:00 dp=2026-04-14 00:00:00 title='Data Analyst for Office of Business, Communit'  company='University of Texas at El'  bytes=10918
+  DROP  id= 4446 ts=2026-04-22T19:54:03.908007+00:00 dp=2026-04-13 00:00:00 title='Data Analyst for Office of Business, Communit'  company='University of Texas at El'  bytes=10918

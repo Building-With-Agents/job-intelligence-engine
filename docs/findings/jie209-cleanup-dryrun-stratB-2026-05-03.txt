@@ -1,0 +1,14 @@
+2026-05-03 23:13:51 [info     ] db_engine_created              url=localhost:5432/talent_finder
+2026-05-03 23:13:51 [info     ] cleanup_scope                  extracted_intelligence_excess=849 normalized_jobs_excess=849 raw_ingested_jobs_excess=830
+  [dry-run] raw_ingested_jobs: 830 rows would be deleted (sample ids: [1377, 1734, 3698, 493, 5067, 4066, 4369, 3758, 4062, 1264]...)
+  [dry-run] normalized_jobs: 849 rows would be deleted (sample ids: [3290, 4659, 3658, 494, 3961, 3350, 3653, 3608, 3221, 4627]...)
+  [dry-run] extracted_intelligence: 849 rows would be deleted (sample ids: [84, 85, 86, 484, 485, 486, 487, 488, 489, 490]...)
+
+================================================================
+JIE #209 cleanup (DRY-RUN):
+  raw_ingested_jobs    excess:    830
+  normalized_jobs      excess:    849
+  extracted_intelligence excess:    849
+  llm_audit_log        : preserved (not touched)
+  job_postings         : preserved (not touched)
+================================================================

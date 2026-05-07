@@ -1,0 +1,115 @@
+====================================================================================================
+=== external_id = xIzCaEvUfP6JbcOEAAAAAA==
+====================================================================================================
+
+--- raw_ingested_jobs (KEEP = earliest ingestion_timestamp + lowest id) ---
+  KEEP  id=   13 ts=2026-04-03T03:14:48.623296+00:00 date_posted=2026-04-02 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=e9138a354735 payload_bytes=12875
+  DROP  id= 1976 ts=2026-04-15T01:37:28.189409+00:00 date_posted=2026-04-07 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=0af475a14dc5 payload_bytes=12520
+  DROP  id= 3747 ts=2026-04-22T18:54:30.626686+00:00 date_posted=2026-04-16 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=d1ecee4e8891 payload_bytes= 8494
+  DROP  id= 5234 ts=2026-04-23T00:03:10.013789+00:00 date_posted=2026-04-17 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=cd1b4536130a payload_bytes= 8494
+  DROP  id= 5243 ts=2026-04-27T08:18:04.165540+00:00 date_posted=2026-04-22 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=94ce7896980c payload_bytes= 8599
+  DROP  id= 5252 ts=2026-04-28T22:14:48.195044+00:00 date_posted=2026-04-21 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=a68b65339c5a payload_bytes= 8599
+  DROP  id= 5266 ts=2026-05-04T05:27:53.910236+00:00 date_posted=2026-05-02 00:00:00       title='Software Engineer, Product Sec'  company='Johnson & Johnson'   hash=b5c2146570a6 payload_bytes= 8599
+
+--- normalized_jobs for this pair ---
+  KEEP  id=   26 raw_job_id=   13 created_at=2026-04-07T17:06:57.887090+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 1547 raw_job_id= 1976 created_at=2026-04-15T05:26:10.658273+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 3157 raw_job_id= 5234 created_at=2026-04-23T00:03:10.117594+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 3339 raw_job_id= 3747 created_at=2026-04-26T07:54:48.887273+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 4829 raw_job_id= 5243 created_at=2026-04-27T08:18:04.268258+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 4841 raw_job_id= 5252 created_at=2026-04-28T22:16:20.204411+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+  DROP  id= 4858 raw_job_id= 5266 created_at=2026-05-04T05:27:54.150710+00:00 title='Software Engineer, Product Sec'  city='El Paso'          state='Texas'
+
+--- extracted_intelligence linked to those normalized_jobs ---
+   extr_id=   42 norm_id=   26 ts=2026-04-07T17:22:21.584915+00:00 skills= 18 tasks= 12 resps=  7 failed=False
+   extr_id= 1664 norm_id= 1547 ts=2026-04-15T05:30:11.994400+00:00 skills= 14 tasks= 12 resps=  7 failed=False
+   extr_id= 3281 norm_id= 3157 ts=2026-04-23T00:03:40.597204+00:00 skills= 14 tasks= 12 resps=  7 failed=False
+   extr_id= 3505 norm_id= 3339 ts=2026-04-26T07:57:48.704299+00:00 skills= 14 tasks= 12 resps=  7 failed=False
+   extr_id= 5041 norm_id= 4829 ts=2026-04-27T08:18:16.009471+00:00 skills= 13 tasks=  0 resps=  6 failed=False
+   extr_id= 5082 norm_id= 4841 ts=2026-04-28T22:16:38.880270+00:00 skills= 15 tasks= 12 resps=  7 failed=False
+   extr_id= 5203 norm_id= 4858 ts=2026-05-04T05:28:54.918096+00:00 skills= 15 tasks= 12 resps=  7 failed=False
+
+--- job_postings for this pair (1 row expected, NOT touched) ---
+   posting_id=f814983d-9058-4455-a8d3-e52a3822d933 quality=0.597736 is_spam=None canonical_role_id=None company_id=aee2cbb1-4b90-48f5-b90e-2bfbf566ad29 run=2f483f17-101b-4c37-8fa2-28c03ac7ed35
+
+====================================================================================================
+=== external_id = BZpQnOo9_9A8-7zzAAAAAA==
+====================================================================================================
+
+--- raw_ingested_jobs (KEEP = earliest ingestion_timestamp + lowest id) ---
+  KEEP  id=   15 ts=2026-04-03T03:19:57.794929+00:00 date_posted=2026-03-27 00:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=adfff7a96a86 payload_bytes= 6377
+  DROP  id= 3745 ts=2026-04-22T18:54:30.610124+00:00 date_posted=2026-04-21 23:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=0e8abc751296 payload_bytes= 3733
+  DROP  id= 4739 ts=2026-04-22T20:26:20.912310+00:00 date_posted=2026-04-22 00:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=51011dc1846f payload_bytes= 4086
+  DROP  id= 5253 ts=2026-04-28T22:14:48.198045+00:00 date_posted=2026-04-23 00:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=414b4ff81623 payload_bytes= 3731
+  DROP  id= 5260 ts=2026-04-30T01:50:47.815366+00:00 date_posted=2026-04-24 00:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=7d6bfbb2c857 payload_bytes= 3731
+  DROP  id= 5267 ts=2026-05-04T05:27:53.955442+00:00 date_posted=2026-05-02 00:00:00       title='Junior/Entry Level Software En'  company='SynergisticIT'       hash=4392cf7b0da4 payload_bytes= 3731
+
+--- normalized_jobs for this pair ---
+  KEEP  id=   28 raw_job_id=   15 created_at=2026-04-07T17:11:29.378689+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+  DROP  id= 3337 raw_job_id= 3745 created_at=2026-04-26T07:54:48.876245+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+  DROP  id= 4331 raw_job_id= 4739 created_at=2026-04-26T10:32:13.071579+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+  DROP  id= 4842 raw_job_id= 5253 created_at=2026-04-28T22:16:20.209968+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+  DROP  id= 4851 raw_job_id= 5260 created_at=2026-04-30T01:50:47.912352+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+  DROP  id= 4859 raw_job_id= 5267 created_at=2026-05-04T05:27:54.166474+00:00 title='Junior/Entry Level Software En'  city='El Paso'          state='Texas'
+
+--- extracted_intelligence linked to those normalized_jobs ---
+   extr_id=   44 norm_id=   28 ts=2026-04-07T17:22:21.673025+00:00 skills=  6 tasks=  4 resps=  4 failed=False
+   extr_id= 3503 norm_id= 3337 ts=2026-04-26T07:57:48.604612+00:00 skills=  8 tasks=  5 resps=  4 failed=False
+   extr_id= 4536 norm_id= 4331 ts=2026-04-26T10:58:47.345841+00:00 skills= 10 tasks=  4 resps=  4 failed=False
+   extr_id= 5083 norm_id= 4842 ts=2026-04-28T22:16:38.924209+00:00 skills=  6 tasks=  4 resps=  4 failed=False
+   extr_id= 5155 norm_id= 4851 ts=2026-04-30T01:50:50.921260+00:00 skills=  8 tasks=  0 resps=  3 failed=False
+   extr_id= 5204 norm_id= 4859 ts=2026-05-04T05:28:54.965701+00:00 skills=  6 tasks=  4 resps=  4 failed=False
+
+--- job_postings for this pair (1 row expected, NOT touched) ---
+   posting_id=e50021f3-95a6-4098-aab3-7eef18026321 quality=0.670393 is_spam=None canonical_role_id=60cc413d-7539-57d8-a9d0-1c33b1b0c0d3 company_id=44BA2D57-3013-49AF-A98C-ACAD3D004782 run=2f483f17-101b-4c37-8fa2-28c03ac7ed35
+
+====================================================================================================
+=== external_id = no6izhOwdi_27HrbAAAAAA==
+====================================================================================================
+
+--- raw_ingested_jobs (KEEP = earliest ingestion_timestamp + lowest id) ---
+  KEEP  id= 3742 ts=2026-04-22T18:54:30.508378+00:00 date_posted=2026-04-15 00:00:00       title='Software Developer II'           company='CITY OF EL PASO, T'  hash=7a45fc517790 payload_bytes= 5047
+  DROP  id= 5231 ts=2026-04-23T00:03:09.922021+00:00 date_posted=2026-04-16 00:00:00       title='Software Developer II'           company='CITY OF EL PASO, T'  hash=ba6f4a4e83f1 payload_bytes= 5047
+  DROP  id= 5237 ts=2026-04-27T08:18:04.022126+00:00 date_posted=2026-04-15 00:00:00       title='Software Developer II'           company='City of El Paso'     hash=67122b5031b4 payload_bytes= 4894
+  DROP  id= 5246 ts=2026-04-28T22:14:34.564732+00:00 date_posted=2026-04-14 00:00:00       title='Software Developer II'           company='City of El Paso'     hash=2184ca81850c payload_bytes= 4872
+
+--- normalized_jobs for this pair ---
+  KEEP  id= 3154 raw_job_id= 5231 created_at=2026-04-23T00:03:10.104144+00:00 title='Software Developer II'           city='El Paso'          state='Texas'
+  DROP  id= 3334 raw_job_id= 3742 created_at=2026-04-26T07:54:48.862560+00:00 title='Software Developer II'           city='El Paso'          state='Texas'
+  DROP  id= 4823 raw_job_id= 5237 created_at=2026-04-27T08:18:04.244720+00:00 title='Software Developer II'           city='El Paso'          state='Texas'
+  DROP  id= 4833 raw_job_id= 5246 created_at=2026-04-28T22:14:34.802241+00:00 title='Software Developer II'           city='El Paso'          state='Texas'
+
+--- extracted_intelligence linked to those normalized_jobs ---
+   extr_id= 3278 norm_id= 3154 ts=2026-04-23T00:03:40.451402+00:00 skills=  8 tasks= 15 resps=  6 failed=False
+   extr_id= 3500 norm_id= 3334 ts=2026-04-26T07:57:48.464353+00:00 skills= 10 tasks= 14 resps=  5 failed=False
+   extr_id= 5035 norm_id= 4823 ts=2026-04-27T08:18:15.779122+00:00 skills=  8 tasks=  0 resps=  3 failed=False
+   extr_id= 5065 norm_id= 4833 ts=2026-04-28T22:15:11.661115+00:00 skills= 10 tasks= 15 resps=  5 failed=False
+
+--- job_postings for this pair (1 row expected, NOT touched) ---
+   posting_id=51f1f2df-a5b4-4fb7-b075-a69ff83b25fa quality=0.510023 is_spam=False canonical_role_id=18dc1ab7-fac0-5d82-b4a7-0de8cb3ec7b7 company_id=058e0c44-9175-4b47-9a04-74542851d8ff run=dcb4806b-d5e6-4c71-9739-c3efdaf10ae5
+
+====================================================================================================
+=== external_id = -RlsMPbXk45QUvEOAAAAAA==
+====================================================================================================
+
+--- raw_ingested_jobs (KEEP = earliest ingestion_timestamp + lowest id) ---
+  KEEP  id= 2137 ts=2026-04-15T02:10:33.777675+00:00 date_posted=2026-04-14 18:00:00       title='Software Engineer'               company='Epic'                hash=bf02f32b220b payload_bytes= 5075
+  DROP  id= 2717 ts=2026-04-15T02:28:38.133782+00:00 date_posted=2026-03-24 00:00:00       title='Software Engineer'               company='Epic'                hash=81fe6596e54f payload_bytes= 5408
+  DROP  id= 2816 ts=2026-04-15T02:31:46.788201+00:00 date_posted=2026-04-14 17:00:00       title='Software Engineer'               company='Epic'                hash=4fddff970b10 payload_bytes= 5075
+  DROP  id= 3773 ts=2026-04-22T18:54:53.326510+00:00 date_posted=None                      title='Software Engineer'               company='ICR'                 hash=af69277f4ec9 payload_bytes= 4055
+
+--- normalized_jobs for this pair ---
+  KEEP  id= 1708 raw_job_id= 2137 created_at=2026-04-15T06:57:15.382213+00:00 title='Software Engineer'               city='Las Cruces'       state='New Mexico'
+  DROP  id= 2288 raw_job_id= 2717 created_at=2026-04-15T08:49:50.189101+00:00 title='Software Engineer'               city='Las Cruces'       state='New Mexico'
+  DROP  id= 2387 raw_job_id= 2816 created_at=2026-04-15T09:11:08.255434+00:00 title='Software Engineer'               city='Las Cruces'       state='New Mexico'
+  DROP  id= 3366 raw_job_id= 3773 created_at=2026-04-26T07:54:49.148704+00:00 title='Software Engineer'               city=''                 state=''
+
+--- extracted_intelligence linked to those normalized_jobs ---
+   extr_id= 1825 norm_id= 1708 ts=2026-04-15T07:07:11.403985+00:00 skills=  8 tasks=  6 resps=  3 failed=False
+   extr_id= 2405 norm_id= 2288 ts=2026-04-15T09:03:23.634430+00:00 skills= 12 tasks=  8 resps=  1 failed=False
+   extr_id= 2504 norm_id= 2387 ts=2026-04-15T09:24:05.449039+00:00 skills=  8 tasks=  8 resps=  3 failed=False
+   extr_id= 3532 norm_id= 3366 ts=2026-04-26T07:57:49.901021+00:00 skills=  8 tasks=  8 resps=  4 failed=False
+
+--- job_postings for this pair (1 row expected, NOT touched) ---
+   posting_id=339fb2c7-2e14-4ef1-a399-d60b5e9746cd quality=0.588515 is_spam=False canonical_role_id=b8e68938-a0a1-5052-b37c-2ef8d604948d company_id=74CB45FC-B9D5-4DB2-ABA9-CA7121DE7684 run=1acf14d4-5d73-4bed-b5d1-e992014d5139
+

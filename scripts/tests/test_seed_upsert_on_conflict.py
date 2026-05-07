@@ -113,11 +113,21 @@ def test_agent_clause_no_overlap_falls_back_to_do_nothing() -> None:
 
 
 def test_agent_clause_pk_quoting_handles_compound_key() -> None:
-    """Multi-column primary key must be properly quoted in the conflict target."""
+    """Multi-column primary key must be properly quoted in the conflict target.
+
+    Uses fixture columns that overlap UPSERT_UPDATE_COLUMNS["job_postings"] so
+    the clause goes through the DO UPDATE branch (which is the path that needs
+    explicit pk quoting). Tables NOT in UPSERT_UPDATE_COLUMNS use the
+    target-less ``ON CONFLICT DO NOTHING`` form (JIE#182/#183), so a quoted
+    target only appears for the UPSERT-update path.
+    """
     clause = seed_agent_data._build_on_conflict_clause(
-        "job_postings", ["source", "external_id"], ["source", "external_id", "job_title"]
+        "job_postings",
+        ["source", "external_id"],
+        ["source", "external_id", "date_posted", "is_remote"],
     )
     assert 'CONFLICT ("source", "external_id")' in clause
+    assert "DO UPDATE SET" in clause
 
 
 def test_agent_clause_qualifies_target_columns_with_schema_and_table() -> None:
