@@ -24,6 +24,7 @@ from analytics.query_engine.intent import (
     IntentClassification,
     _matches_curriculum_generation_shape,
     classify_workforce_question,
+    intent_heuristic_classification,
 )
 
 # ---------------------------------------------------------------------------
@@ -148,6 +149,36 @@ def test_curriculum_classify_short_circuits_without_llm() -> None:
     assert result["intent"] == "curriculum"
     assert result["confidence"] == pytest.approx(0.92)
     assert result["needs_clarification"] is False
+
+
+def test_paird_curriculum_training_program_cover_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "0")
+    q = "What should an IT support training program cover given current Borderplex help-desk postings?"
+    assert intent_heuristic_classification(q) is None
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "1")
+    r = intent_heuristic_classification(q)
+    assert r is not None
+    assert r["intent"] == "curriculum"
+
+
+def test_paird_workflow_data_pipeline_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "1")
+    q = "For data engineering roles, what end-to-end data pipeline and orchestration patterns do employers emphasize?"
+    assert intent_heuristic_classification(q) is None
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "2")
+    r = intent_heuristic_classification(q)
+    assert r is not None
+    assert r["intent"] == "workflow"
+
+
+def test_paird_borderplex_employers_share_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "2")
+    q = "Which Borderplex employers have the highest share of postings mentioning AI tools in the agentic_era period?"
+    assert intent_heuristic_classification(q) is None
+    monkeypatch.setenv("QA_EVAL_INTENT_HEURISTIC_LEVEL", "3")
+    r = intent_heuristic_classification(q)
+    assert r is not None
+    assert r["intent"] == "employer"
 
 
 def test_sanity_routing_non_curriculum_still_uses_llm() -> None:

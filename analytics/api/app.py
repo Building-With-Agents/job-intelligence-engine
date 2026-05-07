@@ -69,6 +69,10 @@ def create_app() -> FastAPI:
         finally:
             scv.clear_contextvars()
 
+    @app.get("/healthz")
+    async def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
     app.include_router(analytics_router)
     return app
 
