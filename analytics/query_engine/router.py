@@ -593,6 +593,47 @@ class QueryRouter:
         return or_(*clauses) if len(clauses) > 1 else clauses[0]
 
     @staticmethod
+    def _ilike_company_location_or(co: Any, geo_terms: list[str], max_terms: int = 5) -> Any | None:
+        """Match geo hints against company HQ columns — not ``company_name`` (JIE #346)."""
+        terms = [str(t).strip() for t in geo_terms[:max_terms] if t and str(t).strip()]
+        if not terms:
+            return None
+        per_term: list[Any] = []
+        for term in terms:
+            pat = f"%{term}%"
+            per_term.append(
+                or_(
+                    co.city.ilike(pat),
+                    co.state.ilike(pat),
+                    co.normalized_location.ilike(pat),
+                )
+            )
+        return or_(*per_term) if len(per_term) > 1 else per_term[0]
+
+    @staticmethod
+    def _employer_company_name_hints(role_names: list[str], *, max_terms: int = 5) -> list[str]:
+        """Role tokens safe for ``company_name`` ILIKE — drop kebab-cased occupational slugs (JIE #346)."""
+        hints: list[str] = []
+        for raw in role_names:
+            if len(hints) >= max_terms:
+                break
+            s = str(raw).strip()
+            if not s or len(s) > 80:
+                continue
+            parts = [p for p in s.split("-") if p]
+            if len(parts) >= 3 and all(p.isalnum() for p in parts):
+                continue
+            if (
+                len(parts) == 2
+                and s == s.lower()
+                and all(p.isalnum() for p in parts)
+                and min(len(p) for p in parts) >= 4
+            ):
+                continue
+            hints.append(s)
+        return hints
+
+    @staticmethod
     def _resolve_role_names_to_canonical_ids(
         role_names: list[str],
         session: Session,
@@ -1100,15 +1141,19 @@ class QueryRouter:
             .order_by(ep.is_known_employer.desc(), co.company_name.asc())
         )
 
-        # role_names / geo_terms may carry company name hints (e.g. "Microsoft jobs")
-        hints = role_names + geo_terms
-        name_filter = self._ilike_or(co.company_name, hints)
+        company_hints = self._employer_company_name_hints(role_names)
+        name_filter = self._ilike_or(co.company_name, company_hints)
         if name_filter is not None:
             stmt = stmt.where(name_filter)
 
+        loc_filter = self._ilike_company_location_or(co, geo_terms)
+        if loc_filter is not None:
+            stmt = stmt.where(loc_filter)
+
         label = "employer profiles"
-        if hints:
-            label += f" — {', '.join(hints[:3])}"
+        label_bits = company_hints + geo_terms
+        if label_bits:
+            label += f" — {', '.join(label_bits[:3])}"
 
         return self._execute(
             session,

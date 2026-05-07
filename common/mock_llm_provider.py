@@ -4,6 +4,11 @@ Returns realistic extraction results from ground truth data
 (eval/extraction_ground_truth.json) without calling any real LLM.
 Generates proper token counts, costs, and latency for Langfuse traces.
 
+This module MUST NOT read ``eval/qa_golden_questions.json`` or any other
+evaluation answer key. Mock responses for synthesis intents (Q&A and
+curriculum) emit a generic structural template only — never content
+derived from a question's expected answer.
+
 Usage: set LLM_PROVIDER=mock in .env
 """
 
@@ -44,6 +49,16 @@ def _next_gt_record() -> dict:
     record = records[_GT_INDEX % len(records)]
     _GT_INDEX += 1
     return record
+
+
+def _extract_intent_user_question(prompt: str) -> str:
+    if "Current user question (this turn only):" in prompt:
+        tail = prompt.split("Current user question (this turn only):", 1)[1].strip()
+        return tail.split("\n", 1)[0].strip()
+    if "User question:" in prompt:
+        tail = prompt.split("User question:", 1)[1].strip()
+        return tail.split("\n", 1)[0].strip()
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +133,107 @@ def mock_complete(prompt: str, agent_name: str, **kwargs: Any) -> dict[str, Any]
 
     Returns a JSON string as content, simulating what the real LLM returns.
     """
+    an = (agent_name or "").strip().lower()
+
+    if an == "analytics-intent-classification":
+        from analytics.query_engine.intent import intent_heuristic_classification
+
+        q = _extract_intent_user_question(prompt)
+        h = intent_heuristic_classification(q) if q else None
+        if h:
+            payload = {
+                "intent": h["intent"],
+                "confidence": h["confidence"],
+                "extracted_entities": h["extracted_entities"],
+            }
+            content = json.dumps(payload)
+        else:
+            content = json.dumps(
+                {
+                    "intent": "other",
+                    "confidence": 0.12,
+                    "extracted_entities": {
+                        "geographic_terms": [],
+                        "role_names": [],
+                        "skill_names": [],
+                        "time_references": [],
+                    },
+                }
+            )
+        metrics = _simulate_metrics(prompt, content)
+        time.sleep(metrics["latency_ms"] / 1000.0)
+        return {
+            "content": content,
+            "input_tokens": metrics["input_tokens"],
+            "output_tokens": metrics["output_tokens"],
+            "cost_usd": metrics["cost_usd"],
+            "model_tier": "sonnet",
+            "success": True,
+            "extraction_failed": False,
+        }
+
+    if an == "analytics-qna-synthesis":
+        # Non-leaky stub: emits a generic structural placeholder. Must NOT
+        # incorporate any content from eval/qa_golden_questions.json.
+        content = (
+            "[MOCK SYNTHESIS — no live LLM] The pipeline returned cited evidence; "
+            "running with LLM_PROVIDER=mock so no synthesized answer is generated. "
+            "Set LLM_PROVIDER=azure_openai to evaluate real synthesis quality."
+        )
+        metrics = _simulate_metrics(prompt, content)
+        time.sleep(metrics["latency_ms"] / 1000.0)
+        return {
+            "content": content,
+            "input_tokens": metrics["input_tokens"],
+            "output_tokens": metrics["output_tokens"],
+            "cost_usd": metrics["cost_usd"],
+            "model_tier": "sonnet",
+            "success": True,
+            "extraction_failed": False,
+        }
+
+    if an == "analytics-qna-followup":
+        content = (
+            '["Which employers show the strongest hiring signal?", '
+            '"How did weekly posting volumes change most recently?"]'
+        )
+        metrics = _simulate_metrics(prompt, content)
+        time.sleep(metrics["latency_ms"] / 1000.0)
+        return {
+            "content": content,
+            "input_tokens": metrics["input_tokens"],
+            "output_tokens": metrics["output_tokens"],
+            "cost_usd": metrics["cost_usd"],
+            "model_tier": "sonnet",
+            "success": True,
+            "extraction_failed": False,
+        }
+
+    if an == "analytics-curriculum-synthesis":
+        # Non-leaky stub: a generic markdown skeleton. Must NOT incorporate
+        # anything derived from eval/qa_golden_questions.json (must_include).
+        c = (
+            "## Program scope\n"
+            "[MOCK CURRICULUM — no live LLM] Run with LLM_PROVIDER=azure_openai "
+            "to evaluate real curriculum-synthesis quality.\n\n"
+            "## Modules\n"
+            "### Module placeholder\n"
+            "Synthesis is mocked; module content reflects no scoring signal.\n\n"
+            "## Evidence\n"
+            "## Recommended follow-up\n"
+        )
+        metrics = _simulate_metrics(prompt, c)
+        time.sleep(metrics["latency_ms"] / 1000.0)
+        return {
+            "content": c,
+            "input_tokens": metrics["input_tokens"],
+            "output_tokens": metrics["output_tokens"],
+            "cost_usd": metrics["cost_usd"],
+            "model_tier": "sonnet",
+            "success": True,
+            "extraction_failed": False,
+        }
+
     gt = _next_gt_record()
 
     # Build response based on agent_name
