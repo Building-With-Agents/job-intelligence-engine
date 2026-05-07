@@ -410,16 +410,6 @@
     "updated_at": "2026-04-12T08:17:48.449005+00:00"
   },
   {
-    "id": "f89fe9eb-6fe6-4037-b53b-93f23bef5188",
-    "company_id": "83171880-1b58-4489-a5e6-400a42ca5741",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:22.553228+00:00",
-    "updated_at": "2026-04-26T09:29:08.198408+00:00"
-  },
-  {
     "id": "f2524c54-16af-46dc-985e-1fc9372fc402",
     "company_id": "c334c0c9-d8ab-4e9c-a374-c2c9510e6a8c",
     "company_size": "enterprise",
@@ -828,16 +818,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T22:23:35.275847+00:00",
     "updated_at": "2026-04-07T22:23:35.275847+00:00"
-  },
-  {
-    "id": "b8a9f0ef-8977-4f03-9f80-2f1a0cbe5d06",
-    "company_id": "b5b8bb4a-a643-4762-a1f5-d23a894da578",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "unknown",
-    "sector": "consulting",
-    "is_known_employer": true,
-    "created_at": "2026-04-15T07:15:56.911576+00:00",
-    "updated_at": "2026-04-26T08:02:28.744087+00:00"
   },
   {
     "id": "b510a160-e82a-48c3-8b11-8dba93ae68f7",
@@ -8810,16 +8790,6 @@
     "updated_at": "2026-04-26T10:10:20.970367+00:00"
   },
   {
-    "id": "0c93fa9a-7544-44ed-a43e-134395c746ba",
-    "company_id": "744fd677-1bc4-400f-8fc4-42599152cf65",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-15T09:39:03.036054+00:00",
-    "updated_at": "2026-04-26T10:19:22.290573+00:00"
-  },
-  {
     "id": "641f00b1-5c3d-4830-a688-82ddbef3d993",
     "company_id": "9c131482-4969-4a00-94e9-162347f13f79",
     "company_size": "unknown",
@@ -14710,16 +14680,6 @@
     "updated_at": "2026-04-28T22:15:11.950941+00:00"
   },
   {
-    "id": "35cf4bbd-c5d5-4633-adc5-11d0b0cc7592",
-    "company_id": "2be3cfdf-33fa-4f9a-9269-7ed677519932",
-    "company_size": "unknown",
-    "ai_maturity_signal": "traditional",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-27T08:18:16.114872+00:00",
-    "updated_at": "2026-04-28T22:15:11.950941+00:00"
-  },
-  {
     "id": "da7c0304-4d66-4927-bb5f-6d9244e41914",
     "company_id": "4a9e1b21-28f9-44bb-84d9-211c9383b93f",
     "company_size": "mid_market",
@@ -14738,26 +14698,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T17:22:22.553228+00:00",
     "updated_at": "2026-04-30T00:05:33.357101+00:00"
-  },
-  {
-    "id": "c1865f16-a38c-47ef-8f4a-24b247530b98",
-    "company_id": "3460389f-3b07-47fd-aedb-b5f1f8d6f25e",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "traditional",
-    "sector": "government",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T06:23:07.715682+00:00",
-    "updated_at": "2026-05-04T05:28:55.115988+00:00"
-  },
-  {
-    "id": "c834e1f4-c92d-4cb4-a9ee-97c81564a4e2",
-    "company_id": "aee2cbb1-4b90-48f5-b90e-2bfbf566ad29",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T17:22:21.765818+00:00",
-    "updated_at": "2026-05-04T05:28:55.115988+00:00"
   },
   {
     "id": "262627b8-cb94-4700-9465-902b3518833c",
@@ -16130,16 +16070,6 @@
     "updated_at": "2026-04-26T13:08:08.114073+00:00"
   },
   {
-    "id": "a5aa6aea-866b-4c5a-a7a2-3e5893cb5198",
-    "company_id": "74CB45FC-B9D5-4DB2-ABA9-CA7121DE7684",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "ai_adopting",
-    "sector": "healthcare",
-    "is_known_employer": true,
-    "created_at": "2026-04-15T07:07:11.917062+00:00",
-    "updated_at": "2026-05-04T05:28:55.115988+00:00"
-  },
-  {
     "id": "c4aae520-0e71-4d58-8d3f-688c076bb770",
     "company_id": "3edc0681-7c5b-4f4f-8b17-6a60693b822b",
     "company_size": "unknown",
@@ -16780,16 +16710,6 @@
     "updated_at": "2026-04-26T13:10:29.429044+00:00"
   },
   {
-    "id": "46706489-9044-4691-a035-14fef7d03a4d",
-    "company_id": "76a95c81-6570-4624-b1b4-133b4dd180d1",
-    "company_size": "mid_market",
-    "ai_maturity_signal": "ai_native",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-15T07:07:11.917062+00:00",
-    "updated_at": "2026-05-04T05:28:55.115988+00:00"
-  },
-  {
     "id": "bedc3ee8-7469-4064-ba8c-a09dc8b6a578",
     "company_id": "02fe66c9-d63b-4050-aa03-f5f565f908c2",
     "company_size": "unknown",
@@ -16968,16 +16888,6 @@
     "is_known_employer": true,
     "created_at": "2026-04-12T19:19:35.082317+00:00",
     "updated_at": "2026-04-26T10:39:25.203250+00:00"
-  },
-  {
-    "id": "897ecd01-a1d4-458c-9fa5-a2b69f4ffa0e",
-    "company_id": "37a7a843-4d3d-4164-961d-8ebc79ac86ae",
-    "company_size": "enterprise",
-    "ai_maturity_signal": "unknown",
-    "sector": "technology",
-    "is_known_employer": true,
-    "created_at": "2026-04-07T01:32:53.328881+00:00",
-    "updated_at": "2026-05-04T05:30:05.693490+00:00"
   },
   {
     "id": "c940d54e-66d5-4ae0-9d58-d144f5cd4693",
@@ -17310,6 +17220,16 @@
     "updated_at": "2026-04-26T13:10:17.796803+00:00"
   },
   {
+    "id": "897ecd01-a1d4-458c-9fa5-a2b69f4ffa0e",
+    "company_id": "37a7a843-4d3d-4164-961d-8ebc79ac86ae",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T01:32:53.328881+00:00",
+    "updated_at": "2026-05-07T22:27:01.043154+00:00"
+  },
+  {
     "id": "cbb0177f-dd78-4567-b956-6c9b001345f7",
     "company_id": "f9e14d82-458d-4504-9d03-9dbcd9c93c0e",
     "company_size": "unknown",
@@ -17398,5 +17318,95 @@
     "is_known_employer": true,
     "created_at": "2026-04-07T01:01:13.749728+00:00",
     "updated_at": "2026-05-04T05:28:55.115988+00:00"
+  },
+  {
+    "id": "b8a9f0ef-8977-4f03-9f80-2f1a0cbe5d06",
+    "company_id": "b5b8bb4a-a643-4762-a1f5-d23a894da578",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:15:56.911576+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "a5aa6aea-866b-4c5a-a7a2-3e5893cb5198",
+    "company_id": "74CB45FC-B9D5-4DB2-ABA9-CA7121DE7684",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "d33ccd38-6885-4e10-a180-4b636c9d9445",
+    "company_id": "3f9a4e55-8160-4a2e-9f66-37b2f2612bb6",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-05-07T22:26:21.045366+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "35cf4bbd-c5d5-4633-adc5-11d0b0cc7592",
+    "company_id": "2be3cfdf-33fa-4f9a-9269-7ed677519932",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-27T08:18:16.114872+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "46706489-9044-4691-a035-14fef7d03a4d",
+    "company_id": "76a95c81-6570-4624-b1b4-133b4dd180d1",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T07:07:11.917062+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "f89fe9eb-6fe6-4037-b53b-93f23bef5188",
+    "company_id": "83171880-1b58-4489-a5e6-400a42ca5741",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:22:22.553228+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "c834e1f4-c92d-4cb4-a9ee-97c81564a4e2",
+    "company_id": "aee2cbb1-4b90-48f5-b90e-2bfbf566ad29",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T17:22:21.765818+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "0c93fa9a-7544-44ed-a43e-134395c746ba",
+    "company_id": "744fd677-1bc4-400f-8fc4-42599152cf65",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-15T09:39:03.036054+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
+  },
+  {
+    "id": "c1865f16-a38c-47ef-8f4a-24b247530b98",
+    "company_id": "3460389f-3b07-47fd-aedb-b5f1f8d6f25e",
+    "company_size": "mid_market",
+    "ai_maturity_signal": "ai_adopting",
+    "sector": "technology",
+    "is_known_employer": true,
+    "created_at": "2026-04-07T06:23:07.715682+00:00",
+    "updated_at": "2026-05-07T22:26:21.045366+00:00"
   }
 ]

@@ -50173,5 +50173,30 @@
     "city": null,
     "state": null,
     "normalized_location": null
+  },
+  {
+    "company_id": "3f9a4e55-8160-4a2e-9f66-37b2f2612bb6",
+    "industry_sector_id": null,
+    "company_name": "Resource Innovations",
+    "company_logo_url": null,
+    "about_us": null,
+    "company_email": null,
+    "year_founded": null,
+    "company_website_url": null,
+    "company_video_url": null,
+    "company_phone": null,
+    "company_mission": null,
+    "company_vision": null,
+    "size": "1-10",
+    "estimated_annual_hires": null,
+    "is_approved": false,
+    "createdby": null,
+    "createdat": "2026-05-07T22:26:24.410541+00:00",
+    "updatedat": "2026-05-07T22:26:24.410541+00:00",
+    "contact_name": null,
+    "engagementtype": "Lead",
+    "city": null,
+    "state": null,
+    "normalized_location": null
   }
 ]

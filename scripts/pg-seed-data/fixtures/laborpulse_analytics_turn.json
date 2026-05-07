@@ -1,1 +1,65 @@
-[]
+[
+  {
+    "id": 1,
+    "conversation_id": "7c7e00be-bdf7-4d66-b5e7-80af4cbdefeb",
+    "turn_index": 0,
+    "question": "What are the most prominent skills showing up in IT job postings right now?",
+    "answer": "Based on job postings for the week starting 2026-04-20, the most prominent skills appearing in IT roles include cross-functional collaboration (13 postings), code review (10), communication (8), software development (7), data analysis (7), problem solving (6), and Python (6). Other frequently cited skills are data visualization, security clearance, REST APIs, software engineering, cloud computing, cybersecurity, artificial intelligence, and machine learning, each with 4–5 postings. This snapshot reflects current demand but does not indicate longer-term trends or changes over time. Please note that the results are limited to the 100 most recent skill rows available in the dataset (c1–c101).",
+    "intent_label": "trend",
+    "created_at": "2026-05-05T08:00:00.740765+00:00"
+  },
+  {
+    "id": 2,
+    "conversation_id": "a2406983-5362-4915-b4d0-b245a0268019",
+    "turn_index": 0,
+    "question": "What are the most prominent skills showing up in IT job postings right now?",
+    "answer": "Based on job postings for the week starting 2026-04-20, the most prominent skills in IT roles include cross-functional collaboration (13 postings), code review (10), communication (8), software development (7), and data analysis (7). Other frequently mentioned skills are problem solving, Python, data visualization, security clearance, REST APIs, software engineering, cloud computing, cybersecurity, artificial intelligence, and machine learning, each appearing in 4 to 6 postings. This snapshot reflects current demand but does not indicate longer-term trends or changes over time. These findings are based on the most recent available data and are limited to the top 100 skills identified in postings for that week (c1–c101).",
+    "intent_label": "trend",
+    "created_at": "2026-05-05T08:02:52.228462+00:00"
+  },
+  {
+    "id": 3,
+    "conversation_id": "57d7d321-80f0-4daf-80c4-099b2a096b5d",
+    "turn_index": 0,
+    "question": "What should an AI agent developer training program cover given current postings — which LLM frameworks, orchestration patterns, and integration skills are in demand?",
+    "answer": "## Program scope\n\n- **Role:** Autonomous AI Agent Engineer  \n- **Estimated duration:** 12-16 weeks (based on breadth of skills and complexity)  \n- **Regional scope:** Borderplex region (El Paso TX + Las Cruces NM)  \n- **Temporal period:** agentic_era; demand_week=2026-04-20; velocity_week=2026-04-20  \n\n---\n\n## Modules\n\n### 1. Software Development\n- **Demand signal:** 100% of postings (3/3), Source: Top demanded skills table\n- **Description:** This module covers foundational and advanced software development practices required for building autonomous AI agents. Participants will learn to design, implement, and maintain robust software systems, focusing on code quality, scalability, and maintainability.\n\n### 2. Large Language Models\n- **Demand signal:** 66.67% of postings (2/3), Source: Top demanded skills table\n- **Description:** This module introduces large language models, their architectures, and their application in autonomous agent engineering. Learners will explore integration strategies, prompt engineering, and performance considerations specific to LLMs.\n\n### 3. Generative AI\n- **Demand signal:** 66.67% of postings (2/3), Source: Top demanded skills table\n- **Description:** Participants will delve into generative AI techniques, including model selection, training, and deployment. The module emphasizes generative approaches for agentic tasks and creative problem-solving.\n\n### 4. System Performance Evaluation\n- **Demand signal:** 66.67% of postings (2/3), Source: Top demanded skills table\n- **Description:** This module focuses on evaluating system performance, including benchmarking, profiling, and optimization. Learners will gain skills in measuring agent efficiency and reliability.\n\n### 5. Rubric Development\n- **Demand signal:** 66.67% of postings (2/3), Source: Top demanded skills table\n- **Description:** Participants will learn to develop rubrics for assessing AI agent outputs and behaviors. The module covers criteria creation, scoring methods, and feedback mechanisms to ensure agent quality.\n\n### 6. Code Review\n- **Demand signal:** 66.67% of postings (2/3), Source: Top demanded skills table\n- **Description:** This module teaches best practices in code review, including collaborative evaluation, identifying bugs, and ensuring adherence to standards. Emphasis is placed on peer review processes for AI agent codebases.\n\n### 7. Backend Engineering\n- **Demand signal:** 33.33% of postings (1/3), Source: Top demanded skills table\n- **Description:** Learners will explore backend engineering principles relevant to autonomous agents, including server-side logic, database integration, and API design.\n\n### 8. Complex Systems Integration\n- **Demand signal:** 33.33% of postings (1/3), Source: Top demanded skills table\n- **Description:** This module covers integration of multiple systems and components, focusing on interoperability, modular software design, and multi-turn system interactions for agentic workflows.\n\n---\n\n## Sequencing rationale\n\nThe program begins with **Software Development** as it is foundational and universally required (100% demand). Next, **Large Language Models** and **Generative AI** are introduced, reflecting their high demand and centrality to autonomous agent engineering. **System Performance Evaluation** and **Rubric Development** follow, equipping learners with skills to assess and improve agent outputs. **Code Review** is placed mid-program to reinforce quality assurance practices. **Backend Engineering** and **Complex Systems Integration** are sequenced last, as they build on prior modules and address specialized infrastructure and integration needs.\n\n---\n\n## Evidence\n\n- **Tables queried:** Top demanded skills, Top employers hiring for this role\n- **Temporal period:** agentic_era; demand_week=2026-04-20; velocity_week=2026-04-20\n- **Regional filter:** Borderplex region (El Paso TX + Las Cruces NM)\n- **Sample size:** 3 job postings (skills table), 5 employers (employer table)\n\n---\n\n## Recommended follow-up\n\nReview recent job postings from Virtual Vocations Inc, Outlier, and Adobe in the Borderplex region to identify specific project requirements and preferred candidate backgrounds for Autonomous AI Agent Engineer roles. This will help tailor the curriculum to employer needs and facilitate direct placement opportunities.",
+    "intent_label": "curriculum",
+    "created_at": "2026-05-05T08:04:06.848506+00:00"
+  },
+  {
+    "id": 4,
+    "conversation_id": "57d7d321-80f0-4daf-80c4-099b2a096b5d",
+    "turn_index": 1,
+    "question": "Review recent job postings from Virtual Vocations Inc, Outlier, and Adobe in the Borderplex region to identify specific project requirements and preferred candidate backgrounds for Autonomous AI Agent Engineer roles. This will help tailor the curriculum to employer needs and facilitate direct placement opportunities.",
+    "answer": "No data in scope for the selected filters.",
+    "intent_label": "employer",
+    "created_at": "2026-05-05T08:04:51.962059+00:00"
+  },
+  {
+    "id": 5,
+    "conversation_id": "71f077c9-99b4-4aaa-ab45-fe7fe374f923",
+    "turn_index": 0,
+    "question": "What should a cybersecurity training program cover given current job postings?",
+    "answer": "## Program scope\n\n- **Role:** AI Security Engineer  \n- **Estimated duration:** Not specified in provided data  \n- **Regional scope:** Borderplex region (El Paso, TX + Las Cruces, NM)  \n- **Temporal period:** Agentic era; demand week of 2026-04-20; velocity week of 2026-04-20  \n\n---\n\n## Modules\n\n### Module 1: Cybersecurity\n- **Demand signal:** 100% of postings (1 out of 1), cited from Top demanded skills table\n- **Description:** This module covers the foundational and advanced concepts of cybersecurity as they pertain to AI systems. Participants will learn about threat detection, mitigation strategies, and best practices for securing AI-driven environments. The focus will be on practical applications relevant to the Borderplex region’s employers, preparing learners to address real-world security challenges in AI engineering roles.\n\n### Module 2: Analytical Skills\n- **Demand signal:** 100% of postings (1 out of 1), cited from Top demanded skills table\n- **Description:** This module develops the analytical skills necessary for AI Security Engineers. Learners will engage in exercises that enhance their ability to interpret complex data, assess risks, and make informed decisions regarding AI system vulnerabilities. Emphasis will be placed on critical thinking and problem-solving within the context of cybersecurity.\n\n---\n\n## Sequencing rationale\n\nThe modules are ordered to first establish a strong foundation in cybersecurity, which is the primary technical requirement for the AI Security Engineer role in the Borderplex region. Analytical skills are then developed to enable participants to effectively apply cybersecurity knowledge, interpret data, and solve security-related problems. This sequence ensures that learners build technical expertise before advancing to higher-order analytical competencies.\n\n---\n\n## Evidence\n\n- **Tables queried:** Top demanded skills, Top employers hiring for this role  \n- **Temporal period:** Agentic era; demand week of 2026-04-20; velocity week of 2026-04-20  \n- **Regional filter:** Borderplex region (El Paso, TX + Las Cruces, NM)  \n- **Sample size:** 1 job posting; 1 employer (DataAnnotation, 9 job postings for this role)\n\n---\n\n## Recommended follow-up\n\nEngage directly with DataAnnotation, the top employer hiring for AI Security Engineers in the Borderplex region, to validate curriculum alignment and explore partnership opportunities for work-based learning or job placement.",
+    "intent_label": "curriculum",
+    "created_at": "2026-05-05T08:05:55.368710+00:00"
+  },
+  {
+    "id": 6,
+    "conversation_id": "53afa9e9-a9ea-4738-9254-c0c355944a8a",
+    "turn_index": 0,
+    "question": "What CI/CD, release automation, and infrastructure-as-code skills appear in active IT job postings, and what does the typical build / test / deploy sequence look like?",
+    "answer": "Based on available job posting data, CI/CD, release automation, and infrastructure-as-code skills are present in several IT roles, though details are limited. For example, the Lead AWS Cloud Solutions Architect role lists CI/CD and Infrastructure as Code as common skills, with tools such as AWS and Terraform frequently mentioned (c49). Site Reliability Engineer roles also reference Infrastructure as Code, with tools like Terraform, Kubernetes, Azure, and AWS (c4, c8).\n\nHowever, the data does not provide explicit details on the typical build, test, and deploy sequence or specific release automation practices. While the presence of these skills and tools suggests automated workflows are valued, the exact sequence or workflow steps are not described in the current dataset.\n\nIn summary, CI/CD and infrastructure-as-code skills—along with tools like AWS, Terraform, and Kubernetes—are in demand, but specifics on workflow sequences are not available in the cited postings. Caution is advised in drawing further conclusions without additional data. \n\nReferences: c4, c8, c37, c49",
+    "intent_label": "workflow",
+    "created_at": "2026-05-05T08:06:52.333887+00:00"
+  },
+  {
+    "id": 7,
+    "conversation_id": "81b3d62e-5e7e-4faa-887e-917e80e8cdba",
+    "turn_index": 0,
+    "question": "What MLOps and model-lifecycle activities (training, deployment, monitoring) appear in IT job postings, and what does the typical training → deploy → monitor sequence look like?",
+    "answer": "Based on available job posting data, explicit references to MLOps or detailed model-lifecycle activities (such as model training, deployment, and monitoring) are limited. Some roles, such as AI Solutions Architect and AI Infrastructure Engineering Architect, mention skills in Artificial Intelligence and Machine Learning, and tools like Python, Kubernetes, Azure, and AWS, which are commonly used in model development and deployment contexts. However, the postings do not provide a clear or typical sequence describing the training → deployment → monitoring workflow.\n\nIn summary, while related technical skills and tools are present in some IT job postings, there is insufficient detail to outline a standard MLOps or model-lifecycle process based on the current data. Stakeholders should be cautious in drawing conclusions about the prevalence or specifics of these workflows in job requirements.  \n[citations: c11, c13]",
+    "intent_label": "workflow",
+    "created_at": "2026-05-05T08:08:18.572056+00:00"
+  }
+]

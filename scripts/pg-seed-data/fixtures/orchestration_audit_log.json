@@ -1,1 +1,146 @@
-[]
+[
+  {
+    "id": 1,
+    "created_at": "2026-05-05T08:00:00.727214+00:00",
+    "correlation_id": "12f51a8b-f849-4367-8e41-e0ae37c1d66c",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "297fe133ff6aee13fb334d77803e871d56ef2a8bb6038a07c9d0b6f3228a9272",
+    "sql_hash": "177a0ec2a4ec35704dff2d39079c7447b72e5115ced6360d9c944e0ca28e1824",
+    "confidence": 0.77,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "trend",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.85
+    }
+  },
+  {
+    "id": 2,
+    "created_at": "2026-05-05T08:02:52.222362+00:00",
+    "correlation_id": "346a1726-e3b7-47da-81e1-16394df0d88e",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "297fe133ff6aee13fb334d77803e871d56ef2a8bb6038a07c9d0b6f3228a9272",
+    "sql_hash": "177a0ec2a4ec35704dff2d39079c7447b72e5115ced6360d9c944e0ca28e1824",
+    "confidence": 0.77,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "trend",
+      "refused": false,
+      "citations": 101,
+      "row_count": 100,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.85
+    }
+  },
+  {
+    "id": 3,
+    "created_at": "2026-05-05T08:04:06.840006+00:00",
+    "correlation_id": "7525e0ba-d458-44b6-975d-3c9403066952",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "aa69f931641f249fce01eaeed176f55a1962c7d1306981e658359d2fc2439b90",
+    "sql_hash": "e0211783636a7e310bb6ae1941e0b30ed7c1201833a8c7540b414d6c966b76eb",
+    "confidence": 0.9,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "curriculum",
+      "refused": false,
+      "citations": 4,
+      "row_count": 15,
+      "tenant_id": "borderplex",
+      "curriculum_modules": 10,
+      "needs_clarification": false,
+      "curriculum_is_sufficient": true,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 4,
+    "created_at": "2026-05-05T08:04:51.955545+00:00",
+    "correlation_id": "9314ab67-ed50-4ac1-b300-c613afb98849",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "888f3e556c510adc9a5d36e0588fcb06c5bd5204daeba6706013e2d1efa8b555",
+    "sql_hash": "b5d67911713c565c11ed8394a08fb42210bace6ce62d16e02969dea755dba912",
+    "confidence": 0.0,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "employer",
+      "refused": true,
+      "citations": 0,
+      "row_count": 0,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.85
+    }
+  },
+  {
+    "id": 5,
+    "created_at": "2026-05-05T08:05:55.363673+00:00",
+    "correlation_id": "9ccbf14e-4607-43db-9599-152f931fcad8",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "591ff37f8a40420cb09b18842842db2dd49ec6f2ca1f4fbd3c32c0ba7cc891e9",
+    "sql_hash": "e0211783636a7e310bb6ae1941e0b30ed7c1201833a8c7540b414d6c966b76eb",
+    "confidence": 0.5,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "curriculum",
+      "refused": false,
+      "citations": 4,
+      "row_count": 2,
+      "tenant_id": "borderplex",
+      "curriculum_modules": 4,
+      "needs_clarification": false,
+      "curriculum_is_sufficient": true,
+      "classification_confidence": 0.95
+    }
+  },
+  {
+    "id": 6,
+    "created_at": "2026-05-05T08:06:52.328655+00:00",
+    "correlation_id": "f98295a7-3108-4f03-88ba-3d7a30d51559",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "8585f10924002cee170656b4010ed96af71070b6a1c233c458a4d672fed3ef0c",
+    "sql_hash": "26316c527610a90d99bc9f4986ff4fc84e12108187f76e1bfce6e512bc79803e",
+    "confidence": 0.77,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "workflow",
+      "refused": false,
+      "citations": 49,
+      "row_count": 49,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.85
+    }
+  },
+  {
+    "id": 7,
+    "created_at": "2026-05-05T08:08:18.566550+00:00",
+    "correlation_id": "edb9db4a-e76e-478f-8810-13e6dd38158d",
+    "endpoint": "POST /analytics/query",
+    "question_hash": "8f27cdbb4aeec86394a02ba79e498d5248d2be664fd6b15621af9217327dd763",
+    "sql_hash": "26316c527610a90d99bc9f4986ff4fc84e12108187f76e1bfce6e512bc79803e",
+    "confidence": 0.83,
+    "success": true,
+    "error_code": null,
+    "payload": {
+      "intent": "workflow",
+      "refused": false,
+      "citations": 49,
+      "row_count": 49,
+      "tenant_id": "borderplex",
+      "needs_clarification": false,
+      "classification_confidence": 0.95
+    }
+  }
+]

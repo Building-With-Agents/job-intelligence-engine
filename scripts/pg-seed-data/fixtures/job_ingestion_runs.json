@@ -25093,5 +25093,50 @@
     "error_count": 0,
     "api_requests_used": 1,
     "error_message": null
+  },
+  {
+    "id": "846b8d9d-fcc7-4259-92da-2f0a55945d8f",
+    "run_id": "e446765e-5b6e-405d-b91c-ebbf0f86e2cd",
+    "region_id": "default",
+    "source": "crawl4ai",
+    "started_at": "2026-05-07T22:24:55.982387+00:00",
+    "completed_at": "2026-05-07T22:25:06.143566+00:00",
+    "status": "completed",
+    "total_fetched": 4,
+    "staged_count": 4,
+    "dedup_count": 0,
+    "error_count": 0,
+    "api_requests_used": 0,
+    "error_message": null
+  },
+  {
+    "id": "53782023-3383-45cf-b783-fcb37237e4c3",
+    "run_id": "a318013e-0a58-43b5-8bf3-c0886922c6d5",
+    "region_id": "default",
+    "source": "crawl4ai",
+    "started_at": "2026-05-07T22:25:06.203454+00:00",
+    "completed_at": "2026-05-07T22:25:14.182472+00:00",
+    "status": "completed",
+    "total_fetched": 4,
+    "staged_count": 0,
+    "dedup_count": 4,
+    "error_count": 0,
+    "api_requests_used": 0,
+    "error_message": null
+  },
+  {
+    "id": "b2ecfe21-7ce9-4f1e-b407-502a11a829ad",
+    "run_id": "1d61fdcc-ef3b-450f-89e0-aa1cc2087700",
+    "region_id": "borderplex-default",
+    "source": "jsearch",
+    "started_at": "2026-05-07T22:25:16.972694+00:00",
+    "completed_at": "2026-05-07T22:26:04.420744+00:00",
+    "status": "completed",
+    "total_fetched": 44,
+    "staged_count": 10,
+    "dedup_count": 0,
+    "error_count": 0,
+    "api_requests_used": 0,
+    "error_message": null
   }
 ]
