@@ -556,14 +556,16 @@ export new fixtures and share them via `export_fixtures.py`.
 > admin source-of-truth database. After a volume reset, re-seed from committed fixtures:
 > `python scripts/pg-seed-data/seed_pg_database.py`
 >
-> **Requires Git LFS.** Five seed fixtures are LFS-tracked. Run `git lfs pull`
-> before reseeding if you haven't already. See
-> [`scripts/pg-seed-data/README.md`](../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
-> for the one-time install.
+> **Heavy fixtures via GitHub Release (no LFS).** Run
+> `python scripts/pg-seed-data/sync_fixtures.py` first if you haven't already
+> or if `fixtures-manifest.json` changed since your last sync. Requires `gh`
+> authenticated. See
+> [`scripts/pg-seed-data/README.md`](../scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
 ```bash
 docker compose down -v
 docker compose --env-file .env.docker up postgres -d
+python scripts/pg-seed-data/sync_fixtures.py
 python scripts/pg-seed-data/seed_pg_database.py
 ```
 

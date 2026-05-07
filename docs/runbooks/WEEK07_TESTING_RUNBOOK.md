@@ -73,14 +73,16 @@ python scripts/db_check.py counts
 
 If all tables show 0, the database has not been seeded. Run the seed script (it handles both reference data and enriched pipeline data in one pass):
 
-> **Requires Git LFS** — five large fixtures are LFS-tracked. If your seed
-> completes but `raw_ingested_jobs` / `extracted_intelligence` /
-> `job_postings` / `normalized_jobs` / `llm_audit_log` stay at zero rows,
-> run `git lfs pull` to fetch the real files. See
-> [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
-> for the one-time install.
+> **Heavy fixtures via GitHub Release (no LFS).** If your seed completes
+> but `raw_ingested_jobs` / `extracted_intelligence` / `job_postings` /
+> `normalized_jobs` / `llm_audit_log` / `postal_geo_data` stay at zero
+> rows, the bundle didn't extract — run
+> `python scripts/pg-seed-data/sync_fixtures.py --force` and re-seed.
+> Requires `gh` authenticated. See
+> [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
 ```bash
+python scripts/pg-seed-data/sync_fixtures.py
 python scripts/pg-seed-data/seed_pg_database.py
 ```
 

@@ -63,11 +63,13 @@ LLM_PROVIDER=azure_openai
 
 If your local PostgreSQL is empty, seed it:
 
-> **Requires Git LFS** — see [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
-> for the one-time install. Without LFS the seeder loads empty arrays from
-> pointer files for the five large fixtures.
+> **Heavy fixtures via GitHub Release (no LFS).** Run
+> `python scripts/pg-seed-data/sync_fixtures.py` first to pull the bundle
+> pinned by `scripts/pg-seed-data/fixtures-manifest.json`. See
+> [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
 ```bash
+python scripts/pg-seed-data/sync_fixtures.py
 python scripts/pg-seed-data/seed_pg_database.py
 ```
 

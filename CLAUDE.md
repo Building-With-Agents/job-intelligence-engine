@@ -556,12 +556,16 @@ See `docs/planning/ARCHITECTURAL_DECISIONS.md` for full classification details a
 
 All commands run from the **repo root** with the venv activated.
 
-> **Prerequisite — Git LFS.** Five seed fixtures
-> (`scripts/pg-seed-data/fixtures/{extracted_intelligence,raw_ingested_jobs,job_postings,normalized_jobs,llm_audit_log}.json`)
-> are stored in Git LFS. Run `git lfs install` once on your machine before
-> cloning, or run `git lfs pull` after cloning if you already have a working
-> tree. Without LFS the seeder silently loads empty arrays from pointer files.
-> See `scripts/pg-seed-data/README.md` for details.
+> **Prerequisite — heavy fixtures via GitHub Release.** Six heavy fixtures
+> (`extracted_intelligence`, `raw_ingested_jobs`, `job_postings`,
+> `normalized_jobs`, `llm_audit_log`, `postal_geo_data`) are not in git —
+> they're published as a single zstd-compressed bundle on a
+> [GitHub Release](https://github.com/Building-With-Agents/job-intelligence-engine/releases)
+> pinned by `scripts/pg-seed-data/fixtures-manifest.json`. Run
+> `python scripts/pg-seed-data/sync_fixtures.py` once after cloning and
+> every time `fixtures-manifest.json` changes. Requires `gh` authenticated
+> (`gh auth status`). LFS is no longer used (issue #322). See
+> `scripts/pg-seed-data/README.md` for details.
 
 ```bash
 # One-time setup: create venv and install deps

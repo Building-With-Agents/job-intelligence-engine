@@ -129,8 +129,9 @@ def test_normalized_jobs_zip_resolution_above_floor(db_session) -> None:
     ).scalar()
     if total == 0:
         pytest.skip(
-            "no dbo.normalized_jobs rows with both city and state — Git LFS/fixtures may be missing "
-            "(see scripts/pg-seed-data/README.md) or seed skipped normalized_jobs; cannot assert zip ratio."
+            "no dbo.normalized_jobs rows with both city and state — heavy fixture bundle may not be "
+            "synced (run `python scripts/pg-seed-data/sync_fixtures.py` then re-seed; see "
+            "scripts/pg-seed-data/README.md) or seed skipped normalized_jobs; cannot assert zip ratio."
         )
     ratio = null_count / total
     assert ratio < _NULL_ZIP_RATIO_THRESHOLD, (
@@ -187,8 +188,8 @@ def test_el_paso_postings_reachable_via_postal_geo_join(db_session) -> None:
         pytest.skip(
             f"only {el_paso_count} El Paso postings reachable via postal_geo_data "
             f"(assertion requires ≥{_EL_PASO_MIN_REACHABLE}). "
-            "Seed `job_postings` + `postal_geo_data` (`python scripts/pg-seed-data/seed_pg_database.py`, "
-            "Git LFS), then zip backfill / refresh as needed."
+            "Sync the heavy fixture bundle (`python scripts/pg-seed-data/sync_fixtures.py`) and seed "
+            "(`python scripts/pg-seed-data/seed_pg_database.py`), then zip backfill / refresh as needed."
         )
 
 
@@ -230,8 +231,9 @@ def test_spam_tier_populated_above_floor(db_session) -> None:
     total = db_session.execute(text("SELECT COUNT(*) FROM dbo.job_postings")).scalar()
     if not total:
         pytest.skip(
-            "dbo.job_postings is empty — run `python scripts/pg-seed-data/seed_pg_database.py` "
-            "(Git LFS fixtures for job_postings) after migrations."
+            "dbo.job_postings is empty — sync the heavy fixture bundle "
+            "(`python scripts/pg-seed-data/sync_fixtures.py`) and re-seed "
+            "(`python scripts/pg-seed-data/seed_pg_database.py`) after migrations."
         )
     populated = db_session.execute(text("SELECT COUNT(*) FROM dbo.job_postings WHERE spam_tier IS NOT NULL")).scalar()
     ratio = populated / total

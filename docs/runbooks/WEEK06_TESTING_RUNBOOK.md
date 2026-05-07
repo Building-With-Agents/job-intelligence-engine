@@ -69,7 +69,7 @@ python scripts/db_check.py counts
 | job_postings | 500+ (enriched, promoted records) |
 | llm_audit_log | 1,000+ (cumulative LLM call records) |
 
-If all tables show 0, the database has not been seeded. Run `python scripts/pg-seed-data/seed_pg_database.py` or ask your instructor to seed it. (**Requires Git LFS** — five fixtures are LFS-tracked. If your seed completes but counts stay at zero, run `git lfs pull` to fetch the real files. See [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-git-lfs).)
+If all tables show 0, the database has not been seeded. Heavy fixtures live on a GitHub Release (no LFS) — run `python scripts/pg-seed-data/sync_fixtures.py` first to pull the bundle, then `python scripts/pg-seed-data/seed_pg_database.py`. If your seed completes but counts stay at zero, the heavy fixtures weren't synced — re-run `sync_fixtures.py --force`. See [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
 ### Step 2 — Verify Ingestion outputs
 

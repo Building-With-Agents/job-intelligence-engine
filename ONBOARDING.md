@@ -103,15 +103,23 @@ Creates all agent-managed tables (`raw_ingested_jobs`, `normalized_jobs`, `extra
 
 ### Seed Data
 
-> **Requires Git LFS** — five seed fixtures are stored in Git LFS because they
-> exceed GitHub's 50 MB recommendation. Install once per machine (Windows: bundled
-> with Git for Windows, or `winget install GitHub.GitLFS`; macOS: `brew install
-> git-lfs`; Linux: `apt install git-lfs`), run `git lfs install`, and `git lfs
-> pull` if your clone is missing the real files. Without LFS the seeder loads
-> empty arrays from pointer files. Details:
-> [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-git-lfs).
+> **Sync heavy fixtures first (no LFS).** Six heavy fixtures
+> (`extracted_intelligence`, `raw_ingested_jobs`, `job_postings`,
+> `normalized_jobs`, `llm_audit_log`, `postal_geo_data`) are published as a
+> zstd-compressed bundle on a [GitHub Release](https://github.com/Building-With-Agents/job-intelligence-engine/releases),
+> pinned by `scripts/pg-seed-data/fixtures-manifest.json`. Requires `gh`
+> authenticated (`gh auth status`; `gh auth login` if not). Run once after
+> cloning and again whenever you pull a `fixtures-manifest.json` change:
+>
+> ```bash
+> python scripts/pg-seed-data/sync_fixtures.py
+> ```
+>
+> Idempotent — re-running is a no-op if local fixtures match the manifest
+> SHA256. Use `--force` to re-extract. LFS is no longer used (issue #322).
+> Details: [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
-The seed script handles reference data and enriched pipeline data in one pass:
+Then seed reference + agent pipeline data in one pass:
 
 ```bash
 python scripts/pg-seed-data/seed_pg_database.py

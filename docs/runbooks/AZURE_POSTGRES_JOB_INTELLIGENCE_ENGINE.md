@@ -206,13 +206,16 @@ Fixtures are JSON files under `scripts/pg-seed-data/fixtures/`. To **generate or
 
 ### Loading fixtures into the Azure database
 
-> **Requires Git LFS.** Five fixtures (`extracted_intelligence.json`,
-> `raw_ingested_jobs.json`, `job_postings.json`, `normalized_jobs.json`,
-> `llm_audit_log.json`) are stored via Git LFS. Run `git lfs install` once
-> per machine and `git lfs pull` to fetch the real files; see
-> [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-git-lfs)
-> for the install matrix. Loading without LFS produces empty rows for those
-> tables (the JSONs would be 133-byte pointer files).
+> **Heavy fixtures via GitHub Release (no LFS).** Six fixtures
+> (`extracted_intelligence.json`, `raw_ingested_jobs.json`,
+> `job_postings.json`, `normalized_jobs.json`, `llm_audit_log.json`,
+> `postal_geo_data.json`) are published as a zstd-compressed bundle on a
+> [GitHub Release](https://github.com/Building-With-Agents/job-intelligence-engine/releases)
+> pinned by `scripts/pg-seed-data/fixtures-manifest.json`. Run
+> `python scripts/pg-seed-data/sync_fixtures.py` before seeding (requires
+> `gh` authenticated). See
+> [`scripts/pg-seed-data/README.md`](../../scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
+> Skipping the sync produces empty rows for those tables.
 
 To load the **shared fixture set** into the Azure DB (or any target DB):
 

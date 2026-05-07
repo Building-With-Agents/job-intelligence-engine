@@ -46,13 +46,17 @@ Starts PostgreSQL (app database), Redis, and Langfuse (6 containers for observab
 
 ## Seed Database
 
-> **Requires Git LFS.** Five seed fixtures (>10 MB each) ride on Git LFS. If
-> you haven't already, install it once per machine — Windows: bundled with
-> Git for Windows, or `winget install GitHub.GitLFS`; macOS: `brew install
-> git-lfs`; Linux: `apt install git-lfs` — then run `git lfs install`. If you
-> already cloned, run `git lfs pull` to fetch the real files. Without LFS the
-> seeder silently loads empty arrays from 133-byte pointer files. Details:
-> [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-git-lfs).
+> **Heavy fixtures via GitHub Release (no LFS).** Six heavy fixtures
+> (`extracted_intelligence`, `raw_ingested_jobs`, `job_postings`,
+> `normalized_jobs`, `llm_audit_log`, `postal_geo_data`) are published as a
+> zstd-compressed bundle on a
+> [GitHub Release](https://github.com/Building-With-Agents/job-intelligence-engine/releases)
+> pinned by `scripts/pg-seed-data/fixtures-manifest.json`. Run
+> `python scripts/pg-seed-data/sync_fixtures.py` once after cloning and any
+> time `fixtures-manifest.json` changes (idempotent — `--force` to
+> re-extract). Requires `gh` authenticated (`gh auth status`). Without
+> sync, the seeder loads empty arrays for those tables. Details:
+> [`scripts/pg-seed-data/README.md`](scripts/pg-seed-data/README.md#prerequisites-heavy-fixture-sync-issue-322).
 
 ```bash
 # Run migrations (creates agent-managed tables)

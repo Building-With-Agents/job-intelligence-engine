@@ -1,4 +1,5 @@
-# Heavy seed fixtures used to be tracked in Git LFS. As of issue #322 they are
-# distributed via GitHub Release assets instead — the org-wide LFS bandwidth
-# budget was exhausted. See scripts/pg-seed-data/README.md for the new flow.
+# Heavy seed fixtures are distributed via GitHub Release assets pinned by
+# scripts/pg-seed-data/fixtures-manifest.json. LFS is not used (retired in
+# issue #322 after the org-wide LFS bandwidth budget was exhausted). See
+# scripts/pg-seed-data/README.md for the sync flow.
 # This file intentionally left near-empty until a future need arises.

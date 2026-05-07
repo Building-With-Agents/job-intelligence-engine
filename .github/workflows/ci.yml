@@ -33,10 +33,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        # LFS is intentionally NOT fetched in CI to conserve the org-wide LFS
-        # bandwidth budget. Tests that need real fixture content are marked
-        # `requires_lfs` and skipped here; devs run those locally after
-        # `git lfs install` + `git lfs pull`.
+        # Heavy fixtures live on a GitHub Release bundle (issue #322), not in
+        # git or LFS. CI does not pull the bundle — tests that need real
+        # fixture content are marked `requires_fixture_bundle` and skipped
+        # here; devs run those locally after
+        # `python scripts/pg-seed-data/sync_fixtures.py`.
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -51,4 +52,4 @@ jobs:
         env:
           PYTHONPATH: .
           LLM_PROVIDER: mock
-        run: python -m pytest tests/ enrichment/tests/ analytics/ scripts/tests/ -m "not live_llm and not requires_lfs" -v --tb=short
+        run: python -m pytest tests/ enrichment/tests/ analytics/ scripts/tests/ -m "not live_llm and not requires_fixture_bundle" -v --tb=short
