@@ -636,7 +636,14 @@ class Company(Base):
     """
 
     __tablename__ = "companies"
-    __table_args__ = {"schema": "dbo"}
+    # The DB has a UNIQUE INDEX on company_name (idx_16826_companies_company_name_key)
+    # inherited from the Prisma-era schema. Declaring it here keeps SQLAlchemy
+    # metadata in sync with the DB so introspection / create_all on a fresh DB
+    # produces the same shape as production. See JIE#370.
+    __table_args__ = (
+        UniqueConstraint("company_name", name="uq_companies_company_name"),
+        {"schema": "dbo"},
+    )
 
     company_id: Mapped[str] = mapped_column(Text, primary_key=True)
     industry_sector_id: Mapped[str | None] = mapped_column(Text, nullable=True)

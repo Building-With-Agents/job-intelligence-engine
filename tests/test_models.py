@@ -12,17 +12,41 @@ import uuid
 from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import create_engine, delete, select, text
+from sqlalchemy import UniqueConstraint, create_engine, delete, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from common.data_store.models import (
     Base,
+    Company,
     JobIngestionRun,
     NormalizedJob,
     RawIngestedJob,
 )
+
+
+def test_company_model_declares_unique_company_name() -> None:
+    """JIE#370 — SQLAlchemy metadata must reflect the DB UNIQUE INDEX on
+    ``dbo.companies.company_name``.
+
+    Pure metadata check: runs without ``PYTHON_DATABASE_URL`` so the model
+    declaration itself is exercised in CI even when no Postgres is wired up.
+    """
+    unique_constraints = [
+        c
+        for c in Company.__table__.constraints
+        if isinstance(c, UniqueConstraint)
+    ]
+    on_company_name = [
+        c
+        for c in unique_constraints
+        if [col.name for col in c.columns] == ["company_name"]
+    ]
+    assert on_company_name, (
+        "Company.company_name must be declared UNIQUE in SQLAlchemy metadata "
+        "to match the existing dbo.companies UNIQUE INDEX (JIE#370)."
+    )
 
 
 @pytest.fixture(scope="session")
