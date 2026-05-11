@@ -48,8 +48,8 @@ python scripts/db_check.py query "SELECT MIN(week_start) AS earliest_week, MAX(w
 |-------|--------|
 | `total_roles` / `with_embedding` | **22** / **22** (100% embedded) |
 | `job_postings` total / `with canonical_role_id` | **2679** / **856** |
-| `role_snapshot_weekly` earliest / latest / distinct `week_start` | **NULL** / **NULL** / **0** (table empty) |
-| `skill_demand_weekly` earliest / latest / distinct `week_start` | **2026-03-02** / **2026-03-23** / **4** |
+| `role_snapshot_weekly` earliest / latest / distinct `week_start` | **2026-03-02** / **2026-04-13** / **7** (59 rows; backfilled 2026-04-28) |
+| `skill_demand_weekly` earliest / latest / distinct `week_start` | **2026-03-02** / **2026-04-13** / **7** |
 
 ---
 
@@ -61,7 +61,7 @@ CLUSTER_MIN_CLUSTER_SIZE=5 CLUSTER_MIN_SAMPLES=2 CLUSTER_MIN_TOTAL_POSTINGS=100 
 ```
 
 - HDBSCAN produced **22** clusters on the run referenced for this doc; orphan cleanup left **22** `canonical_roles` rows, all with **`label_embedding`** populated (persist log: **`label_embeddings_synced=22`**).
-- **`role_snapshot_weekly_refreshed row_count=0`** for the computed `week_start` (salary percentile path reported zero groups); **`role_snapshot_weekly` remains a data/pipeline gap** on this database.
+- **Initial finding:** `role_snapshot_weekly_refreshed row_count=0` for the computed `week_start` (salary percentile path reported zero groups). **Root cause:** the writer (`refresh_role_snapshot_weekly`) was correct, but `analytics/agent.py` and `scripts/run_clustering.py` only invoke it for the current ISO Monday — when `date_posted` lags the calendar week, that single-week call inserts 0 rows even though many roled postings exist in earlier weeks. **Fix (2026-04-28):** `scripts/backfill_role_snapshot_weekly.py` discovers every `week_start` with `canonical_role_id IS NOT NULL` and reuses the existing writer once per week. **Post-backfill state:** **59 rows / 7 distinct weeks (2026-03-02 → 2026-04-13)**; `skill_demand_weekly` likewise spans 7 weeks.
 
 ---
 
@@ -83,4 +83,3 @@ CLUSTER_MIN_CLUSTER_SIZE=5 CLUSTER_MIN_SAMPLES=2 CLUSTER_MIN_TOTAL_POSTINGS=100 
 ## Next steps (out of scope for this doc)
 
 - Run full **v2.x golden eval** on Langfuse and record composite / `intent_accuracy` vs baseline; link run URL in `eval/qa_prompt_iteration_log.md`.
-- Investigate **`role_snapshot_weekly` population** (empty after refresh) when salary or posting filters block inserts.
