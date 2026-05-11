@@ -267,6 +267,17 @@ EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / age
      that DIDN'T EXIST PREVIOUSLY and is now appearing (emergence), or something that
      EXISTED PREVIOUSLY and was transformed (disruption)?" New tools/credentials/titles
      framed as "first-seen" or "did not exist in pre_chatgpt" → emergence.
+  PRECEDENCE: when a question contains EXPLICIT first-seen language — "did not exist
+     before", "did not exist in [prior era]", "first appeared", "first-seen", "newly
+     emerging", "tools that did not exist in the pre_chatgpt period" — emergence takes
+     precedence over BOTH the disruption tie-breaker above AND the SHARE / GROWTH /
+     VELOCITY of AI-ADOPTION rule below, even when era buckets are present and the
+     subject is AI tools (LangChain, LangGraph, vector databases, LLM orchestration
+     frameworks, etc.). The first-seen cue ("tools that did not exist in [prior era]")
+     beats the share-of-AI-adoption cue ("share of postings that mention AI tools")
+     when both appear in the same question, because the question is asking about NEW
+     tools relative to a prior-era baseline — i.e. emergence — not about the structural
+     penetration of existing-but-growing AI tools in a role family.
 
 SHARE / GROWTH / VELOCITY of AI-ADOPTION — TIE-BREAKER (disruption vs trend):
   When the question asks about a SHARE, GROWTH RATE, VELOCITY, or "how fast X is growing"
