@@ -978,7 +978,7 @@
   {
     "id": "gq-026",
     "question": "What percentage of Borderplex IT postings now reference AI-assistant tools (Copilot, Claude, ChatGPT, Cursor) compared to 12 months ago? Tell the story of the rise.",
-    "intent": "trend",
+    "intent": "disruption",
     "context": "",
     "ideal_answer_summary": "Should report percentage of Borderplex IT postings mentioning AI-assistant tools (Copilot, Claude, ChatGPT, Cursor) now vs 12 months ago, show adoption trajectory, include posting counts and percentages.",
     "must_include": [
