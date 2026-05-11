@@ -234,8 +234,13 @@ DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift si
      intensity change (not a balanced A-vs-B leaderboard of arbitrary peers) → disruption,
      not comparison.
   → trend: Demand velocity, growth, or time series "up or down" without era-bucket or
-     transformation/displacement framing. If temporal eras or AI/automation restructuring
-     is central → disruption, not trend.
+     transformation/displacement framing. Pure posting-volume or posting-count questions
+     framed as quarter-over-quarter, month-over-month, or week-over-week — with NO AI /
+     automation / displacement / skill-or-tool-mix framing — stay in trend, even when era
+     tokens (pre_chatgpt, early_genai, post_gpt4, agentic_era) appear only as a time-axis
+     descriptor for the comparison range (e.g. "across the pre_chatgpt → agentic_era
+     periods"). The era tokens describe the WHEN, not the WHAT, in this case. If temporal
+     eras or AI/automation restructuring is central to the WHAT → disruption, not trend.
   → geographic: Location filters which postings are in scope, but the analytic axis is
      still era/skill/automation shift → disruption. Use geographic only when listing or
      filtering postings by place is the main task; a Borderplex (or similar) filter alone
