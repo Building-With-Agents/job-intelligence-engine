@@ -251,6 +251,26 @@ DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift si
      still era/skill/automation shift → disruption. Use geographic only when listing or
      filtering postings by place is the main task; a Borderplex (or similar) filter alone
      does not override disruption when the core question is mix or automation change across eras.
+  ROLE_EVOLUTION CARVE-OUT (supporting-mix / expected-bar within an existing role family):
+     route to role_evolution — even when era buckets (pre_chatgpt, early_genai, post_gpt4,
+     agentic_era, "the four temporal periods") are present — when the question asks how
+     an existing role family's *supporting-skill mix*, *expected AI-literacy level / bar /
+     familiarity*, or *balance* between AI-assistant skills and traditional / fundamental
+     skills has evolved / changed / shifted across those periods, provided EITHER:
+       (a) AI-assist appears as ONE PEER among a broader multi-skill list (e.g.
+           "TypeScript, Next.js, testing frameworks, AI-assisted dev tools" for React;
+           "AI-assistant familiarity and traditional programming skills" for software
+           engineers), OR
+       (b) the *expectation / bar / literacy level* for AI within an existing role is the
+           subject (e.g. "expected AI-literacy bar for product manager roles"), rather
+           than AI tool SHARE or VELOCITY.
+     DISAMBIGUATOR vs disruption: AI-adoption SHARE / PERCENTAGE / GROWTH RATE / VELOCITY
+     / PENETRATION as the PRIMARY subject ("what share of postings mention Copilot",
+     "how fast is that share growing") → disruption (per the SHARE / GROWTH / VELOCITY
+     of AI-ADOPTION rule below). "Balance / supporting-mix / expected-bar evolution"
+     with AI-assist as peer or expectation → role_evolution. Skill-composition SHIFT,
+     skills DROPPED OUT, role TRANSFORMED, AI-DENSITY THRESHOLD CROSSING, displacement
+     by automation → disruption (per the disruption bullet above), not role_evolution.
 
 EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / agentic_era appear):
   → emergence: The subject is something NEW appearing for the first time — net-new roles,
