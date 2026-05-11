@@ -239,8 +239,14 @@ DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift si
      automation / displacement / skill-or-tool-mix framing — stay in trend, even when era
      tokens (pre_chatgpt, early_genai, post_gpt4, agentic_era) appear only as a time-axis
      descriptor for the comparison range (e.g. "across the pre_chatgpt → agentic_era
-     periods"). The era tokens describe the WHEN, not the WHAT, in this case. If temporal
-     eras or AI/automation restructuring is central to the WHAT → disruption, not trend.
+     periods"). The era tokens describe the WHEN, not the WHAT, in this case. Share or
+     distribution questions whose SUBJECT is non-AI — remote-eligibility share, salary
+     distribution, experience-bar requirements, headcount, or other workforce attributes
+     unrelated to AI / automation / skill-or-tool-mix turnover — stay in trend even when
+     framed across era buckets (e.g. "between pre_chatgpt and agentic_era"); the era
+     tokens scope the comparison range, they do not by themselves promote a non-AI
+     subject to disruption. If temporal eras or AI/automation restructuring is central
+     to the WHAT → disruption, not trend.
   → geographic: Location filters which postings are in scope, but the analytic axis is
      still era/skill/automation shift → disruption. Use geographic only when listing or
      filtering postings by place is the main task; a Borderplex (or similar) filter alone
