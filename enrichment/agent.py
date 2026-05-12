@@ -397,10 +397,7 @@ def _check_soc_unclassified_rate(
                 "soc_classified_count": soc_classified_count,
                 "unclassified_count": unclassified_count,
                 "degraded_fields": ["soc_code"],
-                "message": (
-                    f"SOC unclassified rate {unclassified_rate:.1%} exceeds "
-                    f"threshold {threshold:.1%}."
-                ),
+                "message": (f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold {threshold:.1%}."),
             },
         )
         _alert_bus.publish(event)

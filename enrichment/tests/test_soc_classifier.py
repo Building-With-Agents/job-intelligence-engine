@@ -107,10 +107,13 @@ def test_classify_soc_non_candidate_response_logs_warning() -> None:
     change, an unclassified outcome only emitted log.info.  Now it must emit
     log.warning with event ``soc_classifier_llm_resolution``.
     """
-    with patch(
-        "enrichment.classifiers.soc_classifier.get_soc_candidates",
-        new=AsyncMock(return_value=_FAKE_CANDIDATES),
-    ), structlog.testing.capture_logs() as cap:
+    with (
+        patch(
+            "enrichment.classifiers.soc_classifier.get_soc_candidates",
+            new=AsyncMock(return_value=_FAKE_CANDIDATES),
+        ),
+        structlog.testing.capture_logs() as cap,
+    ):
         result = asyncio.run(
             classify_soc(
                 title="Software Engineer",
@@ -123,8 +126,7 @@ def test_classify_soc_non_candidate_response_logs_warning() -> None:
     assert result == "unclassified"
 
     warning_logs = [
-        e for e in cap
-        if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
+        e for e in cap if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
     ]
     assert len(warning_logs) == 1, (
         f"Expected exactly one warning-level soc_classifier_llm_resolution log; "
@@ -139,10 +141,13 @@ def test_classify_soc_valid_response_does_not_log_warning() -> None:
 
     Regression guard: we must not produce spurious warnings when classification works.
     """
-    with patch(
-        "enrichment.classifiers.soc_classifier.get_soc_candidates",
-        new=AsyncMock(return_value=_FAKE_CANDIDATES),
-    ), structlog.testing.capture_logs() as cap:
+    with (
+        patch(
+            "enrichment.classifiers.soc_classifier.get_soc_candidates",
+            new=AsyncMock(return_value=_FAKE_CANDIDATES),
+        ),
+        structlog.testing.capture_logs() as cap,
+    ):
         result = asyncio.run(
             classify_soc(
                 title="Software Engineer",
@@ -156,8 +161,7 @@ def test_classify_soc_valid_response_does_not_log_warning() -> None:
 
     # The resolution event must be info-level (not warning) on a successful pick.
     resolution_warnings = [
-        e for e in cap
-        if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
+        e for e in cap if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
     ]
     assert resolution_warnings == [], (
         f"Unexpected warning-level resolution log on successful pick: {resolution_warnings}"
@@ -168,10 +172,13 @@ def test_classify_soc_no_candidates_returns_unclassified_without_resolution_warn
     """When get_soc_candidates returns an empty list, classify_soc returns 'unclassified'
     immediately (before the LLM is even called) and emits no resolution warning.
     """
-    with patch(
-        "enrichment.classifiers.soc_classifier.get_soc_candidates",
-        new=AsyncMock(return_value=[]),
-    ), structlog.testing.capture_logs() as cap:
+    with (
+        patch(
+            "enrichment.classifiers.soc_classifier.get_soc_candidates",
+            new=AsyncMock(return_value=[]),
+        ),
+        structlog.testing.capture_logs() as cap,
+    ):
         result = asyncio.run(
             classify_soc(
                 title="Completely Unknown Role XYZ",
@@ -183,12 +190,9 @@ def test_classify_soc_no_candidates_returns_unclassified_without_resolution_warn
 
     assert result == "unclassified"
     resolution_warnings = [
-        e for e in cap
-        if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
+        e for e in cap if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
     ]
-    assert resolution_warnings == [], (
-        "No resolution warning expected when there were no candidates to begin with."
-    )
+    assert resolution_warnings == [], "No resolution warning expected when there were no candidates to begin with."
 
 
 # ---------------------------------------------------------------------------

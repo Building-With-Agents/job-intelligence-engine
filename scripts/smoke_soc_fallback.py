@@ -59,22 +59,24 @@ errors: list[str] = []
 
 print("--- Signal 1: classify_soc with INVALID_CODE LLM response ---")
 
-with patch(
-    "enrichment.classifiers.soc_classifier.get_soc_candidates",
-    new=AsyncMock(return_value=_FAKE_CANDIDATES),
-), structlog.testing.capture_logs() as cap1:
+with (
+    patch(
+        "enrichment.classifiers.soc_classifier.get_soc_candidates",
+        new=AsyncMock(return_value=_FAKE_CANDIDATES),
+    ),
+    structlog.testing.capture_logs() as cap1,
+):
     result = asyncio.run(
         classify_soc(
             title="Software Engineer",
             description="Build cloud-native systems.",
-            session=None,           # session not needed — get_soc_candidates mocked
+            session=None,  # session not needed — get_soc_candidates mocked
             llm=lambda _: "INVALID_CODE",
         )
     )
 
 signal1_logs = [
-    e for e in cap1
-    if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
+    e for e in cap1 if e.get("log_level") == "warning" and e.get("event") == "soc_classifier_llm_resolution"
 ]
 
 print(f"  classify_soc return value        : {result!r}  (expected 'unclassified')")
@@ -86,9 +88,7 @@ else:
     print("  PASS  return value")
 
 if len(signal1_logs) != 1:
-    errors.append(
-        f"FAIL  Expected 1 soc_classifier_llm_resolution warning, got {len(signal1_logs)}"
-    )
+    errors.append(f"FAIL  Expected 1 soc_classifier_llm_resolution warning, got {len(signal1_logs)}")
 else:
     rr = signal1_logs[0].get("resolution_reason")
     print(f"  PASS  log.warning fired  (resolution_reason={rr!r})")
@@ -125,37 +125,31 @@ with (
     structlog.testing.capture_logs() as cap2,
 ):
     enriched = agent2.enrich_record(
-            posting={
-                "title": "Software Engineer",
-                "company": "Acme Corp",
-                "description": "Build cloud-native systems.",
-                "normalized_job_id": 42,
-                "source": "jsearch",
-                "external_id": "ext-001",
-            },
-            session=_mock_session,
-        )
+        posting={
+            "title": "Software Engineer",
+            "company": "Acme Corp",
+            "description": "Build cloud-native systems.",
+            "normalized_job_id": 42,
+            "source": "jsearch",
+            "external_id": "ext-001",
+        },
+        session=_mock_session,
+    )
 
 signal2_logs = [
-    e for e in cap2
-    if e.get("log_level") == "warning" and e.get("event") == "enrich_record_soc_unclassified"
+    e for e in cap2 if e.get("log_level") == "warning" and e.get("event") == "enrich_record_soc_unclassified"
 ]
 
 print(f"  enriched['soc_code']             : {enriched.get('soc_code')!r}  (expected None)")
 print(f"  enrich_record_soc_unclassified   : {len(signal2_logs)} warning(s)  (expected 1)")
 
 if enriched.get("soc_code") is not None:
-    errors.append(
-        f"FAIL  enriched['soc_code'] should be None when unclassified, "
-        f"got {enriched.get('soc_code')!r}"
-    )
+    errors.append(f"FAIL  enriched['soc_code'] should be None when unclassified, got {enriched.get('soc_code')!r}")
 else:
     print("  PASS  soc_code is None")
 
 if len(signal2_logs) != 1:
-    errors.append(
-        f"FAIL  Expected 1 enrich_record_soc_unclassified warning, got {len(signal2_logs)}"
-    )
+    errors.append(f"FAIL  Expected 1 enrich_record_soc_unclassified warning, got {len(signal2_logs)}")
 else:
     print("  PASS  log.warning fired")
 
@@ -179,34 +173,23 @@ with patch("enrichment.agent._alert_bus", _alert_bus), structlog.testing.capture
     )
 
 signal3_logs = [
-    e for e in cap3
-    if e.get("log_level") == "warning" and e.get("event") == "soc_unclassified_rate_exceeded"
+    e for e in cap3 if e.get("log_level") == "warning" and e.get("event") == "soc_unclassified_rate_exceeded"
 ]
 
 published = _alert_bus.publish.call_args_list
-degraded_events = [
-    c[0][0] for c in published
-    if c[0][0].payload.get("classifier") == "soc"
-]
+degraded_events = [c[0][0] for c in published if c[0][0].payload.get("classifier") == "soc"]
 
 print(f"  soc_unclassified_rate_exceeded   : {len(signal3_logs)} warning(s)  (expected 1)")
 print(f"  EnrichmentDegraded events        : {len(degraded_events)} event(s)   (expected 1)")
 
 if len(signal3_logs) != 1:
-    errors.append(
-        f"FAIL  Expected 1 soc_unclassified_rate_exceeded warning, got {len(signal3_logs)}"
-    )
+    errors.append(f"FAIL  Expected 1 soc_unclassified_rate_exceeded warning, got {len(signal3_logs)}")
 else:
     rw = signal3_logs[0]
-    print(
-        f"  PASS  log.warning fired  "
-        f"(rate={rw.get('unclassified_rate')}, threshold={rw.get('threshold')})"
-    )
+    print(f"  PASS  log.warning fired  (rate={rw.get('unclassified_rate')}, threshold={rw.get('threshold')})")
 
 if len(degraded_events) != 1:
-    errors.append(
-        f"FAIL  Expected 1 EnrichmentDegraded (soc) event, got {len(degraded_events)}"
-    )
+    errors.append(f"FAIL  Expected 1 EnrichmentDegraded (soc) event, got {len(degraded_events)}")
 else:
     p = degraded_events[0].payload
     print(
