@@ -19,7 +19,9 @@ from sqlalchemy.orm import Session
 
 from common.data_store.models import NAICS
 from common.llm_client import ainvoke_structured_extraction_llm, invoke_structured_extraction_llm
+from enrichment.classifiers._prompt_templates import build_code_classifier_prompt
 from enrichment.classification import tokenize
+from enrichment.resolvers.llm_code_extractor import resolve_llm_code_pick
 
 log = structlog.get_logger()
 
@@ -83,24 +85,13 @@ def get_naics_candidates(
 
 def _resolve_llm_naics_pick(raw: str, candidate_codes: set[str]) -> str:
     """Map free-form LLM text to a member of *candidate_codes* or ``unknown``."""
-    s = (raw or "").strip()
-    if not s or s.lower() == "unknown":
-        return "unknown"
-    if s in candidate_codes:
-        return s
-    unquoted = s.strip("`\"'")
-    if unquoted in candidate_codes:
-        return unquoted
-    contained = [c for c in candidate_codes if c and c in s]
-    if len(contained) == 1:
-        return contained[0]
-    if len(contained) > 1:
-        return "unknown"
-    regex_hits = [m.group(0) for m in _CODE_IN_TEXT.finditer(s) if m.group(0) in candidate_codes]
-    unique = list(dict.fromkeys(regex_hits))
-    if len(unique) == 1:
-        return unique[0]
-    return "unknown"
+    picked, _reason = resolve_llm_code_pick(
+        raw,
+        candidate_codes,
+        unknown_value="unknown",
+        code_pattern=_CODE_IN_TEXT,
+    )
+    return picked
 
 
 def _build_prompt(
@@ -108,21 +99,15 @@ def _build_prompt(
     description: str | None,
     candidates: list[dict[str, str]],
 ) -> str:
-    lines = [f"{c['code']}: {c['title']}" for c in candidates]
-    block = "\n".join(lines)
-    desc = (description or "").strip()
-    return f"""Classify this job into one NAICS 2022 industry from the list below.
-
-Job title: {title}
-Job description: {desc}
-
-NAICS candidates (choose exactly one code from this list, or unknown):
-{block}
-
-Rules:
-- Respond with structured data only.
-- Field naics_code must be exactly one of the numeric codes shown above, or the literal unknown.
-- Use unknown if the job text does not clearly fit any single listed industry."""
+    return build_code_classifier_prompt(
+        title,
+        description,
+        candidates,
+        intro_line="Classify this job into one NAICS 2022 industry from the list below.",
+        candidates_heading="NAICS candidates (choose exactly one code from this list, or unknown):",
+        unknown_value="unknown",
+        response_field="naics_code",
+    )
 
 
 def classify_naics(job_title: str, job_description: str | None, session: Session) -> str:

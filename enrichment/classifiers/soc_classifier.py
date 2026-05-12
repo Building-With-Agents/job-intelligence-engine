@@ -12,6 +12,8 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from common.data_store.models import SOCC
+from enrichment.classifiers._prompt_templates import build_code_classifier_prompt
+from enrichment.resolvers.llm_code_extractor import resolve_llm_code_pick
 
 log = structlog.get_logger()
 
@@ -87,50 +89,19 @@ def _canonical_catalog_code(picked: str, candidate_codes: set[str]) -> str | Non
     return None
 
 
-def _digits_to_canonical_codes(candidate_codes: set[str]) -> dict[str, str]:
-    """Map digit-only key → single catalog code; ambiguous keys are omitted."""
-    buckets: dict[str, list[str]] = {}
-    for c in candidate_codes:
-        k = _soc_digits_key(c)
-        if not k:
-            continue
-        buckets.setdefault(k, []).append(c)
-    return {k: v[0] for k, v in buckets.items() if len(v) == 1}
-
-
 def _resolve_llm_pick_with_reason(raw: str, candidate_codes: set[str]) -> tuple[str, str]:
     """Return ``(picked_code_or_unclassified, reason_tag)`` for logging and auditing."""
-    s = (raw or "").strip()
-    if not s:
-        return "unclassified", "empty_llm_response"
-    if s.lower() == "unclassified":
-        return "unclassified", "llm_said_unclassified"
-    if s in candidate_codes:
-        return s, "exact_code_match"
-    unquoted = s.strip("`\"'")
-    if unquoted in candidate_codes:
-        return unquoted, "exact_after_strip_quotes"
-
-    digit_map = _digits_to_canonical_codes(candidate_codes)
-    raw_key = _soc_digits_key(s)
-    if raw_key and raw_key in digit_map:
-        return digit_map[raw_key], "digit_normalized_match"
-
-    contained = [c for c in candidate_codes if c and c in s]
-    if len(contained) == 1:
-        return contained[0], "single_code_substring_of_response"
-    if len(contained) > 1:
-        return "unclassified", "ambiguous_multiple_catalog_codes_in_response"
-
-    regex_hits = [m.group(0) for m in _SOC_CODE_IN_TEXT.finditer(s) if m.group(0) in candidate_codes]
-    unique_hits = list(dict.fromkeys(regex_hits))
-    if len(unique_hits) == 1:
-        return unique_hits[0], "regex_hyphenated_code_in_candidate_set"
-    for m in _SOC_CODE_IN_TEXT.finditer(s):
-        mk = _soc_digits_key(m.group(0))
-        if mk and mk in digit_map:
-            return digit_map[mk], "regex_then_digit_normalized"
-    return "unclassified", "no_candidate_matched_llm_output"
+    picked, reason = resolve_llm_code_pick(
+        raw,
+        candidate_codes,
+        unknown_value="unclassified",
+        code_pattern=_SOC_CODE_IN_TEXT,
+        enable_digit_normalization=True,
+        digit_key_fn=_soc_digits_key,
+    )
+    if reason == "regex_code_in_candidate_set":
+        return picked, "regex_hyphenated_code_in_candidate_set"
+    return picked, reason
 
 
 def _resolve_llm_pick(raw: str, candidate_codes: set[str]) -> str:
@@ -291,19 +262,14 @@ async def classify_soc(
         return "unclassified"
 
     candidate_codes = {c["code"] for c in candidates}
-    lines = [f"{c['code']}: {c['title']}" for c in candidates]
-    candidates_block = "\n".join(lines)
-
-    prompt = f"""Job Title: {title}
-Job Description: {description or ""}
-
-SOC Candidates:
-{candidates_block}
-
-Instructions:
-- ONLY choose from the list above. DO NOT invent codes.
-- If none match, return 'unclassified'.
-- Reply with exactly one token: the chosen SOC code exactly as shown, or unclassified."""
+    prompt = build_code_classifier_prompt(
+        title,
+        description,
+        candidates,
+        intro_line="Classify this job into one SOC occupation from the candidate list below.",
+        candidates_heading="SOC Candidates:",
+        unknown_value="unclassified",
+    )
 
     if async_llm is not None:
         raw = await async_llm(prompt)
