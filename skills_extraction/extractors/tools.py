@@ -14,6 +14,8 @@ Week 4 implementation (Bryan + Emilio):
 Reference: ARCHITECTURE_DEEP.md § Work Intelligence Agent — Hybrid Extraction.
 """
 
+# EXEMPLAR: Phase 2 reference — Pass 1 deterministic tool extraction (catalog, aliases, field priority) before Pass 2 LLM work.
+
 from __future__ import annotations
 
 import re
