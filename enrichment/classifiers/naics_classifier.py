@@ -19,8 +19,8 @@ from sqlalchemy.orm import Session
 
 from common.data_store.models import NAICS
 from common.llm_client import ainvoke_structured_extraction_llm, invoke_structured_extraction_llm
-from enrichment.classifiers._prompt_templates import build_code_classifier_prompt
 from enrichment.classification import tokenize
+from enrichment.classifiers._prompt_templates import build_code_classifier_prompt
 from enrichment.resolvers.llm_code_extractor import resolve_llm_code_pick
 
 log = structlog.get_logger()
