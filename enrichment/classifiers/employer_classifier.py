@@ -8,7 +8,7 @@ or the LLM fails. ``is_known_employer`` is derived from an exact normalized matc
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 import structlog
 from pydantic import BaseModel, Field
@@ -132,6 +132,28 @@ Fields:
 Respond with structured data only. Use the literal unknown for any field when evidence is weak or missing."""
 
 
+def _build_employer_profile_impl(
+    is_known: bool,
+    parsed: EmployerClassificationLLMOutput | None,
+    meta: dict[str, Any],
+) -> EmployerProfile:
+    if meta.get("extraction_failed") or parsed is None:
+        log.info(
+            "employer_classification_degraded",
+            extraction_failed=meta.get("extraction_failed"),
+            error_reason=meta.get("error_reason"),
+        )
+        return EmployerProfile(is_known_employer=is_known)
+    return EmployerProfile.model_validate(
+        {
+            "company_size": parsed.company_size,
+            "ai_maturity_signal": parsed.ai_maturity_signal,
+            "sector": _canonical_sector(parsed.sector),
+            "is_known_employer": is_known,
+        }
+    )
+
+
 def build_employer_profile(
     job_description: str | None,
     company_name: str,
@@ -146,9 +168,7 @@ def build_employer_profile(
     company = (company_name or "").strip()
     desc = job_description if isinstance(job_description, str) else None
     is_known = registry_has_exact_company_name(session, company)
-
     base = EmployerProfile(is_known_employer=is_known)
-
     try:
         parsed, meta = invoke_structured_extraction_llm(
             _build_prompt(company, desc),
@@ -160,24 +180,7 @@ def build_employer_profile(
     except Exception as exc:
         log.warning("employer_llm_invoke_failed", error=str(exc))
         return base
-
-    if meta.get("extraction_failed") or parsed is None:
-        log.info(
-            "employer_classification_degraded",
-            extraction_failed=meta.get("extraction_failed"),
-            error_reason=meta.get("error_reason"),
-        )
-        return base
-
-    merged = EmployerProfile.model_validate(
-        {
-            "company_size": parsed.company_size,
-            "ai_maturity_signal": parsed.ai_maturity_signal,
-            "sector": _canonical_sector(parsed.sector),
-            "is_known_employer": is_known,
-        }
-    )
-    return merged
+    return _build_employer_profile_impl(is_known, parsed, meta)
 
 
 async def build_employer_profile_async(
@@ -189,9 +192,7 @@ async def build_employer_profile_async(
     company = (company_name or "").strip()
     desc = job_description if isinstance(job_description, str) else None
     is_known = registry_has_exact_company_name(session, company)
-
     base = EmployerProfile(is_known_employer=is_known)
-
     try:
         parsed, meta = await ainvoke_structured_extraction_llm(
             _build_prompt(company, desc),
@@ -203,24 +204,7 @@ async def build_employer_profile_async(
     except Exception as exc:
         log.warning("employer_llm_invoke_failed", error=str(exc))
         return base
-
-    if meta.get("extraction_failed") or parsed is None:
-        log.info(
-            "employer_classification_degraded",
-            extraction_failed=meta.get("extraction_failed"),
-            error_reason=meta.get("error_reason"),
-        )
-        return base
-
-    merged = EmployerProfile.model_validate(
-        {
-            "company_size": parsed.company_size,
-            "ai_maturity_signal": parsed.ai_maturity_signal,
-            "sector": _canonical_sector(parsed.sector),
-            "is_known_employer": is_known,
-        }
-    )
-    return merged
+    return _build_employer_profile_impl(is_known, parsed, meta)
 
 
 def persist_employer_metadata(
