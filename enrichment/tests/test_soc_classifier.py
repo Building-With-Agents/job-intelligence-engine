@@ -22,7 +22,6 @@ import structlog.testing
 
 from enrichment.classifiers.soc_classifier import _resolve_llm_pick_with_reason
 
-
 # ---------------------------------------------------------------------------
 # _resolve_llm_pick_with_reason
 # ---------------------------------------------------------------------------
@@ -111,16 +110,15 @@ def test_classify_soc_non_candidate_response_logs_warning() -> None:
     with patch(
         "enrichment.classifiers.soc_classifier.get_soc_candidates",
         new=AsyncMock(return_value=_FAKE_CANDIDATES),
-    ):
-        with structlog.testing.capture_logs() as cap:
-            result = asyncio.run(
-                classify_soc(
-                    title="Software Engineer",
-                    description="Build and ship software",
-                    session=None,  # mocked above — session is never accessed
-                    llm=lambda _prompt: "INVALID_CODE",
-                )
+    ), structlog.testing.capture_logs() as cap:
+        result = asyncio.run(
+            classify_soc(
+                title="Software Engineer",
+                description="Build and ship software",
+                session=None,  # mocked above — session is never accessed
+                llm=lambda _prompt: "INVALID_CODE",
             )
+        )
 
     assert result == "unclassified"
 
@@ -144,16 +142,15 @@ def test_classify_soc_valid_response_does_not_log_warning() -> None:
     with patch(
         "enrichment.classifiers.soc_classifier.get_soc_candidates",
         new=AsyncMock(return_value=_FAKE_CANDIDATES),
-    ):
-        with structlog.testing.capture_logs() as cap:
-            result = asyncio.run(
-                classify_soc(
-                    title="Software Engineer",
-                    description="Build and ship software",
-                    session=None,
-                    llm=lambda _prompt: "15-1252",
-                )
+    ), structlog.testing.capture_logs() as cap:
+        result = asyncio.run(
+            classify_soc(
+                title="Software Engineer",
+                description="Build and ship software",
+                session=None,
+                llm=lambda _prompt: "15-1252",
             )
+        )
 
     assert result == "15-1252"
 
@@ -174,16 +171,15 @@ def test_classify_soc_no_candidates_returns_unclassified_without_resolution_warn
     with patch(
         "enrichment.classifiers.soc_classifier.get_soc_candidates",
         new=AsyncMock(return_value=[]),
-    ):
-        with structlog.testing.capture_logs() as cap:
-            result = asyncio.run(
-                classify_soc(
-                    title="Completely Unknown Role XYZ",
-                    description="",
-                    session=None,
-                    llm=lambda _prompt: "15-1252",  # should never be called
-                )
+    ), structlog.testing.capture_logs() as cap:
+        result = asyncio.run(
+            classify_soc(
+                title="Completely Unknown Role XYZ",
+                description="",
+                session=None,
+                llm=lambda _prompt: "15-1252",  # should never be called
             )
+        )
 
     assert result == "unclassified"
     resolution_warnings = [

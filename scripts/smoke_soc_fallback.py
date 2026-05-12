@@ -62,16 +62,15 @@ print("--- Signal 1: classify_soc with INVALID_CODE LLM response ---")
 with patch(
     "enrichment.classifiers.soc_classifier.get_soc_candidates",
     new=AsyncMock(return_value=_FAKE_CANDIDATES),
-):
-    with structlog.testing.capture_logs() as cap1:
-        result = asyncio.run(
-            classify_soc(
-                title="Software Engineer",
-                description="Build cloud-native systems.",
-                session=None,           # session not needed — get_soc_candidates mocked
-                llm=lambda _: "INVALID_CODE",
-            )
+), structlog.testing.capture_logs() as cap1:
+    result = asyncio.run(
+        classify_soc(
+            title="Software Engineer",
+            description="Build cloud-native systems.",
+            session=None,           # session not needed — get_soc_candidates mocked
+            llm=lambda _: "INVALID_CODE",
         )
+    )
 
 signal1_logs = [
     e for e in cap1
@@ -106,9 +105,9 @@ _mock_session = MagicMock()
 # Patch the external dependencies that run when session is not None so the test
 # stays DB-free.  classify_soc is patched to return "unclassified" directly,
 # simulating the outcome of an INVALID_CODE LLM response.
+from common.types.job_profile import EmployerProfile
 from enrichment.resolvers.company_resolver import resolve_company as _rc  # noqa: F401
 from enrichment.resolvers.location_resolver import resolve_location as _rl  # noqa: F401
-from common.types.job_profile import EmployerProfile
 
 agent2 = EnrichmentAgent()
 
@@ -123,9 +122,9 @@ with (
     patch("enrichment.agent.build_employer_profile", return_value=EmployerProfile()),
     patch("enrichment.agent.persist_employer_metadata"),
     patch("enrichment.agent.run_coroutine", side_effect=lambda coro: asyncio.run(coro)),
+    structlog.testing.capture_logs() as cap2,
 ):
-    with structlog.testing.capture_logs() as cap2:
-        enriched = agent2.enrich_record(
+    enriched = agent2.enrich_record(
             posting={
                 "title": "Software Engineer",
                 "company": "Acme Corp",
@@ -170,15 +169,14 @@ print("\n--- Signal 3: _check_soc_unclassified_rate at 100 % unclassified (5/5 r
 _alert_bus = MagicMock()
 register_alert_bus(_alert_bus)
 
-with patch("enrichment.agent._alert_bus", _alert_bus):
-    with structlog.testing.capture_logs() as cap3:
-        _check_soc_unclassified_rate(
-            soc_classified_count=0,
-            enriched_count=5,
-            correlation_id="smoke-corr-001",
-            batch_id="smoke-batch-001",
-            triggered_by_event_type="SkillsExtracted",
-        )
+with patch("enrichment.agent._alert_bus", _alert_bus), structlog.testing.capture_logs() as cap3:
+    _check_soc_unclassified_rate(
+        soc_classified_count=0,
+        enriched_count=5,
+        correlation_id="smoke-corr-001",
+        batch_id="smoke-batch-001",
+        triggered_by_event_type="SkillsExtracted",
+    )
 
 signal3_logs = [
     e for e in cap3
