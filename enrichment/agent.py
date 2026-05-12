@@ -330,6 +330,89 @@ def _emit_enrichment_degraded(
         )
 
 
+def _check_soc_unclassified_rate(
+    *,
+    soc_classified_count: int,
+    enriched_count: int,
+    correlation_id: str,
+    batch_id: str,
+    triggered_by_event_type: Any,
+) -> None:
+    """Emit a warning and fire EnrichmentDegraded when too many records are SOC-unclassified.
+
+    The threshold is read from ``config/enrichment.yaml``
+    (``enrichment.soc.unclassified_rate_threshold``) or env override
+    ``SOC_UNCLASSIFIED_RATE_THRESHOLD``; default is 0.10 (10 %).
+
+    This is the batch-level fail-safe: individual unclassified records already
+    emit ``log.warning("soc_classifier_llm_resolution")`` from the classifier
+    and ``log.warning("enrich_record_soc_unclassified")`` from the agent.  This
+    function adds aggregate visibility and routes the alert to the Orchestration
+    Agent via the event bus when the rate is abnormal.
+
+    Safe to call with ``enriched_count == 0`` — no check is performed.
+    """
+    if enriched_count <= 0:
+        return
+
+    from enrichment._config import soc_unclassified_rate_threshold
+
+    threshold = soc_unclassified_rate_threshold()
+    unclassified_count = enriched_count - soc_classified_count
+    unclassified_rate = unclassified_count / enriched_count
+
+    if unclassified_rate <= threshold:
+        return
+
+    log.warning(
+        "soc_unclassified_rate_exceeded",
+        batch_id=batch_id,
+        enriched_count=enriched_count,
+        soc_classified_count=soc_classified_count,
+        unclassified_count=unclassified_count,
+        unclassified_rate=round(unclassified_rate, 4),
+        threshold=threshold,
+        message=(
+            f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold "
+            f"{threshold:.1%} for batch {batch_id}. "
+            "Check dbo.socc population and LLM classification quality."
+        ),
+    )
+
+    if _alert_bus is None:
+        return
+    try:
+        event = EventEnvelope(
+            correlation_id=correlation_id,
+            agent_id="enrichment-agent",
+            payload={
+                "event_type": "EnrichmentDegraded",
+                "batch_id": batch_id,
+                "triggered_by_event_type": triggered_by_event_type,
+                "classifier": "soc",
+                "reason": "unclassified_rate_exceeded",
+                "unclassified_rate": round(unclassified_rate, 4),
+                "threshold": threshold,
+                "enriched_count": enriched_count,
+                "soc_classified_count": soc_classified_count,
+                "unclassified_count": unclassified_count,
+                "degraded_fields": ["soc_code"],
+                "message": (
+                    f"SOC unclassified rate {unclassified_rate:.1%} exceeds "
+                    f"threshold {threshold:.1%}."
+                ),
+            },
+        )
+        _alert_bus.publish(event)
+    except Exception as exc:
+        log.warning(
+            "EnrichmentDegraded_publish_failed",
+            batch_id=batch_id,
+            classifier="soc",
+            error=str(exc),
+        )
+
+
 SpamBucket = Literal["rejected", "flagged", "proceed"]
 
 
@@ -631,6 +714,14 @@ class EnrichmentAgent(BaseAgent):
                     execution_mode="parallel",
                 )
 
+                _check_soc_unclassified_rate(
+                    soc_classified_count=soc_classified_count,
+                    enriched_count=enriched_count,
+                    correlation_id=correlation_id,
+                    batch_id=batch_id,
+                    triggered_by_event_type=payload.get("event_type"),
+                )
+
                 return build_record_enriched_event(
                     correlation_id=correlation_id,
                     batch_id=batch_id,
@@ -879,6 +970,14 @@ class EnrichmentAgent(BaseAgent):
                             "total_processed": total_processed,
                         },
                     )
+
+            _check_soc_unclassified_rate(
+                soc_classified_count=soc_classified_count,
+                enriched_count=enriched_count,
+                correlation_id=correlation_id,
+                batch_id=batch_id,
+                triggered_by_event_type=payload.get("event_type"),
+            )
 
         return build_record_enriched_event(
             correlation_id=correlation_id,
@@ -1203,7 +1302,17 @@ class EnrichmentAgent(BaseAgent):
                             _enrichment_soc_llm(),
                         )
                     )
-                    merged["soc_code"] = None if raw_soc == "unclassified" else raw_soc
+                    if raw_soc == "unclassified":
+                        # Individual-record warning; batch-level rate check fires separately
+                        # in _check_soc_unclassified_rate after the full batch completes.
+                        log.warning(
+                            "enrich_record_soc_unclassified",
+                            title=(posting.get("title") or "")[:200],
+                            normalized_job_id=posting.get("normalized_job_id"),
+                        )
+                        merged["soc_code"] = None
+                    else:
+                        merged["soc_code"] = raw_soc
                 except Exception as soc_exc:
                     log.warning("enrich_record_soc_failed", error=str(soc_exc))
                     merged["soc_code"] = posting.get("soc_code")
