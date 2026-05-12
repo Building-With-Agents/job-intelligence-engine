@@ -121,7 +121,7 @@ _SELECT_EMPLOYER_PROFILE_ID_SQL = text(
     """
 )
 
-_UPDATE_UNCERTAIN_SQL = text(
+_UPDATE_COMMON_SQL = text(
     """
     UPDATE dbo.job_postings SET
         quality_score = :quality_score,
@@ -133,65 +133,9 @@ _UPDATE_UNCERTAIN_SQL = text(
         soc_code = :soc_code,
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = NULL,
+        is_spam = :is_spam,
         spam_score = :spam_score,
-        spam_tier = 'uncertain',
-        date_posted = COALESCE(:date_posted, date_posted),
-        seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote),
-        role_classification = COALESCE(:role_classification, role_classification),
-        salary_min = COALESCE(:salary_min, salary_min),
-        salary_max = COALESCE(:salary_max, salary_max),
-        salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period),
-        zip_code = COALESCE(:zip_code, zip_code)
-    WHERE job_posting_id::text = :job_posting_id
-    """
-)
-
-_UPDATE_CLEAN_SQL = text(
-    """
-    UPDATE dbo.job_postings SET
-        quality_score = :quality_score,
-        overall_confidence = :overall_confidence,
-        field_confidence = CAST(:field_confidence AS jsonb),
-        temporal_period = :temporal_period,
-        borderplex_subregion = :borderplex_subregion,
-        naics_code = :naics_code,
-        soc_code = :soc_code,
-        sector_id = :sector_id,
-        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = FALSE,
-        spam_score = :spam_score,
-        spam_tier = 'clean',
-        date_posted = COALESCE(:date_posted, date_posted),
-        seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote),
-        role_classification = COALESCE(:role_classification, role_classification),
-        salary_min = COALESCE(:salary_min, salary_min),
-        salary_max = COALESCE(:salary_max, salary_max),
-        salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period),
-        zip_code = COALESCE(:zip_code, zip_code)
-    WHERE job_posting_id::text = :job_posting_id
-    """
-)
-
-_UPDATE_FLAGGED_SQL = text(
-    """
-    UPDATE dbo.job_postings SET
-        quality_score = :quality_score,
-        overall_confidence = :overall_confidence,
-        field_confidence = CAST(:field_confidence AS jsonb),
-        temporal_period = :temporal_period,
-        borderplex_subregion = :borderplex_subregion,
-        naics_code = :naics_code,
-        soc_code = :soc_code,
-        sector_id = :sector_id,
-        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = NULL,
-        spam_score = :spam_score,
-        spam_tier = 'flagged',
+        spam_tier = :spam_tier,
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -792,7 +736,12 @@ def apply_enrichment_to_job_postings(
         return True
 
     if tier == "uncertain" or spam_score is None:
-        session.execute(_UPDATE_UNCERTAIN_SQL, params_base)
+        promo_params = {
+            **params_base,
+            "is_spam": None,
+            "spam_tier": "uncertain",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_uncertain_spam",
             normalized_job_id=normalized_job_id,
@@ -803,7 +752,12 @@ def apply_enrichment_to_job_postings(
     try:
         spam_f = float(spam_score)
     except (TypeError, ValueError):
-        session.execute(_UPDATE_UNCERTAIN_SQL, params_base)
+        promo_params = {
+            **params_base,
+            "is_spam": None,
+            "spam_tier": "uncertain",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_uncertain_spam_invalid_score",
             normalized_job_id=normalized_job_id,
@@ -814,7 +768,12 @@ def apply_enrichment_to_job_postings(
     params = {**params_base, "spam_score": spam_f}
 
     if tier == "flagged":
-        session.execute(_UPDATE_FLAGGED_SQL, params)
+        promo_params = {
+            **params,
+            "is_spam": None,
+            "spam_tier": "flagged",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_flagged",
             normalized_job_id=normalized_job_id,
@@ -823,7 +782,12 @@ def apply_enrichment_to_job_postings(
         return _finish_with_dedup()
 
     if tier == "clean":
-        session.execute(_UPDATE_CLEAN_SQL, params)
+        promo_params = {
+            **params,
+            "is_spam": False,
+            "spam_tier": "clean",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_clean",
             normalized_job_id=normalized_job_id,
