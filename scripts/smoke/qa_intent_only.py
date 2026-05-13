@@ -24,10 +24,9 @@ When ``QA_EVAL_INTENT_HEURISTIC_LEVEL=3`` or ``--issue359`` is used, prints
 ``canonical_role``, ``canonical_role_label``, ``_extract_role_phrase`` input phrase.
 
 Requires ``LLM_DEFAULT`` (Haiku-class / ``chat-gpt41mini``) in the repo-root
-``.env`` for the generic single-question path. gq-072 matches the curriculum-generation
-**heuristic** in ``intent.py`` (no LLM). gq-073 does not match that regex today
-(``training program for`` vs ``cybersecurity training program with``) and falls through
-to the LLM unless patterns change.
+``.env`` for the generic single-question path. gq-072 and gq-073 match the
+curriculum-generation **heuristic** in ``intent.py``; intent stays ``curriculum``
+at 0.92 confidence while entities are filled via a follow-up LLM call (JIE #359).
 """
 
 from __future__ import annotations

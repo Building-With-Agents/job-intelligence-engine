@@ -88,6 +88,21 @@ _CURRICULUM_GENERATION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
         r"\bprogram design (?:and delivery )?for\b",
         re.IGNORECASE,
     ),
+    # JIE #359 — "What should a cybersecurity training program with certifications …"
+    re.compile(
+        r"\bwhat should (?:a |an |the )[\w'-]+\s+training program with\b",
+        re.IGNORECASE,
+    ),
+    # "What should … training program with … for …" (skills/certs then role / audience)
+    re.compile(
+        r"\bwhat should\b.{0,120}?\btraining program with\b.{0,120}?\bfor\b",
+        re.IGNORECASE,
+    ),
+    # Multi-token modifier before "training program for" (e.g. "cloud architect training program for")
+    re.compile(
+        r"\bwhat should (?:a |an |the )(?:[\w'-]+\s+){1,4}training program for\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -159,13 +174,6 @@ def intent_heuristic_classification(question: str) -> dict[str, Any] | None:
         return None
     tier = _intent_heuristic_ablation_level()
 
-    if _matches_curriculum_generation_shape(q):
-        return _heuristic_classification_dict(
-            intent="curriculum",
-            confidence=_CURRICULUM_HEURISTIC_CONFIDENCE,
-            reason="curriculum_generation_shape",
-        )
-
     if tier >= 1 and _CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN.search(q):
         return _heuristic_classification_dict(
             intent="curriculum",
@@ -181,6 +189,12 @@ def intent_heuristic_classification(question: str) -> dict[str, Any] | None:
 
     return None
 
+
+_CURRICULUM_INTENT_ENTITY_USER_HINT = (
+    "Intent is already identified as curriculum — extract only the role_names from this question.\n"
+    'Respond with JSON only using the full shape: intent "curriculum", confidence, '
+    "and extracted_entities with geographic_terms, role_names, skill_names, time_references.\n\n"
+)
 
 _SYSTEM_PROMPT = """You are an intent classifier for workforce and labor-market analytics questions.
 
@@ -520,6 +534,100 @@ def _fallback_other(reason: str) -> dict[str, Any]:
     }
 
 
+def _curriculum_heuristic_fallback_response(reason: str) -> dict[str, Any]:
+    log.warning(
+        "intent_classification_curriculum_heuristic_entity_extraction_failed",
+        reason=reason,
+    )
+    return {
+        "intent": "curriculum",
+        "confidence": float(_CURRICULUM_HEURISTIC_CONFIDENCE),
+        "needs_clarification": _CURRICULUM_HEURISTIC_CONFIDENCE < _CLARIFICATION_THRESHOLD,
+        "extracted_entities": _empty_extracted_entities(),
+    }
+
+
+def _build_classification_user_prompt(question: str, conversation_context: str | None) -> str:
+    ctx = (conversation_context or "").strip()
+    if ctx:
+        return (
+            "The user is continuing a conversation. Use the prior Q&A below to resolve "
+            "pronouns, “the same region”, and short follow-up questions that refer to earlier context.\n\n"
+            f"{ctx}\n\n"
+            f"Current user question (this turn only):\n{question}\n"
+        )
+    return f"User question:\n{question}\n"
+
+
+def _run_intent_llm(
+    *,
+    user_prompt: str,
+    question_for_trace: str,
+    correlation_id: str | None,
+    max_tokens: int,
+    cost_ledger: CostLedger | None,
+    ledger_leg_name: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Call ``complete`` for intent classification.
+
+    Returns ``(classification_dict, None)`` on success, or ``(None, reason)`` for
+    :func:`_fallback_other` / curriculum heuristic fallback logging.
+    """
+    langfuse_context.update_current_observation(
+        input=question_for_trace,
+        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    )
+    try:
+        result = complete(
+            prompt=user_prompt,
+            agent_name=_AGENT_NAME,
+            role="classification",
+            system=_SYSTEM_PROMPT,
+            max_tokens=max_tokens,
+            correlation_id=correlation_id,
+        )
+        if cost_ledger is not None:
+            from analytics.query_engine.ledger_utils import append_leg_from_complete
+
+            append_leg_from_complete(cost_ledger, ledger_leg_name, result, model_fallback=None)
+    except Exception as exc:
+        log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
+        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
+        return None, "llm_exception"
+
+    report_langfuse_usage(result)
+
+    if not result.get("success") or result.get("extraction_failed"):
+        langfuse_context.update_current_observation(level="WARNING", status_message="llm_failed")
+        return None, "llm_failed"
+
+    content = (result.get("content") or "").strip()
+    parsed = _parse_llm_json(content)
+    if not parsed:
+        langfuse_context.update_current_observation(level="WARNING", status_message="invalid_json")
+        return None, "invalid_json"
+
+    try:
+        validated = IntentClassification.model_validate(parsed)
+    except Exception:
+        langfuse_context.update_current_observation(level="WARNING", status_message="schema_validation")
+        return None, "schema_validation"
+
+    out_entities = validated.extracted_entities.model_dump()
+    needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
+    classification_out: dict[str, Any] = {
+        "intent": validated.intent,
+        "confidence": float(validated.confidence),
+        "needs_clarification": needs_clarification,
+        "extracted_entities": out_entities,
+    }
+    langfuse_context.update_current_observation(
+        output={"intent": validated.intent, "confidence": float(validated.confidence)},
+        metadata={"needs_clarification": needs_clarification},
+    )
+    return classification_out, None
+
+
 @_lf_observe(as_type="generation", name="intent_classification")
 def classify_workforce_question(
     question: str,
@@ -533,9 +641,12 @@ def classify_workforce_question(
 
     Returns a plain dict: ``{"intent": str, "confidence": float,
     "needs_clarification": bool, "extracted_entities": dict}`` suitable for
-    JSON APIs. On LLM failure or
-    invalid JSON, returns ``intent="other"``, ``confidence=0.0``, and empty entity
-    lists.
+    JSON APIs. On LLM failure or invalid JSON on the **standard** path, returns
+    ``intent="other"``, ``confidence=0.0``, and empty entity lists.
+
+    When the curriculum-generation heuristic matches, intent is ``curriculum`` at
+    heuristic confidence (0.92); entities come from a follow-up LLM call, with empty
+    entities if that call fails.
 
     Routes through :func:`common.llm_adapter.complete` with ``role="classification"``
     (Haiku-tier; resolves to Azure OpenAI ``chat-gpt41mini`` via ``LLM_DEFAULT``).
@@ -544,72 +655,47 @@ def classify_workforce_question(
     if not q:
         return _fallback_other("empty_question")
 
+    if _matches_curriculum_generation_shape(q):
+        log.info("intent_classification_curriculum_heuristic", match="curriculum_generation_shape")
+        base_prompt = _build_classification_user_prompt(q, conversation_context)
+        entity_prompt = _CURRICULUM_INTENT_ENTITY_USER_HINT + base_prompt
+        llm_out, fail_reason = _run_intent_llm(
+            user_prompt=entity_prompt,
+            question_for_trace=q,
+            correlation_id=correlation_id,
+            max_tokens=max_tokens,
+            cost_ledger=cost_ledger,
+            ledger_leg_name="intent_classification_curriculum_entities",
+        )
+        if llm_out is None:
+            return _curriculum_heuristic_fallback_response(fail_reason or "unknown")
+        raw_ent = llm_out.get("extracted_entities")
+        if not isinstance(raw_ent, dict):
+            return _curriculum_heuristic_fallback_response("missing_extracted_entities")
+        try:
+            coerced = ExtractedEntities.model_validate(raw_ent).model_dump()
+        except Exception:
+            return _curriculum_heuristic_fallback_response("extracted_entities_invalid")
+        return {
+            "intent": "curriculum",
+            "confidence": float(_CURRICULUM_HEURISTIC_CONFIDENCE),
+            "needs_clarification": _CURRICULUM_HEURISTIC_CONFIDENCE < _CLARIFICATION_THRESHOLD,
+            "extracted_entities": coerced,
+        }
+
     heuristic = intent_heuristic_classification(q)
     if heuristic is not None:
         return heuristic
 
-    ctx = (conversation_context or "").strip()
-    if ctx:
-        prompt = (
-            "The user is continuing a conversation. Use the prior Q&A below to resolve "
-            "pronouns, “the same region”, and short follow-up questions that refer to earlier context.\n\n"
-            f"{ctx}\n\n"
-            f"Current user question (this turn only):\n{q}\n"
-        )
-    else:
-        prompt = f"User question:\n{q}\n"
-
-    langfuse_context.update_current_observation(
-        input=q,
-        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    prompt = _build_classification_user_prompt(q, conversation_context)
+    llm_out, fail_reason = _run_intent_llm(
+        user_prompt=prompt,
+        question_for_trace=q,
+        correlation_id=correlation_id,
+        max_tokens=max_tokens,
+        cost_ledger=cost_ledger,
+        ledger_leg_name="intent_classification",
     )
-
-    try:
-        result = complete(
-            prompt=prompt,
-            agent_name=_AGENT_NAME,
-            role="classification",
-            system=_SYSTEM_PROMPT,
-            max_tokens=max_tokens,
-            correlation_id=correlation_id,
-        )
-        if cost_ledger is not None:
-            from analytics.query_engine.ledger_utils import append_leg_from_complete
-
-            append_leg_from_complete(cost_ledger, "intent_classification", result, model_fallback=None)
-    except Exception as exc:
-        log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
-        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
-        return _fallback_other("llm_exception")
-
-    report_langfuse_usage(result)
-
-    if not result.get("success") or result.get("extraction_failed"):
-        langfuse_context.update_current_observation(level="WARNING", status_message="llm_failed")
-        return _fallback_other("llm_failed")
-
-    content = (result.get("content") or "").strip()
-    parsed = _parse_llm_json(content)
-    if not parsed:
-        langfuse_context.update_current_observation(level="WARNING", status_message="invalid_json")
-        return _fallback_other("invalid_json")
-
-    try:
-        validated = IntentClassification.model_validate(parsed)
-    except Exception:
-        langfuse_context.update_current_observation(level="WARNING", status_message="schema_validation")
-        return _fallback_other("schema_validation")
-
-    out_entities = validated.extracted_entities.model_dump()
-    needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
-    classification_out = {
-        "intent": validated.intent,
-        "confidence": float(validated.confidence),
-        "needs_clarification": needs_clarification,
-        "extracted_entities": out_entities,
-    }
-    langfuse_context.update_current_observation(
-        output={"intent": validated.intent, "confidence": float(validated.confidence)},
-        metadata={"needs_clarification": needs_clarification},
-    )
-    return classification_out
+    if llm_out is None:
+        return _fallback_other(fail_reason or "unknown")
+    return llm_out
