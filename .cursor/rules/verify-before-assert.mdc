@@ -11,7 +11,7 @@ LLM agents hallucinate paths, function names, commit counts, and issue states wi
 
 Run a single command — the output is the source of truth, not your memory:
 
-- `git ls-tree -r origin/<default-branch> --name-only | grep <name>` — confirm a path on the remote default branch (`development` for JIE, `master` for wfd-os, `main` for curriculum-planning).
+- `git ls-tree -r origin/<default-branch> --name-only | grep <name>` — confirm a path on the remote default branch (`development` for JIE and wfd-os, `main` for curriculum-planning).
 - `ls <directory>` — confirm a local path.
 
 If the file is not in the output, it does not exist. Do not say "it should be at X" — say "I did not find it; the closest match is Y at path Z."
