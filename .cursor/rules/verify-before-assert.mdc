@@ -1,0 +1,41 @@
+---
+description: Verify-before-assert — never claim a file, symbol, commit, or issue state exists without running a command against the actual repo first.
+alwaysApply: true
+---
+
+# Verify Before Assert
+
+LLM agents hallucinate paths, function names, commit counts, and issue states with high confidence. This is the dominant failure mode in this repo. Verify against the actual codebase before asserting.
+
+## Before claiming a file exists
+
+Run a single command — the output is the source of truth, not your memory:
+
+- `git ls-tree -r origin/<default-branch> --name-only | grep <name>` — confirm a path on the remote default branch (`development` for JIE, `master` for wfd-os, `main` for curriculum-planning).
+- `ls <directory>` — confirm a local path.
+
+If the file is not in the output, it does not exist. Do not say "it should be at X" — say "I did not find it; the closest match is Y at path Z."
+
+## Before claiming a function, class, or import path exists
+
+- `git grep "<symbol>" origin/<default-branch>` — verify a symbol is defined or referenced.
+- `git grep "from <module> import" origin/<default-branch>` — verify a specific import path is real.
+
+Zero hits = the symbol or module does not exist. Suggest the actual import path from the grep output, not an inferred one.
+
+## Before claiming a commit count, issue state, or PR state
+
+- `git log --author=<name> --since=<date> origin/<default-branch> --oneline | wc -l` — actual commit count.
+- `gh issue view <number>` — actual issue state and body.
+- `gh issue list --label <label> --state <state>` — full picture of labeled issues.
+- `gh pr view <number>` — actual PR state.
+
+Never quote a number you didn't just measure. Never say "issue #N is open" without `gh issue view N` in the same turn.
+
+## When the user contradicts you
+
+The user is the source of truth about repo state. If the user contradicts a prior claim, re-run the verification commands above against the codebase, then correct yourself with the verified answer: "You're right — verified via `<command>`: `<actual answer>`."
+
+## What this rule is not
+
+This rule is not "ask the user before doing anything." Verify with commands and proceed. Only escalate to the user when verification surfaces a genuine ambiguity (e.g., two files with the same name in different directories, and the user's intent is unclear).
