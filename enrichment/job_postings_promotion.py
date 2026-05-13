@@ -36,6 +36,7 @@ from enrichment.dedup import run_fuzzy_dedup
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 from enrichment.resolvers.sector_resolver import resolve_sector
+from enrichment.types import RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
@@ -794,10 +795,13 @@ def _coerce_enrichment_params(
 def apply_enrichment_to_job_postings(
     session: Session,
     normalized_job_id: int,
-    record_enriched_payload: dict[str, Any],
+    record_enriched_payload: RecordEnrichedPayload,
 ) -> bool:
     """
     Apply enrichment columns to ``job_postings`` when tier allows.
+
+    ``record_enriched_payload`` is validated at the agent boundary via
+    :class:`enrichment.types.RecordEnrichedPayload`.
 
     Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
     rejected tier, or missing quality score when needed).
@@ -821,10 +825,14 @@ def apply_enrichment_to_job_postings(
         )
         return False
 
+    payload_dict: dict[str, Any] = record_enriched_payload.model_dump(
+        mode="python",
+        exclude_unset=True,
+    )
     coercion = _coerce_enrichment_params(
         session,
         normalized_job_id,
-        record_enriched_payload,
+        payload_dict,
         resolved,
     )
     if isinstance(coercion, _PromotionCoercionSkip):
