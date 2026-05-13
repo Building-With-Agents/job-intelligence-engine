@@ -51,6 +51,8 @@ from common.data_store.models import (
     SkillDemandWeekly,
     SkillVelocity,
 )
+from common.types.extraction_schemas import responsibilities_from_jsonb
+from common.types.extraction_types import skills_from_jsonb, tools_from_jsonb
 from enrichment.classifiers.spam_preview import get_spam_thresholds
 
 log = structlog.get_logger()
@@ -332,10 +334,8 @@ def _query_top_skills(
     postings_per_skill: dict[str, set[str]] = {}
     for skills_json, jpid in rows:
         seen: set[str] = set()
-        for item in skills_json or []:
-            if not isinstance(item, dict):
-                continue
-            lab = (item.get("skill_name") or item.get("label") or "").strip()
+        for rec in skills_from_jsonb(skills_json):
+            lab = (rec.skill_name or "").strip()
             if not lab:
                 continue
             key = lab.lower()
@@ -401,11 +401,10 @@ def _query_rising_skills(
             .join(jp, and_(nj.source == jp.source, nj.external_id == jp.external_id))
             .where(base_scope)
         ).all():
-            for item in skills_json or []:
-                if isinstance(item, dict):
-                    lab = (item.get("skill_name") or item.get("label") or "").strip()
-                    if lab:
-                        role_skills.add(lab.lower())
+            for rec in skills_from_jsonb(skills_json):
+                lab = (rec.skill_name or "").strip()
+                if lab:
+                    role_skills.add(lab.lower())
 
     if not role_skills:
         return []
@@ -458,17 +457,13 @@ def _query_co_occurring(session: Session, role_id: str, temporal_period: str | N
     ctr: Counter[tuple[str, str]] = Counter()
     for tools, resps in rows:
         t_names: list[str] = []
-        for t in tools or []:
-            if not isinstance(t, dict):
-                continue
-            n = (t.get("tool_name") or t.get("label") or "").strip()
+        for t in tools_from_jsonb(tools):
+            n = (t.tool_name or "").strip()
             if n:
                 t_names.append(n)
         r_texts: list[str] = []
-        for r in resps or []:
-            if not isinstance(r, dict):
-                continue
-            txt = (r.get("text") or r.get("responsibility") or r.get("description") or r.get("title") or "").strip()
+        for r in responsibilities_from_jsonb(resps):
+            txt = (r.responsibility_description or "").strip()
             if txt:
                 r_texts.append(txt[:500])
         for tn in t_names:

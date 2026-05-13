@@ -8,9 +8,10 @@ Source: ARCHITECTURE_DEEP.md, curriculum Week 5 Pair B spec.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from common.types.extraction_types import SpanRecord
 
@@ -81,3 +82,27 @@ class ContextSignal(BaseModel):
     value: str
     confidence: float = Field(..., ge=0.0, le=1.0)
     source_span: SpanRecord
+
+
+def responsibilities_from_jsonb(raw: Sequence[object] | None) -> list[ResponsibilityRecord]:
+    """Validate ``extracted_intelligence.responsibilities`` JSONB at the read boundary.
+
+    Accepts legacy element keys (``text``, ``responsibility``, ``description``, ``title``)
+    as aliases for :attr:`ResponsibilityRecord.responsibility_description` when the
+    canonical field is absent, matching prior hand-rolled dict access.
+    """
+
+    out: list[ResponsibilityRecord] = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        d = dict(item)
+        if not str(d.get("responsibility_description") or "").strip():
+            alt = str(d.get("text") or d.get("responsibility") or d.get("description") or d.get("title") or "").strip()
+            if alt:
+                d["responsibility_description"] = alt
+        try:
+            out.append(ResponsibilityRecord.model_validate(d))
+        except ValidationError:
+            continue
+    return out

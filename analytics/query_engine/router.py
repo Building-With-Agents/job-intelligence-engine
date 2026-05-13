@@ -43,6 +43,7 @@ from analytics.query_engine.constants import (
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
     SKILL_TAXONOMY_GATE_CONFIDENCE_CAP,
 )
+from analytics.query_engine.intent import IntentClassification
 from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
 from common.data_store.models import (
     CanonicalRole,
@@ -439,7 +440,7 @@ class QueryRouter:
 
     def route(
         self,
-        classification: dict[str, Any],
+        classification: dict[str, Any] | IntentClassification,
         session: Session,
         *,
         tenant: TenantAccess | None = None,
@@ -450,7 +451,7 @@ class QueryRouter:
         Args:
             classification: Output of ``classify_workforce_question`` — keys
                 ``intent`` (str), ``confidence`` (float),
-                ``extracted_entities`` (dict).
+                ``extracted_entities`` (dict), or a validated :class:`IntentClassification`.
             session: Open SQLAlchemy ``Session`` (read path; the router never
                 issues write statements).
             tenant: Entitled subregions + aggregate exposure (JIE #224 / ``X-Tenant-Id``).
@@ -462,11 +463,16 @@ class QueryRouter:
             :class:`RouteResult` with result rows or structured error details.
         """
         taccess: TenantAccess = tenant or get_tenant_access_for_pipeline(None)
-        intent: str = str(classification.get("intent") or "other")
-        confidence: float = float(classification.get("confidence") or 0.0)
-        entities: dict[str, list[str]] = classification.get("extracted_entities") or {}
+        ic = (
+            classification
+            if isinstance(classification, IntentClassification)
+            else IntentClassification.model_validate(classification)
+        )
+        intent: str = str(ic.intent or "other")
+        confidence: float = float(ic.confidence or 0.0)
+        entities = ic.extracted_entities
 
-        issue197_hint = classification.get("issue197_sql_guard_hint")
+        issue197_hint = ic.issue197_sql_guard_hint
         if isinstance(issue197_hint, str) and issue197_hint.strip():
             log.info(
                 "issue197_sql_guard_hint_in_router_context",
@@ -474,10 +480,10 @@ class QueryRouter:
                 hint_preview=issue197_hint.strip()[:200],
             )
 
-        skill_names: list[str] = entities.get("skill_names") or []
-        role_names: list[str] = entities.get("role_names") or []
-        geo_terms: list[str] = entities.get("geographic_terms") or []
-        time_refs: list[str] = entities.get("time_references") or []
+        skill_names: list[str] = list(entities.skill_names)
+        role_names: list[str] = list(entities.role_names)
+        geo_terms: list[str] = list(entities.geographic_terms)
+        time_refs: list[str] = list(entities.time_references)
 
         weeks_back = _parse_weeks_back(time_refs)
         wfloor = _week_floor(weeks_back)

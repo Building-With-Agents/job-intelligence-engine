@@ -13,9 +13,10 @@ Week 5: TaskRecord, ResponsibilityRecord, ContextSignal live in extraction_schem
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Literal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 FieldSource = Literal["title", "description", "requirements", "responsibilities"]
 SkillType = Literal["Technical", "Domain", "Soft", "Certification", "Tool"]
@@ -119,3 +120,31 @@ class ExtractionMetadata(BaseModel):
     pass2_llm_dimensions: list[str] = Field(default_factory=list)
     pass2_llm_calls: int = Field(default=0, ge=0)
     extraction_warnings: list[str] = Field(default_factory=list)
+
+
+def skills_from_jsonb(raw: Sequence[object] | None) -> list[SkillRecord]:
+    """Validate ``extracted_intelligence.skills`` JSONB elements at the read boundary."""
+
+    out: list[SkillRecord] = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out.append(SkillRecord.model_validate(item))
+        except ValidationError:
+            continue
+    return out
+
+
+def tools_from_jsonb(raw: Sequence[object] | None) -> list[ToolRecord]:
+    """Validate ``extracted_intelligence.tools`` JSONB elements at the read boundary."""
+
+    out: list[ToolRecord] = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out.append(ToolRecord.model_validate(item))
+        except ValidationError:
+            continue
+    return out

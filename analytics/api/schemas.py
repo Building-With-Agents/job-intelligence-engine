@@ -99,6 +99,46 @@ class TriggerEnvelope(BaseModel):
     data: dict[str, Any]
 
 
+class CohortGapTriggerCacheData(BaseModel):
+    """JSON written to ``CohortGapCache.gap_data`` for cohort gap analysis."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cohort_key: str
+    week_start: str | None = None
+    market_skill_demand: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class RoleBenchmarkTriggerCacheData(BaseModel):
+    """JSON written to ``CohortGapCache.gap_data`` for role benchmark triggers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    canonical_role_id: str
+    week_start: str | None = None
+    snapshots: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class EmergingSkillsTriggerCacheData(BaseModel):
+    """JSON written to ``CohortGapCache.gap_data`` for emerging skills scan."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    week_start: str | None = None
+    skills: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class EmployerComparisonTriggerCacheData(BaseModel):
+    """JSON written to ``CohortGapCache.gap_data`` for custom employer comparison."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    company_id: str
+    week_start: str | None = None
+    market_sector_context: list[dict[str, Any]] = Field(default_factory=list)
+    note: str = ""
+
+
 class CohortGapAnalysisRequest(BaseModel):
     cohort_key: str = Field(..., min_length=1, max_length=256)
     week_start: str | None = Field(default=None, description="ISO date YYYY-MM-DD")

@@ -24,11 +24,15 @@ from analytics.api.laborpulse_wire import (
 )
 from analytics.api.schemas import (
     CohortGapAnalysisRequest,
+    CohortGapTriggerCacheData,
     CustomEmployerComparisonRequest,
     EmergingSkillsScanRequest,
+    EmergingSkillsTriggerCacheData,
+    EmployerComparisonTriggerCacheData,
     LaborPulseQueryRequest,
     LaborPulseQueryResponse,
     RoleBenchmarkRequest,
+    RoleBenchmarkTriggerCacheData,
     TriggerEnvelope,
 )
 from analytics.query_engine import audit_log
@@ -189,11 +193,11 @@ def run_cohort_gap_analysis(
     if not vr.ok:
         raise ValueError(vr.reason or "sql_invalid")
     rows, _ = execute_validated_query(session, vr.sql_for_execution)
-    gap_data: dict[str, Any] = {
-        "cohort_key": cohort_key,
-        "week_start": week_start,
-        "market_skill_demand": rows,
-    }
+    gap_data = CohortGapTriggerCacheData(
+        cohort_key=cohort_key,
+        week_start=week_start,
+        market_skill_demand=rows,
+    ).model_dump(mode="json")
     now = _cache_put(
         session,
         trigger_type=ttype,
@@ -229,7 +233,11 @@ def run_role_benchmark(
     if not vr.ok:
         raise ValueError(vr.reason or "sql_invalid")
     rows, _ = execute_validated_query(session, vr.sql_for_execution)
-    gap_data = {"canonical_role_id": canonical_role_id, "week_start": week_start, "snapshots": rows}
+    gap_data = RoleBenchmarkTriggerCacheData(
+        canonical_role_id=canonical_role_id,
+        week_start=week_start,
+        snapshots=rows,
+    ).model_dump(mode="json")
     now = _cache_put(
         session,
         trigger_type=ttype,
@@ -266,7 +274,10 @@ def run_emerging_skills_scan(
         raise ValueError(vr.reason or "sql_invalid")
     rows, _ = execute_validated_query(session, vr.sql_for_execution)
     filtered = [r for r in rows if int(r.get("demand_count") or 0) >= min_posting_count]
-    gap_data = {"week_start": week_start, "skills": filtered}
+    gap_data = EmergingSkillsTriggerCacheData(
+        week_start=week_start,
+        skills=filtered,
+    ).model_dump(mode="json")
     now = _cache_put(
         session,
         trigger_type=ttype,
@@ -303,12 +314,12 @@ def run_custom_employer_comparison(
     if not vr.ok:
         raise ValueError(vr.reason or "sql_invalid")
     rows, _ = execute_validated_query(session, vr.sql_for_execution)
-    gap_data = {
-        "company_id": company_id,
-        "week_start": week_start,
-        "market_sector_context": rows,
-        "note": "Employer-specific job rows require validated company scope in a future iteration.",
-    }
+    gap_data = EmployerComparisonTriggerCacheData(
+        company_id=company_id,
+        week_start=week_start,
+        market_sector_context=rows,
+        note="Employer-specific job rows require validated company scope in a future iteration.",
+    ).model_dump(mode="json")
     now = _cache_put(
         session,
         trigger_type=ttype,

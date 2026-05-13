@@ -29,7 +29,7 @@ from analytics.conversation_memory import append_conversation_turn, load_prior_c
 from analytics.query_engine import audit_log, qna
 from analytics.query_engine.curriculum_path import CurriculumInputs, build_curriculum_inputs
 from analytics.query_engine.curriculum_synthesis import no_resolved_role_message, synthesize_curriculum_outline
-from analytics.query_engine.intent import classify_workforce_question
+from analytics.query_engine.intent import IntentClassification, classify_workforce_question
 from analytics.query_engine.langfuse_utils import lf_context as _lf_ctx
 from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
 from analytics.query_engine.langfuse_utils import report_langfuse_usage
@@ -727,37 +727,34 @@ def run_analytics_qna(
             cost_ledger=ledger,
             conversation_context=pctx,
         )
-        intent_label = str(classification.get("intent") or "other")
-        conf = float(classification.get("confidence") or 0.0)
-        payload_audit = {
-            "intent": intent_label,
-            "classification_confidence": conf,
-            "needs_clarification": classification.get("needs_clarification"),
-        }
-
-        if intent_label in _ISSUE197_INTENTS:
+        tentative_intent = str(classification.get("intent") or "other")
+        if tentative_intent in _ISSUE197_INTENTS:
             classification = {
                 **classification,
                 "issue197_sql_guard_hint": _ISSUE197_SQL_GUARD_HINT,
             }
             log.info(
                 "issue197_orm_guard_hint_attached",
-                intent=intent_label,
+                intent=tentative_intent,
                 correlation_id=cid,
             )
 
-        ent = classification.get("extracted_entities")
-        if isinstance(ent, dict):
-            check_region_entitled(taccess, q, ent)
-        else:
-            check_region_entitled(taccess, q, {})
+        ic = IntentClassification.model_validate(classification)
+        intent_label = ic.intent
+        conf = float(ic.confidence)
+        payload_audit = {
+            "intent": intent_label,
+            "classification_confidence": conf,
+            "needs_clarification": ic.needs_clarification,
+        }
+
+        check_region_entitled(taccess, q, ic.extracted_entities.model_dump())
 
         if intent_label == "curriculum":
             role_names_for_ci: list[str] | None = None
-            if isinstance(classification.get("extracted_entities"), dict):
-                rn = classification["extracted_entities"].get("role_names")
-                if isinstance(rn, list):
-                    role_names_for_ci = [str(x) for x in rn if x]
+            rn = ic.extracted_entities.role_names
+            if rn:
+                role_names_for_ci = [str(x) for x in rn if x]
             ins = build_curriculum_inputs(session, q, role_names=role_names_for_ci)
             syn_out = synthesize_curriculum_outline(ins, correlation_id=cid)
             api = _curriculum_to_analytics_response(
@@ -824,8 +821,7 @@ def run_analytics_qna(
         #   already identified, not the raw question text which produces nonsensical output.
         role_hint: str | None = None
         if router_row_count == 0 and not router_error and intent_label in _ROLE_FILTERED_INTENTS:
-            ent = classification.get("extracted_entities") or {}
-            role_names: list[str] = ent.get("role_names") or [] if isinstance(ent, dict) else []
+            role_names = [str(x) for x in ic.extracted_entities.role_names if x]
             role_query_str = ", ".join(role_names) if role_names else ""
             role_hint = no_resolved_role_message(
                 session,

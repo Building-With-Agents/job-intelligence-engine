@@ -4,6 +4,7 @@ from common.types.extraction_schemas import (
     ContextSignal,
     ResponsibilityRecord,
     TaskRecord,
+    responsibilities_from_jsonb,
 )
 from common.types.extraction_types import (
     ExtractionMetadata,
@@ -11,6 +12,8 @@ from common.types.extraction_types import (
     SpanRecord,
     TaxonomyResult,
     ToolRecord,
+    skills_from_jsonb,
+    tools_from_jsonb,
 )
 from common.types.job_record import JobRecord
 from common.types.query_request import QueryPersona, QueryRequest
@@ -31,4 +34,7 @@ __all__ = [
     "TaskRecord",
     "TaxonomyResult",
     "ToolRecord",
+    "responsibilities_from_jsonb",
+    "skills_from_jsonb",
+    "tools_from_jsonb",
 ]

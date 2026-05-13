@@ -21,7 +21,7 @@ import re
 from typing import TYPE_CHECKING, Any, Final
 
 import structlog
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from analytics.query_engine.langfuse_utils import lf_context as langfuse_context
 from analytics.query_engine.langfuse_utils import lf_observe as _lf_observe
@@ -403,9 +403,13 @@ class ExtractedEntities(BaseModel):
 class IntentClassification(BaseModel):
     """Structured LLM output for intent routing."""
 
+    model_config = ConfigDict(extra="ignore")
+
     intent: str
     confidence: float = Field(ge=0.0, le=1.0)
     extracted_entities: ExtractedEntities = Field(default_factory=ExtractedEntities)
+    needs_clarification: bool | None = None
+    issue197_sql_guard_hint: str | None = None
 
     @field_validator("intent", mode="before")
     @classmethod
