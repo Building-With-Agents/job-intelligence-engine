@@ -68,6 +68,9 @@ from analytics._config import query_timeout_seconds as _query_timeout_seconds
 _QUERY_LIMIT: int = _query_row_limit()
 _QUERY_TIMEOUT_SECONDS: int = _query_timeout_seconds()
 
+# EXEMPLAR: Phase 2 reference — ORM guardrails (ALLOWED_TABLES + _execute wrapper).
+# Pattern: use allowlists for table access; wrap execution at the library boundary.
+# All query handlers call _execute — one place to audit, no SQL injection surface.
 #: Tables the router is permitted to query.  Extending this set requires an
 #: explicit PR review — do not add raw pipeline tables here.
 ALLOWED_TABLES: frozenset[str] = frozenset(

@@ -98,6 +98,9 @@ def create_placeholder_company(raw_name: str, _normalized_name: str, session: Se
     return company.company_id
 
 
+# EXEMPLAR: Phase 2 reference — three-tier resolver with confidence scores.
+# Pattern: structured fallback chains emit confidence signals, degrade gracefully, never throw.
+# Phase 2 Career Navigator + College Intelligence agents should follow this pattern.
 def resolve_company(raw_name: str, session: Session) -> tuple[str, float]:
     """
     Resolve ``raw_name`` to a company id and a confidence score for ``field_confidence``.

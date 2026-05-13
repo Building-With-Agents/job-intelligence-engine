@@ -133,6 +133,13 @@ _BORDERPLEX_EMPLOYERS_RANKED_SHARE_PATTERN: Final[re.Pattern[str]] = re.compile(
 def _intent_heuristic_ablation_level() -> int:
     """Higher enables more Pair D heuristics. Unset → all off (level 0). Set 1-3 for staged eval baselines."""
 
+    # Intent heuristic ablation levels — controlled by QA_EVAL_INTENT_HEURISTIC_LEVEL env var
+    # Level 0: no heuristics — all questions go to LLM classifier
+    # Level 1: curriculum training-program cover pattern added
+    # Level 2: workflow data-pipeline pattern added (level 1 +)
+    # Level 3: Borderplex employer ranked-share pattern added (levels 1+2 +) — DEFAULT
+    # Production default: 3 (all heuristics active)
+    # Use level 0 in eval harness when testing LLM classifier in isolation
     raw = os.getenv("QA_EVAL_INTENT_HEURISTIC_LEVEL")
     if raw is None or not str(raw).strip():
         return 0
@@ -434,6 +441,9 @@ Respond with JSON ONLY, no markdown, matching this shape:
 """
 
 
+# EXEMPLAR: Phase 2 reference — Pydantic @field_validator coercion at model boundary.
+# Pattern: validate and coerce LLM JSON output at the model boundary, not in handlers.
+# Callers always receive a valid shape regardless of LLM output variation.
 class ExtractedEntities(BaseModel):
     """Entity lists parsed from the user question (all optional, default empty)."""
 
