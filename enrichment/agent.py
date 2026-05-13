@@ -102,7 +102,7 @@ from enrichment.resolvers.freshness_slice import build_freshness_record_for_anal
 from enrichment.resolvers.location_resolver import resolve_location
 from enrichment.resolvers.sector_resolver import resolve_sector
 from enrichment.schemas import EnrichedJobProfile
-from enrichment.types import RecordEnrichedPayload
+from enrichment.schemas import RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()

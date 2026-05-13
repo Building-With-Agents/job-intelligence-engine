@@ -29,7 +29,7 @@ from enrichment.job_postings_promotion import (
     _UPDATE_UNCERTAIN_SQL,
     apply_enrichment_to_job_postings,
 )
-from enrichment.types import RecordEnrichedPayload
+from enrichment.schemas import RecordEnrichedPayload
 
 
 def _mapping_first(row: dict | None) -> MagicMock:
