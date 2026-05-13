@@ -18,7 +18,7 @@ from enrichment.job_postings_promotion import (
     apply_enrichment_to_job_postings,
     apply_fuzzy_dedup_result,
 )
-from enrichment.types import RecordEnrichedPayload
+from enrichment.schemas import RecordEnrichedPayload
 
 CURRENT_ID = "00000000-0000-0000-0000-000000000001"
 MATCHED_ID = "00000000-0000-0000-0000-000000000002"

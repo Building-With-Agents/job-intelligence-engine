@@ -36,7 +36,7 @@ from enrichment.dedup import run_fuzzy_dedup
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 from enrichment.resolvers.sector_resolver import resolve_sector
-from enrichment.types import RecordEnrichedPayload
+from enrichment.schemas import RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
@@ -798,7 +798,7 @@ def apply_enrichment_to_job_postings(
     Apply enrichment columns to ``job_postings`` when tier allows.
 
     ``record_enriched_payload`` is validated at the agent boundary via
-    :class:`enrichment.types.RecordEnrichedPayload`.
+    :class:`enrichment.schemas.RecordEnrichedPayload`.
 
     Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
     rejected tier, or missing quality score when needed).

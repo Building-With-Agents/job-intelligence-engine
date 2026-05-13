@@ -1,11 +1,11 @@
-"""Boundary validation for :class:`enrichment.types.RecordEnrichedPayload`."""
+"""Boundary validation for :class:`enrichment.schemas.RecordEnrichedPayload`."""
 
 from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
 
-from enrichment.types import RecordEnrichedPayload
+from enrichment.schemas import RecordEnrichedPayload
 
 
 def test_record_enriched_payload_accepts_extra_keys() -> None:
