@@ -482,6 +482,7 @@ def _cluster_member_ids(session: Session, cluster_id: str, *, exclude_job_postin
     return [str(row["job_posting_id"]) for row in rows]
 
 
+# EXEMPLAR: Phase 2 reference — fuzzy dedup persistence contract validation uses imperative ValueError checks on stub, unique-clear, and clustered survivor paths before SQL updates.
 def apply_fuzzy_dedup_result(
     session: Session,
     job_posting_id: str,
@@ -584,6 +585,8 @@ def apply_fuzzy_dedup_result(
     return True
 
 
+# EXEMPLAR: Phase 2 reference — savepoint pattern
+# Dedup runs inside session.begin_nested() so failures roll back only the savepoint, not the outer promotion transaction.
 def _apply_fuzzy_dedup_after_promotion(
     session: Session,
     *,
