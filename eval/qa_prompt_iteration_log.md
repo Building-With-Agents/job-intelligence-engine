@@ -329,6 +329,6 @@ Cumulative iteration arc over **`gq-041` … `gq-060`** (geographic + comparison
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
 | 2026-04-30 | Nestor | Added `nestor-baseline` human-annotation row (Langfuse reconstruction); added `nestor-v2-role-evolution-fix` row with final automated-score results; created `findings_nestor_v2_role_evolution_fix.md`; documented DEV-005 |
-| 2026-05-04 | Pair C | #340 harness: cohort + golden-id precedence, composite JSON + Langfuse `composite` / `mean_composite`; Pair C iteration table + cycle findings stubs; contract JSON |
 | 2026-05-03 | Pair (intent prompt iteration) | Added "Targeted intent-only smoke runs" section and recorded the gq-061..067 employer disambiguation smoke (20/20 pass). Refs #257, #340, #346 |
+| 2026-05-04 | Pair C | #340 harness: cohort + golden-id precedence, composite JSON + Langfuse `composite` / `mean_composite`; Pair C iteration table + cycle findings stubs; contract JSON |
 | 2026-05-11 | Angel (#339) | Backfilled missing iteration-log rows for `v2.2-emergence-fix` and `v2.3-disruption-trend-tiebreak`; artefacts were already committed on 2026-04-30 (commit `5546fa0`) but the cycle rows were missing from the version-history table. |
