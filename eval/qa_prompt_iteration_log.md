@@ -12,11 +12,6 @@ adopted from v2 onward per IMP-030 / JIE #287).
 
 ## Version history
 
-| Version | Date | Author | Scorer | Change summary | Composite | Answerability | Findings |
-|---------|------|--------|--------|----------------|:---------:|:-------------:|----------|
-| `v1-baseline` | 2026-04-23 | Bryan + Emilio | v1 (partial-credit intent, lenient refusal) | Initial baseline — 90 golden Qs, unmodified prompts, in-process pipeline | **0.875** | 0.260 (n=50) | `eval/runs/qa-v1-baseline.json` |
-| `v2-scorer-redesign` | 2026-04-24 | Bryan + Emilio | v2 (binary intent, geometric composite, None exclusions) | Scorer redesign (PR #278) — binary intent, stronger refusal penalty, `None` for infra failures; run against empty aggregate tables (pre-#291) | **0.510** geo | 0.060 (n=50) | [`eval/runs/findingsv2.md`](findingsv2.md) |
-| `v2.1-post-seed-fix` | 2026-04-27 | Bryan | v2 (same scorer as v2) | Re-run post-PR #291 aggregate table seed fix; confirms data-seed was sole cause of 0.06 answerability collapse | — | **0.340** (n=50) | [`eval/runs/findingsv2.1.md`](findingsv2.1.md) |
 | Version | Date | Author | Scorer | Change summary | Composite | Answerability | Human scores (Langfuse) | Findings |
 |---------|------|--------|--------|----------------|:---------:|:-------------:|------------------------|----------|
 | `v1-baseline` | 2026-04-23 | Bryan + Emilio | v1 (partial-credit intent, lenient refusal) | Initial baseline — 90 golden Qs, unmodified prompts, in-process pipeline | **0.875** | 0.260 (n=50) | — | `eval/runs/qa-v1-baseline.json` |
@@ -211,6 +206,38 @@ the request body. Integration tests added to prevent silent regression.
 
 ---
 
+## Human annotation workflow (Langfuse → repo)
+
+Human annotation scores entered in the Langfuse UI are durable only in Langfuse.
+After annotating, run the pull script to snapshot them into the repo:
+
+```bash
+# Pull the three standard annotation scores for the nestor baseline run
+python scripts/pull_langfuse_annotations.py
+
+# Pull all annotation scores (if you add more score names in Langfuse)
+python scripts/pull_langfuse_annotations.py --all-annotations
+
+# Pull annotations for a different run file
+python scripts/pull_langfuse_annotations.py --run-json eval/runs/<run>.json
+
+# After pulling, commit the annotations file
+git add eval/runs/*_annotations.json
+git commit -m "chore(eval): snapshot human annotations from Langfuse <date>"
+```
+
+The output file (`eval/runs/<run>_annotations.json`) contains:
+- `human_scores` — the values you entered in the Langfuse UI (`source: ANNOTATION`)
+- `automated_scores` — the programmatic scorer output from the original run
+- `summary` — mean per score name and coverage percentage
+
+**Score names tracked:** `correctness`, `decision_relevance`, `followup_quality`
+(add new names with `--score-names <name1> <name2> ...`)
+
+> **Langfuse naming note:** the annotation queue score is `followup_quality` (no underscore between "follow" and "up"). The pull script and all downstream files now use this exact name.
+
+---
+
 ## Targeted intent-only smoke runs
 
 Smaller verifications that exercise `classify_workforce_question` directly
@@ -221,7 +248,7 @@ the binding success criterion is the per-question intent matrix. Full
 
 | Date | Author | Branch | Scope | Result | Artifacts |
 |------|--------|--------|-------|--------|-----------|
-| 2026-05-03 | Pair (intent prompt iteration) | `fix/intent-employer-disambiguation-gq061-067` | gq-041..050 (geographic, #257 preservation), gq-061/063/065/067 (employer fix), gq-062/064/066/068/069/070 (employer prior spot-check) — 20 questions total | **20/20 pass**: 10/10 geographic, 4/4 employer fix, 6/6 employer prior (all conf ≥ 0.90) | [`runs/findings-intent-employer-fewshot-fix.md`](runs/findings-intent-employer-fewshot-fix.md), [`runs/intent-smoke-employer-fewshot-fix.json`](runs/intent-smoke-employer-fewshot-fix.json) |
+| 2026-05-03 | Pair (intent prompt iteration) | `fix/intent-employer-disambiguation-gq061-067` | gq-041..050 (geographic, #257 preservation), gq-061/063/065/067 (employer fix), gq-062/064/066/068/069/070 (employer prior spot-check) — 20 questions total | **20/20 pass**: 10/10 geographic, 4/4 employer fix, 6/6 employer prior (all conf ≥ 0.90) | [`eval/runs/findings-intent-employer-fewshot-fix.md`](runs/findings-intent-employer-fewshot-fix.md), [`eval/runs/intent-smoke-employer-fewshot-fix.json`](runs/intent-smoke-employer-fewshot-fix.json) |
 
 ---
 
@@ -241,6 +268,59 @@ on hard questions. At n ≈ 90, a 2-point composite delta is within noise.
 
 ---
 
+### DEV-005 — `role_evolution` router returns volume data only; `extracted_intelligence` skill content absent
+
+**Observed in:** `nestor-v2-role-evolution-fix`
+
+**What happened:**
+After the v2 fix, `_route_role_evolution` queries `job_postings GROUP BY temporal_period`, which
+provides posting and employer counts per era. This resolved the three outright refusals (gq-032,
+gq-035, gq-036) and lifted `correct_refusal` from 0.70 → 1.00.
+
+However, 8 of 10 role-evolution `must_include` rubrics require `extracted_intelligence` — the
+JSONB table that holds per-posting skill names, tool names, tasks, and context signals. Because
+the router does not join to `extracted_intelligence`, the synthesis layer has no skill-level data
+and cannot name specific skills that changed across temporal eras. Questions that ask "which
+skills were added or dropped" still score below ceiling on `must_include_recall`.
+
+**Per-question impact (gq-031..040):**
+
+| GQ | `extracted_intelligence` in rubric? | `must_include_recall` (v2) | ceiling gap |
+|----|:---:|:---:|---|
+| gq-031 | ✅ | 0.81 | skills gap |
+| gq-032 | ✅ | 0.63 | skills gap + was refusal |
+| gq-033 | ✅ | 0.78 | skills gap + grounding retry |
+| gq-034 | — | 0.91 | uses `canonical_roles`/`role_snapshot_weekly` |
+| gq-035 | ✅ | 0.78 | skills + tools gap |
+| gq-036 | ✅ | 0.78 | skills + tools + co-occurrence gap |
+| gq-037 | ✅ | 0.92 | near-ceiling; seniority_level present |
+| gq-038 | ✅ | 0.72 | tools gap |
+| gq-039 | ✅ | 0.74 | skills gap + grounding failure regression |
+| gq-040 | ✅ | 0.70 | skills + tools gap |
+
+**Planned fix (`nestor-v3`):** Replace the `job_postings GROUP BY temporal_period` query with a
+3-table join (`job_postings → normalized_jobs → extracted_intelligence`) that unnests
+`ei.skills JSONB` and groups by `(temporal_period, skill_name)`. This returns the top skills per
+era for the requested role, giving the synthesis the skill-evolution evidence it needs.
+
+**Status:** Open — next atomic iteration.
+
+---
+
+### Pair C — Week 10 cohort iteration (#340)
+
+Cumulative iteration arc over **`gq-041` … `gq-060`** (geographic + comparison). Each cycle: sort cohort by composite (worst first), inspect top **5** failures, pick **one** primary bucket (intent vs SQL vs synthesis), apply **one** stacked change. Cycles **stack** unless explicitly labeled A/B vs baseline.
+
+| Cycle | Before cohort composite (mean / p25) | Failure pattern (top-5 skew) | Single change (file + summary) | After (mean / p25) | Outcome / link |
+|-------|----------------------------------------|--------------------------------|----------------------------------|--------------------|----------------|
+| 1 | *TBD — run `python -m eval.qa_eval --prompt-version pairc-week10-c1 --cohort pair-c-geo-comp --dry-run --output-json eval/runs/qa-pairc-week10-c1.json`* | Baseline inventory | Document harness + cohort contract only (`eval/qa_eval.py`, `eval/qa_eval_cohorts.py`, composite JSON + Langfuse alignment) | — | [`findings-pairc-cycle1-baseline.md`](runs/findings-pairc-cycle1-baseline.md) |
+| 2 | — | — | *Reserved for first routing / SQL / synthesis fix once baseline numbers captured* | — | [`findings-pairc-cycle2-baseline.md`](runs/findings-pairc-cycle2-baseline.md) |
+| 3 | — | — | *Reserved for follow-on stacked change* | — | [`findings-pairc-cycle3-baseline.md`](runs/findings-pairc-cycle3-baseline.md) |
+
+**Langfuse:** When keys are present, capture **`dataset_run_id` + `dataset_run_url`** per cycle in the JSON artifact comments or iteration notes. CI remains offline for scored runs; local-only capture is acceptable per IMP-030.
+
+---
+
 ## Changelog
 
 | Date | Who | Change |
@@ -248,7 +328,7 @@ on hard questions. At n ≈ 90, a 2-point composite delta is within noise.
 | 2026-04-22 | Bryan | Created skeleton; documented DEV-001–DEV-003; v1-baseline section stubbed |
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
-| 2026-05-03 | Pair (intent prompt iteration) | Added "Targeted intent-only smoke runs" section and recorded the gq-061..067 employer disambiguation smoke (20/20 pass). Refs #257, #340, #346 |
 | 2026-04-30 | Nestor | Added `nestor-baseline` human-annotation row (Langfuse reconstruction); added `nestor-v2-role-evolution-fix` row with final automated-score results; created `findings_nestor_v2_role_evolution_fix.md`; documented DEV-005 |
 | 2026-05-04 | Pair C | #340 harness: cohort + golden-id precedence, composite JSON + Langfuse `composite` / `mean_composite`; Pair C iteration table + cycle findings stubs; contract JSON |
+| 2026-05-03 | Pair (intent prompt iteration) | Added "Targeted intent-only smoke runs" section and recorded the gq-061..067 employer disambiguation smoke (20/20 pass). Refs #257, #340, #346 |
 | 2026-05-11 | Angel (#339) | Backfilled missing iteration-log rows for `v2.2-emergence-fix` and `v2.3-disruption-trend-tiebreak`; artefacts were already committed on 2026-04-30 (commit `5546fa0`) but the cycle rows were missing from the version-history table. |
