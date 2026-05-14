@@ -1,0 +1,344 @@
+---
+description: "Pydantic v2 conventions for event payloads, extraction metadata, and JSONB column read/write — reuse common/types/ models; new payloads in common/events/; validate at every boundary"
+alwaysApply: false
+globs:
+  - "common/events/**"
+  - "common/types/**"
+  - "common/event_envelope.py"
+  - "common/data_store/models.py"
+  - "**/agent.py"
+  - "**/schemas.py"
+  - "enrichment/**"
+  - "skills_extraction/**"
+  - "analytics/query_engine/**"
+  - "ingestion/**"
+  - "visualization/**"
+---
+
+# Pydantic conventions — event payloads, extraction metadata, JSONB columns
+
+**Scope:** typed payloads at three boundaries: cross-agent **event payloads** (`EventEnvelope.payload`), **JSONB columns** read/written via SQLAlchemy, and **extraction metadata** dicts produced inside agents.
+
+**Pydantic version:** v2 (`requirements.txt:8`). All examples below use v2 API (`ConfigDict`, `@field_validator(..., mode="before")`, `Field(default_factory=...)`).
+
+---
+
+## 1. Reuse these — don't reinvent
+
+| Type | File:line | Use for |
+|---|---|---|
+| `EventEnvelope` | `common/event_envelope.py:22` | All cross-agent events. Leave `.payload: dict[str, Any]` typed loose at the envelope; validate at the consumer boundary with the per-event payload model. |
+| `ExtractionMetadata` | `common/types/extraction_types.py:92` | Per-extraction-call metadata (model, tokens, cost, duration, warnings). **Already a Pydantic model — use it directly; stop hand-rolling matching dicts.** |
+| `SkillRecord` / `ToolRecord` / `TaxonomyResult` / `SpanRecord` | `common/types/extraction_types.py:25, 52, 68, 81` | Per-skill / per-tool record shapes |
+| `TaskRecord` / `ResponsibilityRecord` / `ContextSignal` | `common/types/extraction_schemas.py:29, 53, 77` | Pass 2 dimension records |
+| `IntentClassification` / `ExtractedEntities` | `analytics/query_engine/intent.py:403, 368` | **Exemplar** for LLM-output coercion via `@field_validator(..., mode="before")`. Copy this pattern for any model that consumes raw LLM JSON. |
+| `EnrichedJobProfile` | `enrichment/schemas.py:20` | Single-record enrichment result |
+| `DisruptionRefreshedPayload`, `EmergenceAlertPayload` | `common/events/disruption_refreshed.py:18`, `common/events/emergence_alert.py:24` | Precedent for new per-event payload models |
+
+---
+
+## 2. Convention rules
+
+### 2.1 Where schemas live
+
+| Type of schema | Location | Example |
+|---|---|---|
+| Cross-agent event payload | `common/events/<event_name>.py` (one file per event) | `common/events/disruption_refreshed.py` |
+| Record type reused across agents | `common/types/extraction_types.py` or `common/types/extraction_schemas.py` | `SkillRecord`, `ExtractionMetadata` |
+| Agent-internal model | `<agent>/schemas.py` | `enrichment/schemas.py:EnrichedJobProfile` |
+| LLM I/O intermediates (agent-private) | `<agent>/extractors/<name>.py` with leading underscore | `_LLMSkill`, `_SkillsLLMRoot` in `skills_extraction/extractors/skills.py` |
+
+### 2.2 Naming
+
+- Event payloads: `<Domain><Action>Payload` → `SkillsExtractedPayload`, `RecordEnrichedPayload`, `IngestBatchPayload`
+- Records (single entity): `<Entity>Record` → `SkillRecord`, `TaskRecord`
+- Metadata: `<Domain>Metadata` → `ExtractionMetadata`
+- Agent-internal/intermediate: leading underscore — `_LLMSkill`, `_SkillsLLMRoot`
+
+### 2.3 At-boundary validation
+
+Validate at every boundary where a typed payload crosses into a typed-dict region.
+
+**On receive (every `event.payload.get(...)` site):**
+
+```python
+from common.events.skills_extracted import SkillsExtractedPayload
+
+def process(self, event: EventEnvelope) -> None:
+    payload = SkillsExtractedPayload.model_validate(event.payload)
+    # use payload.records, payload.batch_id, etc. — typed, validated, autocompleted
+```
+
+**On send (constructing event payloads):**
+
+```python
+payload = SkillsExtractedPayload(
+    batch_id=batch_id,
+    records=records,
+    skills_count=len(records),
+    # ...
+)
+event = EventEnvelope(
+    event_id=..., correlation_id=..., agent_id=..., timestamp=...,
+    schema_version=1,
+    payload=payload.model_dump(mode="json"),
+)
+```
+
+**Anti-pattern:** constructing payloads as bare dicts (`{"batch_id": ..., "records": ...}`). Always route through the Pydantic model.
+
+### 2.4 JSONB read/write
+
+SQLAlchemy column type stays as `Mapped[list[dict]]` or `Mapped[dict | None]` — don't try to plug Pydantic types directly into SQLAlchemy (fights the ORM's change-tracking + serialization). Validation happens at the application boundary:
+
+**Write:**
+```python
+row.skills = [s.model_dump(mode="json") for s in result.skills]
+row.extraction_metadata = result.extraction_metadata.model_dump(mode="json")
+```
+
+**Read:**
+```python
+skills = [SkillRecord.model_validate(d) for d in row.skills]
+meta = ExtractionMetadata.model_validate(row.extraction_metadata) if row.extraction_metadata else None
+```
+
+Helper functions in `common/types/extraction_types.py` (e.g., `skills_from_jsonb(row.skills) -> list[SkillRecord]`) are encouraged. Define once, reuse everywhere.
+
+### 2.5 Schema evolution / versioning
+
+- Every event-payload model **and** every JSONB-stored Pydantic model has an explicit `schema_version: int = N` field. Bump on breaking change.
+- Consumers tolerate older versions via `@field_validator(..., mode="before")` shims (see 2.7).
+- `EventEnvelope.schema_version` is the envelope-level version; the payload model carries its own version field independently.
+
+```python
+class SkillsExtractedPayload(BaseModel):
+    schema_version: int = 1
+    batch_id: str | None = None
+    records: list[ExtractionRecord]
+```
+
+### 2.6 Coercion / strict mode
+
+- **Default strict** for internal-to-internal models (our agents talking to each other). Catch shape drift loudly.
+- **Tolerant coercion** for LLM outputs and external inputs — use `@field_validator(..., mode="before")` per 2.7.
+- Set `model_config = ConfigDict(extra="forbid")` for cross-agent payloads — extra keys are a bug, not a feature. Use `extra="ignore"` only with a documented forward-compat reason.
+
+### 2.7 The `@field_validator` coercion exemplar
+
+Copy this pattern from `analytics/query_engine/intent.py:368-430` for any LLM-output model:
+
+```python
+from typing import Any
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+class ExtractedEntities(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    skill_names: list[str] = Field(default_factory=list)
+
+    @field_validator("skill_names", mode="before")
+    @classmethod
+    def _coerce_list(cls, v: Any) -> list[str]:
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, list):
+            return [str(x) for x in v if x is not None]
+        return []
+```
+
+LLMs return inconsistent shapes. This pattern absorbs the inconsistency at the model boundary so the rest of the code can rely on the declared type.
+
+### 2.8 `TypedDict` vs Pydantic `BaseModel`
+
+| Context | Use |
+|---|---|
+| Crosses a serialization boundary (event payload, JSONB column, logged structured data, persisted record) | **Pydantic `BaseModel`** |
+| Purely in-memory, in-process dict where you want a static type hint but don't need runtime validation | `TypedDict` |
+
+**Heuristic:** if you ever call `.model_dump()` or `.model_validate()`, it's a `BaseModel`. Anything touching JSONB, the LLM, or the event bus is `BaseModel` — no exceptions.
+
+---
+
+## 3. New payload models to author
+
+Two genuine gaps versus current code. Both follow the precedent set by `common/events/disruption_refreshed.py` and `common/events/emergence_alert.py`.
+
+### 3.1 `SkillsExtractedPayload` — `common/events/skills_extracted.py`
+
+Mirror the actual shape currently built ad-hoc in `skills_extraction/agent.py:1144-1182`. The `enrichment/agent.py:process()` path at lines 916-1128 (≈10 sites of `event.payload.get(...)`) should switch to `SkillsExtractedPayload.model_validate(event.payload)`.
+
+```python
+from pydantic import BaseModel, ConfigDict, Field
+from common.types.extraction_types import SkillRecord, ToolRecord
+from common.types.extraction_schemas import TaskRecord, ResponsibilityRecord, ContextSignal
+
+class ExtractionRecord(BaseModel):
+    """One job's extraction result inside a SkillsExtracted batch."""
+    model_config = ConfigDict(extra="ignore")
+    job_id: int
+    posting_id: int
+    normalized_job_id: int | None = None
+    title: str
+    company: str
+    source: str
+    external_id: str | None = None
+    description: str | None = None
+    skills: list[SkillRecord] = Field(default_factory=list)
+    tools: list[ToolRecord] = Field(default_factory=list)
+    tasks: list[TaskRecord] = Field(default_factory=list)
+    responsibilities: list[ResponsibilityRecord] = Field(default_factory=list)
+    context: list[ContextSignal] = Field(default_factory=list)
+    tasks_count: int = 0
+    responsibilities_count: int = 0
+    context_signals_count: int = 0
+    seniority: str | None = None
+    extraction_status: str = "success"
+
+class SkillsExtractedPayload(BaseModel):
+    """Cross-agent event payload for SkillsExtracted."""
+    model_config = ConfigDict(extra="forbid")
+    schema_version: int = 1
+    event_type: str = "SkillsExtracted"
+    batch_id: str | None = None
+    job_ids: list[int] = Field(default_factory=list)
+    skills_count: int = 0
+    tools_count: int = 0
+    tasks_count: int = 0
+    responsibilities_count: int = 0
+    context_signals_count: int = 0
+    taxonomy_coverage: float = 0.0
+    extraction_cost_usd: float = 0.0
+    failed_count: int = 0
+    records: list[ExtractionRecord] = Field(default_factory=list)
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    llm_call_logged: bool = False
+    skills_extraction_alert: bool = False
+```
+
+### 3.2 `RecordEnrichedPayload` — `common/events/record_enriched.py`
+
+Two payload variants discriminated by presence of `posting_id`. Aligned with `enrichment/resolvers/record_enriched_contract.py` (already at `schema_version=3`). Constructor currently lives in `enrichment/resolvers/events.py:36`; consumers at `analytics/agent.py:764`, `visualization/agent.py:60-61`.
+
+```python
+class DedupStats(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    cosine_threshold: float
+    rolling_window_days: int
+    stub_count: int = 0
+    rows_with_duplicate_cluster_id: int = 0
+    rows_with_matched_job_posting_id: int = 0
+
+class FreshnessRecord(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    posting_id: int
+    first_seen: str  # ISO-8601
+    last_seen: str
+    duration_days: int
+
+class RecordEnrichedBatchPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: int = 3
+    event_type: str = "RecordEnriched"
+    batch_id: str
+    enriched_count: int
+    spam_rejected_count: int = 0
+    flagged_for_review_count: int = 0
+    temporal_period_distribution: dict[str, int] = Field(default_factory=dict)
+    borderplex_subregion_distribution: dict[str, int] = Field(default_factory=dict)
+    duplicate_count: int = 0
+    soc_classified_count: int = 0
+    naics_classified_count: int = 0
+    dedup: DedupStats
+    freshness_records: list[FreshnessRecord] = Field(default_factory=list)
+
+class RecordEnrichedSinglePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: int = 3
+    event_type: str = "RecordEnriched"
+    posting_id: int
+    title: str
+    company: str
+    company_id: str | None = None
+    sector_id: str | None = None
+    role_classification: str | None = None
+    seniority: str | None = None
+    quality_score: float | None = None
+    quality_components: dict[str, float] = Field(default_factory=dict)
+    spam_score: float | None = None
+    is_spam: bool = False
+    enrichment_status: str
+    skills: list[SkillRecord] = Field(default_factory=list)
+
+def parse_record_enriched(payload: dict) -> RecordEnrichedBatchPayload | RecordEnrichedSinglePayload:
+    if "posting_id" in payload:
+        return RecordEnrichedSinglePayload.model_validate(payload)
+    return RecordEnrichedBatchPayload.model_validate(payload)
+```
+
+### 3.3 `ExtractorRunInfo` — `common/types/extraction_types.py`
+
+The outer flat-fields dict currently hand-built in `skills_extraction/extractors/context.py:96-117` (NOT the nested `extraction_metadata`, which is already covered by `ExtractionMetadata`). Author this once, then migrate the other extractors (`skills.py`, `tools.py`, `tasks.py`, `responsibilities.py`) to return `ExtractorRunInfo` instances.
+
+```python
+class ExtractorRunInfo(BaseModel):
+    """Per-call observability info from an extractor invocation (LLM or pattern-matching)."""
+    model_config = ConfigDict(extra="forbid")
+    tokens_used: int = 0
+    cost_usd: float = 0.0
+    latency_ms: int = 0
+    success: bool = True
+    extraction_failed: bool = False
+    error_reason: str | None = None
+    provider: str
+    model: str
+    extraction_metadata: ExtractionMetadata
+```
+
+---
+
+## 4. Migration checklist
+
+For any cleanup / refactor PR that touches a glob covered by this rule:
+
+- [ ] Every `event.payload.get(...)` site replaced with `<EventName>Payload.model_validate(event.payload)`
+- [ ] Every event-construction site routes through the Pydantic model + `.model_dump(mode="json")`
+- [ ] Every JSONB column write goes through `.model_dump(mode="json")`; every read goes through `Model.model_validate(...)`
+- [ ] Every hand-rolled metadata dict matches an existing `BaseModel` — if so, use the model; if not, author one per §1–§2
+- [ ] `schema_version: int` field present on all event-payload + JSONB-stored models
+- [ ] LLM-output models use `@field_validator(..., mode="before")` coercion per the `intent.py` exemplar
+- [ ] `ConfigDict(extra="forbid")` for cross-agent payloads unless explicit forward-compat reason
+
+---
+
+## 5. FAQ
+
+**Q: My LLM output doesn't match the schema. What now?**
+A: Use `@field_validator(..., mode="before")` to coerce. Pattern in `intent.py:380-401`. If coercion fails, log + skip + emit a `*_alert` event — don't crash the pipeline.
+
+**Q: Do I need to migrate everything at once?**
+A: No — migrate the file(s) you're already touching. Convention compounds over commits.
+
+**Q: How do I add a new field to an existing event?**
+A: Bump the payload model's `schema_version`. Old consumers with `ConfigDict(extra="ignore")` keep working; new consumers read the new field.
+
+**Q: Can I use `TypedDict` for an event payload?**
+A: No. Event payloads cross a serialization boundary → Pydantic `BaseModel`. See §2.8.
+
+**Q: Why not type the SQLAlchemy JSONB column with Pydantic directly?**
+A: SQLAlchemy + Pydantic JSONB integration fights the ORM's change-tracking and serialization. Cleaner pattern: column stays `dict` / `list[dict]`; application code validates at the read/write boundary using the Pydantic model. See §2.4.
+
+**Q: Where do I put a new schema?**
+A: §2.1. Cross-agent payload → `common/events/`. Shared record → `common/types/`. Agent-internal → `<agent>/schemas.py`.
+
+---
+
+## References
+
+- Pydantic v2 docs: https://docs.pydantic.dev/latest/
+- Exemplar: `analytics/query_engine/intent.py:368-430` (`@field_validator(..., mode="before")` pattern)
+- Event envelope: `common/event_envelope.py:22`
+- Existing typed event payloads: `common/events/disruption_refreshed.py`, `common/events/emergence_alert.py`
+- Extraction types: `common/types/extraction_types.py`, `common/types/extraction_schemas.py`
