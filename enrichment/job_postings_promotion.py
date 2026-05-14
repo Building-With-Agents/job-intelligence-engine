@@ -629,14 +629,17 @@ def _coerce_enrichment_params(
     normalized_job_id: int,
     record_enriched_payload: dict[str, Any],
     resolved: dict[str, Any],
-    job_posting_id: object,
-    company_id: object,
 ) -> _PromotionCoercionSkip | _PromotionCoercionReady:
     """
     Normalize payload + resolved row into ``params_base`` and spam tier, or signal skip.
 
-    Pure coercion and DB reads for quality derivation / employer profile; no posting UPDATE.
+    Coerces promotion bind parameters and spam tier from the payload and ``resolved`` row;
+    reads ``normalized_jobs`` via ``_derive_quality_from_normalized_job`` when ``quality_score``
+    is missing; may select or upsert ``employer_profiles`` when ``employer_metadata`` is present
+    and ``company_id`` resolves. Does **not** run ``UPDATE`` on ``job_postings`` (caller only).
     """
+    job_posting_id = resolved["job_posting_id"]
+    company_id = resolved["company_id"]
     raw_tier = record_enriched_payload.get("spam_tier")
     tier = (raw_tier or "").strip().lower() if isinstance(raw_tier, str) else ""
     spam_score = record_enriched_payload.get("spam_score")
@@ -820,8 +823,6 @@ def apply_enrichment_to_job_postings(
         normalized_job_id,
         record_enriched_payload,
         resolved,
-        job_posting_id,
-        company_id,
     )
     if isinstance(coercion, _PromotionCoercionSkip):
         return False

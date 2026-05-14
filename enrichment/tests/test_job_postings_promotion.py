@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from contextlib import nullcontext
 from datetime import datetime, timezone
@@ -1038,8 +1039,6 @@ def test_coerce_enrichment_params_rejected_spam() -> None:
         1,
         {"spam_tier": "rejected", "spam_score": 0.95, "quality_score": 0.8},
         _coerce_resolved(),
-        "11111111-1111-1111-1111-111111111111",
-        "22222222-2222-2222-2222-222222222222",
     )
     assert isinstance(out, _PromotionCoercionSkip)
     assert out.reason == "rejected_spam"
@@ -1057,8 +1056,6 @@ def test_coerce_enrichment_params_no_quality_after_derivation_none() -> None:
             42,
             {"spam_tier": "clean", "spam_score": 0.1},
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionSkip)
     assert out.reason == "no_quality_score"
@@ -1071,11 +1068,32 @@ def test_coerce_enrichment_params_invalid_quality_score() -> None:
         1,
         {"spam_tier": "clean", "spam_score": 0.1, "quality_score": "not-a-float"},
         _coerce_resolved(),
-        "11111111-1111-1111-1111-111111111111",
-        "22222222-2222-2222-2222-222222222222",
     )
     assert isinstance(out, _PromotionCoercionSkip)
     assert out.reason == "invalid_quality_score"
+
+
+def test_coerce_enrichment_params_quality_derivation_happy_path_sets_score_and_field_confidence_json() -> None:
+    session = MagicMock()
+    with (
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        patch(
+            "enrichment.job_postings_promotion._derive_quality_from_normalized_job",
+            return_value=(0.75, {"completeness": 0.8}),
+        ),
+    ):
+        out = _coerce_enrichment_params(
+            session,
+            99,
+            {"spam_tier": "clean", "spam_score": 0.1},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["quality_score"] == 0.75
+    fc = out.params_base["field_confidence"]
+    assert isinstance(fc, str) and fc
+    parsed = json.loads(fc)
+    assert isinstance(parsed, dict)
 
 
 def test_coerce_enrichment_params_derives_tier_from_spam_score_when_tier_unset() -> None:
@@ -1086,8 +1104,6 @@ def test_coerce_enrichment_params_derives_tier_from_spam_score_when_tier_unset()
             1,
             {"spam_score": 0.25, "quality_score": 0.9},
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.tier == "clean"
@@ -1102,8 +1118,6 @@ def test_coerce_enrichment_params_naics_unknown_when_missing() -> None:
             1,
             {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9},
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["naics_code"] == "unknown"
@@ -1122,8 +1136,6 @@ def test_coerce_enrichment_params_naics_strips_nonempty() -> None:
                 "naics_code": "  541512  ",
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["naics_code"] == "541512"
@@ -1137,8 +1149,6 @@ def test_coerce_enrichment_params_soc_none_when_blank() -> None:
             1,
             {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9, "soc_code": "   "},
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["soc_code"] is None
@@ -1157,8 +1167,6 @@ def test_coerce_enrichment_params_soc_persisted_when_present() -> None:
                 "soc_code": "15-1252.00",
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["soc_code"] == "15-1252.00"
@@ -1178,8 +1186,6 @@ def test_coerce_enrichment_params_seniority_level_over_seniority() -> None:
                 "seniority_level": "Senior",
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["seniority_level"] == "Senior"
@@ -1193,8 +1199,6 @@ def test_coerce_enrichment_params_is_remote_int_coerced_to_bool() -> None:
             1,
             {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9},
             _coerce_resolved(is_remote=1),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["is_remote"] is True
@@ -1214,8 +1218,6 @@ def test_coerce_enrichment_params_employer_metadata_non_dict_skips_profile_sql()
                 "employer_metadata": "not-a-dict",
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["employer_profile_id"] is None
@@ -1245,8 +1247,6 @@ def test_coerce_enrichment_params_employer_metadata_select_then_upsert() -> None
                 "employer_metadata": {"company_size": "smb"},
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["employer_profile_id"] == ep_uuid
@@ -1271,8 +1271,6 @@ def test_coerce_enrichment_params_uses_existing_employer_profile_id() -> None:
                 "employer_metadata": {"company_size": "smb"},
             },
             _coerce_resolved(),
-            "11111111-1111-1111-1111-111111111111",
-            "22222222-2222-2222-2222-222222222222",
         )
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["employer_profile_id"] == ep_uuid
