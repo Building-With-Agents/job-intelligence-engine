@@ -6,6 +6,8 @@
 
 ``RecordEnrichedPayload`` is the typed single-record shape for
 :func:`enrichment.job_postings_promotion.apply_enrichment_to_job_postings` (Pair C P3).
+Placed here alongside ``EnrichedJobProfile`` rather than a separate ``enrichment/types.py``
+to avoid confusion with ``enrichment.dedup.types`` (``FuzzyDedupResult``).
 
 Cross-pair field names (``soc_code``, ``naics_code``, canonical ``employer`` vs
 ``employer_profile``): ``.cursor/rules/integration-schema.mdc`` § Nestor + Fatima.
