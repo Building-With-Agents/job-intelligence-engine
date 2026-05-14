@@ -44,6 +44,9 @@ class RecordEnrichedPayload(BaseModel):
     seniority: str | None = None
     seniority_level: str | None = None
     employer_metadata: dict[str, Any] | None = None
+    # Forward-compatible only: merged in-memory dicts / event-shaped payloads may carry
+    # ``company_id``; job postings promotion uses ``resolved["company_id"]`` from the DB
+    # resolve path, not this field, for employer profile SQL and posting updates.
     company_id: str | None = None
 
     @field_validator("spam_score", "quality_score", "overall_confidence", mode="before")
