@@ -98,7 +98,6 @@ def _digits_to_canonical_codes(candidate_codes: set[str]) -> dict[str, str]:
     return {k: v[0] for k, v in buckets.items() if len(v) == 1}
 
 
-# EXEMPLAR: Phase 2 reference — LLM output coercion
 # Maps free-text model replies back to a member of the candidate code set or to unclassified.
 def _resolve_llm_pick_with_reason(raw: str, candidate_codes: set[str]) -> tuple[str, str]:
     """Return ``(picked_code_or_unclassified, reason_tag)`` for logging and auditing."""
