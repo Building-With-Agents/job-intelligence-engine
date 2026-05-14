@@ -102,6 +102,7 @@ from enrichment.resolvers.freshness_slice import build_freshness_record_for_anal
 from enrichment.resolvers.location_resolver import resolve_location
 from enrichment.resolvers.sector_resolver import resolve_sector
 from enrichment.schemas import EnrichedJobProfile
+from enrichment.schemas import RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
@@ -444,8 +445,8 @@ def _posting_for_enrichment(
 def _job_postings_promotion_payload(
     enriched: dict[str, Any],
     posting: dict[str, Any],
-) -> dict[str, Any]:
-    """Build a payload for :func:`apply_enrichment_to_job_postings` from batch enrichment output."""
+) -> RecordEnrichedPayload:
+    """Build a validated payload for :func:`apply_enrichment_to_job_postings` from batch enrichment output."""
     spam_score = enriched.get("spam_score")
     if spam_score is None:
         spam_score = posting.get("spam_score")
@@ -457,23 +458,25 @@ def _job_postings_promotion_payload(
     quality_score = enriched.get("quality_score")
     if quality_score is None:
         quality_score = posting.get("quality_score")
-    return {
-        "spam_tier": spam_tier,
-        "spam_score": spam_score,
-        "quality_score": quality_score,
-        "overall_confidence": enriched.get("overall_confidence"),
-        "field_confidence": enriched.get("field_confidence"),
-        "naics_code": enriched.get("naics_code"),
-        "soc_code": enriched.get("soc_code"),
-        "role_classification": enriched.get("role_classification"),
-        # Forward fields the promotion path COALESCEs into job_postings.
-        # Without these, seniority_level + employer_profile_id stay NULL and
-        # the backfill scripts have to plug the gap (issues #281, #282).
-        "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
-        "seniority": enriched.get("seniority"),
-        "employer_metadata": enriched.get("employer_metadata"),
-        "company_id": enriched.get("company_id"),
-    }
+    return RecordEnrichedPayload.model_validate(
+        {
+            "spam_tier": spam_tier,
+            "spam_score": spam_score,
+            "quality_score": quality_score,
+            "overall_confidence": enriched.get("overall_confidence"),
+            "field_confidence": enriched.get("field_confidence"),
+            "naics_code": enriched.get("naics_code"),
+            "soc_code": enriched.get("soc_code"),
+            "role_classification": enriched.get("role_classification"),
+            # Forward fields the promotion path COALESCEs into job_postings.
+            # Without these, seniority_level + employer_profile_id stay NULL and
+            # the backfill scripts have to plug the gap (issues #281, #282).
+            "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
+            "seniority": enriched.get("seniority"),
+            "employer_metadata": enriched.get("employer_metadata"),
+            "company_id": enriched.get("company_id"),
+        }
+    )
 
 
 class EnrichmentAgent(BaseAgent):
@@ -1127,7 +1130,11 @@ class EnrichmentAgent(BaseAgent):
                         source=event.payload.get("source"),
                         external_id=event.payload.get("external_id"),
                     )
-                    apply_enrichment_to_job_postings(session, nj_id, base_payload)
+                    apply_enrichment_to_job_postings(
+                        session,
+                        nj_id,
+                        RecordEnrichedPayload.model_validate(base_payload),
+                    )
             except Exception as exc:
                 log.warning(
                     "enrichment_promotion_failed",

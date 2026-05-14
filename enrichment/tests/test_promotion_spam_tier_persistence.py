@@ -29,6 +29,7 @@ from enrichment.job_postings_promotion import (
     _UPDATE_UNCERTAIN_SQL,
     apply_enrichment_to_job_postings,
 )
+from enrichment.schemas import RecordEnrichedPayload
 
 
 def _mapping_first(row: dict | None) -> MagicMock:
@@ -57,15 +58,17 @@ def _resolved_row() -> dict:
     }
 
 
-def _payload(*, tier: str, score: float | None) -> dict[str, object]:
-    return {
-        "quality_score": 0.84,
-        "field_confidence": {"spam_score": 0.8},
-        "overall_confidence": 0.82,
-        "spam_tier": tier,
-        "spam_score": score,
-        "naics_code": "541110",
-    }
+def _payload(*, tier: str, score: float | None) -> RecordEnrichedPayload:
+    return RecordEnrichedPayload.model_validate(
+        {
+            "quality_score": 0.84,
+            "field_confidence": {"spam_score": 0.8},
+            "overall_confidence": 0.82,
+            "spam_tier": tier,
+            "spam_score": score,
+            "naics_code": "541110",
+        }
+    )
 
 
 def _build_session() -> MagicMock:

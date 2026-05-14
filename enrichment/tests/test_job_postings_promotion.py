@@ -18,6 +18,7 @@ from enrichment.job_postings_promotion import (
     apply_enrichment_to_job_postings,
     apply_fuzzy_dedup_result,
 )
+from enrichment.schemas import RecordEnrichedPayload
 
 CURRENT_ID = "00000000-0000-0000-0000-000000000001"
 MATCHED_ID = "00000000-0000-0000-0000-000000000002"
@@ -53,7 +54,7 @@ def _execute_sql(session: MagicMock) -> list[str]:
     return [str(call.args[0]) for call in session.execute.call_args_list]
 
 
-def _promotion_payload(**overrides: object) -> dict[str, object]:
+def _promotion_payload(**overrides: object) -> RecordEnrichedPayload:
     payload: dict[str, object] = {
         "quality_score": 0.84,
         "quality_components": {"description": 0.9},
@@ -63,7 +64,7 @@ def _promotion_payload(**overrides: object) -> dict[str, object]:
         "spam_score": 0.25,
     }
     payload.update(overrides)
-    return payload
+    return RecordEnrichedPayload.model_validate(payload)
 
 
 def test_apply_fuzzy_dedup_result_clears_current_row_for_unique_posting() -> None:
@@ -330,11 +331,13 @@ def _apply_with_resolved_row_for_temporal_borderplex(resolved_row: dict[str, obj
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                }
+            ),
         )
     return out, session
 
@@ -447,13 +450,15 @@ def test_apply_enrichment_binds_soc_code_column_from_payload() -> None:
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "soc_code": "17-3029",
-                "naics_code": "541512",
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "soc_code": "17-3029",
+                    "naics_code": "541512",
+                }
+            ),
         )
     assert out is True
     _stmt, params = session.execute.call_args_list[1][0]
@@ -503,12 +508,14 @@ def test_apply_enrichment_selects_employer_profile_id_when_metadata_present() ->
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "employer_metadata": {"company_size": "smb", "is_known_employer": True},
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "employer_metadata": {"company_size": "smb", "is_known_employer": True},
+                }
+            ),
         )
 
     assert out is True
@@ -549,12 +556,14 @@ def test_apply_enrichment_persists_sector_id_for_known_role() -> None:
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "role_classification": "Software Engineering",
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "role_classification": "Software Engineering",
+                }
+            ),
         )
 
     assert out is True
@@ -589,11 +598,13 @@ def test_apply_enrichment_persists_sector_id_for_unknown_role_fallback() -> None
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                }
+            ),
         )
 
     assert out is True
@@ -636,7 +647,11 @@ def test_apply_enrichment_sector_id_is_in_params_base_for_all_tiers() -> None:
             if spam_score is not None:
                 payload["spam_score"] = spam_score
 
-            out = apply_enrichment_to_job_postings(session, 42, payload)
+            out = apply_enrichment_to_job_postings(
+                session,
+                42,
+                RecordEnrichedPayload.model_validate(payload),
+            )
 
         assert out is True, f"Expected True for tier={tier}"
         _stmt, params = session.execute.call_args_list[1][0]
@@ -690,7 +705,11 @@ def _apply_with_qna_payload(session: MagicMock, resolved_row: dict, payload_over
         **payload_overrides,
     }
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 42, payload)
+        out = apply_enrichment_to_job_postings(
+            session,
+            42,
+            RecordEnrichedPayload.model_validate(payload),
+        )
 
     assert out is True
     _stmt, params = session.execute.call_args_list[1][0]
@@ -750,7 +769,7 @@ def test_apply_enrichment_derives_quality_when_payload_omits_score_jsearch_null_
         "spam_score": 0.2,
     }
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 4242, payload)
+        out = apply_enrichment_to_job_postings(session, 4242, RecordEnrichedPayload.model_validate(payload))
     assert out is True
     assert session.execute.call_count >= 3
     _stmt, params = session.execute.call_args_list[2][0]
@@ -880,7 +899,11 @@ def test_apply_enrichment_qna_fields_present_for_all_tiers(tier: str, spam_score
         payload["spam_score"] = spam_score
 
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 42, payload)
+        out = apply_enrichment_to_job_postings(
+            session,
+            42,
+            RecordEnrichedPayload.model_validate(payload),
+        )
 
     assert out is True, f"Expected True for tier={tier!r}"
     _stmt, params = session.execute.call_args_list[1][0]
