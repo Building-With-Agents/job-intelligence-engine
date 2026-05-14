@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 import structlog
 from sqlalchemy import text
@@ -609,36 +610,39 @@ def _apply_fuzzy_dedup_after_promotion(
         )
 
 
-def apply_enrichment_to_job_postings(
+@dataclass(frozen=True)
+class _PromotionCoercionSkip:
+    """Return when promotion must not run an ``UPDATE`` (caller returns False)."""
+
+    reason: Literal["rejected_spam", "no_quality_score", "invalid_quality_score"]
+
+
+@dataclass(frozen=True)
+class _PromotionCoercionReady:
+    """Coerced SQL bind params and spam tier state for tier routing."""
+
+    params_base: dict[str, Any]
+    tier: str
+    spam_score: Any
+    raw_tier: Any
+
+
+def _coerce_enrichment_params(
     session: Session,
     normalized_job_id: int,
     record_enriched_payload: dict[str, Any],
-) -> bool:
+    resolved: dict[str, Any],
+) -> _PromotionCoercionSkip | _PromotionCoercionReady:
     """
-    Apply enrichment columns to ``job_postings`` when tier allows.
+    Normalize payload + resolved row into ``params_base`` and spam tier, or signal skip.
 
-    Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
-    rejected tier, or missing quality score when needed).
+    Coerces promotion bind parameters and spam tier from the payload and ``resolved`` row;
+    reads ``normalized_jobs`` via ``_derive_quality_from_normalized_job`` when ``quality_score``
+    is missing; may select or upsert ``employer_profiles`` when ``employer_metadata`` is present
+    and ``company_id`` resolves. Does **not** run ``UPDATE`` on ``job_postings`` (caller only).
     """
-    resolved = resolve_job_posting_row(session, normalized_job_id)
-    if not resolved:
-        resolved = _insert_job_posting_from_normalized(session, normalized_job_id)
-        if not resolved:
-            log.info(
-                "enrichment_promotion_no_job_posting",
-                normalized_job_id=normalized_job_id,
-            )
-            return False
-
-    job_posting_id = resolved.get("job_posting_id")
-    company_id = resolved.get("company_id")
-    if not job_posting_id or not str(company_id).strip():
-        log.warning(
-            "enrichment_promotion_skipped_no_company_id",
-            normalized_job_id=normalized_job_id,
-        )
-        return False
-
+    job_posting_id = resolved["job_posting_id"]
+    company_id = resolved["company_id"]
     raw_tier = record_enriched_payload.get("spam_tier")
     tier = (raw_tier or "").strip().lower() if isinstance(raw_tier, str) else ""
     spam_score = record_enriched_payload.get("spam_score")
@@ -658,7 +662,7 @@ def apply_enrichment_to_job_postings(
             normalized_job_id=normalized_job_id,
             job_posting_id=job_posting_id,
         )
-        return False
+        return _PromotionCoercionSkip(reason="rejected_spam")
 
     quality_score = record_enriched_payload.get("quality_score")
     merged_payload_for_confidence: dict[str, Any] = record_enriched_payload
@@ -681,12 +685,12 @@ def apply_enrichment_to_job_postings(
             "enrichment_promotion_skipped_no_quality_score",
             normalized_job_id=normalized_job_id,
         )
-        return False
+        return _PromotionCoercionSkip(reason="no_quality_score")
 
     try:
         qs_f = float(quality_score)
     except (TypeError, ValueError):
-        return False
+        return _PromotionCoercionSkip(reason="invalid_quality_score")
 
     fc_merged = merge_field_confidence_for_storage(merged_payload_for_confidence)
     fc_json = json.dumps(fc_merged)
@@ -778,6 +782,58 @@ def apply_enrichment_to_job_postings(
         "spam_score": None,
         **derived_output_fields,
     }
+
+    return _PromotionCoercionReady(
+        params_base=params_base,
+        tier=tier,
+        spam_score=spam_score,
+        raw_tier=raw_tier,
+    )
+
+
+def apply_enrichment_to_job_postings(
+    session: Session,
+    normalized_job_id: int,
+    record_enriched_payload: dict[str, Any],
+) -> bool:
+    """
+    Apply enrichment columns to ``job_postings`` when tier allows.
+
+    Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
+    rejected tier, or missing quality score when needed).
+    """
+    resolved = resolve_job_posting_row(session, normalized_job_id)
+    if not resolved:
+        resolved = _insert_job_posting_from_normalized(session, normalized_job_id)
+        if not resolved:
+            log.info(
+                "enrichment_promotion_no_job_posting",
+                normalized_job_id=normalized_job_id,
+            )
+            return False
+
+    job_posting_id = resolved.get("job_posting_id")
+    company_id = resolved.get("company_id")
+    if not job_posting_id or not str(company_id).strip():
+        log.warning(
+            "enrichment_promotion_skipped_no_company_id",
+            normalized_job_id=normalized_job_id,
+        )
+        return False
+
+    coercion = _coerce_enrichment_params(
+        session,
+        normalized_job_id,
+        record_enriched_payload,
+        resolved,
+    )
+    if isinstance(coercion, _PromotionCoercionSkip):
+        return False
+
+    params_base = coercion.params_base
+    tier = coercion.tier
+    spam_score = coercion.spam_score
+    raw_tier = coercion.raw_tier
 
     def _finish_with_dedup() -> bool:
         _apply_fuzzy_dedup_after_promotion(
