@@ -748,6 +748,7 @@ def _compile_aliases() -> tuple[CompiledAlias, ...]:
 COMPILED_ALIASES = _compile_aliases()
 
 
+# EXEMPLAR: Phase 2 reference — Pass 1 deterministic tool extraction (catalog, aliases, field priority) before Pass 2 LLM work.
 def extract_tools(job_record: JobRecord) -> list[ToolRecord]:
     """Extract tools from a normalized job record using pattern matching.
 
