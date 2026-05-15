@@ -28,7 +28,6 @@ import os
 import random
 import re
 import time
-import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +35,7 @@ import httpx
 import numpy as np
 import structlog
 
+from common.text_normalization import normalize_label
 from common.types import TaxonomyResult
 
 log = structlog.get_logger()
@@ -69,10 +69,7 @@ _PARENT_LABEL_ALIASES: dict[str, str] = {
 
 def _normalize_label(value: str | None) -> str:
     """NFKC, lowercase, strip, collapse internal whitespace."""
-    text = unicodedata.normalize("NFKC", value or "")
-    text = text.lower().strip()
-    text = re.sub(r"\s+", " ", text)
-    return text
+    return normalize_label(value)
 
 
 # ---------------------------------------------------------------------------
