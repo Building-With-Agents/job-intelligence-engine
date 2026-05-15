@@ -6,8 +6,13 @@ Azure API calls are made (avoids cost, latency, and flakiness in CI).
 
 from __future__ import annotations
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 from common.types import TaxonomyResult
 from skills_extraction.extractors.taxonomy import (
+    _clear_taxonomy_caches_for_tests,
+    _get_esco_embeddings,
     _load_genai_extension,
     resolution_report,
     resolution_stats,
@@ -90,14 +95,7 @@ class TestResolveTaxonomy:
         fake_matrix = fake_vec / fake_norms
 
         # Clear in-memory cache so _get_esco_embeddings re-loads
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
-            None,
-        )
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
-            None,
-        )
+        _clear_taxonomy_caches_for_tests()
         # Mock DB load to return our fake matrix
         monkeypatch.setattr(
             "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
@@ -172,14 +170,7 @@ class TestResolveTaxonomyBatch:
 
     def test_step5_in_batch(self, monkeypatch) -> None:
         """Batch resolves a label at step 5 when O*NET store is patched and step 4 is skipped."""
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
-            None,
-        )
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
-            None,
-        )
+        _clear_taxonomy_caches_for_tests()
         monkeypatch.setattr(
             "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
             lambda: None,
@@ -235,14 +226,7 @@ class TestResolutionStats:
 
     def test_resolution_report_shape(self, monkeypatch) -> None:
         """Skip embedding + O*NET so one label is step 2 and one is step 6."""
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_embedding_meta",
-            None,
-        )
-        monkeypatch.setattr(
-            "skills_extraction.extractors.taxonomy._esco_normalized_matrix",
-            None,
-        )
+        _clear_taxonomy_caches_for_tests()
         monkeypatch.setattr(
             "skills_extraction.extractors.taxonomy._get_onet_store",
             lambda: {},
@@ -254,3 +238,30 @@ class TestResolutionStats:
         assert rep["genai_extension_matches"] == 0
         assert "counts_by_step" in rep
         assert rep["avg_resolution_confidence"] == 1.0  # only step-2 hit, confidence 1.0
+
+
+def test_get_esco_embeddings_threadsafe_single_load(monkeypatch) -> None:
+    import numpy as np
+
+    _clear_taxonomy_caches_for_tests()
+
+    fake_meta = [("skill_a", "Skill A")]
+    fake_matrix = np.array([[1.0, 0.0]], dtype=np.float64)
+    call_count = {"n": 0}
+    lock = threading.Lock()
+
+    def _mock_db_load():
+        with lock:
+            call_count["n"] += 1
+        return fake_meta, fake_matrix
+
+    monkeypatch.setattr(
+        "skills_extraction.extractors.taxonomy._load_embeddings_from_db",
+        _mock_db_load,
+    )
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        results = list(pool.map(lambda _: _get_esco_embeddings(), range(5)))
+
+    assert all(result is not None for result in results)
+    assert call_count["n"] == 1
