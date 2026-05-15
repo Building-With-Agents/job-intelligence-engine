@@ -101,8 +101,7 @@ from enrichment.resolvers.events import build_record_enriched_event
 from enrichment.resolvers.freshness_slice import build_freshness_record_for_analytics
 from enrichment.resolvers.location_resolver import resolve_location
 from enrichment.resolvers.sector_resolver import resolve_sector
-from enrichment.schemas import EnrichedJobProfile
-from enrichment.schemas import RecordEnrichedPayload
+from enrichment.schemas import EnrichedJobProfile, RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
