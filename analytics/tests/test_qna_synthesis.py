@@ -190,22 +190,25 @@ def test_periods_and_citations_echo() -> None:
 # Comparison-intent prompt clause (JIE #340 cycle 3)
 # ---------------------------------------------------------------------------
 
-# Stable substring of the comparison clause added in _build_main_prompt for
-# intent_label == "comparison".  Pinning it here lets refactors of the clause
-# wording still trip the test if the magnitude-difference instruction is dropped.
-_COMPARISON_CLAUSE_MARKER = "magnitude difference"
+# Stable substrings of the merged comparison clause (#361 totals-first + #406 magnitude).
+_COMPARISON_TOTALS_MARKER = "total supporting_count"
+_COMPARISON_MAGNITUDE_MARKER = "magnitude of the difference"
 
 
 def test_comparison_clause_present_for_comparison_intent() -> None:
-    """When intent_label == 'comparison', _build_main_prompt must include the
-    magnitude-difference instruction so the synthesis LLM does not over-hedge
-    on thin comparison data (JIE #340 cycle 3)."""
+    """When intent_label == 'comparison', _build_main_prompt must include totals-first
+    and magnitude-difference instructions (#361 + #406 merged clause)."""
     bundle = sample_evidence_bundle_adequate()
     prompt = _build_main_prompt("Compare X vs Y", "comparison", bundle)
-    assert _COMPARISON_CLAUSE_MARKER in prompt, (
+    assert _COMPARISON_TOTALS_MARKER in prompt, (
+        "comparison_clause must require summing total supporting_count per term; "
+        "see analytics/query_engine/synthesis.py:_build_main_prompt"
+    )
+    assert _COMPARISON_MAGNITUDE_MARKER in prompt, (
         "comparison_clause must include the magnitude-difference instruction; "
         "see analytics/query_engine/synthesis.py:_build_main_prompt"
     )
+    assert "COMPARISON INSTRUCTIONS" in prompt
     # The carve-out for the general thin-data rule must also be present so
     # the LLM does not receive a "be cautious" signal that contradicts the
     # comparison clause's "do not refuse on thin data" instruction.
@@ -219,7 +222,11 @@ def test_comparison_clause_absent_for_non_comparison_intents() -> None:
     bundle = sample_evidence_bundle_adequate()
     for intent_label in ("aggregate_salary", "trend", "role_evolution", "geographic"):
         prompt = _build_main_prompt("q", intent_label, bundle)
-        assert _COMPARISON_CLAUSE_MARKER not in prompt, (
+        assert _COMPARISON_TOTALS_MARKER not in prompt, (
+            f"comparison clause leaked into intent_label={intent_label!r}; "
+            "the clause must be gated on intent_label == 'comparison'"
+        )
+        assert _COMPARISON_MAGNITUDE_MARKER not in prompt, (
             f"comparison clause leaked into intent_label={intent_label!r}; "
             "the clause must be gated on intent_label == 'comparison'"
         )
