@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# EXEMPLAR: Phase 2 reference — FuzzyDedupResult is the frozen in-process contract; apply_fuzzy_dedup_result is the sole writer path for duplicate flags, and persistence still enforces additional invariants.
+
 
 class FuzzyDedupResult(BaseModel):
     """Outcome of comparing one posting against same-company survivors in a rolling window."""

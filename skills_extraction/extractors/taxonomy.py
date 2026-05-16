@@ -25,9 +25,9 @@ import contextlib
 import csv
 import json
 import os
+import random
 import re
 import time
-import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +35,7 @@ import httpx
 import numpy as np
 import structlog
 
+from common.text_normalization import normalize_label
 from common.types import TaxonomyResult
 
 log = structlog.get_logger()
@@ -68,10 +69,7 @@ _PARENT_LABEL_ALIASES: dict[str, str] = {
 
 def _normalize_label(value: str | None) -> str:
     """NFKC, lowercase, strip, collapse internal whitespace."""
-    text = unicodedata.normalize("NFKC", value or "")
-    text = text.lower().strip()
-    text = re.sub(r"\s+", " ", text)
-    return text
+    return normalize_label(value)
 
 
 # ---------------------------------------------------------------------------
@@ -423,6 +421,14 @@ def _extract_retry_after_embedding(error_message: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _embedding_retry_delay(retry_after: int | None, attempt: int) -> float:
+    """Return retry delay with jitter to avoid lockstep 429 retries across workers."""
+    if retry_after:
+        return float(retry_after)
+    base_delay = _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+    return base_delay * random.uniform(1.0, 1.3)
+
+
 def _embed_texts_azure(
     texts: list[str],
     *,
@@ -472,7 +478,7 @@ def _embed_texts_azure(
                 response_data = _response_json_or_none(resp)
                 if resp.status_code == 429:
                     retry_after = _extract_retry_after_embedding(resp.text)
-                    delay = retry_after if retry_after else _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+                    delay = _embedding_retry_delay(retry_after, attempt)
                     _log_embedding_audit_event(
                         texts,
                         response_data,
@@ -513,7 +519,7 @@ def _embed_texts_azure(
             )
             if response is not None and response.status_code == 429:
                 retry_after = _extract_retry_after_embedding(str(exc))
-                delay = retry_after if retry_after else _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+                delay = _embedding_retry_delay(retry_after, attempt)
                 log.warning("embedding_rate_limited", attempt=attempt, delay_s=round(delay, 2))
                 if attempt == _EMBED_MAX_RETRIES:
                     return None
