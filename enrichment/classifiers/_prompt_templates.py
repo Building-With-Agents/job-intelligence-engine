@@ -32,7 +32,9 @@ Rules:
 - Field {response_field} must be exactly one of the codes shown above, or the literal {unknown_value}.
 - Use {unknown_value} if the job text does not clearly fit any single listed option."""
 
-    return f"""Job Title: {title}
+    return f"""{intro_line}
+
+Job Title: {title}
 Job Description: {desc}
 
 {candidates_heading}
