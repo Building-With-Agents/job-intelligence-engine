@@ -29,6 +29,7 @@ from enrichment.job_postings_promotion import (
     _UPDATE_UNCERTAIN_SQL,
     apply_enrichment_to_job_postings,
 )
+from enrichment.schemas import RecordEnrichedPayload
 
 
 def _mapping_first(row: dict | None) -> MagicMock:
@@ -57,15 +58,17 @@ def _resolved_row() -> dict:
     }
 
 
-def _payload(*, tier: str, score: float | None) -> dict[str, object]:
-    return {
-        "quality_score": 0.84,
-        "field_confidence": {"spam_score": 0.8},
-        "overall_confidence": 0.82,
-        "spam_tier": tier,
-        "spam_score": score,
-        "naics_code": "541110",
-    }
+def _payload(*, tier: str | None, score: float | None) -> RecordEnrichedPayload:
+    return RecordEnrichedPayload.model_validate(
+        {
+            "quality_score": 0.84,
+            "field_confidence": {"spam_score": 0.8},
+            "overall_confidence": 0.82,
+            "spam_tier": tier,
+            "spam_score": score,
+            "naics_code": "541110",
+        }
+    )
 
 
 def _build_session() -> MagicMock:
@@ -154,13 +157,17 @@ def test_uncertain_path_binds_spam_score_none() -> None:
 def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) -> None:
     """JIE #308 Fix A: an unrecognized tier value must produce an ERROR log, not WARNING.
 
-    Before Fix A this was a warning that buried in routine dashboards. Now it's
-    a loud ERROR so a future regression introducing a new tier value (typo,
-    case mismatch, classifier output drift) shows up in PR-CI noise immediately.
+    Before Fix A this was a warning buried in routine dashboards. Now it's a loud
+    ERROR so a future regression introducing a new tier value (typo, case mismatch,
+    classifier output drift) shows up in PR-CI noise immediately.
 
-    The structurally-reachable way to hit this fall-through is for
-    ``apply_spam_tiers`` to return a tier outside the four-state model
-    (clean/flagged/rejected/uncertain). We simulate that via monkeypatch.
+    Invalid tier *strings* are caught at the Pydantic boundary
+    (``RecordEnrichedPayload.spam_tier`` is a ``Literal``). The structurally-reachable
+    way to exercise the promotion function's defensive fall-through is for
+    ``apply_spam_tiers`` to return a tier outside the four-state model at runtime.
+    We simulate that via monkeypatch; the payload carries ``spam_tier=None`` so that
+    ``_coerce_enrichment_params`` falls through to the ``apply_spam_tiers`` derivation
+    path and picks up the injected unknown tier.
     """
     import enrichment.job_postings_promotion as promotion_mod
 
@@ -174,7 +181,9 @@ def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(promotion_mod.log, "warning", lambda *a, **kw: warning_calls.append((a, kw)))
 
     session = _build_session()
-    payload = _payload(tier="bogus_tier", score=0.5)
+    # spam_tier=None: Pydantic accepts it; _coerce_enrichment_params falls through
+    # to apply_spam_tiers (monkeypatched) which injects the unknown tier string.
+    payload = _payload(tier=None, score=0.5)
 
     applied = apply_enrichment_to_job_postings(session, normalized_job_id=42, record_enriched_payload=payload)
 
@@ -190,5 +199,5 @@ def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) 
     # Verify the structured fields the guard surfaces (helps debugging future regressions).
     _, kwargs = unhandled_err[0]
     assert kwargs.get("tier_resolved") == "future_unknown_tier"
-    assert kwargs.get("tier_raw") == "bogus_tier"
+    assert kwargs.get("tier_raw") is None  # payload carried spam_tier=None; derivation injected the unknown tier
     assert kwargs.get("spam_score_payload") == 0.5
