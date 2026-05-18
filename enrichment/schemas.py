@@ -15,7 +15,7 @@ Cross-pair field names (``soc_code``, ``naics_code``, canonical ``employer`` vs
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -34,7 +34,7 @@ class RecordEnrichedPayload(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    spam_tier: str | None = None
+    spam_tier: Literal["clean", "flagged", "rejected", "uncertain"] | None = None
     spam_score: float | None = None
     quality_score: float | None = None
     quality_components: dict[str, Any] = Field(default_factory=dict)

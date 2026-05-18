@@ -58,3 +58,18 @@ def test_record_enriched_payload_coerces_int_scores_to_float() -> None:
     assert p.spam_score == 1.0
     assert p.quality_score == 84.0
     assert p.overall_confidence == 0.0
+
+
+def test_record_enriched_payload_accepts_all_valid_spam_tiers() -> None:
+    """Every valid Literal tier parses without error."""
+    for tier in ("clean", "flagged", "rejected", "uncertain"):
+        p = RecordEnrichedPayload.model_validate({"spam_tier": tier, "spam_score": 0.1, "quality_score": 0.9})
+        assert p.spam_tier == tier
+
+
+def test_record_enriched_payload_rejects_invalid_spam_tier() -> None:
+    """Unrecognised tier strings are caught at the validation boundary."""
+    with pytest.raises(ValidationError):
+        RecordEnrichedPayload.model_validate(
+            {"spam_tier": "garbage", "spam_score": 0.1, "quality_score": 0.9}
+        )
