@@ -70,6 +70,4 @@ def test_record_enriched_payload_accepts_all_valid_spam_tiers() -> None:
 def test_record_enriched_payload_rejects_invalid_spam_tier() -> None:
     """Unrecognised tier strings are caught at the validation boundary."""
     with pytest.raises(ValidationError):
-        RecordEnrichedPayload.model_validate(
-            {"spam_tier": "garbage", "spam_score": 0.1, "quality_score": 0.9}
-        )
+        RecordEnrichedPayload.model_validate({"spam_tier": "garbage", "spam_score": 0.1, "quality_score": 0.9})
