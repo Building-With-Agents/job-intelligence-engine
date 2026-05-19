@@ -1,4 +1,5 @@
 """One-off investigation script for issue #363 — canonical_role_id NULL rate."""
+
 import os
 from pathlib import Path
 
