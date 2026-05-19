@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+import structlog.testing
 
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.job_postings_promotion import (
@@ -1298,3 +1299,87 @@ def test_coerce_enrichment_params_uses_existing_employer_profile_id() -> None:
     assert isinstance(out, _PromotionCoercionReady)
     assert out.params_base["employer_profile_id"] == ep_uuid
     session.execute.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# P2 — fuzzy_dedup_contract_violation metric counter (JIE phase-1-cleanup-pair-c)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_fuzzy_dedup_after_promotion_logs_contract_violation_for_value_error() -> None:
+    """ValueError from apply_fuzzy_dedup_result must log fuzzy_dedup_contract_violation,
+    not fuzzy_dedup_after_promotion_failed, so dashboards count contract violations
+    as a distinct metric from infrastructure failures."""
+    session = MagicMock()
+    session.begin_nested.return_value = nullcontext()
+
+    with (
+        patch(
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
+            return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
+        ),
+        patch(
+            "enrichment.job_postings_promotion.run_fuzzy_dedup",
+            return_value=FuzzyDedupResult(
+                is_duplicate=False,
+                duplicate_cluster_id=None,
+                matched_job_posting_id=None,
+                survivor_job_posting_id=None,
+                stub=False,
+            ),
+        ),
+        patch(
+            "enrichment.job_postings_promotion.apply_fuzzy_dedup_result",
+            side_effect=ValueError("duplicate fuzzy dedup results must include duplicate_cluster_id"),
+        ),
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        structlog.testing.capture_logs() as cap_logs,
+    ):
+        applied = apply_enrichment_to_job_postings(
+            session,
+            normalized_job_id=123,
+            record_enriched_payload=_promotion_payload(),
+        )
+
+    assert applied is True
+    violation_events = [e for e in cap_logs if e.get("event") == "fuzzy_dedup_contract_violation"]
+    assert len(violation_events) == 1, f"expected 1 contract violation log, got: {cap_logs}"
+    assert violation_events[0]["job_posting_id"] == CURRENT_ID
+    assert violation_events[0]["normalized_job_id"] == 123
+    assert "duplicate_cluster_id" in violation_events[0]["error"]
+    # Must NOT fall through to the generic infrastructure failure key
+    assert not any(e.get("event") == "fuzzy_dedup_after_promotion_failed" for e in cap_logs)
+
+
+def test_apply_fuzzy_dedup_after_promotion_logs_general_failure_for_non_value_error() -> None:
+    """Non-ValueError exceptions (DB errors, network timeouts) must still log
+    fuzzy_dedup_after_promotion_failed — the original infrastructure failure key."""
+    session = MagicMock()
+    session.begin_nested.return_value = nullcontext()
+
+    with (
+        patch(
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
+            return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
+        ),
+        patch(
+            "enrichment.job_postings_promotion.run_fuzzy_dedup",
+            side_effect=RuntimeError("db pool exhausted"),
+        ),
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        structlog.testing.capture_logs() as cap_logs,
+    ):
+        applied = apply_enrichment_to_job_postings(
+            session,
+            normalized_job_id=456,
+            record_enriched_payload=_promotion_payload(),
+        )
+
+    assert applied is True
+    failure_events = [e for e in cap_logs if e.get("event") == "fuzzy_dedup_after_promotion_failed"]
+    assert len(failure_events) == 1, f"expected 1 infrastructure failure log, got: {cap_logs}"
+    assert failure_events[0]["job_posting_id"] == CURRENT_ID
+    assert failure_events[0]["normalized_job_id"] == 456
+    assert "db pool exhausted" in failure_events[0]["error"]
+    # Must NOT be misclassified as a contract violation
+    assert not any(e.get("event") == "fuzzy_dedup_contract_violation" for e in cap_logs)
