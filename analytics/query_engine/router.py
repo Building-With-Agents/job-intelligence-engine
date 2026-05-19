@@ -166,6 +166,49 @@ _ROLE_TOKEN_STOPWORDS: frozenset[str] = frozenset(
     {"and", "or", "the", "of", "for", "with", "at", "in", "to", "a", "an", "any", "all"}
 )
 
+_ROLE_CONTEXT_SUFFIXES: frozenset[str] = frozenset(
+    {
+        "employer",
+        "employers",
+        "candidate",
+        "candidates",
+        "hire",
+        "hires",
+        "recruit",
+        "recruits",
+        "professional",
+        "professionals",
+    }
+)
+
+_ROLE_CONTEXT_SCOPE_PREFIXES: frozenset[str] = frozenset(
+    {
+        "borderplex",
+        "regional",
+        "local",
+        "current",
+        "active",
+    }
+)
+
+_ROLE_OCCUPATION_HEADS: frozenset[str] = frozenset(
+    {
+        "administrator",
+        "analyst",
+        "architect",
+        "consultant",
+        "developer",
+        "engineer",
+        "manager",
+        "operator",
+        "programmer",
+        "researcher",
+        "scientist",
+        "specialist",
+        "technician",
+    }
+)
+
 
 def _tokenize_role_name(role: str) -> list[str]:
     """Split a free-text role name into ILIKE-friendly tokens.
@@ -182,6 +225,38 @@ def _tokenize_role_name(role: str) -> list[str]:
         return []
     raw_tokens = re.split(r"[\s/,\-_]+", role.strip())
     return [t.strip() for t in raw_tokens if len(t.strip()) >= 2 and t.strip().lower() not in _ROLE_TOKEN_STOPWORDS]
+
+
+def _clean_workflow_role_names(role_names: list[str]) -> list[str]:
+    """Drop workflow role-context phrases that are not actual occupation names.
+
+    LLM entity extraction can return phrases such as ``"Borderplex IT employers"``
+    as role names. Those phrases describe the employer/candidate population, not
+    a role family, and hard-filtering workflow queries on them can produce empty
+    evidence. If a phrase ends in a context suffix but still contains an
+    occupation head (for example ``"software developer candidates"``), keep the
+    role portion.
+    """
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in role_names:
+        value = str(raw or "").strip()
+        if not value:
+            continue
+        tokens = _tokenize_role_name(value)
+        if tokens and tokens[-1].lower() in _ROLE_CONTEXT_SUFFIXES:
+            role_tokens = tokens[:-1]
+            while role_tokens and role_tokens[0].lower() in _ROLE_CONTEXT_SCOPE_PREFIXES:
+                role_tokens = role_tokens[1:]
+            if not any(t.lower() in _ROLE_OCCUPATION_HEADS for t in role_tokens):
+                continue
+            value = " ".join(role_tokens)
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(value)
+    return cleaned
 
 
 # US state-code lookup for the small set we expect in Borderplex / Puget queries.
@@ -1180,6 +1255,7 @@ class QueryRouter:
         """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
+        role_names = _clean_workflow_role_names(role_names)
         cr = CanonicalRole
         stmt = select(
             cr.role_id,
