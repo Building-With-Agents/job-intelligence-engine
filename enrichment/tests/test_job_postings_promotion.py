@@ -217,7 +217,9 @@ def test_apply_fuzzy_dedup_result_rejects_invalid_duplicate_contract() -> None:
         stub=False,
     )
 
-    with pytest.raises(FuzzyDedupContractError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"):
+    with pytest.raises(
+        FuzzyDedupContractError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"
+    ):
         apply_fuzzy_dedup_result(session, CURRENT_ID, result)
 
 

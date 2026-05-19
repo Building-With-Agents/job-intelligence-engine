@@ -524,7 +524,9 @@ def apply_fuzzy_dedup_result(
         if result.is_duplicate:
             raise FuzzyDedupContractError("duplicate fuzzy dedup results must include duplicate_cluster_id")
         if matched_id or survivor_id:
-            raise FuzzyDedupContractError("non-duplicate fuzzy dedup results may not include cluster or survivor metadata")
+            raise FuzzyDedupContractError(
+                "non-duplicate fuzzy dedup results may not include cluster or survivor metadata"
+            )
         session.execute(
             _UPDATE_FUZZY_DEDUP_SQL,
             {
