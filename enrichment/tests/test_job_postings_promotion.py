@@ -13,6 +13,7 @@ import structlog.testing
 
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.job_postings_promotion import (
+    FuzzyDedupContractError,
     _coerce_enrichment_params,
     _PromotionCoercionReady,
     _PromotionCoercionSkip,
@@ -216,7 +217,7 @@ def test_apply_fuzzy_dedup_result_rejects_invalid_duplicate_contract() -> None:
         stub=False,
     )
 
-    with pytest.raises(ValueError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"):
+    with pytest.raises(FuzzyDedupContractError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"):
         apply_fuzzy_dedup_result(session, CURRENT_ID, result)
 
 
@@ -1306,8 +1307,8 @@ def test_coerce_enrichment_params_uses_existing_employer_profile_id() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_apply_fuzzy_dedup_after_promotion_logs_contract_violation_for_value_error() -> None:
-    """ValueError from apply_fuzzy_dedup_result must log fuzzy_dedup_contract_violation,
+def test_apply_fuzzy_dedup_after_promotion_logs_contract_violation_for_contract_error() -> None:
+    """FuzzyDedupContractError from apply_fuzzy_dedup_result must log fuzzy_dedup_contract_violation,
     not fuzzy_dedup_after_promotion_failed, so dashboards count contract violations
     as a distinct metric from infrastructure failures."""
     session = MagicMock()
@@ -1330,7 +1331,7 @@ def test_apply_fuzzy_dedup_after_promotion_logs_contract_violation_for_value_err
         ),
         patch(
             "enrichment.job_postings_promotion.apply_fuzzy_dedup_result",
-            side_effect=ValueError("duplicate fuzzy dedup results must include duplicate_cluster_id"),
+            side_effect=FuzzyDedupContractError("duplicate fuzzy dedup results must include duplicate_cluster_id"),
         ),
         patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
         structlog.testing.capture_logs() as cap_logs,
