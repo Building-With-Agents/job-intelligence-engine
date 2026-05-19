@@ -602,6 +602,17 @@ def _apply_fuzzy_dedup_after_promotion(
         with session.begin_nested():
             result = run_fuzzy_dedup(session, job_posting_id)
             apply_fuzzy_dedup_result(session, job_posting_id, result)
+    except ValueError as exc:
+        # Contract violations raised by apply_fuzzy_dedup_result (e.g. missing
+        # cluster_id on a duplicate, wrong survivor_id) get a distinct log key so
+        # observability dashboards can count them separately from infrastructure
+        # failures (DB errors, network timeouts) logged below.
+        log.warning(
+            "fuzzy_dedup_contract_violation",
+            normalized_job_id=normalized_job_id,
+            job_posting_id=job_posting_id,
+            error=str(exc),
+        )
     except Exception as exc:
         log.warning(
             "fuzzy_dedup_after_promotion_failed",
