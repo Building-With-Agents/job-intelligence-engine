@@ -137,8 +137,9 @@ def _intent_heuristic_ablation_level() -> int:
     # Level 0: no heuristics — all questions go to LLM classifier
     # Level 1: curriculum training-program cover pattern added
     # Level 2: workflow data-pipeline pattern added (level 1 +)
-    # Level 3: Borderplex employer ranked-share pattern added (levels 1+2 +) — DEFAULT
-    # Production default: 3 (all heuristics active)
+    # Level 3: Borderplex employer ranked-share pattern added (levels 1+2 +)
+    # Default when env var is unset: 0 (no heuristics — all questions go to LLM classifier)
+    # Set QA_EVAL_INTENT_HEURISTIC_LEVEL=3 in production to enable all heuristics
     # Use level 0 in eval harness when testing LLM classifier in isolation
     raw = os.getenv("QA_EVAL_INTENT_HEURISTIC_LEVEL")
     if raw is None or not str(raw).strip():
