@@ -69,7 +69,6 @@ import re
 import shutil
 import sys
 import tempfile
-import unicodedata
 import urllib.request
 import zipfile
 from collections.abc import Iterable
@@ -78,6 +77,8 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+
+from common.text_normalization import normalize_label
 
 load_dotenv()
 
@@ -303,10 +304,7 @@ def normalize_text(value: str | None) -> str:
     It avoids stemming here because the seed store should preserve the canonical
     labels; stemming can be applied later in the resolver if the team wants it.
     """
-    text_value = unicodedata.normalize("NFKC", value or "")
-    text_value = text_value.lower().strip()
-    text_value = re.sub(r"\s+", " ", text_value)
-    return text_value
+    return normalize_label(value)
 
 
 def split_multivalue(value: str | None) -> list[str]:

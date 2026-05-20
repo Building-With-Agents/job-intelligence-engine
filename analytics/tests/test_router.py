@@ -40,6 +40,7 @@ from analytics.query_engine.constants import (
 from analytics.query_engine.router import (
     ALLOWED_TABLES,
     QueryRouter,
+    _clean_workflow_role_names,
     _is_list_style,
     _parse_weeks_back,
     _resolve_geo_terms,
@@ -467,6 +468,54 @@ class TestEdgeCases:
 class TestRoleEmbeddingResolution:
     """Embedding path vs ILIKE fallback; _embed_texts_azure is always mocked."""
 
+    def test_workflow_drops_role_context_phrase_before_resolution(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #357: ``IT employers`` is context, not a role filter."""
+
+        def _unexpected_embed(*args: Any, **kwargs: Any) -> None:
+            raise AssertionError("role context phrases should be removed before role resolution")
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _unexpected_embed)
+
+        session = _make_session()
+        cls = _mk_classification("workflow", role_names=["Borderplex IT employers"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert result.query_label == "role workflow — skills and tools"
+        sql = _compiled_sql(session)
+        assert "ILIKE" not in sql.upper()
+        assert "IT employers" not in sql
+
+    def test_workflow_keeps_valid_role_before_resolution(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Valid role names must still reach the workflow role resolver."""
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            assert texts == ["software developer"]
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-role-id-aa",)]
+
+        select_result = MagicMock()
+        select_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, select_result]
+
+        cls = _mk_classification("workflow", role_names=["software developer"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert session.execute.call_count == 2
+
     def test_workflow_embedding_resolved_role_ids_use_pgvector_then_in_filter(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -595,6 +644,28 @@ class TestRoleEmbeddingResolution:
 
 
 class TestHelpers:
+    @pytest.mark.parametrize(
+        ("role_names", "expected"),
+        [
+            (["IT employers"], []),
+            (["Borderplex IT employers"], []),
+            (["AI candidates"], []),
+            (["cybersecurity hires"], []),
+            (["software professionals"], []),
+            (["tech recruits"], []),
+            (["healthcare-IT employers"], []),
+            (["software developer candidates"], ["software developer"]),
+            (["data engineer", "AI agent developer"], ["data engineer", "AI agent developer"]),
+            (["unicorn wranglers"], ["unicorn wranglers"]),
+        ],
+    )
+    def test_clean_workflow_role_names_removes_context_phrases(
+        self,
+        role_names: list[str],
+        expected: list[str],
+    ) -> None:
+        assert _clean_workflow_role_names(role_names) == expected
+
     def test_parse_weeks_back_named_periods(self) -> None:
         assert _parse_weeks_back(["last week"]) == 1
         assert _parse_weeks_back(["last month"]) == 4
