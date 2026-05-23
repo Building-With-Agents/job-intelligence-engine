@@ -46,7 +46,7 @@ from common.data_store.models import Skill  # noqa: E402
 log = structlog.get_logger()
 
 # Subcategory IDs from dbo.skill_subcategories (fixture-seeded)
-_AIML_SUBCATEGORY_ID = "F6CD1DF0-8352-4B4E-BE9B-E5291BC95702"   # AI/ML
+_AIML_SUBCATEGORY_ID = "F6CD1DF0-8352-4B4E-BE9B-E5291BC95702"  # AI/ML
 _AUTOMATION_SUBCATEGORY_ID = "344DEF26-88C4-430F-A7D2-0195A6EFF498"  # IT Automation
 
 # Terms that belong under the Automation subcategory; everything else → AI/ML.
@@ -74,9 +74,22 @@ def _subcategory_for(term: str) -> str:
 def _skill_type_for(term: str) -> str:
     """Rough type assignment; "tool" for named products, "knowledge" for concepts."""
     tools = {
-        "copilot", "github copilot", "cursor", "cursor ide", "claude", "claude.ai",
-        "chatgpt", "gpt-4", "gpt4", "uipath", "blue prism", "automation anywhere",
-        "testim", "mabl", "applitools", "langchain",
+        "copilot",
+        "github copilot",
+        "cursor",
+        "cursor ide",
+        "claude",
+        "claude.ai",
+        "chatgpt",
+        "gpt-4",
+        "gpt4",
+        "uipath",
+        "blue prism",
+        "automation anywhere",
+        "testim",
+        "mabl",
+        "applitools",
+        "langchain",
     }
     return "tool" if term in tools else "knowledge"
 
@@ -95,7 +108,9 @@ def run(*, dry_run: bool) -> None:
                 select(func.lower(Skill.skill_name)).where(
                     func.lower(Skill.skill_name).in_([t.lower() for t in canonical_terms])
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
 
         to_insert = [t for t in canonical_terms if t.lower() not in existing]
