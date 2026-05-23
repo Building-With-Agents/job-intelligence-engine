@@ -215,6 +215,12 @@ def run_fuzzy_dedup(
 
     Persists ``dedup_text_hash`` and ``dedup_embedding`` on success; duplicate flags are
     applied by ``job_postings_promotion.apply_fuzzy_dedup_result``.
+
+    # EXEMPLAR: Phase 2 reference — layered load→validate→embed→compare→arbitrate
+    # pipeline; every error path is structured-logged with a distinct key; safe
+    # defaults (_unique_result) on any failure so the caller never receives a
+    # partially-constructed result; threshold and window are config-driven with no
+    # hardcoded values; embedding cache avoids redundant Azure calls within a batch.
     """
     effective_threshold = dedup_cosine_threshold() if threshold is None else threshold
     jid = (job_posting_id or "").strip()
