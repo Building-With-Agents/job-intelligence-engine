@@ -38,12 +38,15 @@ from analytics.query_engine.constants import (
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
 )
 from analytics.query_engine.router import (
+    _AI_TOOL_RESOLUTION_ALIASES,
+    _AI_TOOL_SUPPLEMENTAL_TERMS,
     ALLOWED_TABLES,
     QueryRouter,
     _clean_workflow_role_names,
     _is_list_style,
     _parse_weeks_back,
     _resolve_geo_terms,
+    _skill_terms_all_in_dbo_skills,
     _split_geo_term,
     _tokenize_role_name,
     _week_floor,
@@ -458,6 +461,76 @@ class TestEdgeCases:
         assert result.row_count == 0
         assert result.tables_used == []
         session.execute.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# AI-tool taxonomy supplement (JIE #349)
+# ---------------------------------------------------------------------------
+
+
+class TestAIToolTaxonomySupplement:
+    """Validate that AI-tool / AI-adjacent terms bypass the DB taxonomy gate."""
+
+    def test_supplemental_terms_frozenset_is_non_empty(self) -> None:
+        assert len(_AI_TOOL_SUPPLEMENTAL_TERMS) > 0
+
+    def test_resolution_aliases_values_are_in_supplemental_set(self) -> None:
+        """Every alias target must resolve to a term in the supplemental set."""
+        for alias, canonical in _AI_TOOL_RESOLUTION_ALIASES.items():
+            assert canonical in _AI_TOOL_SUPPLEMENTAL_TERMS, (
+                f"alias {alias!r} → {canonical!r} is not in _AI_TOOL_SUPPLEMENTAL_TERMS"
+            )
+
+    def test_ai_tool_terms_bypass_db_lookup(self) -> None:
+        """copilot, chatgpt, prompt engineering etc. must not issue a DB query."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Copilot", "ChatGPT", "Prompt Engineering"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_rpa_terms_bypass_db_lookup(self) -> None:
+        """Automation / RPA terms must not issue a DB query."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["RPA", "UiPath", "automation"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_alias_resolution_github_copilot_bypasses_db(self) -> None:
+        """'GitHub Copilot' aliases to 'copilot' and must bypass the DB gate."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["GitHub Copilot"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_mixed_ai_and_db_terms_still_queries_db_for_non_supplemental(self) -> None:
+        """If a question contains one AI-tool term and one unknown term, the DB
+        is still queried for the unknown term only."""
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = ["python"]
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        # "Copilot" → supplemental (no DB); "Python" → DB query
+        result = _skill_terms_all_in_dbo_skills(session, ["Copilot", "Python"])
+        assert result is True
+        session.execute.assert_called_once()
+
+    def test_disruption_intent_with_ai_tools_routes_through_gate(self) -> None:
+        """Disruption question whose extracted skills are all AI-tool terms must not
+        be blocked — it should reach the disruption handler (JIE #349)."""
+        session = _make_session(rows=[_make_mock_row(temporal_period="agentic_era", posting_count=42)])
+        cls = _mk_classification("disruption", skill_names=["Copilot", "ChatGPT"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.empty_rows_refusal_reason is None or result.row_count > 0
+
+    def test_trend_intent_with_langchain_routes_without_db_gate(self) -> None:
+        """LangChain is in the supplemental set — trend query must not query skills table first."""
+        session = _make_session(rows=[_make_mock_row(skill_label="LangChain", posting_count=10)])
+        cls = _mk_classification("trend", skill_names=["LangChain"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        # Only the trend aggregate query executes; no separate taxonomy probe call.
+        assert session.execute.call_count == 1
 
 
 # ---------------------------------------------------------------------------
