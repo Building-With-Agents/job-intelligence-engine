@@ -129,6 +129,16 @@ def _build_main_prompt(
             "time-bucketed demand, velocity, or role snapshots, name the direction of change "
             "(up / down / flat / mixed) and tie it to the cited counts — do not hand-wave.\n"
         )
+    comparison_clause = ""
+    if intent_label == "comparison":
+        comparison_clause = (
+            "- This question is a comparison: when citeable_facts_json includes counts for "
+            "two or more skills, sectors, or temporal periods, state the magnitude difference "
+            "(e.g. 'X has 3× more postings than Y') and identify the leader. "
+            "If only one side has data, be explicit about which side is absent and why "
+            "(e.g. 'no demand data found for Y in the current aggregate window'). "
+            "Do not refuse or hedge when the data is thin — use it with appropriate caveats.\n"
+        )
     instructions = (
         "You are an analytics assistant. Write a concise, professional answer for workforce stakeholders.\n"
         "Rules:\n"
@@ -143,6 +153,7 @@ def _build_main_prompt(
         "state the amounts as plain numbers only — do not assume USD or any other currency.\n"
         "- Do not include markdown code fences.\n"
         f"{trend_clause}"
+        f"{comparison_clause}"
     )
     return instructions + "Context JSON (for grounding):\n" + json.dumps(payload, ensure_ascii=False)
 
