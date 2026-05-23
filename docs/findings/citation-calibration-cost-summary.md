@@ -33,7 +33,7 @@ Full scoring logic: `eval/qa_scoring.py:score_evidence_citation`.
 | v2-scorer-redesign (2026-04-24) | 0.510 geo | Scorer redesign + empty aggregate tables (pre-#291) |
 | v2.1-post-seed-fix (2026-04-27) | recovered | #291 aggregate seed fix confirmed sole cause of collapse |
 | dev-verify-2026-05-01 (2026-05-01) | **0.571** | Regression from two bugs: employer ILIKE (#346) + disruption taxonomy gate (#349) |
-| target (post #346 + #349 fixes) | **≥0.70** | Issue #346 merged; #349 in review (PR #405) |
+| target (post #346 + #349 fixes) | **≥0.70** | #346 fix in router.py (issue open); #349 in review (PR #405) |
 
 **Full per-intent breakdown:** `eval/qa_prompt_iteration_log.md` → `dev-verify-2026-05-01` row.
 
@@ -41,7 +41,7 @@ Full scoring logic: `eval/qa_scoring.py:score_evidence_citation`.
 
 | Root cause | Impact | Fix |
 |------------|--------|-----|
-| `_route_employer`: ILIKE matched `geo_terms` against `company_name` — 0 rows for all 10 employer questions | Employer intent ev_cit = 0.196 (10/10 refusing) | PR #346 (Pair D, merged) |
+| `_route_employer`: ILIKE matched `geo_terms` against `company_name` — 0 rows for all 10 employer questions | Employer intent ev_cit = 0.196 (10/10 refusing) | Fix in `router.py` (guards added per issue #346; issue remains open) |
 | Disruption: AI-tool skill names not in `dbo.skills` → `skill_taxonomy_gate_blocked` before any query fires | Disruption intent 10/10 refusing | PR #405 (`_AI_TOOL_SUPPLEMENTAL_TERMS`) |
 | Comparison: "LLM", "ETL" not in exact-match taxonomy | 4/10 comparison questions refusing | PR #406 (`_COMPARISON_SKILL_SUPPLEMENT`) |
 
@@ -59,26 +59,28 @@ Post-synthesis grounding (`analytics/query_engine/grounding.py:verify_answer_gro
 
 | Threshold | Default | Meaning |
 |-----------|:-------:|---------|
-| `SKILL_TAXONOMY_GATE_CONFIDENCE_CAP` | see constants | Caps confidence when taxonomy gate fires |
+| `SKILL_TAXONOMY_GATE_CONFIDENCE_CAP` | **0.35** | Caps confidence when taxonomy gate fires |
 | Transparency threshold | **0.6** | Below this, LLM receives explicit instruction to explain why confidence is low |
 | Volume warning | **< 30 postings** | `data_volume_warning = True` on `SynthesisResponse` |
 
 ### Calibration evidence
 
-| Metric | v1-baseline | dev-verify-2026-05-01 |
-|--------|:-----------:|:--------------------:|
-| confidence_self_consistency | 0.880 | **0.973** (improved) |
+| Metric | v1-baseline (v1 scorer) | dev-verify-2026-05-01 (v2 scorer) |
+|--------|:-----------------------:|:---------------------------------:|
+| confidence_self_consistency | — ¹ | **0.973** (improved from 0.910) |
 | intent_accuracy | 0.811 | 0.822 |
 | answerability | 0.260 | 0.460 |
 
+> ¹ The v1 scorer uses `confidence_flags` (mean = 1.000), not `confidence_self_consistency`. The metric is not directly comparable across scorer versions. Pre-dev-verify v2 baseline for `confidence_self_consistency` was 0.910 (per `findings-dev-verify-2026-05-01.md`).
+
 **Finding:** `confidence_self_consistency` rose to 0.973 while `answerability` is only 0.460 — the pipeline over-reports confidence on questions it cannot actually answer (taxonomy gate firing, empty aggregates). This is expected calibration behavior: the LLM correctly expresses low confidence on genuinely sparse intents, but the **gate itself** returns a high-looking refusal confidence score rather than 0.0.
 
-**Calibration lever:** `DataSufficiency` (`NO_DATA` / `SPARSE` / `ADEQUATE`) in `analytics/query_engine/evidence.py`. When the pipeline is unblocked (post #349 / #406), answerability is expected to rise toward 0.6+, which will bring calibration closer to actual answer quality. No threshold changes are needed yet — close the data gaps first.
+**Calibration lever:** `DataSufficiency` (`NO_DATA` / `SPARSE` / `ADEQUATE`) defined in `analytics/query_engine/schemas.py` and used in `analytics/query_engine/evidence.py`. When the pipeline is unblocked (post #349 / #406), answerability is expected to rise toward 0.6+, which will bring calibration closer to actual answer quality. No threshold changes are needed yet — close the data gaps first.
 
 ### Confidence calibration recommendation
 
 Do not retune the 0.6 transparency threshold or the volume-warning floor until:
-1. `skill_taxonomy_gate` regressions are resolved (#346 merged, #349/#406 in review)
+1. `skill_taxonomy_gate` regressions are resolved (#346 fix confirmed live; #349/#406 in review)
 2. `_route_employer` geographic fix is confirmed in a live re-run
 3. A new full-cohort baseline is captured — calibration metrics will shift
 
@@ -111,7 +113,7 @@ Source: `eval/qa_prompt_iteration_log.md` cost notes, `analytics/query_engine/sy
 | Synthesis (main answer) | `synthesis` | Sonnet-class (`chat-gpt41`) |
 | Follow-up suggestions | `classification` | Haiku-class |
 
-No measured per-query cost from `llm_audit_log` is available in this document — Q&A calls are not separated from extraction rows by a canonical `agent_name` label in the current audit schema. **Recommendation:** add `agent_name = "analytics-qna"` to the Q&A `LLMAuditLog` write path to enable future cost attribution.
+No measured per-query cost from `llm_audit_log` is available in this document — the cost audit query in `eval/cost_audit_week5_report.py` does not yet filter for Q&A rows. `synthesis.py` already uses `AGENT_SYNTHESIS = "analytics-qna-synthesis"` and `AGENT_FOLLOWUP = "analytics-qna-followup"` as `agent_name` labels in audit log writes. **Recommendation:** extend `cost_audit_week5_report.py` to include a second aggregate over these two `agent_name` values to produce a per-query cost breakdown.
 
 ### Throughput vs. cost trade-off
 
@@ -150,7 +152,7 @@ Source: `docs/findings/llm-throughput-executive-summary.md`.
 
 | Item | Owner | Status |
 |------|-------|--------|
-| Capture per-query Q&A cost via `agent_name = "analytics-qna"` | Pair C / analytics team | Open |
+| Extend `cost_audit_week5_report.py` to aggregate Q&A rows (`analytics-qna-synthesis`, `analytics-qna-followup`) for per-query cost attribution | Pair C / analytics team | Open |
 | Post-fix citation accuracy re-run (expected ≥0.70) | Gary (SoT DB) | Pending PR #405 + #406 merge |
 | Confidence calibration re-assessment after data gaps closed | Pair C | Pending baseline re-run |
 | Provisioned-throughput Azure OpenAI request | Team lead / admin | Open (not blocking Phase 1) |
