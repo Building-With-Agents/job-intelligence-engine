@@ -147,7 +147,7 @@ def _build_main_prompt(
         "- If prior_conversation is present, you may use it only to connect this answer to the thread "
         '(e.g. "as we discussed" / same geography); still ground all numbers in citeable_facts_json.\n'
         "- You may paraphrase the summary lines; do not add numbers absent from the facts.\n"
-        "- If facts are thin, keep the answer short and explicitly cautious.\n"
+        "- If facts are thin (and this is not a comparison question), keep the answer short and explicitly cautious.\n"
         "- Salary facts: if citeable_facts_json shows salary amounts without an explicit currency "
         "code on that line (for example `salary=50,000–70,000` with no trailing ISO code), "
         "state the amounts as plain numbers only — do not assume USD or any other currency.\n"

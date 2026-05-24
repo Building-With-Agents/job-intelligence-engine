@@ -457,7 +457,8 @@ _AI_TOOL_RESOLUTION_ALIASES: dict[str, str] = {
 # These pass the taxonomy gate without a DB lookup.
 # Add terms here when a gate-blocked comparison question uses a term that the LLM
 # extracts correctly but dbo.skills does not have under that exact spelling.
-# Run  python scripts/seed_ai_taxonomy_terms.py  to also seed them to dbo.skills.
+# To persist these terms to dbo.skills, add them via scripts/seed_esco.py or a
+# targeted INSERT in common/data_store/migrations.py.
 _COMPARISON_SKILL_SUPPLEMENT: frozenset[str] = frozenset(
     {
         # LLM / generative AI — fixtures have "Generative AI (LLMs)" but not the
@@ -473,12 +474,12 @@ _COMPARISON_SKILL_SUPPLEMENT: frozenset[str] = frozenset(
         "extract transform load",
         "extract, transform, load",
         # Common tech abbreviations whose expansions are in the taxonomy but
-        # whose short form may not be
+        # whose short form may not be — omit single-char or 2-char tokens that
+        # are too ambiguous (RT-007: short tokens let broad aggregates pass the gate)
         "ml",
         "nlp",
         "mlops",
         "devsecops",
-        "cd",
         "ci cd",
         "continuous deployment",
         "continuous delivery",

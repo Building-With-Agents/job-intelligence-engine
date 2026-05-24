@@ -552,8 +552,11 @@ class TestComparisonSkillSupplement:
     def test_supplement_set_is_non_empty(self) -> None:
         assert len(_COMPARISON_SKILL_SUPPLEMENT) > 0
 
-    def test_taxonomy_supplement_contains_comparison_terms(self) -> None:
-        assert _TAXONOMY_SUPPLEMENT is not None
+    def test_taxonomy_supplement_is_comparison_supplement_alias(self) -> None:
+        assert _TAXONOMY_SUPPLEMENT is _COMPARISON_SKILL_SUPPLEMENT, (
+            "_TAXONOMY_SUPPLEMENT must be the same object as _COMPARISON_SKILL_SUPPLEMENT "
+            "until #349 unions the AI-tool supplement"
+        )
         for term in ("etl", "llm", "generative ai", "large language models"):
             assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
 
@@ -596,6 +599,20 @@ class TestComparisonSkillSupplement:
         result = QueryRouter().route(cls, session)
         assert result.routed is True
         assert result.empty_rows_refusal_reason is None
+
+    def test_unknown_term_not_in_supplement_still_requires_db(self) -> None:
+        """RT-007 boundary: a term absent from both supplement AND dbo.skills blocks the gate.
+
+        Ensures the supplement bypass does not widen to unknown terms — the core
+        RT-007 exact-match guard must still fire for anything not explicitly listed.
+        """
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = []  # DB returns nothing for "cobol"
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        result = _skill_terms_all_in_dbo_skills(session, ["COBOL"])
+        assert result is False
+        session.execute.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
