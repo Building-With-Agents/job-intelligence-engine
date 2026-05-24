@@ -390,20 +390,24 @@ _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY: frozenset[str] = frozenset(
 # even before they are seeded to dbo.skills.  All values are lowercase; the gate
 # normalises incoming skill_names to lowercase before checking.
 #
+# Rules for this set:
+#   1. Canonical forms only — variant spellings belong in _AI_TOOL_RESOLUTION_ALIASES.
+#      Alias resolution always runs first, so a term that is also an alias key can
+#      never reach this frozenset check; such entries are unreachable dead code.
+#   2. No generic single-word fragments (e.g. "automation", "rpa").  Short tokens can
+#      match unrelated taxonomy rows and re-open the RT-007 broad-aggregate failure
+#      mode.  Specific brand names and multi-word phrases are safe.
+#
 # To permanently surface these terms across all analytics dimensions (skill demand,
 # velocity, co-occurrence), run:  python scripts/seed_ai_taxonomy_terms.py
 _AI_TOOL_SUPPLEMENTAL_TERMS: frozenset[str] = frozenset(
     {
-        # AI coding assistants
+        # AI coding assistants (canonical forms; aliases map variants → these)
         "copilot",
-        "github copilot",
         "cursor",
-        "cursor ide",
         "claude",
-        "claude.ai",
         "chatgpt",
         "gpt-4",
-        "gpt4",
         # AI skill categories
         "prompt engineering",
         "rag",
@@ -417,14 +421,10 @@ _AI_TOOL_SUPPLEMENTAL_TERMS: frozenset[str] = frozenset(
         "llm-driven incident triage",
         "copilot for infra-as-code",
         "ai-assistant tools",
-        "ai assistant tools",
-        # Automation / RPA
-        "automation",
-        "rpa",
-        "robotic process automation",
+        # Automation / RPA — specific brands and multi-word phrases only.
+        # "automation" and "rpa" are excluded (RT-007 risk: too short/generic).
         "workflow automation",
         "process automation",
-        # RPA and AI tool brands
         "uipath",
         "blue prism",
         "automation anywhere",
@@ -437,7 +437,9 @@ _AI_TOOL_SUPPLEMENTAL_TERMS: frozenset[str] = frozenset(
 
 # Resolution aliases: variant spelling → canonical form (always lowercase).
 # Applied after lowercasing and before the supplemental / DB lookup so that
-# "GitHub Copilot" and "Copilot" resolve to the same canonical term.
+# e.g. "GitHub Copilot" and "Copilot" resolve to the same canonical term.
+# Every alias target must be present in _AI_TOOL_SUPPLEMENTAL_TERMS so that
+# the alias short-circuits the DB lookup for the canonical form as well.
 _AI_TOOL_RESOLUTION_ALIASES: dict[str, str] = {
     "github copilot": "copilot",
     "ms copilot": "copilot",
@@ -446,7 +448,6 @@ _AI_TOOL_RESOLUTION_ALIASES: dict[str, str] = {
     "gpt4": "gpt-4",
     "cursor ide": "cursor",
     "claude.ai": "claude",
-    "robotic process automation": "rpa",
     "ai assistant tools": "ai-assistant tools",
     "llm incident triage": "llm-driven incident triage",
 }

@@ -488,10 +488,12 @@ class TestAIToolTaxonomySupplement:
         assert result is True
         session.execute.assert_not_called()
 
-    def test_rpa_terms_bypass_db_lookup(self) -> None:
-        """Automation / RPA terms must not issue a DB query."""
+    def test_automation_brands_bypass_db_lookup(self) -> None:
+        """Specific automation brand names must not issue a DB query.
+        Note: bare "automation" and "rpa" are intentionally excluded from the
+        supplemental set (RT-007 risk) and will fall through to the DB lookup."""
         session = MagicMock(spec=Session)
-        result = _skill_terms_all_in_dbo_skills(session, ["RPA", "UiPath", "automation"])
+        result = _skill_terms_all_in_dbo_skills(session, ["UiPath", "Blue Prism", "Workflow Automation"])
         assert result is True
         session.execute.assert_not_called()
 
@@ -516,12 +518,15 @@ class TestAIToolTaxonomySupplement:
 
     def test_disruption_intent_with_ai_tools_routes_through_gate(self) -> None:
         """Disruption question whose extracted skills are all AI-tool terms must not
-        be blocked — it should reach the disruption handler (JIE #349)."""
+        be blocked by the taxonomy gate — it should reach the disruption handler (JIE #349)."""
         session = _make_session(rows=[_make_mock_row(temporal_period="agentic_era", posting_count=42)])
         cls = _mk_classification("disruption", skill_names=["Copilot", "ChatGPT"])
         result = QueryRouter().route(cls, session)
         assert result.routed is True
-        assert result.empty_rows_refusal_reason is None or result.row_count > 0
+        assert result.empty_rows_refusal_reason is None, (
+            f"taxonomy gate must not have blocked: {result.empty_rows_refusal_reason}"
+        )
+        assert result.row_count > 0
 
     def test_trend_intent_with_langchain_routes_without_db_gate(self) -> None:
         """LangChain is in the supplemental set — trend query must not query skills table first."""

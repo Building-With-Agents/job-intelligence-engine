@@ -50,11 +50,9 @@ _AIML_SUBCATEGORY_ID = "F6CD1DF0-8352-4B4E-BE9B-E5291BC95702"  # AI/ML
 _AUTOMATION_SUBCATEGORY_ID = "344DEF26-88C4-430F-A7D2-0195A6EFF498"  # IT Automation
 
 # Terms that belong under the Automation subcategory; everything else → AI/ML.
+# Mirrors the automation brands / multi-word phrases retained in the supplemental set.
 _AUTOMATION_TERMS: frozenset[str] = frozenset(
     {
-        "automation",
-        "rpa",
-        "robotic process automation",
         "workflow automation",
         "process automation",
         "uipath",
@@ -66,6 +64,43 @@ _AUTOMATION_TERMS: frozenset[str] = frozenset(
     }
 )
 
+# Display-ready casing for each canonical term.  The supplemental set stores
+# lowercase keys for gate matching; dbo.skills should store human-readable names
+# so they surface correctly in dashboards and velocity/demand exports.
+_DISPLAY_NAMES: dict[str, str] = {
+    "copilot": "Copilot",
+    "cursor": "Cursor",
+    "claude": "Claude",
+    "chatgpt": "ChatGPT",
+    "gpt-4": "GPT-4",
+    "prompt engineering": "Prompt Engineering",
+    "rag": "RAG",
+    "vector search": "Vector Search",
+    "llm engineering": "LLM Engineering",
+    "ai-adjacent": "AI-Adjacent",
+    "ai-native": "AI-Native",
+    "ai-augmented": "AI-Augmented",
+    "ai-assisted testing": "AI-Assisted Testing",
+    "aiops": "AIOps",
+    "llm-driven incident triage": "LLM-Driven Incident Triage",
+    "copilot for infra-as-code": "Copilot for Infra-as-Code",
+    "ai-assistant tools": "AI-Assistant Tools",
+    "workflow automation": "Workflow Automation",
+    "process automation": "Process Automation",
+    "uipath": "UiPath",
+    "blue prism": "Blue Prism",
+    "automation anywhere": "Automation Anywhere",
+    "testim": "Testim",
+    "mabl": "Mabl",
+    "applitools": "Applitools",
+    "langchain": "LangChain",
+}
+
+
+def _display_name_for(term: str) -> str:
+    """Return display-ready casing; fall back to title-case for unknown terms."""
+    return _DISPLAY_NAMES.get(term, term.title())
+
 
 def _subcategory_for(term: str) -> str:
     return _AUTOMATION_SUBCATEGORY_ID if term in _AUTOMATION_TERMS else _AIML_SUBCATEGORY_ID
@@ -75,14 +110,10 @@ def _skill_type_for(term: str) -> str:
     """Rough type assignment; "tool" for named products, "knowledge" for concepts."""
     tools = {
         "copilot",
-        "github copilot",
         "cursor",
-        "cursor ide",
         "claude",
-        "claude.ai",
         "chatgpt",
         "gpt-4",
-        "gpt4",
         "uipath",
         "blue prism",
         "automation anywhere",
@@ -129,7 +160,11 @@ def run(*, dry_run: bool) -> None:
 
         if dry_run:
             for term in to_insert:
-                log.info("seed_ai_taxonomy_terms_would_insert", term=term)
+                log.info(
+                    "seed_ai_taxonomy_terms_would_insert",
+                    term=term,
+                    display_name=_display_name_for(term),
+                )
             return
 
         inserted = 0
@@ -137,7 +172,7 @@ def run(*, dry_run: bool) -> None:
             skill = Skill(
                 skill_id=str(uuid.uuid4()).upper(),
                 skill_subcategory_id=_subcategory_for(term),
-                skill_name=term,
+                skill_name=_display_name_for(term),
                 skill_info_url="",
                 skill_type=_skill_type_for(term),
                 createdat=now,
