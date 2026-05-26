@@ -110,6 +110,16 @@ clustering:
       # Env override: CLUSTER_UMAP_RANDOM_STATE
       random_state: 42
 
+  # Centroid fallback for HDBSCAN noise / NULL canonical_role_id (JIE #363).
+  assignment:
+    # Min cosine similarity to nearest canonical_roles.label_embedding for assignment.
+    # Env override: CLUSTER_ASSIGNMENT_MIN_SIMILARITY
+    min_centroid_similarity: 0.75
+
+    # Safety cap per backfill or persist noise-fallback pass.
+    # Env override: CLUSTER_ASSIGNMENT_MAX_PER_RUN
+    max_assignments_per_run: 5000
+
   emergence:
     # Cluster quality score floor for emergence detection. Range 0.0–1.0.
     # Env override: EMERGENCE_MIN_QUALITY_SCORE

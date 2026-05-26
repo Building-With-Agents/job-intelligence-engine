@@ -111,7 +111,13 @@ def main() -> None:
                 print(f"    Reason: {ec.filter_reason}")
 
         print("\n--- Persisting to DB ---")
-        persist_info = persist_clustering_result(session, result, correlation_id="week7-clustering-run")
+        embedding_by_posting = {item.posting_id: item.embedding for item in embedded}
+        persist_info = persist_clustering_result(
+            session,
+            result,
+            correlation_id="week7-clustering-run",
+            posting_embeddings=embedding_by_posting,
+        )
         print(f"  Roles inserted:    {persist_info.get('roles_inserted')}")
         print(f"  Postings updated:  {persist_info.get('postings_updated')}")
 
