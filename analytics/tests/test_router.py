@@ -33,11 +33,11 @@ import pytest
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
+from analytics.canonical_roles.role_family import comparison_should_use_role_family_count
 from analytics.query_engine.constants import (
     NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
 )
-from analytics.canonical_roles.role_family import comparison_should_use_role_family_count
 from analytics.query_engine.router import (
     _AI_TOOL_RESOLUTION_ALIASES,
     _AI_TOOL_SUPPLEMENTAL_TERMS,
@@ -414,7 +414,7 @@ class TestIntentRouting:
         )
         q = "How many Borderplex job postings are for cybersecurity roles?"
         cls = _mk_classification("comparison", skill_names=["Cybersecurity"])
-        result = QueryRouter().route(cls, session, question=q)
+        QueryRouter().route(cls, session, question=q)
         sql = _last_execute_sql(session).lower()
         assert "role_family" not in sql
         assert "skill_demand_weekly" in sql
