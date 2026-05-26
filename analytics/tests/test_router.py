@@ -382,10 +382,7 @@ class TestIntentRouting:
                 _make_mock_row(role_family="cybersecurity", posting_count=31),
             ],
         )
-        q = (
-            "How many job postings are for cloud engineering roles compared to "
-            "cybersecurity roles?"
-        )
+        q = "How many job postings are for cloud engineering roles compared to cybersecurity roles?"
         cls = _mk_classification("comparison", role_names=["cloud engineering", "cybersecurity"])
         result = QueryRouter().route(cls, session, question=q)
         assert result.distinct_posting_count == 115
@@ -394,10 +391,7 @@ class TestIntentRouting:
         session = _make_session(
             rows=[_make_mock_row(role_family="cloud_engineering", posting_count=10)],
         )
-        q = (
-            "How many Borderplex job postings are for cloud-engineering roles "
-            "compared to cybersecurity roles?"
-        )
+        q = "How many Borderplex job postings are for cloud-engineering roles compared to cybersecurity roles?"
         cls = _mk_classification(
             "comparison",
             skill_names=["Cloud Computing", "Cybersecurity"],
@@ -461,10 +455,7 @@ class TestIntentRouting:
         skill_names: list[str],
         expected: bool,
     ) -> None:
-        assert (
-            comparison_should_use_role_family_count(question, role_names, skill_names)
-            is expected
-        )
+        assert comparison_should_use_role_family_count(question, role_names, skill_names) is expected
 
     def test_route_other(self) -> None:
         session = _make_session()
