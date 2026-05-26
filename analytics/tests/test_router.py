@@ -40,6 +40,8 @@ from analytics.query_engine.constants import (
 from analytics.query_engine.router import (
     _AI_TOOL_RESOLUTION_ALIASES,
     _AI_TOOL_SUPPLEMENTAL_TERMS,
+    _COMPARISON_SKILL_SUPPLEMENT,
+    _TAXONOMY_SUPPLEMENT,
     ALLOWED_TABLES,
     QueryRouter,
     _clean_workflow_role_names,
@@ -536,6 +538,82 @@ class TestAIToolTaxonomySupplement:
         assert result.routed is True
         # Only the trend aggregate query executes; no separate taxonomy probe call.
         assert session.execute.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Comparison-skill taxonomy supplement — JIE #340 cycle 2
+# ---------------------------------------------------------------------------
+
+
+class TestComparisonSkillSupplement:
+    """Validate that tech terms missing from dbo.skills bypass the taxonomy gate
+    so comparison questions are not blocked (JIE #340 cycle 2)."""
+
+    def test_supplement_set_is_non_empty(self) -> None:
+        assert len(_COMPARISON_SKILL_SUPPLEMENT) > 0
+
+    def test_taxonomy_supplement_is_union_of_both_supplements(self) -> None:
+        """#349 (#405) has landed — _TAXONOMY_SUPPLEMENT is now the union of
+        _AI_TOOL_SUPPLEMENTAL_TERMS and _COMPARISON_SKILL_SUPPLEMENT."""
+        assert _TAXONOMY_SUPPLEMENT == _AI_TOOL_SUPPLEMENTAL_TERMS | _COMPARISON_SKILL_SUPPLEMENT
+        for term in ("etl", "llm", "generative ai", "large language models"):
+            assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
+        for term in ("copilot", "chatgpt", "langchain", "prompt engineering"):
+            assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
+
+    def test_etl_bypasses_db_lookup(self) -> None:
+        """gq-056 scenario: 'ETL' is in supplement, 'SQL' is in dbo.skills —
+        DB is queried only for SQL; the gate still passes."""
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = ["sql"]
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        result = _skill_terms_all_in_dbo_skills(session, ["SQL", "ETL"])
+        assert result is True
+        # DB was queried once — for "sql" only; "etl" was in the supplement
+        session.execute.assert_called_once()
+
+    def test_llm_bypasses_db_lookup(self) -> None:
+        """gq-054 scenario: 'Large Language Models' extracted but not in dbo.skills."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Large Language Models", "LLM"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_generative_ai_bypasses_db_lookup(self) -> None:
+        """'Generative AI' extracted term passes without DB round-trip."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Generative AI"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_comparison_with_etl_and_sql_routes_through(self) -> None:
+        """Comparison question with SQL (in DB) + ETL (supplement) routes to skill table."""
+        session = _make_session(
+            rows=[
+                _make_mock_row(skill_label="SQL", posting_count=120),
+                _make_mock_row(skill_label="ETL", posting_count=45),
+            ],
+            taxonomy_lower_matches=("sql",),
+        )
+        cls = _mk_classification("comparison", skill_names=["SQL", "ETL"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.empty_rows_refusal_reason is None
+
+    def test_unknown_term_not_in_supplement_still_requires_db(self) -> None:
+        """RT-007 boundary: a term absent from both supplement AND dbo.skills blocks the gate.
+
+        Ensures the supplement bypass does not widen to unknown terms — the core
+        RT-007 exact-match guard must still fire for anything not explicitly listed.
+        """
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = []  # DB returns nothing for "cobol"
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        result = _skill_terms_all_in_dbo_skills(session, ["COBOL"])
+        assert result is False
+        session.execute.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
