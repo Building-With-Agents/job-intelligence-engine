@@ -42,7 +42,8 @@ class _LangfuseContextV4:
 
 
 try:
-    from langfuse import get_client, observe as lf_observe
+    from langfuse import get_client
+    from langfuse import observe as lf_observe
 
     lf_context = _LangfuseContextV4()
 except ImportError:
