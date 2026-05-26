@@ -103,10 +103,7 @@ def main() -> int:
 
     print(f"== Plan: create {len(to_create)}, skip {len(skipped)} ==")
     for model_name, tier_key, inp, out in to_create:
-        print(
-            f"  [create] {model_name:30s}  tier={tier_key:12s}  "
-            f"input=${inp:.2e}/tok  output=${out:.2e}/tok"
-        )
+        print(f"  [create] {model_name:30s}  tier={tier_key:12s}  input=${inp:.2e}/tok  output=${out:.2e}/tok")
     for name in skipped:
         print(f"  [skip]   {name:30s}  (already registered)")
     print()
@@ -128,10 +125,7 @@ def main() -> int:
             input_price=input_price,
             output_price=output_price,
         )
-        print(
-            f"  [created] {result.model_name:30s}  id={result.id}  "
-            f"tier={tier_key}"
-        )
+        print(f"  [created] {result.model_name:30s}  id={result.id}  tier={tier_key}")
 
     print()
     print(f"Done. {len(to_create)} model(s) created; {len(skipped)} skipped.")

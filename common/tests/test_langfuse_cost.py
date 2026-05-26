@@ -12,10 +12,7 @@ from common.observability.langfuse_cost import langfuse_model_for_observation
 
 class TestLangfuseModelForObservation:
     def test_prefers_deployment_over_api_model(self) -> None:
-        assert (
-            langfuse_model_for_observation("chat-gpt41mini", "gpt-4.1-mini-2025-04-14")
-            == "chat-gpt41mini"
-        )
+        assert langfuse_model_for_observation("chat-gpt41mini", "gpt-4.1-mini-2025-04-14") == "chat-gpt41mini"
 
     def test_registered_api_name_passthrough(self) -> None:
         assert langfuse_model_for_observation(None, "gpt-4.1-2025-04-14") == "gpt-4.1-2025-04-14"
