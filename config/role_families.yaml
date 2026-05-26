@@ -1,0 +1,93 @@
+# config/role_families.yaml — role-family taxonomy for canonical_roles.role_family (JIE #362).
+# Loaded via load_yaml("role_families") → data["role_families"]["families"].
+
+role_families:
+  families:
+    - slug: cybersecurity
+      aliases:
+        - cyber security
+        - cybersecurity
+        - cyber-security
+        - infosec
+        - information security
+        - security engineer
+        - network security
+    - slug: cloud_engineering
+      aliases:
+        - cloud computing
+        - cloud engineer
+        - cloud engineering
+        - cloud infrastructure
+        - cloud architect
+        - cloud operations
+    - slug: data_engineering
+      aliases:
+        - data engineer
+        - data engineering
+        - etl engineer
+        - data pipeline
+    - slug: ai_ml
+      aliases:
+        - ai engineer
+        - machine learning
+        - ml engineer
+        - artificial intelligence
+        - deep learning
+    - slug: devops_sre
+      aliases:
+        - devops
+        - site reliability
+        - sre
+        - platform engineer
+        - infrastructure engineer
+    - slug: software_engineering
+      aliases:
+        - software engineer
+        - software developer
+        - application developer
+        - full stack
+        - fullstack
+    - slug: frontend
+      aliases:
+        - front end
+        - frontend
+        - front-end developer
+        - ui developer
+    - slug: backend
+      aliases:
+        - back end
+        - backend
+        - back-end developer
+        - api developer
+    - slug: mobile
+      aliases:
+        - mobile developer
+        - ios developer
+        - android developer
+    - slug: qa_test
+      aliases:
+        - qa engineer
+        - quality assurance
+        - test engineer
+        - software tester
+        - automation tester
+    - slug: it_ops
+      aliases:
+        - it operations
+        - systems administrator
+        - sysadmin
+        - network administrator
+        - it support
+    - slug: product_design
+      aliases:
+        - product manager
+        - product design
+        - ux designer
+        - ui designer
+        - product owner
+    - slug: analytics_bi
+      aliases:
+        - data analyst
+        - business intelligence
+        - bi analyst
+        - analytics engineer

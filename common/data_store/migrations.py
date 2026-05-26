@@ -351,6 +351,8 @@ _SKILL_DEMAND_WEEKLY_ALTER_STATEMENTS = [
 # Not ORM-mapped — follows the same unmapped-vector pattern as dedup_embedding on job_postings.
 _CANONICAL_ROLES_ALTER_STATEMENTS = [
     "ALTER TABLE dbo.canonical_roles ADD COLUMN IF NOT EXISTS label_embedding vector(1536)",
+    "ALTER TABLE dbo.canonical_roles ADD COLUMN IF NOT EXISTS role_family TEXT",
+    "CREATE INDEX IF NOT EXISTS ix_canonical_roles_role_family ON dbo.canonical_roles (role_family)",
 ]
 
 # Issue #157: JSearch Pro-plan monthly budget counter — one column on job_ingestion_runs

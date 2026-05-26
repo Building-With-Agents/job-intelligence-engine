@@ -38,6 +38,10 @@ import structlog
 from sqlalchemy import Text, cast, func, or_, select, text
 from sqlalchemy.orm import Session
 
+from analytics.canonical_roles.role_family import (
+    comparison_resolved_role_families,
+    comparison_should_use_role_family_count,
+)
 from analytics.query_engine.constants import (
     NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
@@ -378,6 +382,7 @@ class RouteResult:
     error: str | None = None
     confidence: float = 0.0
     empty_rows_refusal_reason: str | None = None
+    distinct_posting_count: int | None = None
 
 
 # JIE #330 — intents that read skill-scoped aggregates; every extracted skill_name must
@@ -668,9 +673,13 @@ class QueryRouter:
             geo_terms=geo_terms[:3],
         )
 
-        blocked = _apply_skill_taxonomy_and_geo_scope_gates(session, intent, confidence, skill_names, question)
-        if blocked is not None:
-            return blocked
+        skip_taxonomy_gate = intent == "comparison" and comparison_should_use_role_family_count(
+            question, role_names, skill_names
+        )
+        if not skip_taxonomy_gate:
+            blocked = _apply_skill_taxonomy_and_geo_scope_gates(session, intent, confidence, skill_names, question)
+            if blocked is not None:
+                return blocked
 
         handler: Callable[..., RouteResult] | None = _INTENT_HANDLERS.get(intent)
         if handler is None:
@@ -1706,6 +1715,112 @@ class QueryRouter:
                 confidence=confidence,
             )
 
+    def _route_role_family_count(
+        self,
+        *,
+        intent: str,
+        confidence: float,
+        families: list[str],
+        week_floor: date,
+        session: Session,
+        tenant: TenantAccess,
+        question: str = "",
+    ) -> RouteResult:
+        """comparison (job-count) → ``job_postings`` joined to ``canonical_roles.role_family``."""
+        if not tenant.can_query_borderplex_skill_tables:
+            return self._no_borderplex_market_aggregates(intent, confidence)
+
+        if not families:
+            return RouteResult(
+                intent=intent,
+                tables_used=[],
+                query_label="role family posting count — no families resolved",
+                rows=[],
+                row_count=0,
+                routed=True,
+                confidence=confidence,
+                empty_rows_refusal_reason=(
+                    "Could not resolve at least two role families for a domain job-count comparison."
+                ),
+            )
+
+        allowed_subregions = list(tenant.allowed_subregions)
+        params: dict[str, Any] = {
+            "families": families,
+            "week_floor": week_floor,
+            "subregions": allowed_subregions,
+        }
+        where_parts: list[str] = [
+            "cr.role_family = ANY(:families)",
+            "jp.is_spam = FALSE",
+            "jp.canonical_role_id IS NOT NULL",
+            "jp.date_posted >= :week_floor",
+        ]
+        if allowed_subregions:
+            where_parts.append("jp.borderplex_subregion = ANY(:subregions)")
+
+        sql = text(
+            f"""
+            SELECT
+                cr.role_family,
+                COUNT(DISTINCT jp.job_posting_id) AS posting_count
+            FROM dbo.job_postings AS jp
+            INNER JOIN dbo.canonical_roles AS cr ON cr.role_id = jp.canonical_role_id
+            WHERE {" AND ".join(where_parts)}
+            GROUP BY cr.role_family
+            ORDER BY posting_count DESC
+            LIMIT {_QUERY_LIMIT}
+            """
+        )
+
+        family_label = " vs ".join(families[:5])
+        label = f"role family posting count (since {week_floor.isoformat()}) — {family_label}"
+
+        try:
+            result = session.execute(
+                sql,
+                params,
+                execution_options={"timeout": _QUERY_TIMEOUT_SECONDS},
+            )
+            rows = [dict(row._mapping) for row in result]
+            is_partial = len(rows) >= _QUERY_LIMIT
+            distinct_total = sum(int(r.get("posting_count") or 0) for r in rows)
+            log.info(
+                "query_router_result",
+                intent=intent,
+                query_label=label,
+                row_count=len(rows),
+                is_partial=is_partial,
+                tables_used=["job_postings", "canonical_roles"],
+                distinct_posting_count=distinct_total,
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings", "canonical_roles"],
+                query_label=label,
+                rows=rows,
+                row_count=len(rows),
+                is_partial=is_partial,
+                confidence=confidence,
+                distinct_posting_count=distinct_total,
+            )
+        except Exception as exc:
+            log.error(
+                "query_router_execute_error",
+                intent=intent,
+                query_label=label,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            return RouteResult(
+                intent=intent,
+                tables_used=["job_postings", "canonical_roles"],
+                query_label=label,
+                routed=False,
+                error=str(exc),
+                confidence=confidence,
+            )
+
     def _route_comparison(
         self,
         *,
@@ -1719,9 +1834,22 @@ class QueryRouter:
         tenant: TenantAccess,
         question: str = "",
     ) -> RouteResult:
-        """comparison → ``skill_demand_weekly`` for skill vs skill; ``sector_summary_weekly`` otherwise."""
+        """comparison → role-family job counts, ``skill_demand_weekly``, or ``sector_summary_weekly``."""
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
+
+        families = comparison_resolved_role_families(question, role_names, skill_names)
+        if families:
+            return self._route_role_family_count(
+                intent=intent,
+                confidence=confidence,
+                families=families,
+                week_floor=week_floor,
+                session=session,
+                tenant=tenant,
+                question=question,
+            )
+
         if skill_names:
             t = SkillDemandWeekly
             skill_filter = self._ilike_or(t.skill_label, skill_names)

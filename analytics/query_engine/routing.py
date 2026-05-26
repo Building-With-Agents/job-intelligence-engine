@@ -847,6 +847,7 @@ def run_analytics_qna(
             correlation_id=cid,
             role_suggestion_hint=role_hint,
             no_data_refusal_override=no_data_override,
+            distinct_posting_count=getattr(route_result, "distinct_posting_count", None),
         )
 
         syn = qna.run_analytics_qna(q_payload, cost_ledger=ledger)

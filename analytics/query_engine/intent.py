@@ -317,6 +317,14 @@ Q: "Compare AI engineering hiring in El Paso vs Las Cruces over the last 6 month
 A: {"intent":"comparison","confidence":0.88,...}
    ← Two locations being compared side-by-side.
 
+Q: "How many Borderplex job postings are for cloud-engineering roles compared to cybersecurity roles in recent weeks?"
+A: {"intent":"comparison","confidence":0.88,"extracted_entities":{"geographic_terms":["Borderplex"],"role_names":["cloud engineering","cybersecurity"],"skill_names":[],"time_references":["recent weeks"]}}
+   ← Job posting counts by role family (not skill-mention weekly aggregates).
+
+Q: "Compare Borderplex demand for DevOps skills versus Data Engineering skills — which is the stronger hiring signal?"
+A: {"intent":"comparison","confidence":0.85,"extracted_entities":{"geographic_terms":["Borderplex"],"role_names":[],"skill_names":["DevOps","Data Engineering"],"time_references":[]}}
+   ← Skill-mention comparison → skill_demand_weekly, not role-family job counts.
+
 Q: "What should a training program for a cybersecurity analyst in El Paso look like in the next 2 years?"
 A: {"intent":"curriculum","confidence":0.91,...}
    ← Program/curriculum design for a role; the city is context, not a posting filter.

@@ -712,7 +712,7 @@ pipeline startup and treated as agent-owned reference data.
 
 | Table | PK | Key query columns | Notes |
 |-------|----|-------------------|-------|
-| `canonical_roles` | `role_id VARCHAR(64)` | `label, description, posting_count, top_skills, top_tools` | Cluster-level role definitions; use `role_id` as FK target |
+| `canonical_roles` | `role_id VARCHAR(64)` | `label, role_family, description, posting_count, top_skills, top_tools` | Cluster-level role definitions; `role_family` groups ~200 labels into domain buckets (JIE #362). Job-count-by-domain: `JOIN job_postings ON canonical_role_id = role_id` + `GROUP BY role_family` (non-null `canonical_role_id` only; see #363). |
 | `companies` | `company_id TEXT` | `company_name, size, city, state, industry_sector_id` | Cast `job_postings.company_id` to `TEXT` when joining |
 | `industry_sectors` | `industry_sector_id TEXT` | `sector_title` | Join via `job_postings.sector_id` or `sector_summary_weekly.sector` |
 | `employer_profiles` | `id UUID` | `company_size, ai_maturity_signal, sector, is_known_employer` | Join via `job_postings.employer_profile_id` |
