@@ -18,6 +18,8 @@ from __future__ import annotations
 import pytest
 
 from analytics.clustering.config import (
+    DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN,
+    DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY,
     DEFAULT_CLUSTER_DIM_REDUCTION_METHOD,
     DEFAULT_CLUSTER_DIM_REDUCTION_N_COMPONENTS,
     DEFAULT_CLUSTER_DISTANCE_METRIC,
@@ -27,8 +29,6 @@ from analytics.clustering.config import (
     DEFAULT_CLUSTER_LABEL_DOMINANCE_THRESHOLD,
     DEFAULT_CLUSTER_MIN_CLUSTER_SIZE,
     DEFAULT_CLUSTER_MIN_SAMPLES,
-    DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN,
-    DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY,
     DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS,
     DEFAULT_CLUSTER_SELECTION_EPSILON,
     DEFAULT_CLUSTER_SELECTION_METHOD,
@@ -39,6 +39,8 @@ from analytics.clustering.config import (
     DEFAULT_EMERGENCE_MIN_DISTINCT_EMPLOYERS,
     DEFAULT_EMERGENCE_MIN_NOVEL_SKILLS,
     DEFAULT_EMERGENCE_MIN_QUALITY_SCORE,
+    cluster_assignment_max_per_run,
+    cluster_assignment_min_similarity,
     cluster_dim_reduction_method,
     cluster_dim_reduction_n_components,
     cluster_distance_metric,
@@ -48,8 +50,6 @@ from analytics.clustering.config import (
     cluster_label_dominance_threshold,
     cluster_min_cluster_size,
     cluster_min_samples,
-    cluster_assignment_max_per_run,
-    cluster_assignment_min_similarity,
     cluster_min_total_postings,
     cluster_selection_epsilon,
     cluster_selection_method,
