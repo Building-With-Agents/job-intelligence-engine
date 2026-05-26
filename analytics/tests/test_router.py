@@ -37,6 +37,7 @@ from analytics.query_engine.constants import (
     NO_DATA_GEO_SKILL_SCOPE_REFUSAL,
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
 )
+from analytics.canonical_roles.role_family import comparison_should_use_role_family_count
 from analytics.query_engine.router import (
     _AI_TOOL_RESOLUTION_ALIASES,
     _AI_TOOL_SUPPLEMENTAL_TERMS,
@@ -137,6 +138,17 @@ def _compiled_sql(session: MagicMock) -> str:
             compile_kwargs={"literal_binds": True},
         )
     )
+
+
+def _last_execute_sql(session: MagicMock) -> str:
+    """Return SQL text from the last ``session.execute()`` (ORM or ``text()``)."""
+    calls = session.execute.call_args_list
+    if not calls:
+        raise AssertionError("session.execute was never called")
+    stmt = calls[-1][0][0]
+    if hasattr(stmt, "text"):
+        return str(stmt.text)
+    return _compiled_sql(session)
 
 
 def _assert_sql_guardrails(sql: str) -> None:
@@ -319,7 +331,11 @@ class TestIntentRouting:
     def test_route_comparison_with_skills(self) -> None:
         session = _make_session(taxonomy_lower_matches=("python", "r"))
         cls = _mk_classification("comparison", skill_names=["Python", "R"])
-        result = QueryRouter().route(cls, session)
+        result = QueryRouter().route(
+            cls,
+            session,
+            question="Compare Python skills vs R skills in Borderplex demand",
+        )
 
         assert result.intent == "comparison"
         assert result.routed is True
@@ -329,6 +345,126 @@ class TestIntentRouting:
         sql = _compiled_sql(session)
         _assert_sql_guardrails(sql)
         assert "skill_demand_weekly" in sql.lower()
+
+    def test_comparison_role_family_job_count(self) -> None:
+        session = _make_session(
+            rows=[
+                _make_mock_row(role_family="cloud_engineering", posting_count=84),
+                _make_mock_row(role_family="cybersecurity", posting_count=31),
+            ],
+        )
+        q = (
+            "How many Borderplex job postings are for cloud-engineering roles "
+            "compared to cybersecurity roles in recent weeks?"
+        )
+        cls = _mk_classification(
+            "comparison",
+            role_names=["cloud engineering", "cybersecurity"],
+            time_refs=["recent weeks"],
+        )
+        result = QueryRouter().route(cls, session, question=q)
+
+        assert result.routed is True
+        assert result.tables_used == ["job_postings", "canonical_roles"]
+        assert result.empty_rows_refusal_reason is None
+        sql = _last_execute_sql(session).lower()
+        _assert_sql_guardrails(sql)
+        assert "role_family" in sql
+        assert "job_postings" in sql
+        assert "canonical_roles" in sql
+        assert "count(distinct" in sql
+        assert "date_posted" in sql
+
+    def test_comparison_role_family_distinct_posting_count(self) -> None:
+        session = _make_session(
+            rows=[
+                _make_mock_row(role_family="cloud_engineering", posting_count=84),
+                _make_mock_row(role_family="cybersecurity", posting_count=31),
+            ],
+        )
+        q = (
+            "How many job postings are for cloud engineering roles compared to "
+            "cybersecurity roles?"
+        )
+        cls = _mk_classification("comparison", role_names=["cloud engineering", "cybersecurity"])
+        result = QueryRouter().route(cls, session, question=q)
+        assert result.distinct_posting_count == 115
+
+    def test_comparison_job_count_skips_taxonomy_gate(self) -> None:
+        session = _make_session(
+            rows=[_make_mock_row(role_family="cloud_engineering", posting_count=10)],
+        )
+        q = (
+            "How many Borderplex job postings are for cloud-engineering roles "
+            "compared to cybersecurity roles?"
+        )
+        cls = _mk_classification(
+            "comparison",
+            skill_names=["Cloud Computing", "Cybersecurity"],
+        )
+        result = QueryRouter().route(cls, session, question=q)
+        assert result.empty_rows_refusal_reason is None
+        assert "canonical_roles" in result.tables_used
+        assert session.execute.call_count == 1
+
+    def test_comparison_single_family_not_role_family_sql(self) -> None:
+        session = _make_session(
+            taxonomy_lower_matches=("cybersecurity",),
+            rows=[_make_mock_row(skill_label="Cybersecurity", posting_count=31)],
+        )
+        q = "How many Borderplex job postings are for cybersecurity roles?"
+        cls = _mk_classification("comparison", skill_names=["Cybersecurity"])
+        result = QueryRouter().route(cls, session, question=q)
+        sql = _last_execute_sql(session).lower()
+        assert "role_family" not in sql
+        assert "skill_demand_weekly" in sql
+
+    def test_comparison_devops_skills_vs_data_engineering(self) -> None:
+        session = _make_session(taxonomy_lower_matches=("devops", "data engineering"))
+        q = (
+            "Compare Borderplex demand for DevOps skills versus Data Engineering skills "
+            "— which is the stronger hiring signal?"
+        )
+        cls = _mk_classification("comparison", skill_names=["DevOps", "Data Engineering"])
+        result = QueryRouter().route(cls, session, question=q)
+        assert result.tables_used == ["skill_demand_weekly"]
+        sql = _compiled_sql(session).lower()
+        assert "role_family" not in sql
+
+    @pytest.mark.parametrize(
+        "question,role_names,skill_names,expected",
+        [
+            (
+                "How many job postings for cloud engineering vs cybersecurity roles?",
+                [],
+                [],
+                True,
+            ),
+            (
+                "How many cybersecurity job postings?",
+                [],
+                ["Cybersecurity"],
+                False,
+            ),
+            (
+                "Compare Python skills vs R skills",
+                [],
+                ["Python", "R"],
+                False,
+            ),
+        ],
+    )
+    def test_comparison_should_use_role_family_count_predicate(
+        self,
+        question: str,
+        role_names: list[str],
+        skill_names: list[str],
+        expected: bool,
+    ) -> None:
+        assert (
+            comparison_should_use_role_family_count(question, role_names, skill_names)
+            is expected
+        )
 
     def test_route_other(self) -> None:
         session = _make_session()

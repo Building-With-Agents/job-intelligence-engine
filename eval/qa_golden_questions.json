@@ -1691,15 +1691,16 @@
   },
   {
     "id": "gq-052",
-    "question": "How does Borderplex demand for Cloud Computing skills compare to Cybersecurity skills \u2014 which domain has more job postings?",
+    "question": "How many Borderplex job postings are for cloud-engineering roles compared to cybersecurity roles in recent weeks?",
     "intent": "comparison",
-    "context": "Workforce director choosing between launching a cloud computing or cybersecurity certification track for the next fiscal year. Budget only supports one new track. Needs a clear demand comparison to justify the investment to funders.",
-    "ideal_answer_summary": "Should compare posting counts for Cloud Computing (approx 84 postings for core label plus variants) versus Cybersecurity (approx 31 postings for core label). Cloud Computing should clearly dominate with roughly 2.5x to 3x more postings. Should cite specific counts for each domain. Should name related skill variants found (e.g., Cloud Certifications, Cloud AI Services for cloud; Cybersecurity Certification, CISSP for security). Should recommend the cloud track as the higher-demand option while noting cybersecurity still shows solid demand and may have less competition among training providers.",
+    "context": "Workforce director choosing between launching a cloud computing or cybersecurity certification track for the next fiscal year. Budget only supports one new track. Needs a clear demand comparison of open role-domain postings (not skill-mention counts).",
+    "ideal_answer_summary": "Should compare distinct job posting counts by role_family (cloud_engineering vs cybersecurity) from job_postings joined to canonical_roles, scoped to Borderplex and recent weeks via date_posted. Should cite posting_count per family and state which domain has more open roles. Should note coverage caveat: only postings with non-null canonical_role_id are included (#363). Should recommend the higher-volume track while acknowledging cybersecurity demand if lower.",
     "must_include": [
-      "cloud_computing_posting_count_stated",
+      "cloud_engineering_posting_count_stated",
       "cybersecurity_posting_count_stated",
-      "cloud_computing_identified_as_higher_demand",
+      "cloud_engineering_identified_as_higher_demand_when_data_supports",
       "both_domains_compared_numerically",
+      "canonical_role_id_coverage_caveat_or_equivalent",
       "recommendation_for_track_priority"
     ],
     "must_not_include": [

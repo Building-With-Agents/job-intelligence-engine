@@ -13,6 +13,7 @@ import structlog
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from analytics.canonical_roles.role_family import classify_canonical_role
 from analytics.clustering.types import ClusteringResult, RankedSkill, RankedTool
 from common.data_store.models import CanonicalRole
 
@@ -113,6 +114,8 @@ def persist_clustering_result(
 
     now = datetime.now(timezone.utc)
     roles_inserted = 0
+    role_family_assigned = 0
+    role_family_unmapped = 0
 
     for cluster in result.clusters:
         role_id = cluster_id_to_role_id[cluster.cluster_id]
@@ -132,8 +135,24 @@ def persist_clustering_result(
         row.is_llm_generated = cluster.is_llm_generated_label
         row.computed_at = now
         row.updated_at = now
+        family = classify_canonical_role(
+            row.label,
+            representative_titles=list(row.representative_titles or []),
+            top_skills=row.top_skills if isinstance(row.top_skills, list) else None,
+        )
+        row.role_family = family
+        if family:
+            role_family_assigned += 1
+        else:
+            role_family_unmapped += 1
 
     session.flush()
+    log.info(
+        "clustering_role_family_assigned",
+        correlation_id=correlation_id,
+        assigned=role_family_assigned,
+        unmapped=role_family_unmapped,
+    )
 
     label_embeddings_synced = 0
     for cluster in result.clusters:
