@@ -47,7 +47,8 @@ PARITY: list[tuple[str, str | None, Any]] = [
         "analytics-clustering",
     ),
     ("analytics.clustering.config:cluster_min_total_postings", "CLUSTER_MIN_TOTAL_POSTINGS", 500),
-    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 5),
+    ("analytics.clustering.config:cluster_min_cluster_size", "CLUSTER_MIN_CLUSTER_SIZE", 3),
+    # #400: was 5 (#321 Tier 2); lowered to 3 to reduce noise for sparse role families.
     # #327 Phase 2: 5 → 3 (more permissive density floor on UMAP-reduced space).
     ("analytics.clustering.config:cluster_min_samples", "CLUSTER_MIN_SAMPLES", 3),
     (

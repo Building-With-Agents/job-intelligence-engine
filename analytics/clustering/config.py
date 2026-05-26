@@ -24,7 +24,7 @@ from common.config_loader import cached_accessor, get_float, get_int, get_str
 # When tuning (e.g. issue #321 Tier 2), update BOTH the YAML AND this file.
 DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE = 50
 DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS = 500
-DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 5  # #321 Tier 2: was 10 (Tier 1 cosine)
+DEFAULT_CLUSTER_MIN_CLUSTER_SIZE = 3  # #400: was 5 (#321 Tier 2); reduce noise for sparse role families
 DEFAULT_CLUSTER_MIN_SAMPLES = 3  # #327 Phase 2: 5 → 3 (more permissive density floor on UMAP-reduced space)
 DEFAULT_CLUSTER_INPUT_MIN_QUALITY_SCORE = 0.0  # #327 Phase 4 gate; 0.0 = disabled until live tuning
 DEFAULT_CLUSTER_SELECTION_EPSILON = 0.0
