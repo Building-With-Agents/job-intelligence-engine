@@ -386,14 +386,84 @@ _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY: frozenset[str] = frozenset(
     {"trend", "disruption", "emergence", "comparison", "curriculum"},
 )
 
+# JIE #349 — AI-tool / AI-adjacent canonical terms accepted by the taxonomy gate
+# even before they are seeded to dbo.skills.  All values are lowercase; the gate
+# normalises incoming skill_names to lowercase before checking.
+#
+# Rules for this set:
+#   1. Canonical forms only — variant spellings belong in _AI_TOOL_RESOLUTION_ALIASES.
+#      Alias resolution always runs first, so a term that is also an alias key can
+#      never reach this frozenset check; such entries are unreachable dead code.
+#   2. No generic single-word fragments (e.g. "automation", "rpa").  Short tokens can
+#      match unrelated taxonomy rows and re-open the RT-007 broad-aggregate failure
+#      mode.  Specific brand names and multi-word phrases are safe.
+#
+# To permanently surface these terms across all analytics dimensions (skill demand,
+# velocity, co-occurrence), run:  python scripts/seed_ai_taxonomy_terms.py
+_AI_TOOL_SUPPLEMENTAL_TERMS: frozenset[str] = frozenset(
+    {
+        # AI coding assistants (canonical forms; aliases map variants → these)
+        "copilot",
+        "cursor",
+        "claude",
+        "chatgpt",
+        "gpt-4",
+        # AI skill categories
+        "prompt engineering",
+        "rag",
+        "vector search",
+        "llm engineering",
+        "ai-adjacent",
+        "ai-native",
+        "ai-augmented",
+        "ai-assisted testing",
+        "aiops",
+        "llm-driven incident triage",
+        "copilot for infra-as-code",
+        "ai-assistant tools",
+        # Automation / RPA — specific brands and multi-word phrases only.
+        # "automation" and "rpa" are excluded (RT-007 risk: too short/generic).
+        "workflow automation",
+        "process automation",
+        "uipath",
+        "blue prism",
+        "automation anywhere",
+        "testim",
+        "mabl",
+        "applitools",
+        "langchain",
+    }
+)
+
+# Resolution aliases: variant spelling → canonical form (always lowercase).
+# Applied after lowercasing and before the supplemental / DB lookup so that
+# e.g. "GitHub Copilot" and "Copilot" resolve to the same canonical term.
+# Every alias target must be present in _AI_TOOL_SUPPLEMENTAL_TERMS so that
+# the alias short-circuits the DB lookup for the canonical form as well.
+_AI_TOOL_RESOLUTION_ALIASES: dict[str, str] = {
+    "github copilot": "copilot",
+    "ms copilot": "copilot",
+    "microsoft copilot": "copilot",
+    "openai chatgpt": "chatgpt",
+    "gpt4": "gpt-4",
+    "cursor ide": "cursor",
+    "claude.ai": "claude",
+    "ai assistant tools": "ai-assistant tools",
+    "llm incident triage": "llm-driven incident triage",
+}
+
 
 def _skill_terms_all_in_dbo_skills(session: Session, skill_names: list[str], *, max_terms: int = 5) -> bool:
-    """True iff each distinct extracted skill term matches ``dbo.skills.skill_name`` (ci exact).
+    """True iff each distinct extracted skill term matches ``dbo.skills.skill_name`` (ci exact)
+    or belongs to the AI-tool supplemental allowlist (JIE #349).
 
     Matching uses **case-insensitive equality on the full stored skill_name** only.
     Substring or ``ILIKE '%term%'`` is intentionally avoided: short tokens and
     ambiguous fragments would otherwise match unrelated taxonomy rows and let
     broad aggregates pass the gate (the RT-007 failure mode).
+
+    AI-tool terms in ``_AI_TOOL_SUPPLEMENTAL_TERMS`` bypass the DB lookup: they are
+    semantically valid skill references whose taxonomy entries are seeded separately.
     """
     lowered: list[str] = []
     for raw in skill_names[:max_terms]:
@@ -403,9 +473,15 @@ def _skill_terms_all_in_dbo_skills(session: Session, skill_names: list[str], *, 
     if not lowered:
         return True
     distinct = list(dict.fromkeys(lowered))
-    stmt = select(func.lower(Skill.skill_name)).where(func.lower(Skill.skill_name).in_(distinct))
+    # Resolve aliases before checking (e.g. "GitHub Copilot" → "copilot").
+    resolved = [_AI_TOOL_RESOLUTION_ALIASES.get(t, t) for t in distinct]
+    # Terms in the supplemental AI-tool list are accepted without a DB round-trip.
+    db_terms = [t for t in resolved if t not in _AI_TOOL_SUPPLEMENTAL_TERMS]
+    if not db_terms:
+        return True
+    stmt = select(func.lower(Skill.skill_name)).where(func.lower(Skill.skill_name).in_(db_terms))
     matched = set(session.execute(stmt).scalars().all())
-    return all(term in matched for term in distinct)
+    return all(term in matched for term in db_terms)
 
 
 def _skill_taxonomy_block_result(
