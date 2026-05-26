@@ -552,12 +552,13 @@ class TestComparisonSkillSupplement:
     def test_supplement_set_is_non_empty(self) -> None:
         assert len(_COMPARISON_SKILL_SUPPLEMENT) > 0
 
-    def test_taxonomy_supplement_is_comparison_supplement_alias(self) -> None:
-        assert _TAXONOMY_SUPPLEMENT is _COMPARISON_SKILL_SUPPLEMENT, (
-            "_TAXONOMY_SUPPLEMENT must be the same object as _COMPARISON_SKILL_SUPPLEMENT "
-            "until #349 unions the AI-tool supplement"
-        )
+    def test_taxonomy_supplement_is_union_of_both_supplements(self) -> None:
+        """#349 (#405) has landed — _TAXONOMY_SUPPLEMENT is now the union of
+        _AI_TOOL_SUPPLEMENTAL_TERMS and _COMPARISON_SKILL_SUPPLEMENT."""
+        assert _TAXONOMY_SUPPLEMENT == _AI_TOOL_SUPPLEMENTAL_TERMS | _COMPARISON_SKILL_SUPPLEMENT
         for term in ("etl", "llm", "generative ai", "large language models"):
+            assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
+        for term in ("copilot", "chatgpt", "langchain", "prompt engineering"):
             assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
 
     def test_etl_bypasses_db_lookup(self) -> None:
