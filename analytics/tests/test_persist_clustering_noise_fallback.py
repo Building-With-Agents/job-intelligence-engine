@@ -64,6 +64,27 @@ def test_noise_row_gets_fallback_role_when_similarity_high(mock_nearest: MagicMo
     mock_nearest.assert_called_once()
 
 
+@patch("analytics.canonical_roles.persist.cluster_assignment_max_per_run", return_value=0)
+@patch("analytics.canonical_roles.persist.nearest_canonical_role_id", return_value="fallback-role-id")
+def test_noise_row_skips_fallback_when_cap_reached(mock_nearest: MagicMock, _mock_cap: MagicMock) -> None:
+    session = MagicMock()
+    execute_result = MagicMock()
+    execute_result.scalars.return_value.all.return_value = []
+    session.execute.return_value = execute_result
+
+    embeddings = {"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee": [0.2] * 1536}
+    persist_clustering_result(
+        session,
+        _noise_result(),
+        correlation_id="test-corr",
+        posting_embeddings=embeddings,
+    )
+
+    mock_nearest.assert_not_called()
+    calls = [str(c.args[0]) if c.args else "" for c in session.execute.call_args_list]
+    assert any("canonical_role_id = NULL" in c for c in calls)
+
+
 @patch("analytics.canonical_roles.persist.nearest_canonical_role_id", return_value=None)
 def test_noise_row_stays_null_when_below_threshold(mock_nearest: MagicMock) -> None:
     session = MagicMock()

@@ -14,7 +14,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from analytics.canonical_roles.assign_from_centroids import nearest_canonical_role_id
-from analytics.clustering.config import cluster_assignment_min_similarity
+from analytics.clustering.config import cluster_assignment_max_per_run, cluster_assignment_min_similarity
 from analytics.clustering.types import ClusteringResult, RankedSkill, RankedTool
 from common.data_store.models import CanonicalRole
 
@@ -157,12 +157,25 @@ def persist_clustering_result(
     postings_updated = 0
     noise_fallback_assigned = 0
     noise_left_null = 0
+    noise_cap_skipped = 0
     min_similarity = cluster_assignment_min_similarity()
+    max_assign = cluster_assignment_max_per_run()
     embeddings_by_posting = posting_embeddings or {}
 
     for a in result.assignments:
         pid = a.posting_id
         if a.is_noise:
+            if noise_fallback_assigned >= max_assign:
+                session.execute(
+                    text(
+                        "UPDATE dbo.job_postings SET canonical_role_id = NULL WHERE job_posting_id = CAST(:pid AS text)"
+                    ),
+                    {"pid": pid},
+                )
+                noise_cap_skipped += 1
+                noise_left_null += 1
+                postings_updated += 1
+                continue
             vec = embeddings_by_posting.get(pid)
             role_id = (
                 nearest_canonical_role_id(vec, session, min_similarity=min_similarity) if vec is not None else None
@@ -216,6 +229,7 @@ def persist_clustering_result(
         label_embeddings_synced=label_embeddings_synced,
         noise_fallback_assigned=noise_fallback_assigned,
         noise_left_null=noise_left_null,
+        noise_cap_skipped=noise_cap_skipped,
     )
 
     return {

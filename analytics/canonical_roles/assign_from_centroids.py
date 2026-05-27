@@ -19,8 +19,8 @@ from analytics.clustering.config import (
 from analytics.clustering.text import build_clustering_text
 from analytics.clustering.types import PostingClusterFeatures
 from analytics.query_engine.sql_guardrails import _ISSUE197_NA_LABEL
-from enrichment.dedup.vectors import parse_stored_embedding, vector_to_pg_cast_param
-from skills_extraction.extractors.taxonomy import _embed_texts_azure
+from common.embedding_vectors import parse_stored_embedding, vector_to_pg_cast_param
+from common.embeddings import embed_texts_azure
 
 log = structlog.get_logger()
 
@@ -155,7 +155,7 @@ def posting_vector_for_assignment(
     parsed = parse_stored_embedding(raw)
     if parsed is not None and len(parsed) == _EMBEDDING_DIM:
         return [float(x) for x in parsed.tolist()]
-    vectors = _embed_texts_azure(
+    vectors = embed_texts_azure(
         [build_assignment_text(features)],
         audit_agent_name=cluster_embedding_audit_agent_name(),
     )
@@ -175,7 +175,11 @@ def assign_canonical_role_for_posting(
     dedup_embedding_text: str | None = None,
     dry_run: bool = False,
 ) -> bool:
-    """Assign ``canonical_role_id`` when similarity >= threshold and row is eligible."""
+    """Assign ``canonical_role_id`` when similarity >= threshold and row is eligible.
+
+    When ``dry_run`` is True, no writes are performed, but the function still reads
+    the database (e.g. ``nearest_canonical_role_match`` and embedding lookup paths).
+    """
     vec = embedding
     if vec is None:
         if features is None:

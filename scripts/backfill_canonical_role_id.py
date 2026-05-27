@@ -34,7 +34,7 @@ from analytics.canonical_roles.assign_from_centroids import (  # noqa: E402
     nearest_canonical_role_match,
     posting_vector_for_assignment,
 )
-from analytics.canonical_roles.loader import _row_to_features  # noqa: E402
+from analytics.canonical_roles.loader import row_to_features  # noqa: E402
 from analytics.clustering.config import (  # noqa: E402
     cluster_assignment_max_per_run,
     cluster_assignment_min_similarity,
@@ -126,7 +126,7 @@ def main() -> None:
                 break
             processed += 1
             posting_id = str(row["job_posting_id"])
-            features = _row_to_features(row)
+            features = row_to_features(row)
             dedup_text = row.get("dedup_embedding_text")
             dedup_str = str(dedup_text) if dedup_text is not None else None
 
