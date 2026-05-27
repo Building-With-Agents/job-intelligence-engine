@@ -17,6 +17,7 @@ from common.data_store.database import check_db_connection, get_engine, session_
 from common.data_store.models import ExtractedIntelligence, NormalizedJob
 from common.event_envelope import EventEnvelope
 from common.types import JobRecord
+from common.types.extraction_types import ExtractionMetadata, ExtractorRunInfo
 from skills_extraction.agent import ExtractionWorkItem, SkillsExtractionAgent
 
 
@@ -1092,15 +1093,15 @@ class TestSkillsExtractionAgent:
             is_genai_extension=False,
             resolution_step=2,
         )
-        ctx_meta = {
-            "tokens_used": 0,
-            "cost_usd": 0.0,
-            "latency_ms": 0,
-            "extraction_failed": False,
-            "provider": "pattern-matching",
-            "model": "none",
-            "extraction_metadata": {"context_signals": 0},
-        }
+        ctx_meta = ExtractorRunInfo(
+            provider="pattern-matching",
+            model="none",
+            extraction_metadata=ExtractionMetadata(
+                extraction_version="week5-context-pass1",
+                model_used="none",
+                model_tier="none",
+            ),
+        )
         tasks_meta = {
             "success": True,
             "extraction_failed": False,
