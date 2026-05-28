@@ -311,7 +311,11 @@ Instructions:
         raw = llm(prompt)
     raw_stripped = (raw or "").strip()
     picked, resolution_reason = _resolve_llm_pick_with_reason(raw, candidate_codes)
-    log.info(
+
+    # Emit at warning when the record exits unclassified so operators can see
+    # individual failures in log aggregators without scanning info-level noise.
+    _log_fn = log.warning if picked == "unclassified" else log.info
+    _log_fn(
         "soc_classifier_llm_resolution",
         title=(title or "")[:300],
         llm_raw=raw_stripped if len(raw_stripped) <= 2000 else raw_stripped[:2000] + "…",

@@ -71,6 +71,23 @@ def spam_preview_allow_heuristic() -> bool:
 
 
 @cached_accessor
+def soc_unclassified_rate_threshold() -> float:
+    """Fraction of enriched records allowed to be SOC-unclassified before an alert fires.
+
+    Reads ``enrichment.soc.unclassified_rate_threshold`` from
+    ``config/enrichment.yaml`` (env override ``SOC_UNCLASSIFIED_RATE_THRESHOLD``).
+    Returns a value in [0.0, 1.0]; the production default is 0.10 (10 %).
+    """
+    return get_float(
+        file="enrichment",
+        key="enrichment.soc.unclassified_rate_threshold",
+        env="SOC_UNCLASSIFIED_RATE_THRESHOLD",
+        minimum=0.0,
+        maximum=1.0,
+    )
+
+
+@cached_accessor
 def esco_seed_apply_filter() -> bool:
     return get_bool(
         file="enrichment",
@@ -86,6 +103,7 @@ __all__ = [
     "enrichment_llm_timeout_seconds",
     "enrichment_parallel",
     "esco_seed_apply_filter",
+    "soc_unclassified_rate_threshold",
     "ENRICHMENT_CONCURRENCY_MAX",
     "spam_preview_allow_heuristic",
 ]
