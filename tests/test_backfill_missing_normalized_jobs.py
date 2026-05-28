@@ -64,9 +64,11 @@ def _engine_returning(rows: list[dict]) -> MagicMock:
 
 def _noop_session_scope():
     """Return a context manager factory that yields a MagicMock session."""
+
     @contextmanager
     def _cm():
         yield MagicMock()
+
     return _cm
 
 
