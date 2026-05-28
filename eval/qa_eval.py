@@ -299,10 +299,11 @@ def _evaluator_factory(sla_seconds: float | None):
             # Malformed harness output (not a pipeline failure) — emit latency only.
             return [Evaluation(name="latency_sla", value=0.0, comment="malformed task output")]
         golden = output.get("golden") or {}
+        raw_latency = float(output.get("latency_seconds") or 0.0)
         scores = compute_item_scores(
             golden=golden,
             response=output.get("response"),
-            latency_seconds=float(output.get("latency_seconds") or 0.0),
+            latency_seconds=raw_latency,
             pipeline_error=output.get("pipeline_error"),
             sla_seconds=sla_seconds,
         )
@@ -320,19 +321,31 @@ def _evaluator_factory(sla_seconds: float | None):
             val = getattr(scores, name)
             if val is not None:
                 evals.append(Evaluation(name=name, value=val, comment=scores.comments[name][:500]))
+        # latency_sla is None on catastrophic latency (JIE #270); emit only when scorable.
+        if scores.latency_sla is not None:
+            evals.append(
+                Evaluation(
+                    name="latency_sla",
+                    value=scores.latency_sla,
+                    comment=scores.comments["latency_sla"][:500],
+                )
+            )
+        # Raw latency seconds — persisted for tail-aggregate computation at run level (JIE #270).
         evals.append(
-            Evaluation(name="latency_sla", value=scores.latency_sla, comment=scores.comments["latency_sla"][:500])
+            Evaluation(name="latency_seconds_raw", value=raw_latency, comment="wall-clock seconds")
         )
         if scores.answerability is not None:
             ab_c = (scores.comments.get("answerability") or "")[:500]
             evals.append(Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c))
-        evals.append(
-            Evaluation(
-                name="composite",
-                value=float(composite_score(scores)),
-                comment="mean of scorable core four; eval.qa_scoring.composite_score",
+        comp = composite_score(scores)
+        if comp is not None:
+            evals.append(
+                Evaluation(
+                    name="composite",
+                    value=float(comp),
+                    comment="mean of scorable core four; eval.qa_scoring.composite_score",
+                )
             )
-        )
         return evals
 
     return combined_evaluator
@@ -341,12 +354,17 @@ def _evaluator_factory(sla_seconds: float | None):
 def _run_evaluators_average() -> list:
     """Run-level means for the four core metrics, plus mean answerability when present.
 
+    Also emits tail-latency statistics (mean/p50/p95/p99 seconds) and
+    ``p95_latency_sla_score`` for iteration signal (JIE #270).
+
     ``n_scored`` and ``n_excluded`` are included in each comment so readers know
     the denominator and how many items were excluded as infrastructure failures (JIE #263).
     """
 
     def run_mean(*, item_results: list, **kwargs: Any):
         from langfuse import Evaluation
+
+        from eval.qa_scoring import _DEFAULT_LATENCY_SLA_SECONDS, _quantile
 
         sums: dict[str, list[float]] = {
             "intent_accuracy": [],
@@ -356,6 +374,7 @@ def _run_evaluators_average() -> list:
             "confidence_self_consistency": [],
             "confidence_in_expected_range": [],
             "latency_sla": [],
+            "latency_seconds_raw": [],
             "answerability": [],
             "correct_refusal": [],
             "composite": [],
@@ -381,6 +400,27 @@ def _run_evaluators_average() -> list:
                 n_excl = n_total - len(vals)
                 cmt = f"n_scored={len(vals)} n_excluded={n_excl} n_total={n_total}"
                 out.append(Evaluation(name=f"mean_{k}", value=sum(vals) / len(vals), comment=cmt))
+
+        # Tail-latency stats from raw seconds (JIE #270).
+        lats = sums["latency_seconds_raw"]
+        if lats:
+            import statistics
+
+            sla = _DEFAULT_LATENCY_SLA_SECONDS
+            n_cat = n_total - len(lats)
+            p95 = _quantile(lats, 0.95)
+            cmt_base = f"n={len(lats)} catastrophic_excluded={n_cat} n_total={n_total}"
+            out.append(Evaluation(name="mean_latency_seconds", value=statistics.mean(lats), comment=cmt_base))
+            out.append(Evaluation(name="p50_latency_seconds", value=statistics.median(lats), comment=cmt_base))
+            out.append(Evaluation(name="p95_latency_seconds", value=p95, comment=cmt_base))
+            out.append(Evaluation(name="p99_latency_seconds", value=_quantile(lats, 0.99), comment=cmt_base))
+            out.append(
+                Evaluation(
+                    name="p95_latency_sla_score",
+                    value=min(1.0, sla / max(p95, 1e-6)),
+                    comment=f"min(1, {sla:.1f}s / p95); {cmt_base}",
+                )
+            )
         cr = sums["correct_refusal"]
         if cr:
             n_excl = n_total - len(cr)
