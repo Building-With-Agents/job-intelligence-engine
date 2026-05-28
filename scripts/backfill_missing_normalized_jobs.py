@@ -22,8 +22,10 @@ For recoverable rows: resets ``raw_ingested_jobs.processing_status`` to
 ``'pending'`` so the standard normalization → extraction → enrichment pipeline
 picks them up on the next processing loop run.
 
-For irrecoverable rows: logs them clearly so the silence is visible. No writes
-are made for these rows — the original payload is gone and cannot be recovered.
+For irrecoverable rows: stamps ``job_postings.ingestion_run_id`` with the
+sentinel value ``'irrecoverable-backfill-399'`` so they are queryable as a
+distinct population in the DB (not silently indistinguishable from rows awaiting
+clustering). The original payload is gone and these rows cannot be requeued.
 
 After running this script with ``--apply``, run the processing loop to complete
 the pipeline for the recoverable rows::
@@ -67,7 +69,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import text  # noqa: E402
 
-from common.data_store.database import session_scope  # noqa: E402
+from common.data_store.database import get_engine, session_scope  # noqa: E402
 from common.env import load_repo_root_dotenv  # noqa: E402
 
 log = structlog.get_logger()
@@ -109,6 +111,15 @@ _RESET_STATUS_SQL = text(
     """
 )
 
+_STAMP_IRRECOVERABLE_SQL = text(
+    """
+    UPDATE dbo.job_postings
+    SET ingestion_run_id = 'irrecoverable-backfill-399'
+    WHERE job_posting_id = :posting_id::uuid
+      AND ingestion_run_id != 'irrecoverable-backfill-399'
+    """
+)
+
 
 # ---------------------------------------------------------------------------
 # Core logic
@@ -124,8 +135,10 @@ def backfill(*, limit: int = 1000, apply: bool = False) -> dict[str, int]:
             "total_gap": N,
             "recoverable": N,
             "irrecoverable": N,
-            "reset": N,       # rows actually reset to pending (apply=True only)
+            "reset": N,           # rows actually reset to pending (apply=True only)
             "already_pending": N,  # recoverable but already pending (no-op)
+            "stamped": N,         # irrecoverable rows stamped in job_postings (apply=True only)
+            "failed": N,          # write failures (reset or stamp); non-zero → exit code 1
         }
     """
     counts: dict[str, int] = {
@@ -134,10 +147,13 @@ def backfill(*, limit: int = 1000, apply: bool = False) -> dict[str, int]:
         "irrecoverable": 0,
         "reset": 0,
         "already_pending": 0,
+        "stamped": 0,
+        "failed": 0,
     }
 
-    with session_scope() as session:
-        rows = session.execute(_GAP_ROWS_SQL, {"lim": limit}).mappings().all()
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(_GAP_ROWS_SQL, {"lim": limit}).mappings().all()
 
     rows = [dict(r) for r in rows]
     counts["total_gap"] = len(rows)
@@ -159,11 +175,13 @@ def backfill(*, limit: int = 1000, apply: bool = False) -> dict[str, int]:
         apply=apply,
     )
 
-    # Always report irrecoverable rows so the silence is visible
+    # Report irrecoverable rows; stamp them in job_postings when applying
     if irrecoverable:
         print(f"\n  [IRRECOVERABLE — {len(irrecoverable)} rows]")
         print("  These job_postings rows have no raw payload and cannot be requeued.")
         print("  They will remain with canonical_role_id = NULL.")
+        if apply:
+            print("  Stamping ingestion_run_id = 'irrecoverable-backfill-399' so they are queryable.")
         for row in irrecoverable[:10]:
             print(f"    posting_id={row['posting_id']}  source={row['source']}  run={row['ingestion_run_id']}")
         if len(irrecoverable) > 10:
@@ -176,6 +194,22 @@ def backfill(*, limit: int = 1000, apply: bool = False) -> dict[str, int]:
                 external_id=row["external_id"],
                 ingestion_run_id=row["ingestion_run_id"],
             )
+            if apply:
+                try:
+                    with session_scope() as session:
+                        session.execute(_STAMP_IRRECOVERABLE_SQL, {"posting_id": row["posting_id"]})
+                    counts["stamped"] += 1
+                    log.info(
+                        "backfill_irrecoverable_stamped",
+                        posting_id=row["posting_id"],
+                    )
+                except Exception as exc:
+                    counts["failed"] += 1
+                    log.warning(
+                        "backfill_stamp_failed",
+                        posting_id=row["posting_id"],
+                        error=str(exc),
+                    )
 
     if not apply:
         print(f"\n  [DRY-RUN] Would reset {len(recoverable)} raw_ingested_jobs rows to pending.")
@@ -210,6 +244,7 @@ def backfill(*, limit: int = 1000, apply: bool = False) -> dict[str, int]:
                 previous_status=row["raw_status"],
             )
         except Exception as exc:
+            counts["failed"] += 1
             log.warning(
                 "backfill_reset_failed",
                 raw_id=row["raw_id"],
@@ -265,6 +300,8 @@ def main() -> int:
     if args.apply:
         print(f"  Reset to pending     : {counts['reset']}")
         print(f"  Already pending      : {counts['already_pending']}  (no-op)")
+        print(f"  Stamped irrecoverable: {counts['stamped']}")
+        print(f"  Failed               : {counts['failed']}")
     print("=" * 70)
 
     if args.apply and counts["reset"] > 0:
@@ -277,6 +314,8 @@ def main() -> int:
         print("  3. Export fixtures so the fix is captured for everyone:")
         print("       python scripts/pg-seed-data/export_fixtures.py --scope all")
 
+    if args.apply and counts["failed"] > 0:
+        return 1
     return 0
 
 
