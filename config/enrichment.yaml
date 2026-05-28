@@ -43,6 +43,13 @@ enrichment:
     # Env override: SPAM_PREVIEW_ALLOW_HEURISTIC
     allow_heuristic: false
 
+  soc:
+    # Maximum tolerable fraction of enriched records that exit SOC classification
+    # as "unclassified" before an EnrichmentDegraded alert is emitted and the
+    # batch is flagged.  Range 0.0–1.0.  10 % is the production threshold.
+    # Env override: SOC_UNCLASSIFIED_RATE_THRESHOLD
+    unclassified_rate_threshold: 0.10
+
   esco_seed:
     # Apply curated ESCO subset filter during seeding (scripts/seed_esco.py).
     # When false, the full ESCO digital-skills cluster is loaded.
