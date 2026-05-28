@@ -41,6 +41,18 @@ from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
 
+
+class FuzzyDedupContractError(ValueError):
+    """Raised by ``apply_fuzzy_dedup_result`` when a ``FuzzyDedupResult`` violates
+    the persistence contract (e.g. duplicate result missing ``duplicate_cluster_id``).
+
+    Subclasses ``ValueError`` for backward compatibility with callers that
+    already catch the broader type, but gives ``_apply_fuzzy_dedup_after_promotion``
+    a precise handle so infrastructure failures (DB errors, numpy shape mismatches)
+    are not mis-classified as contract violations in observability dashboards.
+    """
+
+
 # JIE #328 — derive deterministic quality when the promotion payload omits it
 # (legacy partial payloads / skipped promotions left job_postings.quality_score NULL).
 _NJ_EI_QUALITY_SQL = text(
@@ -427,7 +439,7 @@ def _cluster_member_ids(session: Session, cluster_id: str, *, exclude_job_postin
     return [str(row["job_posting_id"]) for row in rows]
 
 
-# EXEMPLAR: Phase 2 reference — fuzzy dedup persistence contract validation uses imperative ValueError checks on stub, unique-clear, and clustered survivor paths before SQL updates.
+# EXEMPLAR: Phase 2 reference — fuzzy dedup persistence contract validation uses imperative FuzzyDedupContractError checks on stub, unique-clear, and clustered survivor paths before SQL updates.
 def apply_fuzzy_dedup_result(
     session: Session,
     job_posting_id: str,
@@ -454,9 +466,11 @@ def apply_fuzzy_dedup_result(
         prior_cluster = str(prior_cluster_id).strip() if prior_cluster_id else None
         prior_was_survivor = existing.get("is_duplicate") is False and prior_cluster is not None
         if result.is_duplicate:
-            raise ValueError("duplicate fuzzy dedup results must include duplicate_cluster_id")
+            raise FuzzyDedupContractError("duplicate fuzzy dedup results must include duplicate_cluster_id")
         if matched_id or survivor_id:
-            raise ValueError("non-duplicate fuzzy dedup results may not include cluster or survivor metadata")
+            raise FuzzyDedupContractError(
+                "non-duplicate fuzzy dedup results may not include cluster or survivor metadata"
+            )
         session.execute(
             _UPDATE_FUZZY_DEDUP_SQL,
             {
@@ -492,11 +506,11 @@ def apply_fuzzy_dedup_result(
 
     effective_survivor_id = survivor_id or (job_posting_id if not result.is_duplicate else None)
     if effective_survivor_id is None:
-        raise ValueError("duplicate fuzzy dedup results must include survivor_job_posting_id")
+        raise FuzzyDedupContractError("duplicate fuzzy dedup results must include survivor_job_posting_id")
     if result.is_duplicate and effective_survivor_id == job_posting_id:
-        raise ValueError("duplicate fuzzy dedup results cannot mark the current row as survivor")
+        raise FuzzyDedupContractError("duplicate fuzzy dedup results cannot mark the current row as survivor")
     if not result.is_duplicate and effective_survivor_id != job_posting_id:
-        raise ValueError("non-duplicate clustered results must keep the current row as survivor")
+        raise FuzzyDedupContractError("non-duplicate clustered results must keep the current row as survivor")
 
     session.execute(
         _UPDATE_FUZZY_DEDUP_SQL,
@@ -546,6 +560,17 @@ def _apply_fuzzy_dedup_after_promotion(
         with session.begin_nested():
             result = run_fuzzy_dedup(session, job_posting_id)
             apply_fuzzy_dedup_result(session, job_posting_id, result)
+    except FuzzyDedupContractError as exc:
+        # Contract violations raised by apply_fuzzy_dedup_result (e.g. missing
+        # cluster_id on a duplicate, wrong survivor_id) get a distinct log key so
+        # observability dashboards can count them separately from infrastructure
+        # failures (DB errors, network timeouts) logged below.
+        log.warning(
+            "fuzzy_dedup_contract_violation",
+            normalized_job_id=normalized_job_id,
+            job_posting_id=job_posting_id,
+            error=str(exc),
+        )
     except Exception as exc:
         log.warning(
             "fuzzy_dedup_after_promotion_failed",

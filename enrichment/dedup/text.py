@@ -1,4 +1,10 @@
-"""Build normalized dedup text for fuzzy near-duplicate detection (IMP-018)."""
+"""Build normalized dedup text for fuzzy near-duplicate detection (IMP-018).
+
+# EXEMPLAR: Phase 2 reference — normalize/hash decoupled into pure functions;
+# immutable string ops with no side effects; extend hash logic or normalization
+# independently without touching the other; each function is unit-testable in
+# isolation with no DB or LLM dependency.
+"""
 
 from __future__ import annotations
 
