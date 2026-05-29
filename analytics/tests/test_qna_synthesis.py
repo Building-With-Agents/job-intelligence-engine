@@ -310,9 +310,7 @@ def test_rt005_table_names_not_in_facts_json() -> None:
     def fake_complete(prompt: str, agent_name: str, **_kwargs) -> dict:
         captured_prompts.append(prompt)
         if agent_name == AGENT_SYNTHESIS:
-            return _ok_synthesis_result(
-                "Top skills in El Paso include Python and SQL based on recent postings."
-            )
+            return _ok_synthesis_result("Top skills in El Paso include Python and SQL based on recent postings.")
         return _ok_synthesis_result('["What sectors are growing?", "Any salary data?"]', cost=0.002)
 
     bundle = sample_evidence_bundle_adequate()
