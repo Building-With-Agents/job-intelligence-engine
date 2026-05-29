@@ -1,16 +1,10 @@
 """Tests for JIE #308 Fix B-1 + Fix A — `spam_tier` persistence on every promotion path.
 
-Pre-#308, the three UPDATE SQL constants in ``enrichment/job_postings_promotion.py``
-(``_UPDATE_CLEAN_SQL`` / ``_UPDATE_FLAGGED_SQL`` / ``_UPDATE_UNCERTAIN_SQL``) read the
-classifier's tier output to pick which UPDATE to run, but none of them actually
-persisted the ``spam_tier`` column. So ``dbo.job_postings.spam_tier`` was NULL on
-every row, even successfully-classified ones, and there was no way to distinguish
-"classifier ran with tier='flagged'" from "classifier never ran."
-
-Post-#308, each UPDATE writes its tier as a hardcoded literal:
-- ``_UPDATE_CLEAN_SQL`` writes ``spam_tier = 'clean'``
-- ``_UPDATE_FLAGGED_SQL`` writes ``spam_tier = 'flagged'``
-- ``_UPDATE_UNCERTAIN_SQL`` writes ``spam_tier = 'uncertain'`` + ``is_spam = NULL`` + ``spam_score = :spam_score``
+Pre-#308, promotion UPDATEs did not persist ``dbo.job_postings.spam_tier``. Post-#308,
+``apply_enrichment_to_job_postings`` runs a single ``_UPDATE_COMMON_SQL`` statement
+and passes ``is_spam``, ``spam_score``, and ``spam_tier`` as bound parameters so
+each tier (clean / flagged / uncertain) persists the correct values without
+duplicating the full UPDATE body.
 
 Plus Fix A — the previously-WARNING ``enrichment_promotion_unhandled_tier`` log
 is now ERROR-level so future regressions surface in PR-CI rather than buried
@@ -24,11 +18,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from enrichment.job_postings_promotion import (
-    _UPDATE_CLEAN_SQL,
-    _UPDATE_FLAGGED_SQL,
-    _UPDATE_UNCERTAIN_SQL,
+    _UPDATE_COMMON_SQL,
     apply_enrichment_to_job_postings,
 )
+from enrichment.schemas import RecordEnrichedPayload
 
 
 def _mapping_first(row: dict | None) -> MagicMock:
@@ -57,15 +50,17 @@ def _resolved_row() -> dict:
     }
 
 
-def _payload(*, tier: str, score: float | None) -> dict[str, object]:
-    return {
-        "quality_score": 0.84,
-        "field_confidence": {"spam_score": 0.8},
-        "overall_confidence": 0.82,
-        "spam_tier": tier,
-        "spam_score": score,
-        "naics_code": "541110",
-    }
+def _payload(*, tier: str | None, score: float | None) -> RecordEnrichedPayload:
+    return RecordEnrichedPayload.model_validate(
+        {
+            "quality_score": 0.84,
+            "field_confidence": {"spam_score": 0.8},
+            "overall_confidence": 0.82,
+            "spam_tier": tier,
+            "spam_score": score,
+            "naics_code": "541110",
+        }
+    )
 
 
 def _build_session() -> MagicMock:
@@ -94,73 +89,74 @@ def _params_for_sql(session: MagicMock, sql_obj) -> dict:
     raise AssertionError(f"No execute() call matched SQL\n{expected}")
 
 
-def test_clean_tier_sql_includes_spam_tier_literal() -> None:
-    """JIE #308 Fix B-1: _UPDATE_CLEAN_SQL must write spam_tier = 'clean'."""
-    sql = str(_UPDATE_CLEAN_SQL)
-    assert "spam_tier = 'clean'" in sql, "_UPDATE_CLEAN_SQL missing spam_tier literal"
-    assert "is_spam = FALSE" in sql, "Clean tier should still write is_spam = FALSE"
-
-
-def test_flagged_tier_sql_includes_spam_tier_literal() -> None:
-    """JIE #308 Fix B-1: _UPDATE_FLAGGED_SQL must write spam_tier = 'flagged' + keep is_spam = NULL."""
-    sql = str(_UPDATE_FLAGGED_SQL)
-    assert "spam_tier = 'flagged'" in sql
-    # NULL semantics preserved per Gary's HITL rule — flagged rows aren't surfaced
-    # in the natural flow until manually approved.
-    assert "is_spam = NULL" in sql, "Flagged tier MUST keep is_spam = NULL (HITL queue)"
-
-
-def test_uncertain_tier_sql_includes_spam_tier_literal_and_is_spam_null() -> None:
-    """JIE #308 Fix B-1 + B-2: _UPDATE_UNCERTAIN_SQL writes spam_tier = 'uncertain' + is_spam = NULL + spam_score bind."""
-    sql = str(_UPDATE_UNCERTAIN_SQL)
-    assert "spam_tier = 'uncertain'" in sql
-    assert "is_spam = NULL" in sql
-    assert "spam_score = :spam_score" in sql, (
-        "Uncertain tier should bind spam_score (None when classifier produced no score)"
-    )
+def test_common_promotion_sql_binds_spam_columns() -> None:
+    """JIE #308 Fix B-1: unified UPDATE binds is_spam, spam_score, and spam_tier."""
+    sql = str(_UPDATE_COMMON_SQL)
+    assert "is_spam = :is_spam" in sql
+    assert "spam_score = :spam_score" in sql
+    assert "spam_tier = :spam_tier" in sql
 
 
 @pytest.mark.parametrize(
-    ("tier", "score", "expected_sql"),
+    ("tier", "score", "expected_spam_tier", "expected_is_spam"),
     [
-        ("clean", 0.2, _UPDATE_CLEAN_SQL),
-        ("flagged", 0.8, _UPDATE_FLAGGED_SQL),
-        ("uncertain", None, _UPDATE_UNCERTAIN_SQL),
+        ("clean", 0.2, "clean", False),
+        ("flagged", 0.8, "flagged", None),
+        ("uncertain", None, "uncertain", None),
     ],
 )
-def test_apply_enrichment_dispatches_to_correct_tier_update(tier: str, score: float | None, expected_sql) -> None:
-    """JIE #308 Fix B-1: each tier value routes to its own UPDATE constant."""
+def test_apply_enrichment_dispatches_spam_params_per_tier(
+    tier: str,
+    score: float | None,
+    expected_spam_tier: str,
+    expected_is_spam: bool | None,
+) -> None:
+    """Each tier routes through ``_UPDATE_COMMON_SQL`` with the correct spam binds."""
     session = _build_session()
     payload = _payload(tier=tier, score=score)
 
     apply_enrichment_to_job_postings(session, normalized_job_id=42, record_enriched_payload=payload)
 
     sqls_executed = [str(c.args[0]) for c in session.execute.call_args_list]
-    assert str(expected_sql) in sqls_executed, f"Expected {tier} tier to execute its dedicated UPDATE constant"
+    assert str(_UPDATE_COMMON_SQL) in sqls_executed, f"Expected promotion UPDATE for tier={tier}"
+
+    params = _params_for_sql(session, _UPDATE_COMMON_SQL)
+    assert params["spam_tier"] == expected_spam_tier
+    assert params["is_spam"] is expected_is_spam
+    if tier == "uncertain":
+        assert params["spam_score"] is None
+    else:
+        assert params["spam_score"] == score
 
 
 def test_uncertain_path_binds_spam_score_none() -> None:
-    """JIE #308 Fix B-2: uncertain UPDATE binds spam_score=None when classifier produced none."""
+    """JIE #308 Fix B-2: uncertain path binds spam_score=None when classifier produced none."""
     session = _build_session()
     payload = _payload(tier="uncertain", score=None)
 
     apply_enrichment_to_job_postings(session, normalized_job_id=42, record_enriched_payload=payload)
 
-    params = _params_for_sql(session, _UPDATE_UNCERTAIN_SQL)
-    assert "spam_score" in params, "uncertain UPDATE missing spam_score bind"
+    params = _params_for_sql(session, _UPDATE_COMMON_SQL)
+    assert "spam_score" in params, "promotion UPDATE missing spam_score bind"
     assert params["spam_score"] is None
+    assert params["spam_tier"] == "uncertain"
+    assert params["is_spam"] is None
 
 
 def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) -> None:
     """JIE #308 Fix A: an unrecognized tier value must produce an ERROR log, not WARNING.
 
-    Before Fix A this was a warning that buried in routine dashboards. Now it's
-    a loud ERROR so a future regression introducing a new tier value (typo,
-    case mismatch, classifier output drift) shows up in PR-CI noise immediately.
+    Before Fix A this was a warning buried in routine dashboards. Now it's a loud
+    ERROR so a future regression introducing a new tier value (typo, case mismatch,
+    classifier output drift) shows up in PR-CI noise immediately.
 
-    The structurally-reachable way to hit this fall-through is for
-    ``apply_spam_tiers`` to return a tier outside the four-state model
-    (clean/flagged/rejected/uncertain). We simulate that via monkeypatch.
+    Invalid tier *strings* are caught at the Pydantic boundary
+    (``RecordEnrichedPayload.spam_tier`` is a ``Literal``). The structurally-reachable
+    way to exercise the promotion function's defensive fall-through is for
+    ``apply_spam_tiers`` to return a tier outside the four-state model at runtime.
+    We simulate that via monkeypatch; the payload carries ``spam_tier=None`` so that
+    ``_coerce_enrichment_params`` falls through to the ``apply_spam_tiers`` derivation
+    path and picks up the injected unknown tier.
     """
     import enrichment.job_postings_promotion as promotion_mod
 
@@ -174,7 +170,9 @@ def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(promotion_mod.log, "warning", lambda *a, **kw: warning_calls.append((a, kw)))
 
     session = _build_session()
-    payload = _payload(tier="bogus_tier", score=0.5)
+    # spam_tier=None: Pydantic accepts it; _coerce_enrichment_params falls through
+    # to apply_spam_tiers (monkeypatched) which injects the unknown tier string.
+    payload = _payload(tier=None, score=0.5)
 
     applied = apply_enrichment_to_job_postings(session, normalized_job_id=42, record_enriched_payload=payload)
 
@@ -190,5 +188,5 @@ def test_unhandled_tier_logs_error_not_warning(monkeypatch: pytest.MonkeyPatch) 
     # Verify the structured fields the guard surfaces (helps debugging future regressions).
     _, kwargs = unhandled_err[0]
     assert kwargs.get("tier_resolved") == "future_unknown_tier"
-    assert kwargs.get("tier_raw") == "bogus_tier"
+    assert kwargs.get("tier_raw") is None  # payload carried spam_tier=None; derivation injected the unknown tier
     assert kwargs.get("spam_score_payload") == 0.5

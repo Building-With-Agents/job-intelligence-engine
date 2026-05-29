@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from contextlib import nullcontext
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+import structlog.testing
 
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.job_postings_promotion import (
+    FuzzyDedupContractError,
+    _coerce_enrichment_params,
+    _PromotionCoercionReady,
+    _PromotionCoercionSkip,
     apply_enrichment_to_job_postings,
     apply_fuzzy_dedup_result,
 )
+from enrichment.schemas import RecordEnrichedPayload
 
 CURRENT_ID = "00000000-0000-0000-0000-000000000001"
 MATCHED_ID = "00000000-0000-0000-0000-000000000002"
@@ -49,7 +56,7 @@ def _execute_sql(session: MagicMock) -> list[str]:
     return [str(call.args[0]) for call in session.execute.call_args_list]
 
 
-def _promotion_payload(**overrides: object) -> dict[str, object]:
+def _promotion_payload(**overrides: object) -> RecordEnrichedPayload:
     payload: dict[str, object] = {
         "quality_score": 0.84,
         "quality_components": {"description": 0.9},
@@ -59,7 +66,7 @@ def _promotion_payload(**overrides: object) -> dict[str, object]:
         "spam_score": 0.25,
     }
     payload.update(overrides)
-    return payload
+    return RecordEnrichedPayload.model_validate(payload)
 
 
 def test_apply_fuzzy_dedup_result_clears_current_row_for_unique_posting() -> None:
@@ -210,7 +217,9 @@ def test_apply_fuzzy_dedup_result_rejects_invalid_duplicate_contract() -> None:
         stub=False,
     )
 
-    with pytest.raises(ValueError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"):
+    with pytest.raises(
+        FuzzyDedupContractError, match="duplicate fuzzy dedup results must include duplicate_cluster_id"
+    ):
         apply_fuzzy_dedup_result(session, CURRENT_ID, result)
 
 
@@ -326,11 +335,13 @@ def _apply_with_resolved_row_for_temporal_borderplex(resolved_row: dict[str, obj
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                }
+            ),
         )
     return out, session
 
@@ -443,13 +454,15 @@ def test_apply_enrichment_binds_soc_code_column_from_payload() -> None:
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "soc_code": "17-3029",
-                "naics_code": "541512",
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "soc_code": "17-3029",
+                    "naics_code": "541512",
+                }
+            ),
         )
     assert out is True
     _stmt, params = session.execute.call_args_list[1][0]
@@ -499,12 +512,14 @@ def test_apply_enrichment_selects_employer_profile_id_when_metadata_present() ->
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "employer_metadata": {"company_size": "smb", "is_known_employer": True},
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "employer_metadata": {"company_size": "smb", "is_known_employer": True},
+                }
+            ),
         )
 
     assert out is True
@@ -545,12 +560,14 @@ def test_apply_enrichment_persists_sector_id_for_known_role() -> None:
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-                "role_classification": "Software Engineering",
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                    "role_classification": "Software Engineering",
+                }
+            ),
         )
 
     assert out is True
@@ -585,11 +602,13 @@ def test_apply_enrichment_persists_sector_id_for_unknown_role_fallback() -> None
         out = apply_enrichment_to_job_postings(
             session,
             42,
-            {
-                "spam_tier": "clean",
-                "spam_score": 0.2,
-                "quality_score": 0.85,
-            },
+            RecordEnrichedPayload.model_validate(
+                {
+                    "spam_tier": "clean",
+                    "spam_score": 0.2,
+                    "quality_score": 0.85,
+                }
+            ),
         )
 
     assert out is True
@@ -632,7 +651,11 @@ def test_apply_enrichment_sector_id_is_in_params_base_for_all_tiers() -> None:
             if spam_score is not None:
                 payload["spam_score"] = spam_score
 
-            out = apply_enrichment_to_job_postings(session, 42, payload)
+            out = apply_enrichment_to_job_postings(
+                session,
+                42,
+                RecordEnrichedPayload.model_validate(payload),
+            )
 
         assert out is True, f"Expected True for tier={tier}"
         _stmt, params = session.execute.call_args_list[1][0]
@@ -686,7 +709,11 @@ def _apply_with_qna_payload(session: MagicMock, resolved_row: dict, payload_over
         **payload_overrides,
     }
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 42, payload)
+        out = apply_enrichment_to_job_postings(
+            session,
+            42,
+            RecordEnrichedPayload.model_validate(payload),
+        )
 
     assert out is True
     _stmt, params = session.execute.call_args_list[1][0]
@@ -746,7 +773,7 @@ def test_apply_enrichment_derives_quality_when_payload_omits_score_jsearch_null_
         "spam_score": 0.2,
     }
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 4242, payload)
+        out = apply_enrichment_to_job_postings(session, 4242, RecordEnrichedPayload.model_validate(payload))
     assert out is True
     assert session.execute.call_count >= 3
     _stmt, params = session.execute.call_args_list[2][0]
@@ -876,7 +903,11 @@ def test_apply_enrichment_qna_fields_present_for_all_tiers(tier: str, spam_score
         payload["spam_score"] = spam_score
 
     with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
-        out = apply_enrichment_to_job_postings(session, 42, payload)
+        out = apply_enrichment_to_job_postings(
+            session,
+            42,
+            RecordEnrichedPayload.model_validate(payload),
+        )
 
     assert out is True, f"Expected True for tier={tier!r}"
     _stmt, params = session.execute.call_args_list[1][0]
@@ -1001,3 +1032,357 @@ def test_apply_enrichment_binds_salary_period_strips_whitespace() -> None:
         {},
     )
     assert params["salary_period"] is None
+
+
+# ---------------------------------------------------------------------------
+# _coerce_enrichment_params (Pair C P1) — isolated coercion / early-exit
+# ---------------------------------------------------------------------------
+
+
+def _coerce_resolved(**overrides: object) -> dict[str, object]:
+    row: dict[str, object] = {
+        "job_posting_id": "11111111-1111-1111-1111-111111111111",
+        "company_id": "22222222-2222-2222-2222-222222222222",
+        "date_posted": None,
+        "city": None,
+        "state_province": None,
+        "country": None,
+        "is_remote": None,
+        "work_arrangement": None,
+        "zip_code": None,
+        "salary_min": None,
+        "salary_max": None,
+        "salary_currency": None,
+        "salary_period": None,
+    }
+    row.update(overrides)
+    return row
+
+
+def test_coerce_enrichment_params_rejected_spam() -> None:
+    session = MagicMock()
+    out = _coerce_enrichment_params(
+        session,
+        1,
+        {"spam_tier": "rejected", "spam_score": 0.95, "quality_score": 0.8},
+        _coerce_resolved(),
+    )
+    assert isinstance(out, _PromotionCoercionSkip)
+    assert out.reason == "rejected_spam"
+    session.execute.assert_not_called()
+
+
+def test_coerce_enrichment_params_no_quality_after_derivation_none() -> None:
+    session = MagicMock()
+    with patch(
+        "enrichment.job_postings_promotion._derive_quality_from_normalized_job",
+        return_value=None,
+    ):
+        out = _coerce_enrichment_params(
+            session,
+            42,
+            {"spam_tier": "clean", "spam_score": 0.1},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionSkip)
+    assert out.reason == "no_quality_score"
+
+
+def test_coerce_enrichment_params_invalid_quality_score() -> None:
+    session = MagicMock()
+    out = _coerce_enrichment_params(
+        session,
+        1,
+        {"spam_tier": "clean", "spam_score": 0.1, "quality_score": "not-a-float"},
+        _coerce_resolved(),
+    )
+    assert isinstance(out, _PromotionCoercionSkip)
+    assert out.reason == "invalid_quality_score"
+
+
+def test_coerce_enrichment_params_quality_derivation_happy_path_sets_score_and_field_confidence_json() -> None:
+    session = MagicMock()
+    with (
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        patch(
+            "enrichment.job_postings_promotion._derive_quality_from_normalized_job",
+            return_value=(0.75, {"completeness": 0.8}),
+        ),
+    ):
+        out = _coerce_enrichment_params(
+            session,
+            99,
+            {"spam_tier": "clean", "spam_score": 0.1},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["quality_score"] == 0.75
+    fc = out.params_base["field_confidence"]
+    assert isinstance(fc, str) and fc
+    parsed = json.loads(fc)
+    assert isinstance(parsed, dict)
+
+
+def test_coerce_enrichment_params_derives_tier_from_spam_score_when_tier_unset() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {"spam_score": 0.25, "quality_score": 0.9},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.tier == "clean"
+    assert out.params_base["quality_score"] == 0.9
+
+
+def test_coerce_enrichment_params_naics_unknown_when_missing() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["naics_code"] == "unknown"
+
+
+def test_coerce_enrichment_params_naics_strips_nonempty() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "naics_code": "  541512  ",
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["naics_code"] == "541512"
+
+
+def test_coerce_enrichment_params_soc_none_when_blank() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9, "soc_code": "   "},
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["soc_code"] is None
+
+
+def test_coerce_enrichment_params_soc_persisted_when_present() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "soc_code": "15-1252.00",
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["soc_code"] == "15-1252.00"
+
+
+def test_coerce_enrichment_params_seniority_level_over_seniority() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "seniority": "Mid",
+                "seniority_level": "Senior",
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["seniority_level"] == "Senior"
+
+
+def test_coerce_enrichment_params_is_remote_int_coerced_to_bool() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {"spam_tier": "clean", "spam_score": 0.1, "quality_score": 0.9},
+            _coerce_resolved(is_remote=1),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["is_remote"] is True
+    assert isinstance(out.params_base["is_remote"], bool)
+
+
+def test_coerce_enrichment_params_employer_metadata_non_dict_skips_profile_sql() -> None:
+    session = MagicMock()
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "employer_metadata": "not-a-dict",
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["employer_profile_id"] is None
+    session.execute.assert_not_called()
+
+
+def test_coerce_enrichment_params_employer_metadata_select_then_upsert() -> None:
+    session = MagicMock()
+    ep_uuid = uuid.uuid4()
+    select_result = MagicMock()
+    select_result.scalar_one_or_none.return_value = None
+    session.execute.return_value = select_result
+    with (
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        patch(
+            "enrichment.job_postings_promotion.upsert_employer_profile_by_company_id",
+            return_value=ep_uuid,
+        ) as mock_upsert,
+    ):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "employer_metadata": {"company_size": "smb"},
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["employer_profile_id"] == ep_uuid
+    mock_upsert.assert_called_once()
+    session.execute.assert_called_once()
+
+
+def test_coerce_enrichment_params_uses_existing_employer_profile_id() -> None:
+    session = MagicMock()
+    ep_uuid = uuid.uuid4()
+    select_result = MagicMock()
+    select_result.scalar_one_or_none.return_value = ep_uuid
+    session.execute.return_value = select_result
+    with patch("enrichment.job_postings_promotion.resolve_sector", return_value=None):
+        out = _coerce_enrichment_params(
+            session,
+            1,
+            {
+                "spam_tier": "clean",
+                "spam_score": 0.1,
+                "quality_score": 0.9,
+                "employer_metadata": {"company_size": "smb"},
+            },
+            _coerce_resolved(),
+        )
+    assert isinstance(out, _PromotionCoercionReady)
+    assert out.params_base["employer_profile_id"] == ep_uuid
+    session.execute.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# P2 — fuzzy_dedup_contract_violation metric counter (JIE phase-1-cleanup-pair-c)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_fuzzy_dedup_after_promotion_logs_contract_violation_for_contract_error() -> None:
+    """FuzzyDedupContractError from apply_fuzzy_dedup_result must log fuzzy_dedup_contract_violation,
+    not fuzzy_dedup_after_promotion_failed, so dashboards count contract violations
+    as a distinct metric from infrastructure failures."""
+    session = MagicMock()
+    session.begin_nested.return_value = nullcontext()
+
+    with (
+        patch(
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
+            return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
+        ),
+        patch(
+            "enrichment.job_postings_promotion.run_fuzzy_dedup",
+            return_value=FuzzyDedupResult(
+                is_duplicate=False,
+                duplicate_cluster_id=None,
+                matched_job_posting_id=None,
+                survivor_job_posting_id=None,
+                stub=False,
+            ),
+        ),
+        patch(
+            "enrichment.job_postings_promotion.apply_fuzzy_dedup_result",
+            side_effect=FuzzyDedupContractError("duplicate fuzzy dedup results must include duplicate_cluster_id"),
+        ),
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        structlog.testing.capture_logs() as cap_logs,
+    ):
+        applied = apply_enrichment_to_job_postings(
+            session,
+            normalized_job_id=123,
+            record_enriched_payload=_promotion_payload(),
+        )
+
+    assert applied is True
+    violation_events = [e for e in cap_logs if e.get("event") == "fuzzy_dedup_contract_violation"]
+    assert len(violation_events) == 1, f"expected 1 contract violation log, got: {cap_logs}"
+    assert violation_events[0]["job_posting_id"] == CURRENT_ID
+    assert violation_events[0]["normalized_job_id"] == 123
+    assert "duplicate_cluster_id" in violation_events[0]["error"]
+    # Must NOT fall through to the generic infrastructure failure key
+    assert not any(e.get("event") == "fuzzy_dedup_after_promotion_failed" for e in cap_logs)
+
+
+def test_apply_fuzzy_dedup_after_promotion_logs_general_failure_for_non_value_error() -> None:
+    """Non-ValueError exceptions (DB errors, network timeouts) must still log
+    fuzzy_dedup_after_promotion_failed — the original infrastructure failure key."""
+    session = MagicMock()
+    session.begin_nested.return_value = nullcontext()
+
+    with (
+        patch(
+            "enrichment.job_postings_promotion.resolve_job_posting_row",
+            return_value={"job_posting_id": CURRENT_ID, "company_id": MATCHED_ID},
+        ),
+        patch(
+            "enrichment.job_postings_promotion.run_fuzzy_dedup",
+            side_effect=RuntimeError("db pool exhausted"),
+        ),
+        patch("enrichment.job_postings_promotion.resolve_sector", return_value=None),
+        structlog.testing.capture_logs() as cap_logs,
+    ):
+        applied = apply_enrichment_to_job_postings(
+            session,
+            normalized_job_id=456,
+            record_enriched_payload=_promotion_payload(),
+        )
+
+    assert applied is True
+    failure_events = [e for e in cap_logs if e.get("event") == "fuzzy_dedup_after_promotion_failed"]
+    assert len(failure_events) == 1, f"expected 1 infrastructure failure log, got: {cap_logs}"
+    assert failure_events[0]["job_posting_id"] == CURRENT_ID
+    assert failure_events[0]["normalized_job_id"] == 456
+    assert "db pool exhausted" in failure_events[0]["error"]
+    # Must NOT be misclassified as a contract violation
+    assert not any(e.get("event") == "fuzzy_dedup_contract_violation" for e in cap_logs)

@@ -101,7 +101,7 @@ from enrichment.resolvers.events import build_record_enriched_event
 from enrichment.resolvers.freshness_slice import build_freshness_record_for_analytics
 from enrichment.resolvers.location_resolver import resolve_location
 from enrichment.resolvers.sector_resolver import resolve_sector
-from enrichment.schemas import EnrichedJobProfile
+from enrichment.schemas import EnrichedJobProfile, RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
@@ -330,6 +330,86 @@ def _emit_enrichment_degraded(
         )
 
 
+def _check_soc_unclassified_rate(
+    *,
+    soc_classified_count: int,
+    enriched_count: int,
+    correlation_id: str,
+    batch_id: str,
+    triggered_by_event_type: Any,
+) -> None:
+    """Emit a warning and fire EnrichmentDegraded when too many records are SOC-unclassified.
+
+    The threshold is read from ``config/enrichment.yaml``
+    (``enrichment.soc.unclassified_rate_threshold``) or env override
+    ``SOC_UNCLASSIFIED_RATE_THRESHOLD``; default is 0.10 (10 %).
+
+    This is the batch-level fail-safe: individual unclassified records already
+    emit ``log.warning("soc_classifier_llm_resolution")`` from the classifier
+    and ``log.warning("enrich_record_soc_unclassified")`` from the agent.  This
+    function adds aggregate visibility and routes the alert to the Orchestration
+    Agent via the event bus when the rate is abnormal.
+
+    Safe to call with ``enriched_count == 0`` — no check is performed.
+    """
+    if enriched_count <= 0:
+        return
+
+    from enrichment._config import soc_unclassified_rate_threshold
+
+    threshold = soc_unclassified_rate_threshold()
+    unclassified_count = enriched_count - soc_classified_count
+    unclassified_rate = unclassified_count / enriched_count
+
+    if unclassified_rate <= threshold:
+        return
+
+    log.warning(
+        "soc_unclassified_rate_exceeded",
+        batch_id=batch_id,
+        enriched_count=enriched_count,
+        soc_classified_count=soc_classified_count,
+        unclassified_count=unclassified_count,
+        unclassified_rate=round(unclassified_rate, 4),
+        threshold=threshold,
+        message=(
+            f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold "
+            f"{threshold:.1%} for batch {batch_id}. "
+            "Check dbo.socc population and LLM classification quality."
+        ),
+    )
+
+    if _alert_bus is None:
+        return
+    try:
+        event = EventEnvelope(
+            correlation_id=correlation_id,
+            agent_id="enrichment-agent",
+            payload={
+                "event_type": "EnrichmentDegraded",
+                "batch_id": batch_id,
+                "triggered_by_event_type": triggered_by_event_type,
+                "classifier": "soc",
+                "reason": "unclassified_rate_exceeded",
+                "unclassified_rate": round(unclassified_rate, 4),
+                "threshold": threshold,
+                "enriched_count": enriched_count,
+                "soc_classified_count": soc_classified_count,
+                "unclassified_count": unclassified_count,
+                "degraded_fields": ["soc_code"],
+                "message": (f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold {threshold:.1%}."),
+            },
+        )
+        _alert_bus.publish(event)
+    except Exception as exc:
+        log.warning(
+            "EnrichmentDegraded_publish_failed",
+            batch_id=batch_id,
+            classifier="soc",
+            error=str(exc),
+        )
+
+
 SpamBucket = Literal["rejected", "flagged", "proceed"]
 
 
@@ -444,8 +524,8 @@ def _posting_for_enrichment(
 def _job_postings_promotion_payload(
     enriched: dict[str, Any],
     posting: dict[str, Any],
-) -> dict[str, Any]:
-    """Build a payload for :func:`apply_enrichment_to_job_postings` from batch enrichment output."""
+) -> RecordEnrichedPayload:
+    """Build a validated payload for :func:`apply_enrichment_to_job_postings` from batch enrichment output."""
     spam_score = enriched.get("spam_score")
     if spam_score is None:
         spam_score = posting.get("spam_score")
@@ -457,23 +537,25 @@ def _job_postings_promotion_payload(
     quality_score = enriched.get("quality_score")
     if quality_score is None:
         quality_score = posting.get("quality_score")
-    return {
-        "spam_tier": spam_tier,
-        "spam_score": spam_score,
-        "quality_score": quality_score,
-        "overall_confidence": enriched.get("overall_confidence"),
-        "field_confidence": enriched.get("field_confidence"),
-        "naics_code": enriched.get("naics_code"),
-        "soc_code": enriched.get("soc_code"),
-        "role_classification": enriched.get("role_classification"),
-        # Forward fields the promotion path COALESCEs into job_postings.
-        # Without these, seniority_level + employer_profile_id stay NULL and
-        # the backfill scripts have to plug the gap (issues #281, #282).
-        "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
-        "seniority": enriched.get("seniority"),
-        "employer_metadata": enriched.get("employer_metadata"),
-        "company_id": enriched.get("company_id"),
-    }
+    return RecordEnrichedPayload.model_validate(
+        {
+            "spam_tier": spam_tier,
+            "spam_score": spam_score,
+            "quality_score": quality_score,
+            "overall_confidence": enriched.get("overall_confidence"),
+            "field_confidence": enriched.get("field_confidence"),
+            "naics_code": enriched.get("naics_code"),
+            "soc_code": enriched.get("soc_code"),
+            "role_classification": enriched.get("role_classification"),
+            # Forward fields the promotion path COALESCEs into job_postings.
+            # Without these, seniority_level + employer_profile_id stay NULL and
+            # the backfill scripts have to plug the gap (issues #281, #282).
+            "seniority_level": enriched.get("seniority_level") or enriched.get("seniority"),
+            "seniority": enriched.get("seniority"),
+            "employer_metadata": enriched.get("employer_metadata"),
+            "company_id": enriched.get("company_id"),
+        }
+    )
 
 
 class EnrichmentAgent(BaseAgent):
@@ -629,6 +711,14 @@ class EnrichmentAgent(BaseAgent):
                     duration_ms=batch_duration_ms,
                     concurrency=concurrency,
                     execution_mode="parallel",
+                )
+
+                _check_soc_unclassified_rate(
+                    soc_classified_count=soc_classified_count,
+                    enriched_count=enriched_count,
+                    correlation_id=correlation_id,
+                    batch_id=batch_id,
+                    triggered_by_event_type=payload.get("event_type"),
                 )
 
                 return build_record_enriched_event(
@@ -880,6 +970,14 @@ class EnrichmentAgent(BaseAgent):
                         },
                     )
 
+            _check_soc_unclassified_rate(
+                soc_classified_count=soc_classified_count,
+                enriched_count=enriched_count,
+                correlation_id=correlation_id,
+                batch_id=batch_id,
+                triggered_by_event_type=payload.get("event_type"),
+            )
+
         return build_record_enriched_event(
             correlation_id=correlation_id,
             batch_id=batch_id,
@@ -1127,7 +1225,11 @@ class EnrichmentAgent(BaseAgent):
                         source=event.payload.get("source"),
                         external_id=event.payload.get("external_id"),
                     )
-                    apply_enrichment_to_job_postings(session, nj_id, base_payload)
+                    apply_enrichment_to_job_postings(
+                        session,
+                        nj_id,
+                        RecordEnrichedPayload.model_validate(base_payload),
+                    )
             except Exception as exc:
                 log.warning(
                     "enrichment_promotion_failed",
@@ -1203,7 +1305,17 @@ class EnrichmentAgent(BaseAgent):
                             _enrichment_soc_llm(),
                         )
                     )
-                    merged["soc_code"] = None if raw_soc == "unclassified" else raw_soc
+                    if raw_soc == "unclassified":
+                        # Individual-record warning; batch-level rate check fires separately
+                        # in _check_soc_unclassified_rate after the full batch completes.
+                        log.warning(
+                            "enrich_record_soc_unclassified",
+                            title=(posting.get("title") or "")[:200],
+                            normalized_job_id=posting.get("normalized_job_id"),
+                        )
+                        merged["soc_code"] = None
+                    else:
+                        merged["soc_code"] = raw_soc
                 except Exception as soc_exc:
                     log.warning("enrich_record_soc_failed", error=str(soc_exc))
                     merged["soc_code"] = posting.get("soc_code")

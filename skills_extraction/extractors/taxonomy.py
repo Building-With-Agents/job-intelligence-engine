@@ -25,9 +25,11 @@ import contextlib
 import csv
 import json
 import os
+import random
 import re
+import threading
 import time
-import unicodedata
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,7 @@ import httpx
 import numpy as np
 import structlog
 
+from common.text_normalization import normalize_label
 from common.types import TaxonomyResult
 
 log = structlog.get_logger()
@@ -68,10 +71,7 @@ _PARENT_LABEL_ALIASES: dict[str, str] = {
 
 def _normalize_label(value: str | None) -> str:
     """NFKC, lowercase, strip, collapse internal whitespace."""
-    text = unicodedata.normalize("NFKC", value or "")
-    text = text.lower().strip()
-    text = re.sub(r"\s+", " ", text)
-    return text
+    return normalize_label(value)
 
 
 # ---------------------------------------------------------------------------
@@ -135,8 +135,6 @@ def _load_genai_extension(json_path: Path | None = None) -> dict[str, str]:
 # O*NET store loading (Step 5)
 # ---------------------------------------------------------------------------
 
-_onet_normalized_to_pair: dict[str, tuple[str, str]] | None = None
-
 
 def _load_onet_store(path: Path | None = None) -> dict[str, tuple[str, str]]:
     """Load O*NET Skills tab-delimited file; return normalized_name -> (element_id, element_name).
@@ -176,30 +174,30 @@ def _load_onet_store(path: Path | None = None) -> dict[str, tuple[str, str]]:
     return out
 
 
+@lru_cache(maxsize=1)
+def _get_onet_store_cached() -> dict[str, tuple[str, str]]:
+    """Return cached O*NET normalized_name -> (element_id, element_name)."""
+    return _load_onet_store()
+
+
 def _get_onet_store() -> dict[str, tuple[str, str]]:
-    """Return lazy-loaded O*NET normalized_name -> (element_id, element_name)."""
-    global _onet_normalized_to_pair
-    if _onet_normalized_to_pair is None:
-        _onet_normalized_to_pair = _load_onet_store()
-    return _onet_normalized_to_pair
+    """Public wrapper for O*NET store access."""
+    return _get_onet_store_cached()
 
 
-# Lazy-loaded singleton store state
-_esco_records: list[dict[str, Any]] | None = None
-_parent_label_to_uri: dict[str, str] | None = None
-_genai_skill_to_parent: dict[str, str] | None = None
-_genai_normalized_to_canonical: dict[str, str] | None = None
+@lru_cache(maxsize=1)
+def _get_store_cached() -> tuple[list[dict[str, Any]], dict[str, str], dict[str, str], dict[str, str]]:
+    """Load ESCO + GenAI config once and return cached store bundle."""
+    records = _load_esco_store()
+    parent_label_to_uri = _build_parent_label_to_uri(records) if records else {}
+    genai_skill_to_parent = _load_genai_extension()
+    genai_normalized_to_canonical = {_normalize_label(k): k for k in genai_skill_to_parent}
+    return records, parent_label_to_uri, genai_normalized_to_canonical, genai_skill_to_parent
 
 
 def _get_store():
-    """Load ESCO + GenAI config once; return (records, parent_label_to_uri, genai_normalized_to_canonical, genai_skill_to_parent)."""
-    global _esco_records, _parent_label_to_uri, _genai_skill_to_parent, _genai_normalized_to_canonical
-    if _esco_records is None:
-        _esco_records = _load_esco_store()
-        _parent_label_to_uri = _build_parent_label_to_uri(_esco_records) if _esco_records else {}
-        _genai_skill_to_parent = _load_genai_extension()
-        _genai_normalized_to_canonical = {_normalize_label(k): k for k in _genai_skill_to_parent}
-    return _esco_records, _parent_label_to_uri, _genai_normalized_to_canonical, _genai_skill_to_parent
+    """Public wrapper for cached ESCO + GenAI store bundle."""
+    return _get_store_cached()
 
 
 # ---------------------------------------------------------------------------
@@ -315,8 +313,8 @@ def _resolve_step3_normalized_esco(label: str) -> TaxonomyResult | None:
 # Step 4: Embedding cosine similarity (Azure OpenAI text-embedding-3-small)
 # ---------------------------------------------------------------------------
 
-_esco_embedding_meta: list[tuple[str, str]] | None = None  # (uri, preferred_label)
-_esco_normalized_matrix: np.ndarray | None = None  # (n_skills, dim) L2-normalized
+_esco_embedding_cache: tuple[list[tuple[str, str]], np.ndarray] | None = None
+_esco_embedding_cache_lock = threading.Lock()
 
 
 _EMBED_MAX_RETRIES = 5
@@ -423,6 +421,14 @@ def _extract_retry_after_embedding(error_message: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _embedding_retry_delay(retry_after: int | None, attempt: int) -> float:
+    """Return retry delay with jitter to avoid lockstep 429 retries across workers."""
+    if retry_after:
+        return float(retry_after)
+    base_delay = _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+    return base_delay * random.uniform(1.0, 1.3)
+
+
 def _embed_texts_azure(
     texts: list[str],
     *,
@@ -472,7 +478,7 @@ def _embed_texts_azure(
                 response_data = _response_json_or_none(resp)
                 if resp.status_code == 429:
                     retry_after = _extract_retry_after_embedding(resp.text)
-                    delay = retry_after if retry_after else _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+                    delay = _embedding_retry_delay(retry_after, attempt)
                     _log_embedding_audit_event(
                         texts,
                         response_data,
@@ -513,7 +519,7 @@ def _embed_texts_azure(
             )
             if response is not None and response.status_code == 429:
                 retry_after = _extract_retry_after_embedding(str(exc))
-                delay = retry_after if retry_after else _EMBED_BASE_DELAY * (2 ** (attempt - 1))
+                delay = _embedding_retry_delay(retry_after, attempt)
                 log.warning("embedding_rate_limited", attempt=attempt, delay_s=round(delay, 2))
                 if attempt == _EMBED_MAX_RETRIES:
                     return None
@@ -609,24 +615,37 @@ def _get_esco_embeddings() -> tuple[list[tuple[str, str]], np.ndarray] | None:
     Meta is list of (skill_name, skill_name). Matrix is (n_skills, dim) L2-normalized
     so Step 4 only needs to normalize the query and run a dot product.
     """
-    global _esco_embedding_meta, _esco_normalized_matrix
+    global _esco_embedding_cache
 
-    # 1. In-memory cache
-    if _esco_embedding_meta is not None and _esco_normalized_matrix is not None:
-        return _esco_embedding_meta, _esco_normalized_matrix
+    # 1. In-memory cache (success-only cache; misses are not cached)
+    if _esco_embedding_cache is not None:
+        return _esco_embedding_cache
 
-    # 2. PostgreSQL
-    db_result = _load_embeddings_from_db()
-    if db_result is not None:
-        _esco_embedding_meta, _esco_normalized_matrix = db_result
-        log.info("esco_embeddings_loaded_from_db", skills=len(_esco_embedding_meta))
-        return _esco_embedding_meta, _esco_normalized_matrix
+    with _esco_embedding_cache_lock:
+        if _esco_embedding_cache is not None:
+            return _esco_embedding_cache
+
+        # 2. PostgreSQL
+        db_result = _load_embeddings_from_db()
+        if db_result is not None:
+            _esco_embedding_cache = db_result
+            log.info("esco_embeddings_loaded_from_db", skills=len(db_result[0]))
+            return _esco_embedding_cache
 
     log.warning(
         "esco_embeddings_not_available",
         reason="No embeddings in dbo.skills — run seed_esco_embeddings.py (admin only)",
     )
     return None
+
+
+def _clear_taxonomy_caches_for_tests() -> None:
+    """Clear cached taxonomy stores for deterministic tests."""
+    global _esco_embedding_cache
+    _get_store_cached.cache_clear()
+    _get_onet_store_cached.cache_clear()
+    with _esco_embedding_cache_lock:
+        _esco_embedding_cache = None
 
 
 def _resolve_step4_embedding_impl(label: str) -> TaxonomyResult | None:

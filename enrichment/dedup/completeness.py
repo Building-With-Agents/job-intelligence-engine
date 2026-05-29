@@ -1,4 +1,10 @@
-"""Field completeness counting for fuzzy dedup survivor arbitration."""
+"""Field completeness counting for fuzzy dedup survivor arbitration.
+
+# EXEMPLAR: Phase 2 reference — single-responsibility pure functions; defensive
+# _has_value guard handles None/empty/non-string uniformly; no side effects or
+# global mutable state; entire module is 43 lines and exhaustively testable
+# without a DB connection or LLM call.
+"""
 
 from __future__ import annotations
 

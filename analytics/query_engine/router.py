@@ -166,6 +166,49 @@ _ROLE_TOKEN_STOPWORDS: frozenset[str] = frozenset(
     {"and", "or", "the", "of", "for", "with", "at", "in", "to", "a", "an", "any", "all"}
 )
 
+_ROLE_CONTEXT_SUFFIXES: frozenset[str] = frozenset(
+    {
+        "employer",
+        "employers",
+        "candidate",
+        "candidates",
+        "hire",
+        "hires",
+        "recruit",
+        "recruits",
+        "professional",
+        "professionals",
+    }
+)
+
+_ROLE_CONTEXT_SCOPE_PREFIXES: frozenset[str] = frozenset(
+    {
+        "borderplex",
+        "regional",
+        "local",
+        "current",
+        "active",
+    }
+)
+
+_ROLE_OCCUPATION_HEADS: frozenset[str] = frozenset(
+    {
+        "administrator",
+        "analyst",
+        "architect",
+        "consultant",
+        "developer",
+        "engineer",
+        "manager",
+        "operator",
+        "programmer",
+        "researcher",
+        "scientist",
+        "specialist",
+        "technician",
+    }
+)
+
 
 def _tokenize_role_name(role: str) -> list[str]:
     """Split a free-text role name into ILIKE-friendly tokens.
@@ -182,6 +225,38 @@ def _tokenize_role_name(role: str) -> list[str]:
         return []
     raw_tokens = re.split(r"[\s/,\-_]+", role.strip())
     return [t.strip() for t in raw_tokens if len(t.strip()) >= 2 and t.strip().lower() not in _ROLE_TOKEN_STOPWORDS]
+
+
+def _clean_workflow_role_names(role_names: list[str]) -> list[str]:
+    """Drop workflow role-context phrases that are not actual occupation names.
+
+    LLM entity extraction can return phrases such as ``"Borderplex IT employers"``
+    as role names. Those phrases describe the employer/candidate population, not
+    a role family, and hard-filtering workflow queries on them can produce empty
+    evidence. If a phrase ends in a context suffix but still contains an
+    occupation head (for example ``"software developer candidates"``), keep the
+    role portion.
+    """
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in role_names:
+        value = str(raw or "").strip()
+        if not value:
+            continue
+        tokens = _tokenize_role_name(value)
+        if tokens and tokens[-1].lower() in _ROLE_CONTEXT_SUFFIXES:
+            role_tokens = tokens[:-1]
+            while role_tokens and role_tokens[0].lower() in _ROLE_CONTEXT_SCOPE_PREFIXES:
+                role_tokens = role_tokens[1:]
+            if not any(t.lower() in _ROLE_OCCUPATION_HEADS for t in role_tokens):
+                continue
+            value = " ".join(role_tokens)
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(value)
+    return cleaned
 
 
 # US state-code lookup for the small set we expect in Borderplex / Puget queries.
@@ -311,14 +386,123 @@ _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY: frozenset[str] = frozenset(
     {"trend", "disruption", "emergence", "comparison", "curriculum"},
 )
 
+# JIE #349 — AI-tool / AI-adjacent canonical terms accepted by the taxonomy gate
+# even before they are seeded to dbo.skills.  All values are lowercase; the gate
+# normalises incoming skill_names to lowercase before checking.
+#
+# Rules for this set:
+#   1. Canonical forms only — variant spellings belong in _AI_TOOL_RESOLUTION_ALIASES.
+#      Alias resolution always runs first, so a term that is also an alias key can
+#      never reach this frozenset check; such entries are unreachable dead code.
+#   2. No generic single-word fragments (e.g. "automation", "rpa").  Short tokens can
+#      match unrelated taxonomy rows and re-open the RT-007 broad-aggregate failure
+#      mode.  Specific brand names and multi-word phrases are safe.
+#
+# To permanently surface these terms across all analytics dimensions (skill demand,
+# velocity, co-occurrence), run:  python scripts/seed_ai_taxonomy_terms.py
+_AI_TOOL_SUPPLEMENTAL_TERMS: frozenset[str] = frozenset(
+    {
+        # AI coding assistants (canonical forms; aliases map variants → these)
+        "copilot",
+        "cursor",
+        "claude",
+        "chatgpt",
+        "gpt-4",
+        # AI skill categories
+        "prompt engineering",
+        "rag",
+        "vector search",
+        "llm engineering",
+        "ai-adjacent",
+        "ai-native",
+        "ai-augmented",
+        "ai-assisted testing",
+        "aiops",
+        "llm-driven incident triage",
+        "copilot for infra-as-code",
+        "ai-assistant tools",
+        # Automation / RPA — specific brands and multi-word phrases only.
+        # "automation" and "rpa" are excluded (RT-007 risk: too short/generic).
+        "workflow automation",
+        "process automation",
+        "uipath",
+        "blue prism",
+        "automation anywhere",
+        "testim",
+        "mabl",
+        "applitools",
+        "langchain",
+    }
+)
+
+# Resolution aliases: variant spelling → canonical form (always lowercase).
+# Applied after lowercasing and before the supplemental / DB lookup so that
+# e.g. "GitHub Copilot" and "Copilot" resolve to the same canonical term.
+# Every alias target must be present in _AI_TOOL_SUPPLEMENTAL_TERMS so that
+# the alias short-circuits the DB lookup for the canonical form as well.
+_AI_TOOL_RESOLUTION_ALIASES: dict[str, str] = {
+    "github copilot": "copilot",
+    "ms copilot": "copilot",
+    "microsoft copilot": "copilot",
+    "openai chatgpt": "chatgpt",
+    "gpt4": "gpt-4",
+    "cursor ide": "cursor",
+    "claude.ai": "claude",
+    "ai assistant tools": "ai-assistant tools",
+    "llm incident triage": "llm-driven incident triage",
+}
+
+# JIE #340 cycle 2 — tech-skill terms commonly extracted from geographic and comparison
+# questions that are absent from dbo.skills or appear under a different canonical form.
+# These pass the taxonomy gate without a DB lookup.
+# Add terms here when a gate-blocked comparison question uses a term that the LLM
+# extracts correctly but dbo.skills does not have under that exact spelling.
+# To persist these terms to dbo.skills, add them via scripts/seed_esco.py or a
+# targeted INSERT in common/data_store/migrations.py.
+_COMPARISON_SKILL_SUPPLEMENT: frozenset[str] = frozenset(
+    {
+        # LLM / generative AI — fixtures have "Generative AI (LLMs)" but not the
+        # short forms the LLM extractor produces
+        "llm",
+        "llms",
+        "large language models",
+        "large language model",
+        "generative ai",
+        "genai",
+        # ETL — fixtures have variants ("Extract, Transform, Load") but not "ETL"
+        "etl",
+        "extract transform load",
+        "extract, transform, load",
+        # Common tech abbreviations whose expansions are in the taxonomy but
+        # whose short form may not be — omit single-char or 2-char tokens that
+        # are too ambiguous (RT-007: short tokens let broad aggregates pass the gate)
+        "ml",
+        "nlp",
+        "mlops",
+        "devsecops",
+        "ci cd",
+        "continuous deployment",
+        "continuous delivery",
+    }
+)
+
+# Unified taxonomy supplement: AI-tool terms (#349) unioned with comparison
+# tech-skill terms (#340).  _skill_terms_all_in_dbo_skills checks this set
+# before issuing a DB query.
+_TAXONOMY_SUPPLEMENT: frozenset[str] = _AI_TOOL_SUPPLEMENTAL_TERMS | _COMPARISON_SKILL_SUPPLEMENT
+
 
 def _skill_terms_all_in_dbo_skills(session: Session, skill_names: list[str], *, max_terms: int = 5) -> bool:
-    """True iff each distinct extracted skill term matches ``dbo.skills.skill_name`` (ci exact).
+    """True iff each distinct extracted skill term matches ``dbo.skills.skill_name`` (ci exact)
+    or belongs to the supplemental skill allowlist (JIE #349 / #340).
 
     Matching uses **case-insensitive equality on the full stored skill_name** only.
     Substring or ``ILIKE '%term%'`` is intentionally avoided: short tokens and
     ambiguous fragments would otherwise match unrelated taxonomy rows and let
     broad aggregates pass the gate (the RT-007 failure mode).
+
+    Terms in ``_TAXONOMY_SUPPLEMENT`` are accepted without a DB round-trip: they are
+    semantically valid skill references whose taxonomy entries are added via seed scripts.
     """
     lowered: list[str] = []
     for raw in skill_names[:max_terms]:
@@ -328,9 +512,15 @@ def _skill_terms_all_in_dbo_skills(session: Session, skill_names: list[str], *, 
     if not lowered:
         return True
     distinct = list(dict.fromkeys(lowered))
-    stmt = select(func.lower(Skill.skill_name)).where(func.lower(Skill.skill_name).in_(distinct))
+    # Resolve aliases before checking (e.g. "GitHub Copilot" → "copilot").
+    resolved = [_AI_TOOL_RESOLUTION_ALIASES.get(t, t) for t in distinct]
+    # Terms in the unified supplement bypass the DB lookup (JIE #349 / #340).
+    db_terms = [t for t in resolved if t not in _TAXONOMY_SUPPLEMENT]
+    if not db_terms:
+        return True
+    stmt = select(func.lower(Skill.skill_name)).where(func.lower(Skill.skill_name).in_(db_terms))
     matched = set(session.execute(stmt).scalars().all())
-    return all(term in matched for term in distinct)
+    return all(term in matched for term in db_terms)
 
 
 def _skill_taxonomy_block_result(
@@ -1180,6 +1370,7 @@ class QueryRouter:
         """workflow → ``canonical_roles`` (top_skills, top_tools) for day-to-day tasks."""
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
+        role_names = _clean_workflow_role_names(role_names)
         cr = CanonicalRole
         stmt = select(
             cr.role_id,

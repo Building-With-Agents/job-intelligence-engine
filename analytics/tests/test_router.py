@@ -38,11 +38,17 @@ from analytics.query_engine.constants import (
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
 )
 from analytics.query_engine.router import (
+    _AI_TOOL_RESOLUTION_ALIASES,
+    _AI_TOOL_SUPPLEMENTAL_TERMS,
+    _COMPARISON_SKILL_SUPPLEMENT,
+    _TAXONOMY_SUPPLEMENT,
     ALLOWED_TABLES,
     QueryRouter,
+    _clean_workflow_role_names,
     _is_list_style,
     _parse_weeks_back,
     _resolve_geo_terms,
+    _skill_terms_all_in_dbo_skills,
     _split_geo_term,
     _tokenize_role_name,
     _week_floor,
@@ -460,12 +466,211 @@ class TestEdgeCases:
 
 
 # ---------------------------------------------------------------------------
+# AI-tool taxonomy supplement (JIE #349)
+# ---------------------------------------------------------------------------
+
+
+class TestAIToolTaxonomySupplement:
+    """Validate that AI-tool / AI-adjacent terms bypass the DB taxonomy gate."""
+
+    def test_supplemental_terms_frozenset_is_non_empty(self) -> None:
+        assert len(_AI_TOOL_SUPPLEMENTAL_TERMS) > 0
+
+    def test_resolution_aliases_values_are_in_supplemental_set(self) -> None:
+        """Every alias target must resolve to a term in the supplemental set."""
+        for alias, canonical in _AI_TOOL_RESOLUTION_ALIASES.items():
+            assert canonical in _AI_TOOL_SUPPLEMENTAL_TERMS, (
+                f"alias {alias!r} → {canonical!r} is not in _AI_TOOL_SUPPLEMENTAL_TERMS"
+            )
+
+    def test_ai_tool_terms_bypass_db_lookup(self) -> None:
+        """copilot, chatgpt, prompt engineering etc. must not issue a DB query."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Copilot", "ChatGPT", "Prompt Engineering"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_automation_brands_bypass_db_lookup(self) -> None:
+        """Specific automation brand names must not issue a DB query.
+        Note: bare "automation" and "rpa" are intentionally excluded from the
+        supplemental set (RT-007 risk) and will fall through to the DB lookup."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["UiPath", "Blue Prism", "Workflow Automation"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_alias_resolution_github_copilot_bypasses_db(self) -> None:
+        """'GitHub Copilot' aliases to 'copilot' and must bypass the DB gate."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["GitHub Copilot"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_mixed_ai_and_db_terms_still_queries_db_for_non_supplemental(self) -> None:
+        """If a question contains one AI-tool term and one unknown term, the DB
+        is still queried for the unknown term only."""
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = ["python"]
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        # "Copilot" → supplemental (no DB); "Python" → DB query
+        result = _skill_terms_all_in_dbo_skills(session, ["Copilot", "Python"])
+        assert result is True
+        session.execute.assert_called_once()
+
+    def test_disruption_intent_with_ai_tools_routes_through_gate(self) -> None:
+        """Disruption question whose extracted skills are all AI-tool terms must not
+        be blocked by the taxonomy gate — it should reach the disruption handler (JIE #349)."""
+        session = _make_session(rows=[_make_mock_row(temporal_period="agentic_era", posting_count=42)])
+        cls = _mk_classification("disruption", skill_names=["Copilot", "ChatGPT"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.empty_rows_refusal_reason is None, (
+            f"taxonomy gate must not have blocked: {result.empty_rows_refusal_reason}"
+        )
+        assert result.row_count > 0
+
+    def test_trend_intent_with_langchain_routes_without_db_gate(self) -> None:
+        """LangChain is in the supplemental set — trend query must not query skills table first."""
+        session = _make_session(rows=[_make_mock_row(skill_label="LangChain", posting_count=10)])
+        cls = _mk_classification("trend", skill_names=["LangChain"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        # Only the trend aggregate query executes; no separate taxonomy probe call.
+        assert session.execute.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Comparison-skill taxonomy supplement — JIE #340 cycle 2
+# ---------------------------------------------------------------------------
+
+
+class TestComparisonSkillSupplement:
+    """Validate that tech terms missing from dbo.skills bypass the taxonomy gate
+    so comparison questions are not blocked (JIE #340 cycle 2)."""
+
+    def test_supplement_set_is_non_empty(self) -> None:
+        assert len(_COMPARISON_SKILL_SUPPLEMENT) > 0
+
+    def test_taxonomy_supplement_is_union_of_both_supplements(self) -> None:
+        """#349 (#405) has landed — _TAXONOMY_SUPPLEMENT is now the union of
+        _AI_TOOL_SUPPLEMENTAL_TERMS and _COMPARISON_SKILL_SUPPLEMENT."""
+        assert _TAXONOMY_SUPPLEMENT == _AI_TOOL_SUPPLEMENTAL_TERMS | _COMPARISON_SKILL_SUPPLEMENT
+        for term in ("etl", "llm", "generative ai", "large language models"):
+            assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
+        for term in ("copilot", "chatgpt", "langchain", "prompt engineering"):
+            assert term in _TAXONOMY_SUPPLEMENT, f"{term!r} missing from _TAXONOMY_SUPPLEMENT"
+
+    def test_etl_bypasses_db_lookup(self) -> None:
+        """gq-056 scenario: 'ETL' is in supplement, 'SQL' is in dbo.skills —
+        DB is queried only for SQL; the gate still passes."""
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = ["sql"]
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        result = _skill_terms_all_in_dbo_skills(session, ["SQL", "ETL"])
+        assert result is True
+        # DB was queried once — for "sql" only; "etl" was in the supplement
+        session.execute.assert_called_once()
+
+    def test_llm_bypasses_db_lookup(self) -> None:
+        """gq-054 scenario: 'Large Language Models' extracted but not in dbo.skills."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Large Language Models", "LLM"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_generative_ai_bypasses_db_lookup(self) -> None:
+        """'Generative AI' extracted term passes without DB round-trip."""
+        session = MagicMock(spec=Session)
+        result = _skill_terms_all_in_dbo_skills(session, ["Generative AI"])
+        assert result is True
+        session.execute.assert_not_called()
+
+    def test_comparison_with_etl_and_sql_routes_through(self) -> None:
+        """Comparison question with SQL (in DB) + ETL (supplement) routes to skill table."""
+        session = _make_session(
+            rows=[
+                _make_mock_row(skill_label="SQL", posting_count=120),
+                _make_mock_row(skill_label="ETL", posting_count=45),
+            ],
+            taxonomy_lower_matches=("sql",),
+        )
+        cls = _mk_classification("comparison", skill_names=["SQL", "ETL"])
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.empty_rows_refusal_reason is None
+
+    def test_unknown_term_not_in_supplement_still_requires_db(self) -> None:
+        """RT-007 boundary: a term absent from both supplement AND dbo.skills blocks the gate.
+
+        Ensures the supplement bypass does not widen to unknown terms — the core
+        RT-007 exact-match guard must still fire for anything not explicitly listed.
+        """
+        tax_mock = MagicMock()
+        tax_mock.scalars.return_value.all.return_value = []  # DB returns nothing for "cobol"
+        session = MagicMock(spec=Session)
+        session.execute.return_value = tax_mock
+        result = _skill_terms_all_in_dbo_skills(session, ["COBOL"])
+        assert result is False
+        session.execute.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
 # label_embedding role resolution (issue #229)
 # ---------------------------------------------------------------------------
 
 
 class TestRoleEmbeddingResolution:
     """Embedding path vs ILIKE fallback; _embed_texts_azure is always mocked."""
+
+    def test_workflow_drops_role_context_phrase_before_resolution(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """JIE #357: ``IT employers`` is context, not a role filter."""
+
+        def _unexpected_embed(*args: Any, **kwargs: Any) -> None:
+            raise AssertionError("role context phrases should be removed before role resolution")
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _unexpected_embed)
+
+        session = _make_session()
+        cls = _mk_classification("workflow", role_names=["Borderplex IT employers"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert result.query_label == "role workflow — skills and tools"
+        sql = _compiled_sql(session)
+        assert "ILIKE" not in sql.upper()
+        assert "IT employers" not in sql
+
+    def test_workflow_keeps_valid_role_before_resolution(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Valid role names must still reach the workflow role resolver."""
+
+        def _fake_embed(texts: list[str], audit_agent_name: str = "") -> list[list[float]]:
+            assert texts == ["software developer"]
+            return [[0.1] * 1536]
+
+        monkeypatch.setattr("analytics.query_engine.router._embed_texts_azure", _fake_embed)
+
+        resolve_result = MagicMock()
+        resolve_result.fetchall.return_value = [("resolved-role-id-aa",)]
+
+        select_result = MagicMock()
+        select_result.__iter__ = MagicMock(return_value=iter([]))
+
+        session = MagicMock(spec=Session)
+        session.execute.side_effect = [resolve_result, select_result]
+
+        cls = _mk_classification("workflow", role_names=["software developer"])
+        result = QueryRouter().route(cls, session)
+
+        assert result.routed is True
+        assert session.execute.call_count == 2
 
     def test_workflow_embedding_resolved_role_ids_use_pgvector_then_in_filter(
         self,
@@ -595,6 +800,28 @@ class TestRoleEmbeddingResolution:
 
 
 class TestHelpers:
+    @pytest.mark.parametrize(
+        ("role_names", "expected"),
+        [
+            (["IT employers"], []),
+            (["Borderplex IT employers"], []),
+            (["AI candidates"], []),
+            (["cybersecurity hires"], []),
+            (["software professionals"], []),
+            (["tech recruits"], []),
+            (["healthcare-IT employers"], []),
+            (["software developer candidates"], ["software developer"]),
+            (["data engineer", "AI agent developer"], ["data engineer", "AI agent developer"]),
+            (["unicorn wranglers"], ["unicorn wranglers"]),
+        ],
+    )
+    def test_clean_workflow_role_names_removes_context_phrases(
+        self,
+        role_names: list[str],
+        expected: list[str],
+    ) -> None:
+        assert _clean_workflow_role_names(role_names) == expected
+
     def test_parse_weeks_back_named_periods(self) -> None:
         assert _parse_weeks_back(["last week"]) == 1
         assert _parse_weeks_back(["last month"]) == 4

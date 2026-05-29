@@ -240,6 +240,20 @@ The output file (`eval/runs/<run>_annotations.json`) contains:
 
 ---
 
+## Targeted intent-only smoke runs
+
+Smaller verifications that exercise `classify_workforce_question` directly
+against a subset of the gold corpus, without running the full Q&A pipeline.
+Use these when a prompt change targets intent classification specifically and
+the binding success criterion is the per-question intent matrix. Full
+`--prompt-version` runs still belong in the version-history table above.
+
+| Date | Author | Branch | Scope | Result | Artifacts |
+|------|--------|--------|-------|--------|-----------|
+| 2026-05-03 | Pair (intent prompt iteration) | `fix/intent-employer-disambiguation-gq061-067` | gq-041..050 (geographic, #257 preservation), gq-061/063/065/067 (employer fix), gq-062/064/066/068/069/070 (employer prior spot-check) — 20 questions total | **20/20 pass**: 10/10 geographic, 4/4 employer fix, 6/6 employer prior (all conf ≥ 0.90) | [`eval/runs/findings-intent-employer-fewshot-fix.md`](runs/findings-intent-employer-fewshot-fix.md), [`eval/runs/intent-smoke-employer-fewshot-fix.json`](runs/intent-smoke-employer-fewshot-fix.json) |
+
+---
+
 ## How to add a future run
 
 1. Run `eval/qa_eval.py --prompt-version <semantic-tag> --output-json eval/runs/<tag>.json`.
@@ -302,8 +316,8 @@ Cumulative iteration arc over **`gq-041` … `gq-060`** (geographic + comparison
 | Cycle | Before cohort composite (mean / p25) | Failure pattern (top-5 skew) | Single change (file + summary) | After (mean / p25) | Outcome / link |
 |-------|----------------------------------------|--------------------------------|----------------------------------|--------------------|----------------|
 | 1 | *TBD — run `python -m eval.qa_eval --prompt-version pairc-week10-c1 --cohort pair-c-geo-comp --dry-run --output-json eval/runs/qa-pairc-week10-c1.json`* | Baseline inventory | Document harness + cohort contract only (`eval/qa_eval.py`, `eval/qa_eval_cohorts.py`, composite JSON + Langfuse alignment) | — | [`findings-pairc-cycle1-baseline.md`](runs/findings-pairc-cycle1-baseline.md) |
-| 2 | — | — | *Reserved for first routing / SQL / synthesis fix once baseline numbers captured* | — | [`findings-pairc-cycle2-baseline.md`](runs/findings-pairc-cycle2-baseline.md) |
-| 3 | — | — | *Reserved for follow-on stacked change* | — | [`findings-pairc-cycle3-baseline.md`](runs/findings-pairc-cycle3-baseline.md) |
+| 2 | ref: `dev-verify-2026-05-01` — comparison composite ~0.849 (6/10 answerable; 4 refusing on taxonomy gate or data shape) | **SQL — taxonomy gate block**: gq-054 ("Large Language Models"), gq-056 ("ETL"), gq-060 ("CI/CD" vs "CI") — extracted skill names absent from `dbo.skills` exact match → `skill_taxonomy_gate_blocked` before any query fires | `analytics/query_engine/router.py` — add `_COMPARISON_SKILL_SUPPLEMENT` frozenset (ETL, LLM, Generative AI, MLOps, NLP, continuous-delivery variants) to `_skill_terms_all_in_dbo_skills`; terms bypass DB lookup without breaking RT-007 exact-match guard | pending Gary SoT re-run | [`findings-pairc-cycle2-taxonomy-supplement.md`](runs/findings-pairc-cycle2-taxonomy-supplement.md) |
+| 3 | post-cycle-2 baseline — comparison evidence_citation ~0.394 (stacked on top of cycle 2 gate fix) | **Synthesis — thin-data hedge**: even when the comparison gate passes and `skill_demand_weekly` returns 2–5 rows, the synthesis LLM responds with a hedge ("insufficient data") rather than stating the magnitude difference between the two skill counts | `analytics/query_engine/synthesis.py` — add `comparison_clause` to `_build_main_prompt`: instructs LLM to state magnitude ("X has 3× more postings than Y"), identify the leader, and name which side is absent when only one has data; do not refuse when facts are thin — use caveats | pending Gary SoT re-run | [`findings-pairc-cycle3-synthesis-clause.md`](runs/findings-pairc-cycle3-synthesis-clause.md) |
 
 **Langfuse:** When keys are present, capture **`dataset_run_id` + `dataset_run_url`** per cycle in the JSON artifact comments or iteration notes. CI remains offline for scored runs; local-only capture is acceptable per IMP-030.
 
@@ -317,6 +331,7 @@ Cumulative iteration arc over **`gq-041` … `gq-060`** (geographic + comparison
 | 2026-04-23 | Bryan + Emilio | v1-baseline run complete (composite 0.875, answerability 0.260); added DEV-004 for `--use-http` regression |
 | 2026-04-27 | Bryan | Restructured per JIE #287: per-run analysis moved to `eval/runs/findings*.md` pattern; log now holds version history table + DEV registry only. Added v2 and v2.1 rows; updated DEV-004 status to Resolved |
 | 2026-04-30 | Nestor | Added `nestor-baseline` human-annotation row (Langfuse reconstruction); added `nestor-v2-role-evolution-fix` row with final automated-score results; created `findings_nestor_v2_role_evolution_fix.md`; documented DEV-005 |
+| 2026-05-03 | Pair (intent prompt iteration) | Added "Targeted intent-only smoke runs" section and recorded the gq-061..067 employer disambiguation smoke (20/20 pass). Refs #257, #340, #346 |
 | 2026-05-04 | Pair C | #340 harness: cohort + golden-id precedence, composite JSON + Langfuse `composite` / `mean_composite`; Pair C iteration table + cycle findings stubs; contract JSON |
 | 2026-05-11 | Pair A (Ángel + Fabian) | #347 Sub-task A: corpus-edit row — relabel `gq-026` `trend` → `disruption` to match the calibrated AI-tool-adoption-share rule + few-shot in `analytics/query_engine/intent.py` (Pair A commit `5546fa0`); per-intent counts now disruption=11, trend=9, total 90; no schema fields added |
 | 2026-05-11 | Pair A (Ángel + Fabian) | #347 Sub-task B (final): added 4 stacked narrow precedence clauses to `analytics/query_engine/intent.py` `_SYSTEM_PROMPT` (no logic / no rule rewrites / no few-shot removals) — pure-volume Q-over-Q → trend (c2/c3), non-AI subject with era buckets → trend (c2/c3), explicit "did not exist before" first-seen tool language → emergence precedence (c4), supporting-mix / expected-AI-literacy-bar within a role family → role_evolution carve-out (c5). Final = c5: disruption gate **11/11** preserved (Pair A `91f0eb8`/`5546fa0` calibration intact), **7 of 7** issue targets resolved (gq-017/021/026/029/033/036/039), `intent_accuracy` 0.8222 → **0.8444**, `overall_geometric_composite` 0.7108 → **0.7145**. Findings: `eval/runs/findings-disruption-narrow-fix.md`. Artifact: `eval/runs/qa-dev-verify-disruption-narrow-fix-c5.json` |

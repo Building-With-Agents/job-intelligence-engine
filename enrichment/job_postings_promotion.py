@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 import structlog
 from sqlalchemy import text
@@ -35,9 +36,22 @@ from enrichment.dedup import run_fuzzy_dedup
 from enrichment.dedup.types import FuzzyDedupResult
 from enrichment.employer_profile_storage import upsert_employer_profile_by_company_id
 from enrichment.resolvers.sector_resolver import resolve_sector
+from enrichment.schemas import RecordEnrichedPayload
 from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 
 log = structlog.get_logger()
+
+
+class FuzzyDedupContractError(ValueError):
+    """Raised by ``apply_fuzzy_dedup_result`` when a ``FuzzyDedupResult`` violates
+    the persistence contract (e.g. duplicate result missing ``duplicate_cluster_id``).
+
+    Subclasses ``ValueError`` for backward compatibility with callers that
+    already catch the broader type, but gives ``_apply_fuzzy_dedup_after_promotion``
+    a precise handle so infrastructure failures (DB errors, numpy shape mismatches)
+    are not mis-classified as contract violations in observability dashboards.
+    """
+
 
 # JIE #328 — derive deterministic quality when the promotion payload omits it
 # (legacy partial payloads / skipped promotions left job_postings.quality_score NULL).
@@ -121,7 +135,7 @@ _SELECT_EMPLOYER_PROFILE_ID_SQL = text(
     """
 )
 
-_UPDATE_UNCERTAIN_SQL = text(
+_UPDATE_COMMON_SQL = text(
     """
     UPDATE dbo.job_postings SET
         quality_score = :quality_score,
@@ -133,65 +147,9 @@ _UPDATE_UNCERTAIN_SQL = text(
         soc_code = :soc_code,
         sector_id = :sector_id,
         employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = NULL,
+        is_spam = :is_spam,
         spam_score = :spam_score,
-        spam_tier = 'uncertain',
-        date_posted = COALESCE(:date_posted, date_posted),
-        seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote),
-        role_classification = COALESCE(:role_classification, role_classification),
-        salary_min = COALESCE(:salary_min, salary_min),
-        salary_max = COALESCE(:salary_max, salary_max),
-        salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period),
-        zip_code = COALESCE(:zip_code, zip_code)
-    WHERE job_posting_id::text = :job_posting_id
-    """
-)
-
-_UPDATE_CLEAN_SQL = text(
-    """
-    UPDATE dbo.job_postings SET
-        quality_score = :quality_score,
-        overall_confidence = :overall_confidence,
-        field_confidence = CAST(:field_confidence AS jsonb),
-        temporal_period = :temporal_period,
-        borderplex_subregion = :borderplex_subregion,
-        naics_code = :naics_code,
-        soc_code = :soc_code,
-        sector_id = :sector_id,
-        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = FALSE,
-        spam_score = :spam_score,
-        spam_tier = 'clean',
-        date_posted = COALESCE(:date_posted, date_posted),
-        seniority_level = COALESCE(:seniority_level, seniority_level),
-        is_remote = COALESCE(:is_remote, is_remote),
-        role_classification = COALESCE(:role_classification, role_classification),
-        salary_min = COALESCE(:salary_min, salary_min),
-        salary_max = COALESCE(:salary_max, salary_max),
-        salary_currency = COALESCE(:salary_currency, salary_currency),
-        salary_period = COALESCE(:salary_period, salary_period),
-        zip_code = COALESCE(:zip_code, zip_code)
-    WHERE job_posting_id::text = :job_posting_id
-    """
-)
-
-_UPDATE_FLAGGED_SQL = text(
-    """
-    UPDATE dbo.job_postings SET
-        quality_score = :quality_score,
-        overall_confidence = :overall_confidence,
-        field_confidence = CAST(:field_confidence AS jsonb),
-        temporal_period = :temporal_period,
-        borderplex_subregion = :borderplex_subregion,
-        naics_code = :naics_code,
-        soc_code = :soc_code,
-        sector_id = :sector_id,
-        employer_profile_id = COALESCE(CAST(:employer_profile_id AS uuid), employer_profile_id),
-        is_spam = NULL,
-        spam_score = :spam_score,
-        spam_tier = 'flagged',
+        spam_tier = :spam_tier,
         date_posted = COALESCE(:date_posted, date_posted),
         seniority_level = COALESCE(:seniority_level, seniority_level),
         is_remote = COALESCE(:is_remote, is_remote),
@@ -481,6 +439,7 @@ def _cluster_member_ids(session: Session, cluster_id: str, *, exclude_job_postin
     return [str(row["job_posting_id"]) for row in rows]
 
 
+# EXEMPLAR: Phase 2 reference — fuzzy dedup persistence contract validation uses imperative FuzzyDedupContractError checks on stub, unique-clear, and clustered survivor paths before SQL updates.
 def apply_fuzzy_dedup_result(
     session: Session,
     job_posting_id: str,
@@ -507,9 +466,11 @@ def apply_fuzzy_dedup_result(
         prior_cluster = str(prior_cluster_id).strip() if prior_cluster_id else None
         prior_was_survivor = existing.get("is_duplicate") is False and prior_cluster is not None
         if result.is_duplicate:
-            raise ValueError("duplicate fuzzy dedup results must include duplicate_cluster_id")
+            raise FuzzyDedupContractError("duplicate fuzzy dedup results must include duplicate_cluster_id")
         if matched_id or survivor_id:
-            raise ValueError("non-duplicate fuzzy dedup results may not include cluster or survivor metadata")
+            raise FuzzyDedupContractError(
+                "non-duplicate fuzzy dedup results may not include cluster or survivor metadata"
+            )
         session.execute(
             _UPDATE_FUZZY_DEDUP_SQL,
             {
@@ -545,11 +506,11 @@ def apply_fuzzy_dedup_result(
 
     effective_survivor_id = survivor_id or (job_posting_id if not result.is_duplicate else None)
     if effective_survivor_id is None:
-        raise ValueError("duplicate fuzzy dedup results must include survivor_job_posting_id")
+        raise FuzzyDedupContractError("duplicate fuzzy dedup results must include survivor_job_posting_id")
     if result.is_duplicate and effective_survivor_id == job_posting_id:
-        raise ValueError("duplicate fuzzy dedup results cannot mark the current row as survivor")
+        raise FuzzyDedupContractError("duplicate fuzzy dedup results cannot mark the current row as survivor")
     if not result.is_duplicate and effective_survivor_id != job_posting_id:
-        raise ValueError("non-duplicate clustered results must keep the current row as survivor")
+        raise FuzzyDedupContractError("non-duplicate clustered results must keep the current row as survivor")
 
     session.execute(
         _UPDATE_FUZZY_DEDUP_SQL,
@@ -583,6 +544,8 @@ def apply_fuzzy_dedup_result(
     return True
 
 
+# EXEMPLAR: Phase 2 reference — savepoint pattern
+# Dedup runs inside session.begin_nested() so failures roll back only the savepoint, not the outer promotion transaction.
 def _apply_fuzzy_dedup_after_promotion(
     session: Session,
     *,
@@ -597,6 +560,17 @@ def _apply_fuzzy_dedup_after_promotion(
         with session.begin_nested():
             result = run_fuzzy_dedup(session, job_posting_id)
             apply_fuzzy_dedup_result(session, job_posting_id, result)
+    except FuzzyDedupContractError as exc:
+        # Contract violations raised by apply_fuzzy_dedup_result (e.g. missing
+        # cluster_id on a duplicate, wrong survivor_id) get a distinct log key so
+        # observability dashboards can count them separately from infrastructure
+        # failures (DB errors, network timeouts) logged below.
+        log.warning(
+            "fuzzy_dedup_contract_violation",
+            normalized_job_id=normalized_job_id,
+            job_posting_id=job_posting_id,
+            error=str(exc),
+        )
     except Exception as exc:
         log.warning(
             "fuzzy_dedup_after_promotion_failed",
@@ -606,36 +580,39 @@ def _apply_fuzzy_dedup_after_promotion(
         )
 
 
-def apply_enrichment_to_job_postings(
+@dataclass(frozen=True)
+class _PromotionCoercionSkip:
+    """Return when promotion must not run an ``UPDATE`` (caller returns False)."""
+
+    reason: Literal["rejected_spam", "no_quality_score", "invalid_quality_score"]
+
+
+@dataclass(frozen=True)
+class _PromotionCoercionReady:
+    """Coerced SQL bind params and spam tier state for tier routing."""
+
+    params_base: dict[str, Any]
+    tier: str
+    spam_score: Any
+    raw_tier: Any
+
+
+def _coerce_enrichment_params(
     session: Session,
     normalized_job_id: int,
     record_enriched_payload: dict[str, Any],
-) -> bool:
+    resolved: dict[str, Any],
+) -> _PromotionCoercionSkip | _PromotionCoercionReady:
     """
-    Apply enrichment columns to ``job_postings`` when tier allows.
+    Normalize payload + resolved row into ``params_base`` and spam tier, or signal skip.
 
-    Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
-    rejected tier, or missing quality score when needed).
+    Coerces promotion bind parameters and spam tier from the payload and ``resolved`` row;
+    reads ``normalized_jobs`` via ``_derive_quality_from_normalized_job`` when ``quality_score``
+    is missing; may select or upsert ``employer_profiles`` when ``employer_metadata`` is present
+    and ``company_id`` resolves. Does **not** run ``UPDATE`` on ``job_postings`` (caller only).
     """
-    resolved = resolve_job_posting_row(session, normalized_job_id)
-    if not resolved:
-        resolved = _insert_job_posting_from_normalized(session, normalized_job_id)
-        if not resolved:
-            log.info(
-                "enrichment_promotion_no_job_posting",
-                normalized_job_id=normalized_job_id,
-            )
-            return False
-
-    job_posting_id = resolved.get("job_posting_id")
-    company_id = resolved.get("company_id")
-    if not job_posting_id or not str(company_id).strip():
-        log.warning(
-            "enrichment_promotion_skipped_no_company_id",
-            normalized_job_id=normalized_job_id,
-        )
-        return False
-
+    job_posting_id = resolved["job_posting_id"]
+    company_id = resolved["company_id"]
     raw_tier = record_enriched_payload.get("spam_tier")
     tier = (raw_tier or "").strip().lower() if isinstance(raw_tier, str) else ""
     spam_score = record_enriched_payload.get("spam_score")
@@ -655,7 +632,7 @@ def apply_enrichment_to_job_postings(
             normalized_job_id=normalized_job_id,
             job_posting_id=job_posting_id,
         )
-        return False
+        return _PromotionCoercionSkip(reason="rejected_spam")
 
     quality_score = record_enriched_payload.get("quality_score")
     merged_payload_for_confidence: dict[str, Any] = record_enriched_payload
@@ -678,12 +655,12 @@ def apply_enrichment_to_job_postings(
             "enrichment_promotion_skipped_no_quality_score",
             normalized_job_id=normalized_job_id,
         )
-        return False
+        return _PromotionCoercionSkip(reason="no_quality_score")
 
     try:
         qs_f = float(quality_score)
     except (TypeError, ValueError):
-        return False
+        return _PromotionCoercionSkip(reason="invalid_quality_score")
 
     fc_merged = merge_field_confidence_for_storage(merged_payload_for_confidence)
     fc_json = json.dumps(fc_merged)
@@ -776,6 +753,65 @@ def apply_enrichment_to_job_postings(
         **derived_output_fields,
     }
 
+    return _PromotionCoercionReady(
+        params_base=params_base,
+        tier=tier,
+        spam_score=spam_score,
+        raw_tier=raw_tier,
+    )
+
+
+def apply_enrichment_to_job_postings(
+    session: Session,
+    normalized_job_id: int,
+    record_enriched_payload: RecordEnrichedPayload,
+) -> bool:
+    """
+    Apply enrichment columns to ``job_postings`` when tier allows.
+
+    ``record_enriched_payload`` is validated at the agent boundary via
+    :class:`enrichment.schemas.RecordEnrichedPayload`.
+
+    Returns True if an ``UPDATE`` ran, False if skipped (no row, no company_id,
+    rejected tier, or missing quality score when needed).
+    """
+    resolved = resolve_job_posting_row(session, normalized_job_id)
+    if not resolved:
+        resolved = _insert_job_posting_from_normalized(session, normalized_job_id)
+        if not resolved:
+            log.info(
+                "enrichment_promotion_no_job_posting",
+                normalized_job_id=normalized_job_id,
+            )
+            return False
+
+    job_posting_id = resolved.get("job_posting_id")
+    company_id = resolved.get("company_id")
+    if not job_posting_id or not str(company_id).strip():
+        log.warning(
+            "enrichment_promotion_skipped_no_company_id",
+            normalized_job_id=normalized_job_id,
+        )
+        return False
+
+    payload_dict: dict[str, Any] = record_enriched_payload.model_dump(
+        mode="python",
+        exclude_unset=True,
+    )
+    coercion = _coerce_enrichment_params(
+        session,
+        normalized_job_id,
+        payload_dict,
+        resolved,
+    )
+    if isinstance(coercion, _PromotionCoercionSkip):
+        return False
+
+    params_base = coercion.params_base
+    tier = coercion.tier
+    spam_score = coercion.spam_score
+    raw_tier = coercion.raw_tier
+
     def _finish_with_dedup() -> bool:
         _apply_fuzzy_dedup_after_promotion(
             session,
@@ -792,7 +828,12 @@ def apply_enrichment_to_job_postings(
         return True
 
     if tier == "uncertain" or spam_score is None:
-        session.execute(_UPDATE_UNCERTAIN_SQL, params_base)
+        promo_params = {
+            **params_base,
+            "is_spam": None,
+            "spam_tier": "uncertain",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_uncertain_spam",
             normalized_job_id=normalized_job_id,
@@ -803,7 +844,12 @@ def apply_enrichment_to_job_postings(
     try:
         spam_f = float(spam_score)
     except (TypeError, ValueError):
-        session.execute(_UPDATE_UNCERTAIN_SQL, params_base)
+        promo_params = {
+            **params_base,
+            "is_spam": None,
+            "spam_tier": "uncertain",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_uncertain_spam_invalid_score",
             normalized_job_id=normalized_job_id,
@@ -814,7 +860,12 @@ def apply_enrichment_to_job_postings(
     params = {**params_base, "spam_score": spam_f}
 
     if tier == "flagged":
-        session.execute(_UPDATE_FLAGGED_SQL, params)
+        promo_params = {
+            **params,
+            "is_spam": None,
+            "spam_tier": "flagged",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_flagged",
             normalized_job_id=normalized_job_id,
@@ -823,7 +874,12 @@ def apply_enrichment_to_job_postings(
         return _finish_with_dedup()
 
     if tier == "clean":
-        session.execute(_UPDATE_CLEAN_SQL, params)
+        promo_params = {
+            **params,
+            "is_spam": False,
+            "spam_tier": "clean",
+        }
+        session.execute(_UPDATE_COMMON_SQL, promo_params)
         log.info(
             "enrichment_promotion_applied_clean",
             normalized_job_id=normalized_job_id,
