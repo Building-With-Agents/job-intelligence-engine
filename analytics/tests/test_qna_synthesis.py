@@ -303,7 +303,6 @@ def test_rt005_table_names_not_in_facts_json() -> None:
     Previous broken output: 'The source tables referenced in the data are:
     companies, job_postings, and postal_geo_data.'
     """
-    import json
     import re
 
     captured_prompts: list[str] = []
