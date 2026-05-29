@@ -24,8 +24,11 @@ clustering:
   # HDBSCAN min_cluster_size. Smaller = more, tighter clusters. Min 1.
   # Tier 2 (#321): 10 → 5 to split mega-clusters (e.g. "Data Center
   # Infrastructure Engineer" absorbed 1,046 postings at size=10).
+  # Issue #400: 5 → 3 to reduce noise rate for sparse role families
+  # (Cybersecurity, unclassified) that were systematically dropped as
+  # HDBSCAN outliers (label = -1) at size=5.
   # Env override: CLUSTER_MIN_CLUSTER_SIZE
-  min_cluster_size: 5
+  min_cluster_size: 3
 
   # HDBSCAN min_samples (density floor). Min 1.
   # Phase 1 of #327: reverted 10 → 5. Tier 2's value of 10 over-tightened

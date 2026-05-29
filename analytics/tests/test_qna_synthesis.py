@@ -19,7 +19,12 @@ from analytics.query_engine.fixtures import (
 )
 from analytics.query_engine.qna import run_analytics_qna
 from analytics.query_engine.schemas import CostLedger, LLMCallCost
-from analytics.query_engine.synthesis import AGENT_FOLLOWUP, AGENT_SYNTHESIS, synthesize_answer
+from analytics.query_engine.synthesis import (
+    AGENT_FOLLOWUP,
+    AGENT_SYNTHESIS,
+    _build_main_prompt,
+    synthesize_answer,
+)
 
 
 def test_refusal_skips_llm_and_sets_message() -> None:
@@ -179,6 +184,45 @@ def test_periods_and_citations_echo() -> None:
     assert r.periods_described == "2025-Q1"
     assert len(r.citations) == 1
     assert r.citations[0].citation_id == "c1"
+
+
+# ---------------------------------------------------------------------------
+# Comparison-intent prompt clause (JIE #340 cycle 3)
+# ---------------------------------------------------------------------------
+
+# Stable substring of the comparison clause added in _build_main_prompt for
+# intent_label == "comparison".  Pinning it here lets refactors of the clause
+# wording still trip the test if the magnitude-difference instruction is dropped.
+_COMPARISON_CLAUSE_MARKER = "magnitude difference"
+
+
+def test_comparison_clause_present_for_comparison_intent() -> None:
+    """When intent_label == 'comparison', _build_main_prompt must include the
+    magnitude-difference instruction so the synthesis LLM does not over-hedge
+    on thin comparison data (JIE #340 cycle 3)."""
+    bundle = sample_evidence_bundle_adequate()
+    prompt = _build_main_prompt("Compare X vs Y", "comparison", bundle)
+    assert _COMPARISON_CLAUSE_MARKER in prompt, (
+        "comparison_clause must include the magnitude-difference instruction; "
+        "see analytics/query_engine/synthesis.py:_build_main_prompt"
+    )
+    # The carve-out for the general thin-data rule must also be present so
+    # the LLM does not receive a "be cautious" signal that contradicts the
+    # comparison clause's "do not refuse on thin data" instruction.
+    assert "(and this is not a comparison question)" in prompt
+
+
+def test_comparison_clause_absent_for_non_comparison_intents() -> None:
+    """The clause must only fire for intent_label == 'comparison'.  Any other
+    label (trend, aggregate_salary, role_evolution, geographic, …) must not
+    receive the magnitude-difference instruction."""
+    bundle = sample_evidence_bundle_adequate()
+    for intent_label in ("aggregate_salary", "trend", "role_evolution", "geographic"):
+        prompt = _build_main_prompt("q", intent_label, bundle)
+        assert _COMPARISON_CLAUSE_MARKER not in prompt, (
+            f"comparison clause leaked into intent_label={intent_label!r}; "
+            "the clause must be gated on intent_label == 'comparison'"
+        )
 
 
 def test_run_analytics_qna_pipeline() -> None:
