@@ -7,7 +7,10 @@ from contextlib import redirect_stdout
 
 from eval.qa_eval import print_console_summary
 from eval.qa_scoring import (
+    _CATASTROPHIC_LATENCY_MULTIPLIER,
+    _DEFAULT_LATENCY_SLA_SECONDS,
     QAItemScores,
+    _quantile,
     composite_score,
     compute_item_scores,
     confusion_rows,
@@ -188,6 +191,102 @@ def test_latency_at_sla() -> None:
 def test_latency_above_sla() -> None:
     s, _ = score_latency_sla(latency_seconds=90.0, sla_seconds=45.0)
     assert abs(s - 0.5) < 1e-6
+
+
+def test_latency_catastrophic_exclusion_returns_none(monkeypatch) -> None:
+    """Latency > SLA × _CATASTROPHIC_LATENCY_MULTIPLIER returns (None, reason) (JIE #270)."""
+    sla = 15.0
+    catastrophic = sla * _CATASTROPHIC_LATENCY_MULTIPLIER + 1.0  # just over threshold
+    s, reason = score_latency_sla(latency_seconds=catastrophic, sla_seconds=sla)
+    assert s is None, "catastrophic latency must return None, not a float score"
+    assert "excluded" in reason.lower()
+    assert "catastrophic" in reason.lower()
+
+
+def test_latency_just_below_catastrophic_threshold_is_scorable() -> None:
+    """Latency exactly at SLA×10 boundary is NOT catastrophic; it should return a float score."""
+    sla = 15.0
+    threshold = sla * _CATASTROPHIC_LATENCY_MULTIPLIER
+    just_under = threshold - 0.001
+    s, _ = score_latency_sla(latency_seconds=just_under, sla_seconds=sla)
+    assert s is not None and isinstance(s, float)
+    assert 0.0 <= s <= 1.0
+
+
+def test_latency_default_sla_is_15s() -> None:
+    """Default SLA tightened to 15s (was 45s); a 5.6s response scores 1.0 (JIE #270)."""
+    assert _DEFAULT_LATENCY_SLA_SECONDS == 15.0
+    s, _ = score_latency_sla(latency_seconds=5.6, sla_seconds=15.0)
+    assert s == 1.0
+
+
+def test_quantile_p95_computation() -> None:
+    """_quantile(values, 0.95) returns a value close to the 95th percentile (JIE #270)."""
+    # 100 values: 0.0 to 99.0; p95 should be near 94/95
+    values = [float(i) for i in range(100)]
+    p95 = _quantile(values, 0.95)
+    # statistics.quantiles(n=100)[94] is the 95th percentile cut point
+    assert 93.0 <= p95 <= 95.0
+
+
+def test_quantile_single_value_returns_itself() -> None:
+    assert _quantile([7.5], 0.95) == 7.5
+
+
+def test_quantile_p50_is_median() -> None:
+    """p50 from _quantile should match the true median for a uniform list."""
+    values = [float(i) for i in range(1, 101)]
+    p50 = _quantile(values, 0.50)
+    import statistics
+
+    assert abs(p50 - statistics.median(values)) < 5.0  # within reasonable range
+
+
+def test_composite_all_none_when_latency_also_catastrophic() -> None:
+    """When all four core metrics are None (incl. latency from catastrophic exclusion), composite is None (JIE #270)."""
+    scores = QAItemScores(
+        intent_accuracy=None,
+        evidence_citation=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
+        latency_sla=None,
+        answerability=None,
+        correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
+        comments={},
+    )
+    assert composite_score(scores) is None
+
+
+def test_print_console_summary_handles_catastrophic_latency_none() -> None:
+    """print_console_summary must not crash when latency_sla=None (catastrophic JIE #270 case)."""
+    catastrophic = QAItemScores(
+        intent_accuracy=0.8,
+        evidence_citation=0.7,
+        confidence_self_consistency=0.9,
+        confidence_in_expected_range=None,
+        latency_sla=None,  # catastrophic exclusion
+        answerability=None,
+        correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
+        comments={
+            "intent_accuracy": "intent matches",
+            "evidence_citation": "overlap ok",
+            "confidence_self_consistency": "calibration ok",
+            "confidence_in_expected_range": "no range",
+            "latency_sla": "excluded: catastrophic latency 200.0s exceeds threshold 150s (SLA×10)",
+            "answerability": "skipped",
+            "correct_refusal": "N/A",
+        },
+    )
+    rows = [("gq-cat", catastrophic, None)]
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        print_console_summary(rows=rows, worst_n=5)
+    out = buf.getvalue()
+    assert " — " in out  # None renders as dash, not crash
 
 
 def test_compute_failure_content_excluded_latency_computed() -> None:

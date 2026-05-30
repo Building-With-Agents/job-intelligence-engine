@@ -77,6 +77,7 @@ def _quantile(values: list[float], q: float) -> float:
     idx = max(0, min(int(q * 100) - 1, len(cuts) - 1))
     return cuts[idx]
 
+
 # Whether the golden *expected* intent is evaluated for answerability (SQL rows).
 # Only the Week 9 eval harness (Pair C) maintains this map as data/pipeline
 # capabilities land; the classifier does not set this.
@@ -400,9 +401,7 @@ def coerce_eval_response_confidence(raw: Any) -> float:
         return 0.0
 
 
-def score_latency_sla(
-    *, latency_seconds: float, sla_seconds: float | None = None
-) -> tuple[float | None, str]:
+def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float | None, str]:
     """Normalized score: 1.0 at or below SLA, decays above.
 
     Returns ``(None, reason)`` when *latency_seconds* exceeds the catastrophic

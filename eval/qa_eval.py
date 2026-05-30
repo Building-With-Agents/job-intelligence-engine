@@ -331,9 +331,7 @@ def _evaluator_factory(sla_seconds: float | None):
                 )
             )
         # Raw latency seconds — persisted for tail-aggregate computation at run level (JIE #270).
-        evals.append(
-            Evaluation(name="latency_seconds_raw", value=raw_latency, comment="wall-clock seconds")
-        )
+        evals.append(Evaluation(name="latency_seconds_raw", value=raw_latency, comment="wall-clock seconds"))
         if scores.answerability is not None:
             ab_c = (scores.comments.get("answerability") or "")[:500]
             evals.append(Evaluation(name="answerability", value=float(scores.answerability), comment=ab_c))
@@ -630,14 +628,14 @@ def print_console_summary(
     def _fmt(v: float | None) -> str:
         return f"{v:.2f}" if v is not None else " — "
 
-    ranked = sorted(rows, key=lambda r: composite_score(r[1]))
+    ranked = sorted(rows, key=lambda r: (composite_score(r[1]) is None, composite_score(r[1]) or 0.0))
     print(f"\n=== Worst {worst_n} by composite (mean of four scores) ===")
     for gq_id, sc, err in ranked[:worst_n]:
         ce = err or ""
         print(
-            f"  {gq_id}: composite={composite_score(sc):.3f} "
+            f"  {gq_id}: composite={_fmt(composite_score(sc))} "
             f"i={_fmt(sc.intent_accuracy)} e={_fmt(sc.evidence_citation)} "
-            f"cf={_fmt(sc.confidence_self_consistency)} l={sc.latency_sla:.2f} {ce[:60]}"
+            f"cf={_fmt(sc.confidence_self_consistency)} l={_fmt(sc.latency_sla)} {ce[:60]}"
         )
 
 
