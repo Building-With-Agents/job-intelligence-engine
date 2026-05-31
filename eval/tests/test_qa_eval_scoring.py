@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 from contextlib import redirect_stdout
 
-from eval.qa_eval import print_console_summary
+from eval.qa_eval import _run_evaluators_average, print_console_summary
 from eval.qa_scoring import (
     _CATASTROPHIC_LATENCY_MULTIPLIER,
     _DEFAULT_LATENCY_SLA_SECONDS,
@@ -666,3 +666,80 @@ def test_intent_eval_trace_metadata_mismatch() -> None:
     assert m["eval_intent_correct"] == 0.0
     assert m["eval_intent_false_negative_class"] == "geographic"
     assert m["eval_intent_false_positive_class"] == "comparison"
+
+
+# ---------------------------------------------------------------------------
+# _run_evaluators_average — catastrophic-exclusion count and SLA consistency
+# ---------------------------------------------------------------------------
+
+
+def _make_item_result(latency_raw: float, latency_sla: float | None) -> object:
+    """Build a minimal item_result-like object for _run_evaluators_average.
+
+    Simulates what combined_evaluator emits: always latency_seconds_raw,
+    latency_sla only when not catastrophic.
+    """
+    from types import SimpleNamespace
+
+    evals = [SimpleNamespace(name="latency_seconds_raw", value=latency_raw)]
+    if latency_sla is not None:
+        evals.append(SimpleNamespace(name="latency_sla", value=latency_sla))
+    return SimpleNamespace(evaluations=evals)
+
+
+def test_run_evaluators_n_cat_reflects_catastrophic_exclusions() -> None:
+    """catastrophic_excluded in the run-level comment must equal the number of items
+    where latency_sla was excluded (None), NOT the number of malformed items (JIE #270).
+
+    Setup: 4 normal items (latency_sla emitted) + 1 catastrophic (latency_sla omitted).
+    Expected: catastrophic_excluded=1 in the p95_latency_seconds comment.
+    """
+    items = [
+        _make_item_result(3.0, 1.0),
+        _make_item_result(4.0, 1.0),
+        _make_item_result(5.0, 1.0),
+        _make_item_result(6.0, 1.0),
+        _make_item_result(200.0, None),  # catastrophic — latency_sla excluded
+    ]
+    run_mean = _run_evaluators_average()[0]
+    out = run_mean(item_results=items)
+
+    p95_ev = next((e for e in out if e.name == "p95_latency_seconds"), None)
+    assert p95_ev is not None, "p95_latency_seconds must be emitted"
+    # Comment must report 1 catastrophic exclusion, not 0
+    assert "catastrophic_excluded=1" in p95_ev.comment, (
+        f"Expected catastrophic_excluded=1 in comment, got: {p95_ev.comment!r}"
+    )
+    # n= counts raw latency entries; all 5 items have latency_seconds_raw
+    assert "n=5" in p95_ev.comment
+    assert "n_total=5" in p95_ev.comment
+
+
+def test_run_evaluators_p95_sla_score_uses_config_sla(monkeypatch) -> None:
+    """p95_latency_sla_score must use qa_latency_sla_seconds() (i.e., respect
+    QA_EVAL_LATENCY_SLA_SECONDS env var) rather than the hardcoded default (JIE #270).
+
+    If _DEFAULT_LATENCY_SLA_SECONDS (15s) were used instead of a custom 30s SLA,
+    p95_latency_sla_score for a p95 of 20s would be 15/20 = 0.75.
+    With sla=30s it is 30/20 = 1.0.  We assert the latter.
+    """
+    import eval._config as cfg
+
+    monkeypatch.setattr(cfg, "qa_latency_sla_seconds", lambda: 30.0)
+    # Invalidate the cached_accessor so the monkeypatched lambda takes effect
+    if hasattr(cfg.qa_latency_sla_seconds, "cache_clear"):
+        cfg.qa_latency_sla_seconds.cache_clear()
+
+    # 100 values; p95 ≈ 20s, well under the custom 30s SLA → score must be 1.0
+    items = [_make_item_result(float(i), 1.0) for i in range(1, 101)]
+    run_mean = _run_evaluators_average()[0]
+    out = run_mean(item_results=items)
+
+    p95_sla_ev = next((e for e in out if e.name == "p95_latency_sla_score"), None)
+    assert p95_sla_ev is not None, "p95_latency_sla_score must be emitted"
+    # p95 of [1..100] is ~95s; with sla=30 that's 30/95 ≈ 0.315.
+    # With the old hardcoded 15s sla it would be 15/95 ≈ 0.158.
+    # Verify the comment references the custom SLA (30.0), not the default (15.0).
+    assert "30.0s" in p95_sla_ev.comment, (
+        f"p95_latency_sla_score comment must reference custom SLA=30.0s, got: {p95_sla_ev.comment!r}"
+    )

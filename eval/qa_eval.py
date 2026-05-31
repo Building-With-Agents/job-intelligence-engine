@@ -362,7 +362,8 @@ def _run_evaluators_average() -> list:
     def run_mean(*, item_results: list, **kwargs: Any):
         from langfuse import Evaluation
 
-        from eval.qa_scoring import _DEFAULT_LATENCY_SLA_SECONDS, _quantile
+        from eval._config import qa_latency_sla_seconds
+        from eval.qa_scoring import _quantile
 
         sums: dict[str, list[float]] = {
             "intent_accuracy": [],
@@ -404,8 +405,13 @@ def _run_evaluators_average() -> list:
         if lats:
             import statistics
 
-            sla = _DEFAULT_LATENCY_SLA_SECONDS
-            n_cat = n_total - len(lats)
+            # Use the same SLA as per-item scoring so p95_latency_sla_score is
+            # consistent with mean_latency_sla when QA_EVAL_LATENCY_SLA_SECONDS is set.
+            sla = qa_latency_sla_seconds()
+            # Catastrophic items emit latency_seconds_raw but NOT latency_sla.
+            # n_cat = items excluded from latency_sla scoring = n_total - len(sums["latency_sla"]).
+            # (NOT n_total - len(lats), which counts malformed items with no raw latency.)
+            n_cat = n_total - len(sums["latency_sla"])
             p95 = _quantile(lats, 0.95)
             cmt_base = f"n={len(lats)} catastrophic_excluded={n_cat} n_total={n_total}"
             out.append(Evaluation(name="mean_latency_seconds", value=statistics.mean(lats), comment=cmt_base))
