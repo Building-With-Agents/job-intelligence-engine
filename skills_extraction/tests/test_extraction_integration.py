@@ -182,7 +182,7 @@ def test_extract_context_returns_empty_list() -> None:
     result, meta = extract_context(job)
     assert isinstance(result, list)
     assert len(result) == 0
-    assert meta.get("tokens_used") == 0
+    assert meta.tokens_used == 0
 
 
 @patch("skills_extraction.extractors.tasks.invoke_structured_extraction_llm")

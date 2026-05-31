@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from typing import Any, cast
+from typing import cast
 
 import structlog
 
 from common.types import ContextSignal, JobRecord, SpanRecord
 from common.types.extraction_schemas import ContextSignalType
+from common.types.extraction_types import ExtractionMetadata, ExtractorRunInfo
 
 log = structlog.get_logger()
 
@@ -79,7 +80,7 @@ def _iter_job_fields(job_record: JobRecord) -> Iterable[tuple[str, str]]:
 
 def extract_context(
     job_record: JobRecord,
-) -> tuple[list[ContextSignal], dict[str, Any]]:
+) -> tuple[list[ContextSignal], ExtractorRunInfo]:
     """Extract context signals using Pass 1 regex patterns only (no LLM).
 
     Parameters
@@ -89,33 +90,11 @@ def extract_context(
 
     Returns
     -------
-    tuple[list[ContextSignal], dict]
-        Signals and metadata. ``tokens_used`` is always 0. On catastrophic
-        regex failure, returns ``[]`` and logs a warning (never raises).
+    tuple[list[ContextSignal], ExtractorRunInfo]
+        Signals and structured run metadata. ``tokens_used`` is always 0 (no LLM).
+        On catastrophic regex failure, returns ``[]`` and logs a warning (never raises).
     """
-    metadata: dict[str, Any] = {
-        "tokens_used": 0,
-        "cost_usd": 0.0,
-        "latency_ms": 0,
-        "success": True,
-        "extraction_failed": False,
-        "error_reason": None,
-        "provider": "pattern-matching",
-        "model": "none",
-        "extraction_metadata": {
-            "extraction_version": "week5-context-pass1",
-            "model_used": "none",
-            "model_tier": "none",
-            "tokens_used": 0,
-            "cost_usd": 0.0,
-            "extraction_duration_ms": 0,
-            "pass1_tool_count": 0,
-            "pass2_llm_dimensions": [],
-            "pass2_llm_calls": 0,
-            "extraction_warnings": [],
-        },
-    }
-
+    extraction_warnings: list[str] = []
     signals: list[ContextSignal] = []
 
     try:
@@ -148,21 +127,38 @@ def extract_context(
                             signal_type=signal_type,
                             field_source=field_source,
                         )
-                        metadata["extraction_metadata"]["extraction_warnings"].append(f"invalid_span:{signal_type}")
+                        extraction_warnings.append(f"invalid_span:{signal_type}")
 
         log.info(
             "context_extraction_complete",
             context_signal_count=len(signals),
             field_count=len(fields),
         )
-        return signals, metadata
+        return signals, ExtractorRunInfo(
+            provider="pattern-matching",
+            model="none",
+            extraction_metadata=ExtractionMetadata(
+                extraction_version="week5-context-pass1",
+                model_used="none",
+                model_tier="none",
+                extraction_warnings=extraction_warnings,
+            ),
+        )
     except Exception as e:
         log.warning("context_extraction_pattern_failure", error_type=type(e).__name__)
-        metadata["success"] = False
-        metadata["extraction_failed"] = True
-        metadata["error_reason"] = type(e).__name__
-        metadata["extraction_metadata"]["extraction_warnings"].append("pattern_failure")
-        return [], metadata
+        return [], ExtractorRunInfo(
+            success=False,
+            extraction_failed=True,
+            error_reason=type(e).__name__,
+            provider="pattern-matching",
+            model="none",
+            extraction_metadata=ExtractionMetadata(
+                extraction_version="week5-context-pass1",
+                model_used="none",
+                model_tier="none",
+                extraction_warnings=["pattern_failure"],
+            ),
+        )
 
 
 def _format_pass1_context_for_prompt(pass1_context: list[ContextSignal] | None) -> str:

@@ -27,6 +27,11 @@ def test_resolve_llm_naics_pick_embedded_code() -> None:
     assert _resolve_llm_naics_pick("The code is 541511 for this industry.", codes) == "541511"
 
 
+def test_resolve_llm_naics_pick_ambiguous_embedded_codes_returns_unknown() -> None:
+    codes = {"541511", "541512"}
+    assert _resolve_llm_naics_pick("Either 541511 or 541512", codes) == "unknown"
+
+
 def test_naics_classification_output_model() -> None:
     m = NAICSClassificationOutput(naics_code="unknown")
     assert m.naics_code == "unknown"
