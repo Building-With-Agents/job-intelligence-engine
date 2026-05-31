@@ -171,6 +171,15 @@ def test_batch_enrichment_complete_has_spam_tier_distribution(
     # SOC/NAICS gap metrics emitted (JIE #15)
     assert "naics_unclassified_count" in batch_data, "naics_unclassified_count missing from enrichment_complete"
     assert "soc_unclassified_count" in batch_data, "soc_unclassified_count missing from enrichment_complete"
+    # Denominator must be enriched_count (1), NOT total_processed (2).
+    # The spam-rejected record never went through classification, so it isn't "unclassified".
+    # With 1 enriched record that has both soc_code and naics_code, unclassified counts are 0.
+    assert batch_data["soc_unclassified_count"] == 0, (
+        f"soc_unclassified_count should be 0 (enriched=1, classified=1); got {batch_data['soc_unclassified_count']}"
+    )
+    assert batch_data["naics_unclassified_count"] == 0, (
+        f"naics_unclassified_count should be 0 (enriched=1, classified=1); got {batch_data['naics_unclassified_count']}"
+    )
 
     # Distribution dicts present for temporal/borderplex observability
     assert "temporal_period_distribution" in batch_data
@@ -204,34 +213,45 @@ def test_no_tracer_log_event_when_tracer_is_none(
 
 
 @patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=True)
-@patch("enrichment.agent.resolve_sector", return_value=None)
-@patch.object(EnrichmentAgent, "enrich_record")
+@patch.object(EnrichmentAgent, "_enrich_batch_parallel_bridge")
 @patch("common.llm_adapter.get_tracer")
 def test_parallel_path_batch_enrichment_complete_emitted(
     mock_get_tracer: MagicMock,
-    mock_enrich: MagicMock,
-    _mock_sector: MagicMock,
+    mock_bridge: MagicMock,
     _mock_parallel: MagicMock,
 ) -> None:
     """When ENRICHMENT_PARALLEL=1 (parallel path), the batch-level enrichment_complete
     Langfuse trace must still be emitted (JIE #15).
 
-    The parallel path returns early before the serial tracer block, so the trace
-    must be explicitly added before build_record_enriched_event().
+    Mocks ``_enrich_batch_parallel_bridge`` (the sync-to-async bridge) to return
+    a pre-built result list.  This is necessary because the parallel path calls
+    ``enrich_record_async`` (not the sync ``enrich_record``), so mocking the sync
+    method has no effect on the actual execution path.
     """
     mock_tracer = MagicMock()
     mock_get_tracer.return_value = mock_tracer
 
-    mock_enrich.return_value = {
-        "spam_score": 0.05,
-        "spam_tier": "clean",
-        "overall_confidence": 0.9,
-        "field_confidence": {},
-        "soc_code": "15-1252",
-        "naics_code": "541511",
-        "quality_score": 0.85,
-        "quality_components": {},
+    posting = {
+        "posting_id": 42,
+        "title": "Senior Python Engineer",
+        "company": "Acme Corp",
+        "source": "jsearch",
+        "normalized_job_id": 42,
     }
+    mock_bridge.return_value = [
+        {
+            "spam_score": 0.05,
+            "spam_tier": "clean",
+            "overall_confidence": 0.9,
+            "field_confidence": {},
+            "soc_code": "15-1252",
+            "naics_code": "541511",
+            "quality_score": 0.85,
+            "quality_components": {},
+            "__posting": posting,
+            "__row": {},
+        },
+    ]
 
     agent = EnrichmentAgent()
     event = EventEnvelope(
@@ -256,3 +276,6 @@ def test_parallel_path_batch_enrichment_complete_emitted(
     assert "temporal_period_distribution" in batch_data
     assert "borderplex_subregion_distribution" in batch_data
     assert batch_data.get("execution_mode") == "parallel"
+    # Verify unclassified counts use enriched_count (1) as denominator, not total_processed.
+    assert batch_data["soc_unclassified_count"] == 0, "1 enriched with soc_code → 0 unclassified"
+    assert batch_data["naics_unclassified_count"] == 0, "1 enriched with naics_code → 0 unclassified"
