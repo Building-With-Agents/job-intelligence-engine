@@ -909,23 +909,24 @@ class EnrichmentAgent(BaseAgent):
                         # Emits span attributes on the job_span_ctx so Langfuse shows
                         # quality breakdown alongside NAICS/SOC/employer classifier calls.
                         if tracer:
-                            _spam_score = enriched.get("spam_score")
-                            _spam_tier = enriched.get("spam_tier") or posting.get("spam_tier")
-                            tracer.log_event(
-                                "enrichment_record_quality_spam",
-                                {
-                                    "quality_score": enriched.get("quality_score"),
-                                    "quality_components": enriched.get("quality_components") or {},
-                                    "spam_score": _spam_score,
-                                    "spam_tier": _spam_tier,
-                                    "overall_confidence": enriched.get("overall_confidence"),
-                                    "field_confidence": enriched.get("field_confidence") or {},
-                                    "soc_code": enriched.get("soc_code"),
-                                    "naics_code": enriched.get("naics_code"),
-                                    "role_classification": enriched.get("role_classification"),
-                                    "seniority": enriched.get("seniority"),
-                                },
-                            )
+                            with suppress(Exception):
+                                _spam_score = enriched.get("spam_score")
+                                _spam_tier = enriched.get("spam_tier") or posting.get("spam_tier")
+                                tracer.log_event(
+                                    "enrichment_record_quality_spam",
+                                    {
+                                        "quality_score": enriched.get("quality_score"),
+                                        "quality_components": enriched.get("quality_components") or {},
+                                        "spam_score": _spam_score,
+                                        "spam_tier": _spam_tier,
+                                        "overall_confidence": enriched.get("overall_confidence"),
+                                        "field_confidence": enriched.get("field_confidence") or {},
+                                        "soc_code": enriched.get("soc_code"),
+                                        "naics_code": enriched.get("naics_code"),
+                                        "role_classification": enriched.get("role_classification"),
+                                        "seniority": enriched.get("seniority"),
+                                    },
+                                )
 
                         tp = _distribution_bucket(enriched.get("temporal_period", posting.get("temporal_period")))
                         temporal_period_distribution[tp] += 1

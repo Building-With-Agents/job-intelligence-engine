@@ -212,6 +212,50 @@ def test_no_tracer_log_event_when_tracer_is_none(
     # No crash, no log_event calls on the None tracer
 
 
+@patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=False)
+@patch("enrichment.agent.resolve_sector", return_value=None)
+@patch.object(EnrichmentAgent, "enrich_record")
+@patch("common.llm_adapter.get_tracer")
+def test_per_record_tracer_exception_does_not_break_processing(
+    mock_get_tracer: MagicMock,
+    mock_enrich: MagicMock,
+    _mock_sector: MagicMock,
+    _mock_parallel: MagicMock,
+) -> None:
+    """A tracer exception during per-record log_event must be suppressed and must not
+    prevent downstream processing (distribution counting, SOC/NAICS counting, job
+    posting promotion, freshness records)."""
+    mock_tracer = MagicMock()
+    mock_tracer.log_event.side_effect = RuntimeError("tracer boom")
+    mock_get_tracer.return_value = mock_tracer
+
+    mock_enrich.return_value = {
+        "spam_score": 0.05,
+        "spam_tier": "clean",
+        "overall_confidence": 0.9,
+        "field_confidence": {},
+        "soc_code": "15-1252",
+        "naics_code": "541511",
+        "quality_score": 0.85,
+        "quality_components": {},
+    }
+
+    agent = EnrichmentAgent()
+    event = EventEnvelope(
+        correlation_id="cid-tracer-err",
+        agent_id="skills-extraction",
+        payload=_base_payload(is_spam=False),
+    )
+    out = agent.process(event)
+
+    assert out.payload["enriched_count"] == 1, (
+        "Tracer failure must not prevent the record from being counted as enriched"
+    )
+    assert out.payload.get("soc_classified_count", 0) == 1, (
+        "SOC classification counting must still execute after a tracer failure"
+    )
+
+
 @patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=True)
 @patch.object(EnrichmentAgent, "_enrich_batch_parallel_bridge")
 @patch("common.llm_adapter.get_tracer")
