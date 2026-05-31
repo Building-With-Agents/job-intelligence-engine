@@ -255,7 +255,7 @@ def _composite_distribution(values: list[float]) -> dict[str, Any]:
 
 
 def _composite_distribution_from_rows(rows: list[tuple[str, QAItemScores, str | None]]) -> dict[str, Any]:
-    return _composite_distribution([composite_score(sc) for _, sc, _ in rows])
+    return _composite_distribution([cs for _, sc, _ in rows if (cs := composite_score(sc)) is not None])
 
 
 def _answerability_run_summary(
@@ -874,7 +874,7 @@ def main(argv: list[str] | None = None) -> int:
                         "latency_sla": sc.latency_sla,
                         "answerability": sc.answerability,
                         "correct_refusal": sc.correct_refusal,
-                        "composite": round(composite_score(sc), 6),
+                        "composite": round(cs, 6) if (cs := composite_score(sc)) is not None else None,
                     },
                     "error": err,
                 }
