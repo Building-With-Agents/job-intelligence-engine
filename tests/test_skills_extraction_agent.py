@@ -17,6 +17,7 @@ from common.data_store.database import check_db_connection, get_engine, session_
 from common.data_store.models import ExtractedIntelligence, NormalizedJob
 from common.event_envelope import EventEnvelope
 from common.types import JobRecord
+from common.types.extraction_types import ExtractionMetadata, ExtractorRunInfo
 from skills_extraction.agent import ExtractionWorkItem, SkillsExtractionAgent
 
 
@@ -56,12 +57,15 @@ def _patch_skills_extraction_pass2_llm(
     ):
         m_ctx.return_value = (
             [],
-            {
-                "tokens_used": 0,
-                "cost_usd": 0.0,
-                "extraction_failed": False,
-                "extraction_metadata": {},
-            },
+            ExtractorRunInfo(
+                provider="pattern-matching",
+                model="none",
+                extraction_metadata=ExtractionMetadata(
+                    extraction_version="week5-context-pass1",
+                    model_used="none",
+                    model_tier="none",
+                ),
+            ),
         )
         m_tasks.return_value = (
             [],
@@ -530,13 +534,15 @@ class TestSkillsExtractionAgent:
                 "skills_extraction.agent.extract_context",
                 return_value=(
                     [],
-                    {
-                        "tokens_used": 0,
-                        "cost_usd": 0.0,
-                        "latency_ms": 5,
-                        "extraction_failed": False,
-                        "extraction_metadata": {},
-                    },
+                    ExtractorRunInfo(
+                        provider="pattern-matching",
+                        model="none",
+                        extraction_metadata=ExtractionMetadata(
+                            extraction_version="week5-context-pass1",
+                            model_used="none",
+                            model_tier="none",
+                        ),
+                    ),
                 ),
             ),
             patch("skills_extraction.agent.extract_tasks_async", new=AsyncMock(side_effect=RuntimeError("tasks boom"))),
@@ -625,13 +631,16 @@ class TestSkillsExtractionAgent:
                 "skills_extraction.agent.extract_context",
                 return_value=(
                     [],
-                    {
-                        "tokens_used": 0,
-                        "cost_usd": 0.0,
-                        "latency_ms": 40,
-                        "extraction_failed": False,
-                        "extraction_metadata": {},
-                    },
+                    ExtractorRunInfo(
+                        latency_ms=40,
+                        provider="pattern-matching",
+                        model="none",
+                        extraction_metadata=ExtractionMetadata(
+                            extraction_version="week5-context-pass1",
+                            model_used="none",
+                            model_tier="none",
+                        ),
+                    ),
                 ),
             ),
             patch(
@@ -1092,15 +1101,15 @@ class TestSkillsExtractionAgent:
             is_genai_extension=False,
             resolution_step=2,
         )
-        ctx_meta = {
-            "tokens_used": 0,
-            "cost_usd": 0.0,
-            "latency_ms": 0,
-            "extraction_failed": False,
-            "provider": "pattern-matching",
-            "model": "none",
-            "extraction_metadata": {"context_signals": 0},
-        }
+        ctx_meta = ExtractorRunInfo(
+            provider="pattern-matching",
+            model="none",
+            extraction_metadata=ExtractionMetadata(
+                extraction_version="week5-context-pass1",
+                model_used="none",
+                model_tier="none",
+            ),
+        )
         tasks_meta = {
             "success": True,
             "extraction_failed": False,
@@ -1204,15 +1213,15 @@ class TestSkillsExtractionAgent:
                 "skills_extraction.agent.extract_context",
                 return_value=(
                     [],
-                    {
-                        "tokens_used": 0,
-                        "cost_usd": 0.0,
-                        "latency_ms": 0,
-                        "extraction_failed": False,
-                        "provider": "pattern-matching",
-                        "model": "none",
-                        "extraction_metadata": {},
-                    },
+                    ExtractorRunInfo(
+                        provider="pattern-matching",
+                        model="none",
+                        extraction_metadata=ExtractionMetadata(
+                            extraction_version="week5-context-pass1",
+                            model_used="none",
+                            model_tier="none",
+                        ),
+                    ),
                 ),
             ),
             patch(
