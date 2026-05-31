@@ -722,7 +722,8 @@ class EnrichmentAgent(BaseAgent):
                 )
 
                 # Batch-level Langfuse trace for the parallel path (JIE #15).
-                # Mirrors the serial path trace below; per-record traces are serial-only
+                # Wraps in a span so the event reaches Langfuse (log_event requires
+                # an active observation on the stack). Per-record traces are serial-only
                 # (no job_span_ctx in parallel path — tracked as follow-up).
                 if tracer:
                     with suppress(Exception):
@@ -732,23 +733,40 @@ class EnrichmentAgent(BaseAgent):
                             "flagged": flagged_for_review_count,
                             "rejected": spam_rejected_count,
                         }
-                        tracer.log_event(
-                            "enrichment_complete",
-                            {
-                                "enriched_count": enriched_count,
-                                "spam_rejected_count": spam_rejected_count,
-                                "flagged_for_review_count": flagged_for_review_count,
-                                "soc_classified_count": soc_classified_count,
-                                "naics_classified_count": naics_classified_count,
-                                "naics_unclassified_count": total_processed - naics_classified_count,
-                                "soc_unclassified_count": total_processed - soc_classified_count,
-                                "spam_tier_distribution": spam_tier_distribution,
-                                "temporal_period_distribution": dict(temporal_period_distribution),
-                                "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
-                                "total_processed": total_processed,
-                                "execution_mode": "parallel",
-                            },
-                        )
+                        with tracer.start_span(
+                            "enrichment",
+                            correlation_id=correlation_id,
+                            metadata={"batch_id": batch_id, "record_count": len(rows), "execution_mode": "parallel"},
+                        ):
+                            tracer.log_event(
+                                "enrichment_complete",
+                                {
+                                    "output": _json.dumps(
+                                        {
+                                            "event_type": "RecordEnriched",
+                                            "batch_id": batch_id,
+                                            "enriched_count": enriched_count,
+                                            "spam_rejected_count": spam_rejected_count,
+                                            "flagged_for_review_count": flagged_for_review_count,
+                                            "soc_classified_count": soc_classified_count,
+                                            "naics_classified_count": naics_classified_count,
+                                            "duplicate_count": duplicate_count,
+                                        }
+                                    ),
+                                    "enriched_count": enriched_count,
+                                    "spam_rejected_count": spam_rejected_count,
+                                    "flagged_for_review_count": flagged_for_review_count,
+                                    "soc_classified_count": soc_classified_count,
+                                    "naics_classified_count": naics_classified_count,
+                                    "naics_unclassified_count": total_processed - naics_classified_count,
+                                    "soc_unclassified_count": total_processed - soc_classified_count,
+                                    "spam_tier_distribution": spam_tier_distribution,
+                                    "temporal_period_distribution": dict(temporal_period_distribution),
+                                    "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
+                                    "total_processed": total_processed,
+                                    "execution_mode": "parallel",
+                                },
+                            )
 
                 return build_record_enriched_event(
                     correlation_id=correlation_id,
@@ -1030,6 +1048,7 @@ class EnrichmentAgent(BaseAgent):
                             "temporal_period_distribution": dict(temporal_period_distribution),
                             "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
                             "total_processed": total_processed,
+                            "execution_mode": "serial",
                         },
                     )
 
