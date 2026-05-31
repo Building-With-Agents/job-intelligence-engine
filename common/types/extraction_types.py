@@ -1,14 +1,15 @@
 """Pydantic schemas for the Work Intelligence Agent extraction pipeline.
 
 These types define the structured output of the 6-dimension extraction model:
-Skills, Tools, Tasks, Responsibilities, Context — plus shared SpanRecord
-and ExtractionMetadata.
+Skills, Tools, Tasks, Responsibilities, Context — plus shared SpanRecord,
+ExtractionMetadata, and ExtractorRunInfo.
 
 Source of truth: ARCHITECTURE_DEEP.md § Work Intelligence Agent.
 
 Week 2: schemas defined, used by fixture data.
 Week 4: used by real extraction stubs (skills, tools, taxonomy).
 Week 5: TaskRecord, ResponsibilityRecord, ContextSignal live in extraction_schemas.py.
+Week 12: ExtractorRunInfo added per pydantic-jsonb-payloads.mdc §3.3.
 """
 
 from __future__ import annotations
@@ -119,3 +120,27 @@ class ExtractionMetadata(BaseModel):
     pass2_llm_dimensions: list[str] = Field(default_factory=list)
     pass2_llm_calls: int = Field(default=0, ge=0)
     extraction_warnings: list[str] = Field(default_factory=list)
+
+
+class ExtractorRunInfo(BaseModel):
+    """Per-call observability wrapper from an extractor invocation (LLM or pattern-matching).
+
+    Replaces the hand-rolled flat metadata dicts returned by extractors.
+    ``extraction_metadata`` carries the nested per-run detail (model, tokens, cost,
+    warnings); the outer fields capture the top-level success/failure signal used by
+    ``skills_extraction/agent.py`` when building the combined pass meta.
+
+    See: ``.cursor/rules/pydantic-jsonb-payloads.mdc §3.3``
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    tokens_used: int = 0
+    cost_usd: float = 0.0
+    latency_ms: int = 0
+    success: bool = True
+    extraction_failed: bool = False
+    error_reason: str | None = None
+    provider: str
+    model: str
+    extraction_metadata: ExtractionMetadata
