@@ -721,6 +721,35 @@ class EnrichmentAgent(BaseAgent):
                     triggered_by_event_type=payload.get("event_type"),
                 )
 
+                # Batch-level Langfuse trace for the parallel path (JIE #15).
+                # Mirrors the serial path trace below; per-record traces are serial-only
+                # (no job_span_ctx in parallel path — tracked as follow-up).
+                if tracer:
+                    with suppress(Exception):
+                        total_processed = enriched_count + spam_rejected_count + flagged_for_review_count
+                        spam_tier_distribution = {
+                            "clean": enriched_count,
+                            "flagged": flagged_for_review_count,
+                            "rejected": spam_rejected_count,
+                        }
+                        tracer.log_event(
+                            "enrichment_complete",
+                            {
+                                "enriched_count": enriched_count,
+                                "spam_rejected_count": spam_rejected_count,
+                                "flagged_for_review_count": flagged_for_review_count,
+                                "soc_classified_count": soc_classified_count,
+                                "naics_classified_count": naics_classified_count,
+                                "naics_unclassified_count": total_processed - naics_classified_count,
+                                "soc_unclassified_count": total_processed - soc_classified_count,
+                                "spam_tier_distribution": spam_tier_distribution,
+                                "temporal_period_distribution": dict(temporal_period_distribution),
+                                "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
+                                "total_processed": total_processed,
+                                "execution_mode": "parallel",
+                            },
+                        )
+
                 return build_record_enriched_event(
                     correlation_id=correlation_id,
                     batch_id=batch_id,
