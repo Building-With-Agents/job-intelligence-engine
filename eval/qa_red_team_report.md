@@ -432,7 +432,7 @@ _Supplemental only — **not** in `REDTEAM_CASES`. Runner **RT-505** is the cano
 - **Fix applied:** Two-layer fix in `analytics/query_engine/synthesis.py`:
   1. `_facts_payload()` no longer includes `source_table` in the JSON sent to the LLM — the field remains on `EvidenceCitation` for internal tracing only.
   2. `_build_main_prompt()` now includes an explicit instruction: "Do not reference internal database table names (such as job_postings, companies, skill_demand_weekly, etc.) in your answer. Use logical labels instead."
-- **Regression test:** `analytics/tests/test_qna_synthesis.py` — `test_facts_payload_excludes_source_table`, `test_prompt_instructs_no_internal_table_names`, `test_rt005_table_names_not_in_llm_context`.
+- **Regression test:** `analytics/tests/test_qna_synthesis.py` — `test_facts_payload_excludes_source_table`, `test_prompt_instructs_no_internal_table_names`, `test_rt005_table_names_not_in_facts_json`.
 
 ---
 

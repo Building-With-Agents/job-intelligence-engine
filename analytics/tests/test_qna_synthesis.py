@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 import pytest
@@ -247,8 +248,6 @@ def test_facts_payload_excludes_source_table() -> None:
     source_table is internal tracing metadata; exposing it in citeable_facts_json
     causes the model to echo raw SQL identifiers in user-facing answers (RT-005).
     """
-    import json
-
     from analytics.query_engine.synthesis import _facts_payload
 
     bundle = sample_evidence_bundle_adequate()
