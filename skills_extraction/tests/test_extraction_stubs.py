@@ -70,7 +70,7 @@ def test_context_signal_schema() -> None:
 def test_extract_context_empty_when_no_matches(dummy_job: JobRecord) -> None:
     """extract_context returns schema-valid list when no regex matches."""
     signals, meta = extract_context(dummy_job)
-    assert meta.get("tokens_used") == 0
+    assert meta.tokens_used == 0
     TypeAdapter(list[ContextSignal]).validate_python(signals)
 
 
@@ -84,7 +84,7 @@ def test_extract_context_finds_hybrid() -> None:
         description="We offer a hybrid schedule for this role.",
     )
     signals, meta = extract_context(job)
-    assert meta.get("tokens_used") == 0
+    assert meta.tokens_used == 0
     assert any(s.signal_type == "remote_policy" for s in signals)
 
 

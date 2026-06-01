@@ -992,7 +992,8 @@ class SkillsExtractionAgent(BaseAgent):
         """
         job = item.job_record
         tools = extract_tools(job)
-        context_signals, ctx_meta = extract_context(job)
+        context_signals, ctx_run_info = extract_context(job)
+        ctx_meta = ctx_run_info.model_dump(mode="json")
 
         has_normalized_text = bool(
             (job.description or "").strip() or (job.requirements or "").strip() or (job.responsibilities or "").strip()
@@ -1027,7 +1028,8 @@ class SkillsExtractionAgent(BaseAgent):
         """Pass 1 sync + Pass 2 async gather for one work item (taxonomy deferred)."""
         job = item.job_record
         tools = extract_tools(job)
-        context_signals, ctx_meta = extract_context(job)
+        context_signals, ctx_run_info = extract_context(job)
+        ctx_meta = ctx_run_info.model_dump(mode="json")
 
         has_normalized_text = bool(
             (job.description or "").strip() or (job.requirements or "").strip() or (job.responsibilities or "").strip()
