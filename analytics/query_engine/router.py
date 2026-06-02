@@ -398,6 +398,7 @@ def _handler_requires_skill_gate(handler: Callable[..., RouteResult] | None) -> 
         return False
     return bool(getattr(handler, "_requires_skill_gate", False))
 
+
 # JIE #349 — AI-tool / AI-adjacent canonical terms accepted by the taxonomy gate
 # even before they are seeded to dbo.skills.  All values are lowercase; the gate
 # normalises incoming skill_names to lowercase before checking.
