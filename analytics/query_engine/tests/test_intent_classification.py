@@ -138,17 +138,62 @@ def test_curriculum_heuristic_shape_examples() -> None:
     assert _matches_curriculum_generation_shape("What skills should we teach for an entry-level data analyst?")
 
 
-def test_curriculum_classify_short_circuits_without_llm() -> None:
-    """Strong curriculum-generation phrasing returns intent before complete() is called."""
-    with patch("analytics.query_engine.intent.complete") as mock_c:
+def test_curriculum_classify_heuristic_calls_llm_for_entities() -> None:
+    """Curriculum-generation shape still routes to curriculum but uses LLM for entities (JIE #359)."""
+    mock_payload = _make_complete_result("curriculum", 0.9, role_names=["registered nurse"])
+    with patch("analytics.query_engine.intent.complete", return_value=mock_payload) as mock_c:
         result = classify_workforce_question(
             "What should a training program for a registered nurse look like?",
             correlation_id="test-curriculum-heuristic",
         )
-    mock_c.assert_not_called()
+    mock_c.assert_called_once()
     assert result["intent"] == "curriculum"
     assert result["confidence"] == pytest.approx(0.92)
     assert result["needs_clarification"] is False
+    assert "registered nurse" in (result.get("extracted_entities") or {}).get("role_names", [])
+
+
+def test_curriculum_heuristic_matches_gq073_shape() -> None:
+    q = "What should a cybersecurity training program with certifications look like given current Borderplex demand?"
+    assert _matches_curriculum_generation_shape(q)
+
+
+def test_curriculum_heuristic_does_not_match_employer_gq062_or_workflow_gq083() -> None:
+    gq062 = (
+        "Which Borderplex employers have the highest share of postings mentioning AI tools "
+        "(Copilot, LangChain, LLM APIs) in the agentic_era period?"
+    )
+    gq083 = (
+        "For data engineering roles, what end-to-end data pipeline and orchestration patterns "
+        "(ETL, schedulers, workflow tools) do employers emphasize, and how are they ordered "
+        "in tasks / responsibilities?"
+    )
+    assert not _matches_curriculum_generation_shape(gq062)
+    assert not _matches_curriculum_generation_shape(gq083)
+
+
+def test_curriculum_heuristic_does_not_match_gq078_cover_phrasing() -> None:
+    """gq-078 stays off the curriculum regex (\"cover\" not \"for\"/\"with\" gate) — no routing regression."""
+    gq078 = (
+        "What should an IT support training program cover given current Borderplex help-desk, "
+        "systems-admin, and network-engineer postings — which skills go beyond the CompTIA A+ / "
+        "Network+ baseline?"
+    )
+    assert not _matches_curriculum_generation_shape(gq078)
+
+
+def test_curriculum_heuristic_llm_failure_falls_back_empty_entities() -> None:
+    with patch(
+        "analytics.query_engine.intent.complete",
+        return_value={"success": False, "extraction_failed": True, "content": ""},
+    ):
+        result = classify_workforce_question(
+            "What should a training program for a registered nurse look like?",
+            correlation_id="test-curriculum-fallback",
+        )
+    assert result["intent"] == "curriculum"
+    assert result["confidence"] == pytest.approx(0.92)
+    assert result["extracted_entities"]["role_names"] == []
 
 
 def test_paird_curriculum_training_program_cover_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:

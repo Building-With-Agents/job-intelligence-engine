@@ -239,6 +239,34 @@ def mock_complete(prompt: str, agent_name: str, **kwargs: Any) -> dict[str, Any]
     # Build response based on agent_name
     if "spam" in agent_name.lower():
         content = json.dumps({"is_spam": False, "confidence": 0.95, "reason": "Legitimate job posting"})
+    elif agent_name == "analytics-intent-classification" and "Intent is already identified as curriculum" in (
+        prompt or ""
+    ):
+        # JIE #359 — curriculum heuristic entity pass uses the same agent_name; return valid intent JSON.
+        role_names: list[str] = []
+        skill_names: list[str] = []
+        geo_terms: list[str] = []
+        low_p = (prompt or "").lower()
+        if "ai agent developer" in low_p:
+            role_names.append("AI agent developer")
+        if "cybersecurity training program with" in low_p:
+            role_names.append("Cybersecurity analyst")
+        if "langchain" in low_p:
+            skill_names.append("LangChain")
+        if "borderplex" in low_p:
+            geo_terms.append("Borderplex")
+        content = json.dumps(
+            {
+                "intent": "curriculum",
+                "confidence": 0.9,
+                "extracted_entities": {
+                    "geographic_terms": geo_terms,
+                    "role_names": role_names,
+                    "skill_names": skill_names,
+                    "time_references": [],
+                },
+            }
+        )
     else:
         content = json.dumps({"skills": _map_skills_for_llm(gt)})
 
