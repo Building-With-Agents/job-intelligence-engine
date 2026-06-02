@@ -9,14 +9,20 @@ from eval.qa_eval import _run_evaluators_average, print_console_summary
 from eval.qa_scoring import (
     _CATASTROPHIC_LATENCY_MULTIPLIER,
     _DEFAULT_LATENCY_SLA_SECONDS,
+    LAYER2_METRIC_NAMES,
     QAItemScores,
     _quantile,
+    aggregate_human_scores,
     composite_score,
     compute_item_scores,
+    compute_no_hallucination_rate,
     confusion_rows,
+    human_correctness_composite,
     intent_classification_report,
     intent_eval_trace_metadata,
+    run_ece_from_correctness,
     run_subcomposites_and_gates,
+    score_confidence_correctness_alignment,
     score_confidence_self_consistency,
     score_evidence_citation,
     score_intent_accuracy,
@@ -743,3 +749,233 @@ def test_run_evaluators_p95_sla_score_uses_config_sla(monkeypatch) -> None:
     assert "30.0s" in p95_sla_ev.comment, (
         f"p95_latency_sla_score comment must reference custom SLA=30.0s, got: {p95_sla_ev.comment!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Layer 2 scoring tests (JIE #271)
+# ---------------------------------------------------------------------------
+
+
+class TestAggregateHumanScores:
+    def test_empty_returns_none(self) -> None:
+        assert aggregate_human_scores([]) is None
+
+    def test_single_annotator_passthrough(self) -> None:
+        assert aggregate_human_scores([0.75]) == 0.75
+
+    def test_two_annotators_mean(self) -> None:
+        result = aggregate_human_scores([0.8, 0.6])
+        assert abs(result - 0.7) < 1e-9
+
+    def test_three_annotators_mean(self) -> None:
+        result = aggregate_human_scores([1.0, 0.5, 0.0])
+        assert abs(result - 0.5) < 1e-9
+
+    def test_high_spread_still_returns_mean(self) -> None:
+        # Spread 0.9 > 0.3 threshold — logs warning but still returns mean
+        result = aggregate_human_scores([0.9, 0.0])
+        assert abs(result - 0.45) < 1e-9
+
+    def test_tight_spread_no_warning(self) -> None:
+        # Spread 0.1 < 0.3 — no warning, deterministic mean
+        result = aggregate_human_scores([0.85, 0.75])
+        assert result is not None
+        assert 0.79 < result < 0.81
+
+
+class TestRunECEFromCorrectness:
+    def test_none_on_empty(self) -> None:
+        assert run_ece_from_correctness([], []) is None
+
+    def test_none_on_mismatched_lengths(self) -> None:
+        assert run_ece_from_correctness([0.9], [True, False]) is None
+
+    def test_none_when_all_correctness_none(self) -> None:
+        assert run_ece_from_correctness([0.8, 0.5], [None, None]) is None
+
+    def test_perfect_calibration_near_zero(self) -> None:
+        # Single item: conf 1.0 → correctness True (1.0); within same bin → ECE = 0
+        ece = run_ece_from_correctness([1.0], [True])
+        assert ece is not None
+        assert ece < 1e-9
+
+    def test_systematic_overconfidence_positive_ece(self) -> None:
+        # All conf=1.0 but all wrong → ECE should be 1.0
+        ece = run_ece_from_correctness([1.0, 1.0, 1.0], [False, False, False])
+        assert ece is not None
+        assert ece > 0.5
+
+    def test_excludes_none_correctness_items(self) -> None:
+        # Third item has None — excluded; result computed from the other two
+        ece = run_ece_from_correctness([0.9, 0.1, 0.5], [True, False, None])
+        assert ece is not None
+
+    def test_bool_and_float_correctness_compatible(self) -> None:
+        ece_bool = run_ece_from_correctness([0.8], [True])
+        ece_float = run_ece_from_correctness([0.8], [1.0])
+        assert ece_bool is not None
+        assert ece_float is not None
+        assert abs(ece_bool - ece_float) < 1e-9
+
+    def test_returns_float_between_zero_and_one(self) -> None:
+        ece = run_ece_from_correctness([0.9, 0.1, 0.6, 0.4], [True, False, True, False])
+        assert ece is not None
+        assert 0.0 <= ece <= 1.0
+
+
+class TestScoreConfidenceCorrectnessAlignment:
+    def test_none_when_correctness_unavailable(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.8, correctness=None)
+        assert score is None
+        assert "pending" in comment.lower() or "layer 2" in comment.lower()
+
+    def test_perfect_alignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.7, correctness=0.7)
+        assert score is not None
+        assert abs(score - 1.0) < 1e-9
+        assert "distance=0.000" in comment
+
+    def test_maximum_misalignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=1.0, correctness=0.0)
+        assert score is not None
+        assert abs(score - 0.0) < 1e-9
+
+    def test_partial_misalignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.9, correctness=0.5)
+        assert score is not None
+        assert abs(score - 0.6) < 1e-6
+
+    def test_clamps_inputs(self) -> None:
+        score, _ = score_confidence_correctness_alignment(confidence=1.5, correctness=-0.1)
+        # Clamped: conf=1.0, corr=0.0 → distance=1.0 → score=0.0
+        assert score is not None
+        assert score >= 0.0
+
+
+class TestComputeNoHallucinationRate:
+    def test_empty_returns_zero(self) -> None:
+        assert compute_no_hallucination_rate([]) == 0.0
+
+    def test_all_missing_correctness_returns_zero(self) -> None:
+        items = [{"confidence": 0.9}, {"confidence": 0.5}]
+        assert compute_no_hallucination_rate(items) == 0.0
+
+    def test_high_conf_high_correctness_is_safe(self) -> None:
+        items = [{"confidence": 0.9, "human_correctness": 0.8}]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+    def test_low_conf_is_safe_regardless_of_correctness(self) -> None:
+        # conf < 0.5: pipeline self-reports uncertainty → safe
+        items = [{"confidence": 0.3, "human_correctness": 0.1}]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+    def test_high_conf_low_correctness_is_unsafe(self) -> None:
+        # confident hallucinator
+        items = [{"confidence": 0.9, "human_correctness": 0.2}]
+        assert compute_no_hallucination_rate(items) == 0.0
+
+    def test_mixed_safe_unsafe(self) -> None:
+        items = [
+            {"confidence": 0.9, "human_correctness": 0.9},  # safe
+            {"confidence": 0.9, "human_correctness": 0.2},  # unsafe
+        ]
+        rate = compute_no_hallucination_rate(items)
+        assert abs(rate - 0.5) < 1e-9
+
+    def test_ignores_items_without_correctness(self) -> None:
+        # Only 1 of 2 items has correctness; only that one counts
+        items = [
+            {"confidence": 0.9, "human_correctness": 0.9},
+            {"confidence": 0.9},
+        ]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+
+class TestHumanCorrectnessComposite:
+    def test_all_none_returns_none(self) -> None:
+        assert human_correctness_composite(correctness=None, decision_relevance=None, followup_quality=None) is None
+
+    def test_all_present_weighted_mean(self) -> None:
+        # correctness=1.0 * 0.5 + dr=1.0 * 0.3 + fq=1.0 * 0.2 = 1.0
+        result = human_correctness_composite(correctness=1.0, decision_relevance=1.0, followup_quality=1.0)
+        assert result is not None
+        assert abs(result - 1.0) < 1e-9
+
+    def test_weights_sum_correctly(self) -> None:
+        # correctness=1.0, dr=0.0, fq=0.0 → 0.5 / (0.5+0.3+0.2) = 0.5
+        result = human_correctness_composite(correctness=1.0, decision_relevance=0.0, followup_quality=0.0)
+        assert result is not None
+        assert abs(result - 0.5) < 1e-9
+
+    def test_missing_dimension_renormalizes(self) -> None:
+        # Only correctness present (weight 0.5): renorm → 0.5/0.5 = 1.0 weight
+        result = human_correctness_composite(correctness=0.8, decision_relevance=None, followup_quality=None)
+        assert result is not None
+        assert abs(result - 0.8) < 1e-9
+
+    def test_two_dimensions_renormalize(self) -> None:
+        # correctness=1.0 (0.5) + dr=0.0 (0.3); fq missing → total_w=0.8
+        # weighted_sum = 1.0*0.5 + 0.0*0.3 = 0.5; / 0.8 = 0.625
+        result = human_correctness_composite(correctness=1.0, decision_relevance=0.0, followup_quality=None)
+        assert result is not None
+        assert abs(result - 0.625) < 1e-9
+
+    def test_output_clamped_to_zero_one(self) -> None:
+        result = human_correctness_composite(correctness=0.0, decision_relevance=0.0, followup_quality=0.0)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
+
+
+class TestSubcompositesNoHallucinationRate:
+    def _base_args(self) -> dict:
+        return dict(
+            evidence_citation=0.8,
+            intent_accuracy=0.9,
+            latency_sla=1.0,
+            answerability=None,
+            correct_refusal=None,
+            confidence_self_consistency=0.80,
+            confidence_in_expected_range=None,
+        )
+
+    def test_no_hallucination_rate_absent_unchanged(self) -> None:
+        s1 = subcomposites_from_means(**self._base_args())
+        s2 = subcomposites_from_means(**self._base_args(), no_hallucination_rate=None)
+        assert s1["safety_composite"] == s2["safety_composite"]
+
+    def test_no_hallucination_rate_blends_into_safety(self) -> None:
+        without = subcomposites_from_means(**self._base_args())
+        with_nhr = subcomposites_from_means(**self._base_args(), no_hallucination_rate=1.0)
+        # safety_composite should increase toward 1.0 when nhr=1.0
+        sfty_base = without["safety_composite"]
+        sfty_nhr = with_nhr["safety_composite"]
+        assert sfty_nhr is not None
+        assert sfty_base is not None
+        assert sfty_nhr > sfty_base
+
+    def test_no_hallucination_rate_fallback_when_no_csc(self) -> None:
+        # When csc is None, safety_composite would normally be None
+        args = self._base_args()
+        args["confidence_self_consistency"] = None
+        without = subcomposites_from_means(**args)
+        assert without["safety_composite"] is None
+        with_nhr = subcomposites_from_means(**args, no_hallucination_rate=0.9)
+        # Now nhr fills in as safety_composite
+        assert with_nhr["safety_composite"] is not None
+        assert abs(with_nhr["safety_composite"] - 0.9) < 1e-9
+
+    def test_no_hallucination_rate_weight(self) -> None:
+        # With csc=0.5 and nhr=1.0: 0.80 * 0.5 + 0.20 * 1.0 = 0.60
+        args = self._base_args()
+        args["confidence_self_consistency"] = 0.5
+        with_nhr = subcomposites_from_means(**args, no_hallucination_rate=1.0)
+        assert with_nhr["safety_composite"] is not None
+        assert abs(with_nhr["safety_composite"] - 0.6) < 1e-6
+
+
+class TestLayer2Constants:
+    def test_metric_names_set(self) -> None:
+        assert "correctness" in LAYER2_METRIC_NAMES
+        assert "decision_relevance" in LAYER2_METRIC_NAMES
+        assert "followup_quality" in LAYER2_METRIC_NAMES
+        assert len(LAYER2_METRIC_NAMES) == 3
