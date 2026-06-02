@@ -238,12 +238,56 @@ DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift si
      intensity change (not a balanced A-vs-B leaderboard of arbitrary peers) → disruption,
      not comparison.
   → trend: Demand velocity, growth, or time series "up or down" without era-bucket or
-     transformation/displacement framing. If temporal eras or AI/automation restructuring
-     is central → disruption, not trend.
+     transformation/displacement framing. Pure posting-volume or posting-count questions
+     framed as quarter-over-quarter, month-over-month, or week-over-week — with NO AI /
+     automation / displacement / skill-or-tool-mix framing — stay in trend, even when era
+     tokens (pre_chatgpt, early_genai, post_gpt4, agentic_era) appear only as a time-axis
+     descriptor for the comparison range (e.g. "across the pre_chatgpt → agentic_era
+     periods"). The era tokens describe the WHEN, not the WHAT, in this case. Share or
+     distribution questions whose SUBJECT is non-AI — remote-eligibility share, salary
+     distribution, experience-bar requirements, headcount, or other workforce attributes
+     unrelated to AI / automation / skill-or-tool-mix turnover — stay in trend even when
+     framed across era buckets (e.g. "between pre_chatgpt and agentic_era"); the era
+     tokens scope the comparison range, they do not by themselves promote a non-AI
+     subject to disruption. If temporal eras or AI/automation restructuring is central
+     to the WHAT → disruption, not trend.
   → geographic: Location filters which postings are in scope, but the analytic axis is
      still era/skill/automation shift → disruption. Use geographic only when listing or
      filtering postings by place is the main task; a Borderplex (or similar) filter alone
      does not override disruption when the core question is mix or automation change across eras.
+  ROLE_EVOLUTION CARVE-OUT (AI-supporting-mix / AI-expected-bar within an existing role family):
+     PREREQUISITE — this carve-out ONLY applies when the question contains explicit AI
+     framing: a named AI-assist tool (Copilot, ChatGPT, LLM tooling, AI-assisted dev
+     tools, etc.) OR explicit AI-literacy / AI-familiarity / AI-readiness language. A
+     question about generic skill-mix evolution, experience-bar change, or seniority
+     requirements with NO mention of AI, AI tools, or AI-literacy does NOT qualify
+     for this carve-out — route those questions by the standard rules (trend, disruption,
+     or role_evolution on their own merits), regardless of era buckets present.
+     When the PREREQUISITE is met, route to role_evolution — even when era buckets
+     (pre_chatgpt, early_genai, post_gpt4, agentic_era, "the four temporal periods")
+     are present — when the question asks how an existing role family's *AI-supporting-
+     skill mix*, *expected AI-literacy level / bar / familiarity*, or *balance* between
+     AI-assistant skills and traditional / fundamental skills has evolved / changed /
+     shifted across those periods, provided EITHER:
+       (a) an AI-assist tool or concept is EXPLICITLY NAMED in the question text as one
+           peer in a broader multi-skill list (e.g. "TypeScript, Next.js, testing
+           frameworks, AI-assisted dev tools" for React; "AI-assistant familiarity and
+           traditional programming skills" for software engineers). A generic "mix of
+           required skills evolved" or "which skills are rising / declining" question
+           with NO named AI-assist concept does NOT qualify — route to trend or
+           role_evolution on their own merits, OR
+       (b) the *expected AI-literacy bar / AI-familiarity level / AI-readiness
+           expectation* within an existing role is the explicit subject (e.g. "expected
+           AI-literacy bar for product managers", "how has the AI-familiarity expectation
+           evolved"). A generic experience bar, seniority level, or years-of-experience
+           requirement WITHOUT explicit AI framing does NOT qualify for this sub-condition.
+     DISAMBIGUATOR vs disruption: AI-adoption SHARE / PERCENTAGE / GROWTH RATE / VELOCITY
+     / PENETRATION as the PRIMARY subject ("what share of postings mention Copilot",
+     "how fast is that share growing") → disruption (per the SHARE / GROWTH / VELOCITY
+     of AI-ADOPTION rule below). "Balance / AI-supporting-mix / AI-expected-bar evolution"
+     with AI-assist as peer or expectation → role_evolution. Skill-composition SHIFT,
+     skills DROPPED OUT, role TRANSFORMED, AI-DENSITY THRESHOLD CROSSING, displacement
+     by automation → disruption (per the disruption bullet above), not role_evolution.
 
 EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / agentic_era appear):
   → emergence: The subject is something NEW appearing for the first time — net-new roles,
@@ -260,6 +304,17 @@ EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / age
      that DIDN'T EXIST PREVIOUSLY and is now appearing (emergence), or something that
      EXISTED PREVIOUSLY and was transformed (disruption)?" New tools/credentials/titles
      framed as "first-seen" or "did not exist in pre_chatgpt" → emergence.
+  PRECEDENCE: when a question contains EXPLICIT first-seen language — "did not exist
+     before", "did not exist in [prior era]", "first appeared", "first-seen", "newly
+     emerging", "tools that did not exist in the pre_chatgpt period" — emergence takes
+     precedence over BOTH the disruption tie-breaker above AND the SHARE / GROWTH /
+     VELOCITY of AI-ADOPTION rule below, even when era buckets are present and the
+     subject is AI tools (LangChain, LangGraph, vector databases, LLM orchestration
+     frameworks, etc.). The first-seen cue ("tools that did not exist in [prior era]")
+     beats the share-of-AI-adoption cue ("share of postings that mention AI tools")
+     when both appear in the same question, because the question is asking about NEW
+     tools relative to a prior-era baseline — i.e. emergence — not about the structural
+     penetration of existing-but-growing AI tools in a role family.
 
 SHARE / GROWTH / VELOCITY of AI-ADOPTION — TIE-BREAKER (disruption vs trend):
   When the question asks about a SHARE, GROWTH RATE, VELOCITY, or "how fast X is growing"
