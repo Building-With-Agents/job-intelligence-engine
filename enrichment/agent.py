@@ -139,9 +139,7 @@ class EnrichmentTimeoutError(Exception):
         self.attempts = attempts
         self.elapsed_ms_per_attempt = list(elapsed_ms_per_attempt)
         self.error_summary = error_summary
-        super().__init__(
-            f"enrich_record_async timed out after {attempts} attempt(s): {error_summary}"
-        )
+        super().__init__(f"enrich_record_async timed out after {attempts} attempt(s): {error_summary}")
 
 
 def _quarantine_enrichment_record(
@@ -1826,12 +1824,8 @@ class EnrichmentAgent(BaseAgent):
                         _attempt_start = time.perf_counter()
                         try:
                             with session_scope() as job_session:
-                                enriched = await self.enrich_record_async(
-                                    posting, job_session, raise_on_timeout=True
-                                )
-                                _elapsed_per_attempt.append(
-                                    int((time.perf_counter() - _attempt_start) * 1000)
-                                )
+                                enriched = await self.enrich_record_async(posting, job_session, raise_on_timeout=True)
+                                _elapsed_per_attempt.append(int((time.perf_counter() - _attempt_start) * 1000))
                                 sector_id = resolve_sector(posting.get("role_classification"), session=job_session)
                                 enriched["sector_id"] = sector_id
 

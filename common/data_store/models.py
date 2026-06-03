@@ -357,17 +357,13 @@ class EnrichmentQuarantine(Base):
     timeout_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """The ``ENRICHMENT_LLM_TIMEOUT`` value at quarantine time."""
 
-    elapsed_ms_per_attempt: Mapped[list[int]] = mapped_column(
-        JSONB, nullable=False, default=list
-    )
+    elapsed_ms_per_attempt: Mapped[list[int]] = mapped_column(JSONB, nullable=False, default=list)
     """Per-attempt wall-clock elapsed milliseconds, oldest first."""
 
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     """Short description of the failure mode."""
 
-    reprocessed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    reprocessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     reprocessed_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
     """One of: 'success' | 'timeout_again' | None (not yet reprocessed)."""
 

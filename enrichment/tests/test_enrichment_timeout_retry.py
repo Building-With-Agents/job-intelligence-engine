@@ -145,9 +145,7 @@ def test_raise_on_timeout_true_propagates_enrichment_timeout_error() -> None:
         patch("enrichment.agent.compute_field_confidence", return_value={}),
         patch("enrichment.agent.compute_overall_confidence", return_value=0.0),
         patch("enrichment.agent.asyncio.wait_for", side_effect=TimeoutError()),
-        patch(
-            "enrichment._config.enrichment_llm_timeout_seconds", return_value=120
-        ),
+        patch("enrichment._config.enrichment_llm_timeout_seconds", return_value=120),
     ):
         posting = {
             "title": "Test job",
@@ -158,9 +156,7 @@ def test_raise_on_timeout_true_propagates_enrichment_timeout_error() -> None:
         }
         # Need a non-None session so the LLM-call block executes
         with pytest.raises(EnrichmentTimeoutError) as excinfo:
-            asyncio.run(
-                stub.enrich_record_async(posting, session=MagicMock(), raise_on_timeout=True)
-            )
+            asyncio.run(stub.enrich_record_async(posting, session=MagicMock(), raise_on_timeout=True))
 
     assert excinfo.value.normalized_job_id == 99
     assert excinfo.value.timeout_seconds == 120
@@ -180,9 +176,7 @@ def test_raise_on_timeout_false_preserves_pre_150_behavior() -> None:
         patch("enrichment.agent.compute_field_confidence", return_value={}),
         patch("enrichment.agent.compute_overall_confidence", return_value=0.0),
         patch("enrichment.agent.asyncio.wait_for", side_effect=TimeoutError()),
-        patch(
-            "enrichment._config.enrichment_llm_timeout_seconds", return_value=120
-        ),
+        patch("enrichment._config.enrichment_llm_timeout_seconds", return_value=120),
         # classify_job is called late in the function — stub it to avoid extra work
         patch("enrichment.agent.classify_job", return_value=(None, None)),
         # build_extraction_dict already imported as builtin; stub it
@@ -198,9 +192,7 @@ def test_raise_on_timeout_false_preserves_pre_150_behavior() -> None:
             "location": "Anywhere",
             "normalized_job_id": 99,
         }
-        merged = asyncio.run(
-            stub.enrich_record_async(posting, session=MagicMock(), raise_on_timeout=False)
-        )
+        merged = asyncio.run(stub.enrich_record_async(posting, session=MagicMock(), raise_on_timeout=False))
 
     # Function returns successfully with degraded fields (no exception)
     assert merged is not None
