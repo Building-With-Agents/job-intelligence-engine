@@ -307,6 +307,72 @@ class ExtractedIntelligence(Base):
 
 
 # ---------------------------------------------------------------------------
+# Enrichment Quarantine (JIE #150)
+# ---------------------------------------------------------------------------
+
+
+class EnrichmentQuarantine(Base):
+    """Enrichment-stage failures (timeouts after retry exhaustion) that must
+    NOT promote to ``job_postings`` until manually reprocessed.
+
+    Mirrors the ``normalization_quarantine`` pattern. Permanent table per
+    CLAUDE.md — never truncate. Created via ``Base.metadata.create_all`` in
+    ``run_migrations``; downstream consumers can join on ``normalized_job_id``.
+
+    Reprocessing flow:
+      1. ``scripts/run_processing_loop.py --reprocess-quarantined`` selects
+         rows where ``reprocessed_at IS NULL``.
+      2. Rebuilds the posting from ``normalized_jobs`` + ``extracted_intelligence``.
+      3. Runs ``enrich_record_async`` with the standard retry loop.
+      4. On success: stamps ``reprocessed_at`` + ``reprocessed_outcome='success'``
+         and promotes via ``apply_enrichment_to_job_postings``.
+      5. On repeated timeout: stamps ``reprocessed_outcome='timeout_again'``
+         and increments ``attempt_count``.
+    """
+
+    __tablename__ = "enrichment_quarantine"
+    __table_args__ = (
+        Index("ix_enrichment_quarantine_norm_id", "normalized_job_id"),
+        Index("ix_enrichment_quarantine_reprocessed_at", "reprocessed_at"),
+        {"schema": "dbo"},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    normalized_job_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("dbo.normalized_jobs.id"),
+        nullable=False,
+    )
+    quarantined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    """One of: 'timeout' | 'resolver_exception' | 'reprocess_timeout'."""
+
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    """Total attempts (including the initial one). Incremented by reprocessing."""
+
+    timeout_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    """The ``ENRICHMENT_LLM_TIMEOUT`` value at quarantine time."""
+
+    elapsed_ms_per_attempt: Mapped[list[int]] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    """Per-attempt wall-clock elapsed milliseconds, oldest first."""
+
+    error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """Short description of the failure mode."""
+
+    reprocessed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reprocessed_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """One of: 'success' | 'timeout_again' | None (not yet reprocessed)."""
+
+
+# ---------------------------------------------------------------------------
 # LLM Audit Log
 # ---------------------------------------------------------------------------
 
