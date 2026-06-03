@@ -1648,7 +1648,7 @@ class EnrichmentAgent(BaseAgent):
                             attempts=1,
                             elapsed_ms_per_attempt=[_elapsed],
                             error_summary=f"gather timeout after {_ENRICH_LLM_TIMEOUT}s",
-                        )
+                        ) from None
                     naics_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
                     soc_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
                     employer_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
