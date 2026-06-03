@@ -11,6 +11,8 @@ Usage:
     from common.data_store.migrations import run_migrations
     from common.data_store.database import get_engine
     run_migrations(get_engine())
+    # Or, when ``PYTHON_DATABASE_URL`` is set:
+    run_migrations()
 """
 
 from __future__ import annotations
@@ -486,8 +488,43 @@ def _ensure_duplicate_cluster_id_uuid(engine: Engine) -> None:
         )
 
 
-def run_migrations(engine: Engine) -> None:
-    """Create agent tables and add Phase 1 columns. Safe to run multiple times."""
+# JIE #359 — curriculum path + normalized↔posting joins. Each runs in AUTOCOMMIT because
+# ``CREATE INDEX CONCURRENTLY`` cannot run inside a transaction block (PostgreSQL).
+_CURRICULUM_CONCURRENT_INDEX_STATEMENTS: tuple[str, ...] = (
+    "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_canonical_roles_label ON dbo.canonical_roles (label)",
+    "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_canonical_roles_description ON dbo.canonical_roles (description)",
+    "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_normalized_jobs_source_eid ON dbo.normalized_jobs (source, external_id)",
+    "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_job_postings_source_eid ON dbo.job_postings (source, external_id)",
+)
+
+
+def _apply_curriculum_concurrent_indexes(engine: Engine) -> None:
+    """Create non-blocking btree indexes for curriculum role match + (source, external_id) joins."""
+    if engine.dialect.name != "postgresql":
+        return
+    for stmt in _CURRICULUM_CONCURRENT_INDEX_STATEMENTS:
+        try:
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text(stmt))
+            log.info("migration_concurrent_index_applied", statement=stmt[:120])
+        except Exception as exc:
+            log.warning(
+                "migration_concurrent_index_skipped",
+                statement=stmt[:120],
+                error=str(exc),
+            )
+
+
+def run_migrations(engine: Engine | None = None) -> None:
+    """Create agent tables and add Phase 1 columns. Safe to run multiple times.
+
+    When ``engine`` is omitted, uses :func:`common.data_store.database.get_engine`
+    (requires ``PYTHON_DATABASE_URL``).
+    """
+    if engine is None:
+        from common.data_store.database import get_engine
+
+        engine = get_engine()
     log.info("migrations_start")
 
     # 0. Ensure the dbo schema exists (required by ORM models)
@@ -793,6 +830,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cohort_gap_cache_cohort_key
                     error=str(exc),
                 )
         log.info("migrations_qna_retrieval_indexes_applied")
+
+    # Week 10 (JIE #359) — concurrent btree indexes (safe on live DB; own try/except per statement).
+    _apply_curriculum_concurrent_indexes(engine)
 
     # Labor Pulse — dbo.qa_feedback (Next.js POST upsert; unique on session_id + message_id)
     if engine.dialect.name == "postgresql":

@@ -88,6 +88,21 @@ _CURRICULUM_GENERATION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
         r"\bprogram design (?:and delivery )?for\b",
         re.IGNORECASE,
     ),
+    # JIE #359 — "What should a cybersecurity training program with certifications …"
+    re.compile(
+        r"\bwhat should (?:a |an |the )[\w'-]+\s+training program with\b",
+        re.IGNORECASE,
+    ),
+    # "What should … training program with … for …" (skills/certs then role / audience)
+    re.compile(
+        r"\bwhat should\b.{0,120}?\btraining program with\b.{0,120}?\bfor\b",
+        re.IGNORECASE,
+    ),
+    # Multi-token modifier before "training program for" (e.g. "cloud architect training program for")
+    re.compile(
+        r"\bwhat should (?:a |an |the )(?:[\w'-]+\s+){1,4}training program for\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -159,13 +174,6 @@ def intent_heuristic_classification(question: str) -> dict[str, Any] | None:
         return None
     tier = _intent_heuristic_ablation_level()
 
-    if _matches_curriculum_generation_shape(q):
-        return _heuristic_classification_dict(
-            intent="curriculum",
-            confidence=_CURRICULUM_HEURISTIC_CONFIDENCE,
-            reason="curriculum_generation_shape",
-        )
-
     if tier >= 1 and _CURRICULUM_TRAINING_PROGRAM_COVER_PATTERN.search(q):
         return _heuristic_classification_dict(
             intent="curriculum",
@@ -181,6 +189,12 @@ def intent_heuristic_classification(question: str) -> dict[str, Any] | None:
 
     return None
 
+
+_CURRICULUM_INTENT_ENTITY_USER_HINT = (
+    "Intent is already identified as curriculum — extract only the role_names from this question.\n"
+    'Respond with JSON only using the full shape: intent "curriculum", confidence, '
+    "and extracted_entities with geographic_terms, role_names, skill_names, time_references.\n\n"
+)
 
 _SYSTEM_PROMPT = """You are an intent classifier for workforce and labor-market analytics questions.
 
@@ -238,12 +252,56 @@ DISRUPTION vs other intents — TIE-BREAKER (when automation / AI / era-shift si
      intensity change (not a balanced A-vs-B leaderboard of arbitrary peers) → disruption,
      not comparison.
   → trend: Demand velocity, growth, or time series "up or down" without era-bucket or
-     transformation/displacement framing. If temporal eras or AI/automation restructuring
-     is central → disruption, not trend.
+     transformation/displacement framing. Pure posting-volume or posting-count questions
+     framed as quarter-over-quarter, month-over-month, or week-over-week — with NO AI /
+     automation / displacement / skill-or-tool-mix framing — stay in trend, even when era
+     tokens (pre_chatgpt, early_genai, post_gpt4, agentic_era) appear only as a time-axis
+     descriptor for the comparison range (e.g. "across the pre_chatgpt → agentic_era
+     periods"). The era tokens describe the WHEN, not the WHAT, in this case. Share or
+     distribution questions whose SUBJECT is non-AI — remote-eligibility share, salary
+     distribution, experience-bar requirements, headcount, or other workforce attributes
+     unrelated to AI / automation / skill-or-tool-mix turnover — stay in trend even when
+     framed across era buckets (e.g. "between pre_chatgpt and agentic_era"); the era
+     tokens scope the comparison range, they do not by themselves promote a non-AI
+     subject to disruption. If temporal eras or AI/automation restructuring is central
+     to the WHAT → disruption, not trend.
   → geographic: Location filters which postings are in scope, but the analytic axis is
      still era/skill/automation shift → disruption. Use geographic only when listing or
      filtering postings by place is the main task; a Borderplex (or similar) filter alone
      does not override disruption when the core question is mix or automation change across eras.
+  ROLE_EVOLUTION CARVE-OUT (AI-supporting-mix / AI-expected-bar within an existing role family):
+     PREREQUISITE — this carve-out ONLY applies when the question contains explicit AI
+     framing: a named AI-assist tool (Copilot, ChatGPT, LLM tooling, AI-assisted dev
+     tools, etc.) OR explicit AI-literacy / AI-familiarity / AI-readiness language. A
+     question about generic skill-mix evolution, experience-bar change, or seniority
+     requirements with NO mention of AI, AI tools, or AI-literacy does NOT qualify
+     for this carve-out — route those questions by the standard rules (trend, disruption,
+     or role_evolution on their own merits), regardless of era buckets present.
+     When the PREREQUISITE is met, route to role_evolution — even when era buckets
+     (pre_chatgpt, early_genai, post_gpt4, agentic_era, "the four temporal periods")
+     are present — when the question asks how an existing role family's *AI-supporting-
+     skill mix*, *expected AI-literacy level / bar / familiarity*, or *balance* between
+     AI-assistant skills and traditional / fundamental skills has evolved / changed /
+     shifted across those periods, provided EITHER:
+       (a) an AI-assist tool or concept is EXPLICITLY NAMED in the question text as one
+           peer in a broader multi-skill list (e.g. "TypeScript, Next.js, testing
+           frameworks, AI-assisted dev tools" for React; "AI-assistant familiarity and
+           traditional programming skills" for software engineers). A generic "mix of
+           required skills evolved" or "which skills are rising / declining" question
+           with NO named AI-assist concept does NOT qualify — route to trend or
+           role_evolution on their own merits, OR
+       (b) the *expected AI-literacy bar / AI-familiarity level / AI-readiness
+           expectation* within an existing role is the explicit subject (e.g. "expected
+           AI-literacy bar for product managers", "how has the AI-familiarity expectation
+           evolved"). A generic experience bar, seniority level, or years-of-experience
+           requirement WITHOUT explicit AI framing does NOT qualify for this sub-condition.
+     DISAMBIGUATOR vs disruption: AI-adoption SHARE / PERCENTAGE / GROWTH RATE / VELOCITY
+     / PENETRATION as the PRIMARY subject ("what share of postings mention Copilot",
+     "how fast is that share growing") → disruption (per the SHARE / GROWTH / VELOCITY
+     of AI-ADOPTION rule below). "Balance / AI-supporting-mix / AI-expected-bar evolution"
+     with AI-assist as peer or expectation → role_evolution. Skill-composition SHIFT,
+     skills DROPPED OUT, role TRANSFORMED, AI-DENSITY THRESHOLD CROSSING, displacement
+     by automation → disruption (per the disruption bullet above), not role_evolution.
 
 EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / agentic_era appear):
   → emergence: The subject is something NEW appearing for the first time — net-new roles,
@@ -260,6 +318,17 @@ EMERGENCE vs DISRUPTION — TIE-BREAKER (when era buckets like pre_chatgpt / age
      that DIDN'T EXIST PREVIOUSLY and is now appearing (emergence), or something that
      EXISTED PREVIOUSLY and was transformed (disruption)?" New tools/credentials/titles
      framed as "first-seen" or "did not exist in pre_chatgpt" → emergence.
+  PRECEDENCE: when a question contains EXPLICIT first-seen language — "did not exist
+     before", "did not exist in [prior era]", "first appeared", "first-seen", "newly
+     emerging", "tools that did not exist in the pre_chatgpt period" — emergence takes
+     precedence over BOTH the disruption tie-breaker above AND the SHARE / GROWTH /
+     VELOCITY of AI-ADOPTION rule below, even when era buckets are present and the
+     subject is AI tools (LangChain, LangGraph, vector databases, LLM orchestration
+     frameworks, etc.). The first-seen cue ("tools that did not exist in [prior era]")
+     beats the share-of-AI-adoption cue ("share of postings that mention AI tools")
+     when both appear in the same question, because the question is asking about NEW
+     tools relative to a prior-era baseline — i.e. emergence — not about the structural
+     penetration of existing-but-growing AI tools in a role family.
 
 SHARE / GROWTH / VELOCITY of AI-ADOPTION — TIE-BREAKER (disruption vs trend):
   When the question asks about a SHARE, GROWTH RATE, VELOCITY, or "how fast X is growing"
@@ -465,6 +534,100 @@ def _fallback_other(reason: str) -> dict[str, Any]:
     }
 
 
+def _curriculum_heuristic_fallback_response(reason: str) -> dict[str, Any]:
+    log.warning(
+        "intent_classification_curriculum_heuristic_entity_extraction_failed",
+        reason=reason,
+    )
+    return {
+        "intent": "curriculum",
+        "confidence": float(_CURRICULUM_HEURISTIC_CONFIDENCE),
+        "needs_clarification": _CURRICULUM_HEURISTIC_CONFIDENCE < _CLARIFICATION_THRESHOLD,
+        "extracted_entities": _empty_extracted_entities(),
+    }
+
+
+def _build_classification_user_prompt(question: str, conversation_context: str | None) -> str:
+    ctx = (conversation_context or "").strip()
+    if ctx:
+        return (
+            "The user is continuing a conversation. Use the prior Q&A below to resolve "
+            "pronouns, “the same region”, and short follow-up questions that refer to earlier context.\n\n"
+            f"{ctx}\n\n"
+            f"Current user question (this turn only):\n{question}\n"
+        )
+    return f"User question:\n{question}\n"
+
+
+def _run_intent_llm(
+    *,
+    user_prompt: str,
+    question_for_trace: str,
+    correlation_id: str | None,
+    max_tokens: int,
+    cost_ledger: CostLedger | None,
+    ledger_leg_name: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Call ``complete`` for intent classification.
+
+    Returns ``(classification_dict, None)`` on success, or ``(None, reason)`` for
+    :func:`_fallback_other` / curriculum heuristic fallback logging.
+    """
+    langfuse_context.update_current_observation(
+        input=question_for_trace,
+        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    )
+    try:
+        result = complete(
+            prompt=user_prompt,
+            agent_name=_AGENT_NAME,
+            role="classification",
+            system=_SYSTEM_PROMPT,
+            max_tokens=max_tokens,
+            correlation_id=correlation_id,
+        )
+        if cost_ledger is not None:
+            from analytics.query_engine.ledger_utils import append_leg_from_complete
+
+            append_leg_from_complete(cost_ledger, ledger_leg_name, result, model_fallback=None)
+    except Exception as exc:
+        log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
+        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
+        return None, "llm_exception"
+
+    report_langfuse_usage(result)
+
+    if not result.get("success") or result.get("extraction_failed"):
+        langfuse_context.update_current_observation(level="WARNING", status_message="llm_failed")
+        return None, "llm_failed"
+
+    content = (result.get("content") or "").strip()
+    parsed = _parse_llm_json(content)
+    if not parsed:
+        langfuse_context.update_current_observation(level="WARNING", status_message="invalid_json")
+        return None, "invalid_json"
+
+    try:
+        validated = IntentClassification.model_validate(parsed)
+    except Exception:
+        langfuse_context.update_current_observation(level="WARNING", status_message="schema_validation")
+        return None, "schema_validation"
+
+    out_entities = validated.extracted_entities.model_dump()
+    needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
+    classification_out: dict[str, Any] = {
+        "intent": validated.intent,
+        "confidence": float(validated.confidence),
+        "needs_clarification": needs_clarification,
+        "extracted_entities": out_entities,
+    }
+    langfuse_context.update_current_observation(
+        output={"intent": validated.intent, "confidence": float(validated.confidence)},
+        metadata={"needs_clarification": needs_clarification},
+    )
+    return classification_out, None
+
+
 @_lf_observe(as_type="generation", name="intent_classification")
 def classify_workforce_question(
     question: str,
@@ -478,9 +641,12 @@ def classify_workforce_question(
 
     Returns a plain dict: ``{"intent": str, "confidence": float,
     "needs_clarification": bool, "extracted_entities": dict}`` suitable for
-    JSON APIs. On LLM failure or
-    invalid JSON, returns ``intent="other"``, ``confidence=0.0``, and empty entity
-    lists.
+    JSON APIs. On LLM failure or invalid JSON on the **standard** path, returns
+    ``intent="other"``, ``confidence=0.0``, and empty entity lists.
+
+    When the curriculum-generation heuristic matches, intent is ``curriculum`` at
+    heuristic confidence (0.92); entities come from a follow-up LLM call, with empty
+    entities if that call fails.
 
     Routes through :func:`common.llm_adapter.complete` with ``role="classification"``
     (Haiku-tier; resolves to Azure OpenAI ``chat-gpt41mini`` via ``LLM_DEFAULT``).
@@ -489,72 +655,47 @@ def classify_workforce_question(
     if not q:
         return _fallback_other("empty_question")
 
+    if _matches_curriculum_generation_shape(q):
+        log.info("intent_classification_curriculum_heuristic", match="curriculum_generation_shape")
+        base_prompt = _build_classification_user_prompt(q, conversation_context)
+        entity_prompt = _CURRICULUM_INTENT_ENTITY_USER_HINT + base_prompt
+        llm_out, fail_reason = _run_intent_llm(
+            user_prompt=entity_prompt,
+            question_for_trace=q,
+            correlation_id=correlation_id,
+            max_tokens=max_tokens,
+            cost_ledger=cost_ledger,
+            ledger_leg_name="intent_classification_curriculum_entities",
+        )
+        if llm_out is None:
+            return _curriculum_heuristic_fallback_response(fail_reason or "unknown")
+        raw_ent = llm_out.get("extracted_entities")
+        if not isinstance(raw_ent, dict):
+            return _curriculum_heuristic_fallback_response("missing_extracted_entities")
+        try:
+            coerced = ExtractedEntities.model_validate(raw_ent).model_dump()
+        except Exception:
+            return _curriculum_heuristic_fallback_response("extracted_entities_invalid")
+        return {
+            "intent": "curriculum",
+            "confidence": float(_CURRICULUM_HEURISTIC_CONFIDENCE),
+            "needs_clarification": _CURRICULUM_HEURISTIC_CONFIDENCE < _CLARIFICATION_THRESHOLD,
+            "extracted_entities": coerced,
+        }
+
     heuristic = intent_heuristic_classification(q)
     if heuristic is not None:
         return heuristic
 
-    ctx = (conversation_context or "").strip()
-    if ctx:
-        prompt = (
-            "The user is continuing a conversation. Use the prior Q&A below to resolve "
-            "pronouns, “the same region”, and short follow-up questions that refer to earlier context.\n\n"
-            f"{ctx}\n\n"
-            f"Current user question (this turn only):\n{q}\n"
-        )
-    else:
-        prompt = f"User question:\n{q}\n"
-
-    langfuse_context.update_current_observation(
-        input=q,
-        metadata={"agent_name": _AGENT_NAME, "role": "classification"},
+    prompt = _build_classification_user_prompt(q, conversation_context)
+    llm_out, fail_reason = _run_intent_llm(
+        user_prompt=prompt,
+        question_for_trace=q,
+        correlation_id=correlation_id,
+        max_tokens=max_tokens,
+        cost_ledger=cost_ledger,
+        ledger_leg_name="intent_classification",
     )
-
-    try:
-        result = complete(
-            prompt=prompt,
-            agent_name=_AGENT_NAME,
-            role="classification",
-            system=_SYSTEM_PROMPT,
-            max_tokens=max_tokens,
-            correlation_id=correlation_id,
-        )
-        if cost_ledger is not None:
-            from analytics.query_engine.ledger_utils import append_leg_from_complete
-
-            append_leg_from_complete(cost_ledger, "intent_classification", result, model_fallback=None)
-    except Exception as exc:
-        log.warning("intent_classification_llm_exception", error_type=type(exc).__name__)
-        langfuse_context.update_current_observation(level="ERROR", status_message=str(exc))
-        return _fallback_other("llm_exception")
-
-    report_langfuse_usage(result)
-
-    if not result.get("success") or result.get("extraction_failed"):
-        langfuse_context.update_current_observation(level="WARNING", status_message="llm_failed")
-        return _fallback_other("llm_failed")
-
-    content = (result.get("content") or "").strip()
-    parsed = _parse_llm_json(content)
-    if not parsed:
-        langfuse_context.update_current_observation(level="WARNING", status_message="invalid_json")
-        return _fallback_other("invalid_json")
-
-    try:
-        validated = IntentClassification.model_validate(parsed)
-    except Exception:
-        langfuse_context.update_current_observation(level="WARNING", status_message="schema_validation")
-        return _fallback_other("schema_validation")
-
-    out_entities = validated.extracted_entities.model_dump()
-    needs_clarification = validated.confidence < _CLARIFICATION_THRESHOLD
-    classification_out = {
-        "intent": validated.intent,
-        "confidence": float(validated.confidence),
-        "needs_clarification": needs_clarification,
-        "extracted_entities": out_entities,
-    }
-    langfuse_context.update_current_observation(
-        output={"intent": validated.intent, "confidence": float(validated.confidence)},
-        metadata={"needs_clarification": needs_clarification},
-    )
-    return classification_out
+    if llm_out is None:
+        return _fallback_other(fail_reason or "unknown")
+    return llm_out

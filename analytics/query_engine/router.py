@@ -380,11 +380,24 @@ class RouteResult:
     empty_rows_refusal_reason: str | None = None
 
 
-# JIE #330 — intents that read skill-scoped aggregates; every extracted skill_name must
-# exist in dbo.skills before we query (case-insensitive full-name equality only).
-_SKILL_AGG_INTENTS_REQUIRING_TAXONOMY: frozenset[str] = frozenset(
-    {"trend", "disruption", "emergence", "comparison", "curriculum"},
-)
+# JIE #330 — skill taxonomy pre-check before aggregate handlers that consume skill_names.
+# Handlers that require the gate are marked with @requires_skill_gate (single source of truth).
+# Human-readable intent list (must match decorated handlers): trend, disruption, emergence,
+# comparison, curriculum.
+
+
+def requires_skill_gate(handler: Callable[..., Any]) -> Callable[..., Any]:
+    """Mark a :class:`QueryRouter` intent handler for the skill taxonomy gate (JIE #330)."""
+
+    handler._requires_skill_gate = True  # type: ignore[attr-defined]
+    return handler
+
+
+def _handler_requires_skill_gate(handler: Callable[..., RouteResult] | None) -> bool:
+    if handler is None:
+        return False
+    return bool(getattr(handler, "_requires_skill_gate", False))
+
 
 # JIE #349 — AI-tool / AI-adjacent canonical terms accepted by the taxonomy gate
 # even before they are seeded to dbo.skills.  All values are lowercase; the gate
@@ -548,6 +561,8 @@ def _apply_skill_taxonomy_and_geo_scope_gates(
     classification_confidence: float,
     skill_names: list[str],
     question: str,
+    *,
+    handler: Callable[..., RouteResult] | None,
 ) -> RouteResult | None:
     """Pre-handler gate for JIE #330: taxonomy match + geo/skill scope honesty."""
     qtext = question or ""
@@ -577,7 +592,7 @@ def _apply_skill_taxonomy_and_geo_scope_gates(
         )
 
     if (
-        intent in _SKILL_AGG_INTENTS_REQUIRING_TAXONOMY
+        _handler_requires_skill_gate(handler)
         and skill_names
         and not _skill_terms_all_in_dbo_skills(session, skill_names)
     ):
@@ -668,11 +683,19 @@ class QueryRouter:
             geo_terms=geo_terms[:3],
         )
 
-        blocked = _apply_skill_taxonomy_and_geo_scope_gates(session, intent, confidence, skill_names, question)
+        handler: Callable[..., RouteResult] | None = _INTENT_HANDLERS.get(intent)
+
+        blocked = _apply_skill_taxonomy_and_geo_scope_gates(
+            session,
+            intent,
+            confidence,
+            skill_names,
+            question,
+            handler=handler,
+        )
         if blocked is not None:
             return blocked
 
-        handler: Callable[..., RouteResult] | None = _INTENT_HANDLERS.get(intent)
         if handler is None:
             return self._route_other(
                 intent=intent,
@@ -955,6 +978,7 @@ class QueryRouter:
 
     # Intent handlers ----------------------------------------------------------
 
+    @requires_skill_gate
     def _route_trend(
         self,
         *,
@@ -1150,6 +1174,7 @@ class QueryRouter:
                 confidence=confidence,
             )
 
+    @requires_skill_gate
     def _route_disruption(
         self,
         *,
@@ -1201,6 +1226,7 @@ class QueryRouter:
             confidence=confidence,
         )
 
+    @requires_skill_gate
     def _route_emergence(
         self,
         *,
@@ -1252,6 +1278,7 @@ class QueryRouter:
             confidence=confidence,
         )
 
+    @requires_skill_gate
     def _route_curriculum(
         self,
         *,
@@ -1706,6 +1733,7 @@ class QueryRouter:
                 confidence=confidence,
             )
 
+    @requires_skill_gate
     def _route_comparison(
         self,
         *,
