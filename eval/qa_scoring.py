@@ -18,8 +18,9 @@ Week 10 pairs from distinguishing "fix the prompt" from "fix the infrastructure"
 | Committed answer with no evidence    | ``0.0`` | Real quality failure; keep as signal   |
 | Correct exact intent                 | ``1.0`` | Quality signal; binary (JIE #261)     |
 
-``latency_sla`` is the one exception: wall-clock time is computable even when the
-pipeline fails, so it always returns a float.
+``latency_sla`` is computable even when the pipeline fails (wall-clock time is always
+available).  Catastrophic latencies (> SLA × 10) return ``None`` so they feed
+pipeline-health monitoring, not quality scoring (JIE #270).
 
 Optional metrics ``answerability`` and ``correct_refusal`` are reported separately
 from the four-metric mean. Data-backed expected intents: ``answerability`` is
@@ -43,7 +44,12 @@ from typing import Any
 _CONFIDENCE_TRANSPARENCY_THRESHOLD = 0.6
 
 # Default SLA in seconds (override with QA_EVAL_LATENCY_SLA_SECONDS).
-_DEFAULT_LATENCY_SLA_SECONDS = 45.0
+# 15s is closer to interactive Q&A user-perception tolerance than the old 45s ceiling (JIE #270).
+_DEFAULT_LATENCY_SLA_SECONDS = 15.0
+
+# Latencies exceeding SLA × this multiplier are treated as infrastructure failures,
+# excluded from quality scoring, and reported as pipeline-health events (JIE #270).
+_CATASTROPHIC_LATENCY_MULTIPLIER = 10.0
 
 # ``POST /analytics/query`` (LaborPulse) returns ``confidence`` as low|medium|high; eval maps to floats.
 _LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
@@ -53,6 +59,24 @@ _LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
 }
 
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
+
+
+def _quantile(values: list[float], q: float) -> float:
+    """Return the q-th quantile of *values* (0 ≤ q ≤ 1).
+
+    Uses ``statistics.quantiles`` with ``n=100`` interpolation buckets so
+    p95 == ``_quantile(values, 0.95)``.  Requires at least one value;
+    returns the single value when the list has exactly one element.
+    """
+    import statistics
+
+    if len(values) == 1:
+        return values[0]
+    # quantiles(n=100) gives 99 cut points at 0.01, 0.02, …, 0.99
+    cuts = statistics.quantiles(values, n=100)
+    idx = max(0, min(int(q * 100) - 1, len(cuts) - 1))
+    return cuts[idx]
+
 
 # Whether the golden *expected* intent is evaluated for answerability (SQL rows).
 # Only the Week 9 eval harness (Pair C) maintains this map as data/pipeline
@@ -121,8 +145,9 @@ class QAItemScores:
     confidence_self_consistency: float | None
     # Optional: only when ``expected_confidence_range`` is set in golden (JIE #267).
     confidence_in_expected_range: float | None
-    # Latency is always computable — even on pipeline failure we have wall-clock time.
-    latency_sla: float
+    # Latency is computable even on pipeline failure; None only for catastrophic
+    # latencies (> SLA × _CATASTROPHIC_LATENCY_MULTIPLIER) treated as infra events (JIE #270).
+    latency_sla: float | None
     # Answerability: None for non-data-backed intents, or when excluded (infra) on data-backed.
     answerability: float | None
     # Intent-only: refuse vs commit; None for data-backed (N/A) or when pipeline returned nothing (JIE #269).
@@ -376,14 +401,29 @@ def coerce_eval_response_confidence(raw: Any) -> float:
         return 0.0
 
 
-def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float, str]:
-    """Normalized score: 1.0 at or below SLA, decays above."""
+def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float | None, str]:
+    """Normalized score: 1.0 at or below SLA, decays above.
+
+    Returns ``(None, reason)`` when *latency_seconds* exceeds the catastrophic
+    threshold (SLA × ``_CATASTROPHIC_LATENCY_MULTIPLIER``).  Catastrophic
+    latencies indicate infrastructure failure — they feed pipeline-health
+    monitoring rather than answer-quality scoring (JIE #270).
+
+    Default SLA is ``_DEFAULT_LATENCY_SLA_SECONDS`` (15 s).  Override via
+    ``QA_EVAL_LATENCY_SLA_SECONDS`` env var or pass ``sla_seconds`` directly.
+    """
     from eval._config import qa_latency_sla_seconds
 
     sla = float(sla_seconds or qa_latency_sla_seconds())
     if sla <= 0:
         sla = _DEFAULT_LATENCY_SLA_SECONDS
     lat = max(float(latency_seconds or 0.0), 1e-6)
+    failure_threshold = sla * _CATASTROPHIC_LATENCY_MULTIPLIER
+    if lat > failure_threshold:
+        return (
+            None,
+            f"excluded: catastrophic latency {lat:.1f}s exceeds threshold {failure_threshold:.0f}s (SLA×{_CATASTROPHIC_LATENCY_MULTIPLIER:.0f})",
+        )
     s = min(1.0, sla / lat)
     return max(0.0, min(1.0, s)), f"min(1, {sla:.1f}s / latency)"
 
@@ -487,8 +527,8 @@ def compute_item_scores(
     """Aggregate four core scores and optional answerability.
 
     On infrastructure failure (``pipeline_error`` or no ``response``), content
-    metrics are set to ``None`` so they are excluded from run means.  Only
-    ``latency_sla`` is always computed (JIE #263).
+    metrics are set to ``None`` so they are excluded from run means.
+    ``latency_sla`` is also ``None`` for catastrophic latencies (JIE #270, #263).
     """
     exp_intent = str(golden.get("intent") or golden.get("expected_intent") or "")
     difficulty = str(golden.get("difficulty") or "medium")
@@ -621,14 +661,13 @@ def compute_item_scores(
     )
 
 
-def composite_score(scores: QAItemScores) -> float:
+def composite_score(scores: QAItemScores) -> float | None:
     """Mean of scorable core metrics only (excludes ``answerability`` and ``None`` values).
 
     The four are intent, evidence, self-consistency, latency — not ``confidence_in_expected_range`` (JIE #267).
-    ``latency_sla`` is always a float so the denominator is always ≥ 1.
-    Content metrics excluded due to infrastructure failures (JIE #263) are
-    dropped from the average — the denominator shrinks rather than the mean
-    being dragged down by pipeline noise.
+    ``latency_sla`` is ``None`` on catastrophic latency (JIE #270) and is excluded from the
+    average in that case — same pattern as other infrastructure-failure exclusions (JIE #263).
+    Returns ``None`` when all four core metrics are excluded (complete infrastructure failure).
     """
     candidates = (
         scores.intent_accuracy,
@@ -637,6 +676,8 @@ def composite_score(scores: QAItemScores) -> float:
         scores.latency_sla,
     )
     vals = [v for v in candidates if v is not None]
+    if not vals:
+        return None
     return float(sum(vals) / len(vals))
 
 
