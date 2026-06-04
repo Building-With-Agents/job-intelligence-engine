@@ -92,11 +92,10 @@ def test_extract_context_db_job_postings_tokens_and_spans(unextracted_job_record
     adapter = TypeAdapter(list[ContextSignal])
     for job in unextracted_job_records:
         signals, meta = extract_context(job)
-        assert meta.get("tokens_used") == 0
-        assert float(meta.get("cost_usd") or 0) == 0.0
-        inner = meta.get("extraction_metadata") or {}
-        assert inner.get("tokens_used") == 0
-        assert inner.get("pass2_llm_calls") == 0
+        assert meta.tokens_used == 0
+        assert meta.cost_usd == 0.0
+        assert meta.extraction_metadata.tokens_used == 0
+        assert meta.extraction_metadata.pass2_llm_calls == 0
         adapter.validate_python(signals)
         for sig in signals:
             _assert_span_anchors(job, sig.source_span)
@@ -232,7 +231,7 @@ def test_extraction_db_job_postings_combined_pass1_and_mocked_pass2(unextracted_
     ):
         for job in jobs:
             ctx, cmeta = extract_context(job)
-            assert cmeta.get("tokens_used") == 0
+            assert cmeta.tokens_used == 0
             tasks, tmeta = extract_tasks(job, pass1_context=ctx)
             assert tmeta.get("extraction_failed") is False
             for t in tasks:

@@ -5,7 +5,7 @@ Mirrors wfd-os → ``POST /analytics/query`` (LaborPulse headers, JIE #222).
 
 Requires JIE running, e.g.::
 
-    uvicorn analytics.api.app:app --host 127.0.0.1 --port 8020
+    python scripts/run_analytics_api.py
 
 Headers match ``scripts/smoke/api_smoke.py``. Set ``ANALYTICS_QUERY_X_API_KEY`` when
 ``JIE_API_KEYS`` is configured (see ``.env.example``).
@@ -13,7 +13,7 @@ Headers match ``scripts/smoke/api_smoke.py``. Set ``ANALYTICS_QUERY_X_API_KEY`` 
 Usage::
 
     python scripts/smoke/laborpulse/real_query.py
-    python scripts/smoke/laborpulse/real_query.py --base-url http://localhost:8020
+    python scripts/smoke/laborpulse/real_query.py --base-url http://localhost:8000
 
 Exit code 0 only if every question returns HTTP 200 with a non-empty answer.
 """
@@ -40,6 +40,8 @@ LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
     "What tools and practices do Borderplex employers expect from workflow automation engineers?",
     "What does an MLOps role look like in the Borderplex job market right now?",
 )
+
+DEFAULT_JIE_BASE_URL = "http://127.0.0.1:8000"
 
 
 def _headers(*, request_id: str | None = None) -> dict[str, str]:
@@ -89,12 +91,22 @@ def _likely_refusal(answer: str) -> bool:
     return any(a.startswith(p) for p in prefixes)
 
 
+def _default_base_url() -> str:
+    """Return the JIE API base URL used by the smoke script.
+
+    Mirrors ``scripts/run_analytics_api.py`` so the no-argument smoke command
+    targets the API port that local devs get by default, while still allowing
+    ``JIE_BASE_URL`` to override it for non-standard runs.
+    """
+    return os.environ.get("JIE_BASE_URL", DEFAULT_JIE_BASE_URL)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke the five locked LaborPulse demo questions.")
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("JIE_BASE_URL", "http://localhost:8020"),
-        help="JIE Analytics API base URL (default: http://localhost:8020 or JIE_BASE_URL).",
+        default=_default_base_url(),
+        help=f"JIE Analytics API base URL (default: {DEFAULT_JIE_BASE_URL} or JIE_BASE_URL).",
     )
     parser.add_argument(
         "--require-non-empty-sql",

@@ -18,8 +18,9 @@ Week 10 pairs from distinguishing "fix the prompt" from "fix the infrastructure"
 | Committed answer with no evidence    | ``0.0`` | Real quality failure; keep as signal   |
 | Correct exact intent                 | ``1.0`` | Quality signal; binary (JIE #261)     |
 
-``latency_sla`` is the one exception: wall-clock time is computable even when the
-pipeline fails, so it always returns a float.
+``latency_sla`` is computable even when the pipeline fails (wall-clock time is always
+available).  Catastrophic latencies (> SLA × 10) return ``None`` so they feed
+pipeline-health monitoring, not quality scoring (JIE #270).
 
 Optional metrics ``answerability`` and ``correct_refusal`` are reported separately
 from the four-metric mean. Data-backed expected intents: ``answerability`` is
@@ -43,7 +44,12 @@ from typing import Any
 _CONFIDENCE_TRANSPARENCY_THRESHOLD = 0.6
 
 # Default SLA in seconds (override with QA_EVAL_LATENCY_SLA_SECONDS).
-_DEFAULT_LATENCY_SLA_SECONDS = 45.0
+# 15s is closer to interactive Q&A user-perception tolerance than the old 45s ceiling (JIE #270).
+_DEFAULT_LATENCY_SLA_SECONDS = 15.0
+
+# Latencies exceeding SLA × this multiplier are treated as infrastructure failures,
+# excluded from quality scoring, and reported as pipeline-health events (JIE #270).
+_CATASTROPHIC_LATENCY_MULTIPLIER = 10.0
 
 # ``POST /analytics/query`` (LaborPulse) returns ``confidence`` as low|medium|high; eval maps to floats.
 _LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
@@ -53,6 +59,24 @@ _LABORPULSE_CONFIDENCE_BUCKET: dict[str, float] = {
 }
 
 _TOKEN_SPLIT = re.compile(r"[_\s]+")
+
+
+def _quantile(values: list[float], q: float) -> float:
+    """Return the q-th quantile of *values* (0 ≤ q ≤ 1).
+
+    Uses ``statistics.quantiles`` with ``n=100`` interpolation buckets so
+    p95 == ``_quantile(values, 0.95)``.  Requires at least one value;
+    returns the single value when the list has exactly one element.
+    """
+    import statistics
+
+    if len(values) == 1:
+        return values[0]
+    # quantiles(n=100) gives 99 cut points at 0.01, 0.02, …, 0.99
+    cuts = statistics.quantiles(values, n=100)
+    idx = max(0, min(int(q * 100) - 1, len(cuts) - 1))
+    return cuts[idx]
+
 
 # Whether the golden *expected* intent is evaluated for answerability (SQL rows).
 # Only the Week 9 eval harness (Pair C) maintains this map as data/pipeline
@@ -121,8 +145,9 @@ class QAItemScores:
     confidence_self_consistency: float | None
     # Optional: only when ``expected_confidence_range`` is set in golden (JIE #267).
     confidence_in_expected_range: float | None
-    # Latency is always computable — even on pipeline failure we have wall-clock time.
-    latency_sla: float
+    # Latency is computable even on pipeline failure; None only for catastrophic
+    # latencies (> SLA × _CATASTROPHIC_LATENCY_MULTIPLIER) treated as infra events (JIE #270).
+    latency_sla: float | None
     # Answerability: None for non-data-backed intents, or when excluded (infra) on data-backed.
     answerability: float | None
     # Intent-only: refuse vs commit; None for data-backed (N/A) or when pipeline returned nothing (JIE #269).
@@ -340,16 +365,167 @@ def score_confidence_in_expected_range(
     return s, f"out of [{lo:.3f}, {hi:.3f}]; distance penalty"
 
 
+import structlog as _structlog
+
+_log = _structlog.get_logger()
+
+# Number of equal-width bins for ECE calibration (Guo et al. 2017).
+_N_ECE_BINS = 10
+
+# Layer 2 human metric names that the harness reads back from Langfuse.
+LAYER2_METRIC_NAMES: frozenset[str] = frozenset({"correctness", "decision_relevance", "followup_quality"})
+
+# High-disagreement threshold: warn when two annotator scores spread by more than this.
+_LAYER2_SPREAD_WARN = 0.3
+
+# Weights for the human-correctness composite (must sum to 1.0).
+_HUMAN_COMPOSITE_WEIGHTS: dict[str, float] = {
+    "correctness": 0.5,
+    "decision_relevance": 0.3,
+    "followup_quality": 0.2,
+}
+
+# Thresholds for compute_no_hallucination_rate.
+_HALLUCINATION_HIGH_CONF = 0.8
+_HALLUCINATION_HIGH_CORR = 0.7
+_HALLUCINATION_LOW_CONF = 0.5
+
+
+def _compute_ece_raw(confidences: list[float], correctnesses: list[float]) -> float:
+    """Weighted mean absolute calibration error across equal-width confidence bins."""
+    bins: list[list[tuple[float, float]]] = [[] for _ in range(_N_ECE_BINS)]
+    for c, y in zip(confidences, correctnesses, strict=False):
+        c = max(0.0, min(1.0, float(c)))
+        y = max(0.0, min(1.0, float(y)))
+        idx = min(int(c * _N_ECE_BINS), _N_ECE_BINS - 1)
+        bins[idx].append((c, y))
+    n = len(confidences)
+    ece = 0.0
+    for bucket in bins:
+        if not bucket:
+            continue
+        avg_conf = sum(c for c, _ in bucket) / len(bucket)
+        avg_acc = sum(y for _, y in bucket) / len(bucket)
+        ece += (len(bucket) / n) * abs(avg_conf - avg_acc)
+    return ece
+
+
 def run_ece_from_correctness(
     confidences: list[float],
     correctness: list[bool | None],
 ) -> float | None:
-    """ECE over items with known correctness. Returns ``None`` if labels are missing (do not fake ECE)."""
+    """ECE over items with known correctness labels (JIE #271).
+
+    ``correctness`` values may be ``bool`` or a continuous ``float`` in [0, 1]; ``None``
+    entries are excluded from the computation.  Returns ``None`` when no labeled items
+    exist — do not emit a fake ECE of 0.0.
+
+    Lower ECE is better (unlike other metrics).  Emit with a ``lower_is_better`` note.
+    """
     if not confidences or not correctness or len(confidences) != len(correctness):
         return None
-    if not any(c is not None for c in correctness):
+    pairs: list[tuple[float, float]] = [
+        (float(c), float(y)) for c, y in zip(confidences, correctness, strict=False) if y is not None
+    ]
+    if not pairs:
         return None
-    return None
+    return _compute_ece_raw([c for c, _ in pairs], [y for _, y in pairs])
+
+
+def aggregate_human_scores(scores_per_annotator: list[float]) -> float | None:
+    """Combine multiple human scores for one item into a single aggregate.
+
+    Aggregation rule: arithmetic mean.  When the spread between the highest
+    and lowest score exceeds ``_LAYER2_SPREAD_WARN`` (0.3), a warning is
+    logged but the mean is still returned so the aggregate is deterministic.
+    Downstream: check the IRR report for rubric anchors with high disagreement.
+
+    Returns ``None`` for an empty list (item not yet scored by any annotator).
+    """
+    if not scores_per_annotator:
+        return None
+    vals = [float(s) for s in scores_per_annotator]
+    if len(vals) == 1:
+        return vals[0]
+    mean = sum(vals) / len(vals)
+    spread = max(vals) - min(vals)
+    if spread > _LAYER2_SPREAD_WARN:
+        _log.warning(
+            "layer2_high_inter_rater_spread",
+            spread=round(spread, 3),
+            n_annotators=len(vals),
+            scores=vals,
+        )
+    return mean
+
+
+def score_confidence_correctness_alignment(*, confidence: float, correctness: float | None) -> tuple[float | None, str]:
+    """Per-item calibration score: 1.0 − |confidence − human_correctness|.
+
+    Returns ``None`` when Layer 2 human correctness is not yet available.
+    Feeds ``safety_composite`` after Layer 2 scoring completes (JIE #271 Change 5).
+    """
+    if correctness is None:
+        return None, "no human correctness yet (Layer 2 pending)"
+    c = max(0.0, min(1.0, float(confidence)))
+    y = max(0.0, min(1.0, float(correctness)))
+    dist = abs(c - y)
+    return max(0.0, 1.0 - dist), f"distance={dist:.3f} (conf={c:.3f} correctness={y:.3f})"
+
+
+def compute_no_hallucination_rate(items_with_scores: list[dict[str, Any]]) -> float:
+    """Fraction of Layer-2-labeled items that are not confidently hallucinating.
+
+    An item is *safe* when:
+    - high confidence (> 0.8) AND high human correctness (> 0.7), or
+    - low confidence (< 0.5) — the pipeline self-reports uncertainty.
+
+    Items without a ``human_correctness`` label are excluded from the denominator.
+    Returns 0.0 when no items carry human correctness labels.
+
+    Each dict in ``items_with_scores`` must contain ``"confidence"`` and optionally
+    ``"human_correctness"`` (both numeric 0–1).
+    """
+    safe = 0
+    counted = 0
+    for item in items_with_scores:
+        conf_raw = item.get("confidence")
+        corr_raw = item.get("human_correctness")
+        if conf_raw is None or corr_raw is None:
+            continue
+        try:
+            conf = max(0.0, min(1.0, float(conf_raw)))
+            corr = max(0.0, min(1.0, float(corr_raw)))
+        except (TypeError, ValueError):
+            continue
+        counted += 1
+        if (conf > _HALLUCINATION_HIGH_CONF and corr > _HALLUCINATION_HIGH_CORR) or conf < _HALLUCINATION_LOW_CONF:
+            safe += 1
+    return safe / max(1, counted)
+
+
+def human_correctness_composite(
+    *,
+    correctness: float | None,
+    decision_relevance: float | None,
+    followup_quality: float | None,
+) -> float | None:
+    """Weighted composite of the three Layer 2 human metrics.
+
+    Weights: correctness=0.5, decision_relevance=0.3, followup_quality=0.2.
+    Missing dimensions are excluded and remaining weights are renormalized so
+    the composite is always on [0, 1].  Returns ``None`` when all inputs are ``None``.
+    """
+    slots: list[tuple[float | None, float]] = [
+        (correctness, _HUMAN_COMPOSITE_WEIGHTS["correctness"]),
+        (decision_relevance, _HUMAN_COMPOSITE_WEIGHTS["decision_relevance"]),
+        (followup_quality, _HUMAN_COMPOSITE_WEIGHTS["followup_quality"]),
+    ]
+    total_w = sum(w for v, w in slots if v is not None)
+    if total_w <= 0:
+        return None
+    weighted_sum = sum(float(v) * w for v, w in slots if v is not None)
+    return max(0.0, min(1.0, weighted_sum / total_w))
 
 
 def coerce_eval_response_confidence(raw: Any) -> float:
@@ -376,14 +552,29 @@ def coerce_eval_response_confidence(raw: Any) -> float:
         return 0.0
 
 
-def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float, str]:
-    """Normalized score: 1.0 at or below SLA, decays above."""
+def score_latency_sla(*, latency_seconds: float, sla_seconds: float | None = None) -> tuple[float | None, str]:
+    """Normalized score: 1.0 at or below SLA, decays above.
+
+    Returns ``(None, reason)`` when *latency_seconds* exceeds the catastrophic
+    threshold (SLA × ``_CATASTROPHIC_LATENCY_MULTIPLIER``).  Catastrophic
+    latencies indicate infrastructure failure — they feed pipeline-health
+    monitoring rather than answer-quality scoring (JIE #270).
+
+    Default SLA is ``_DEFAULT_LATENCY_SLA_SECONDS`` (15 s).  Override via
+    ``QA_EVAL_LATENCY_SLA_SECONDS`` env var or pass ``sla_seconds`` directly.
+    """
     from eval._config import qa_latency_sla_seconds
 
     sla = float(sla_seconds or qa_latency_sla_seconds())
     if sla <= 0:
         sla = _DEFAULT_LATENCY_SLA_SECONDS
     lat = max(float(latency_seconds or 0.0), 1e-6)
+    failure_threshold = sla * _CATASTROPHIC_LATENCY_MULTIPLIER
+    if lat > failure_threshold:
+        return (
+            None,
+            f"excluded: catastrophic latency {lat:.1f}s exceeds threshold {failure_threshold:.0f}s (SLA×{_CATASTROPHIC_LATENCY_MULTIPLIER:.0f})",
+        )
     s = min(1.0, sla / lat)
     return max(0.0, min(1.0, s)), f"min(1, {sla:.1f}s / latency)"
 
@@ -487,8 +678,8 @@ def compute_item_scores(
     """Aggregate four core scores and optional answerability.
 
     On infrastructure failure (``pipeline_error`` or no ``response``), content
-    metrics are set to ``None`` so they are excluded from run means.  Only
-    ``latency_sla`` is always computed (JIE #263).
+    metrics are set to ``None`` so they are excluded from run means.
+    ``latency_sla`` is also ``None`` for catastrophic latencies (JIE #270, #263).
     """
     exp_intent = str(golden.get("intent") or golden.get("expected_intent") or "")
     difficulty = str(golden.get("difficulty") or "medium")
@@ -621,14 +812,13 @@ def compute_item_scores(
     )
 
 
-def composite_score(scores: QAItemScores) -> float:
+def composite_score(scores: QAItemScores) -> float | None:
     """Mean of scorable core metrics only (excludes ``answerability`` and ``None`` values).
 
     The four are intent, evidence, self-consistency, latency — not ``confidence_in_expected_range`` (JIE #267).
-    ``latency_sla`` is always a float so the denominator is always ≥ 1.
-    Content metrics excluded due to infrastructure failures (JIE #263) are
-    dropped from the average — the denominator shrinks rather than the mean
-    being dragged down by pipeline noise.
+    ``latency_sla`` is ``None`` on catastrophic latency (JIE #270) and is excluded from the
+    average in that case — same pattern as other infrastructure-failure exclusions (JIE #263).
+    Returns ``None`` when all four core metrics are excluded (complete infrastructure failure).
     """
     candidates = (
         scores.intent_accuracy,
@@ -637,6 +827,8 @@ def composite_score(scores: QAItemScores) -> float:
         scores.latency_sla,
     )
     vals = [v for v in candidates if v is not None]
+    if not vals:
+        return None
     return float(sum(vals) / len(vals))
 
 
@@ -770,8 +962,14 @@ def subcomposites_from_means(
     confidence_self_consistency: float | None,
     confidence_in_expected_range: float | None,
     n_data_backed_answerability: int = 0,
+    no_hallucination_rate: float | None = None,
 ) -> dict[str, float | bool | str | None]:
-    """Shared JIE #268 engine from per-metric means (local rows or Langfuse run aggregates)."""
+    """Shared JIE #268 engine from per-metric means (local rows or Langfuse run aggregates).
+
+    ``no_hallucination_rate`` is an optional Layer 2 signal (JIE #271 Change 7).
+    When provided it is blended into ``safety_composite`` at 20 % weight so the
+    safety signal reflects both automated self-consistency and human ground truth.
+    """
     e_mean = evidence_citation
     i_mean = intent_accuracy
     l_mean = latency_sla
@@ -796,6 +994,12 @@ def subcomposites_from_means(
         sfty = csc
     else:
         sfty = None
+
+    # Layer 2 signal: blend no_hallucination_rate into safety_composite when available.
+    # Weight: 80 % automated signal, 20 % Layer 2 hallucination guard.
+    if no_hallucination_rate is not None:
+        nhr = max(0.0, min(1.0, float(no_hallucination_rate)))
+        sfty = 0.80 * sfty + 0.20 * nhr if sfty is not None else nhr
 
     overall = _geometric_mean_four(e_mean, i_mean, ph, sfty)
 

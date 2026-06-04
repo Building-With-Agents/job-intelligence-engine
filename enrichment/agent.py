@@ -330,6 +330,86 @@ def _emit_enrichment_degraded(
         )
 
 
+def _check_soc_unclassified_rate(
+    *,
+    soc_classified_count: int,
+    enriched_count: int,
+    correlation_id: str,
+    batch_id: str,
+    triggered_by_event_type: Any,
+) -> None:
+    """Emit a warning and fire EnrichmentDegraded when too many records are SOC-unclassified.
+
+    The threshold is read from ``config/enrichment.yaml``
+    (``enrichment.soc.unclassified_rate_threshold``) or env override
+    ``SOC_UNCLASSIFIED_RATE_THRESHOLD``; default is 0.10 (10 %).
+
+    This is the batch-level fail-safe: individual unclassified records already
+    emit ``log.warning("soc_classifier_llm_resolution")`` from the classifier
+    and ``log.warning("enrich_record_soc_unclassified")`` from the agent.  This
+    function adds aggregate visibility and routes the alert to the Orchestration
+    Agent via the event bus when the rate is abnormal.
+
+    Safe to call with ``enriched_count == 0`` — no check is performed.
+    """
+    if enriched_count <= 0:
+        return
+
+    from enrichment._config import soc_unclassified_rate_threshold
+
+    threshold = soc_unclassified_rate_threshold()
+    unclassified_count = enriched_count - soc_classified_count
+    unclassified_rate = unclassified_count / enriched_count
+
+    if unclassified_rate <= threshold:
+        return
+
+    log.warning(
+        "soc_unclassified_rate_exceeded",
+        batch_id=batch_id,
+        enriched_count=enriched_count,
+        soc_classified_count=soc_classified_count,
+        unclassified_count=unclassified_count,
+        unclassified_rate=round(unclassified_rate, 4),
+        threshold=threshold,
+        message=(
+            f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold "
+            f"{threshold:.1%} for batch {batch_id}. "
+            "Check dbo.socc population and LLM classification quality."
+        ),
+    )
+
+    if _alert_bus is None:
+        return
+    try:
+        event = EventEnvelope(
+            correlation_id=correlation_id,
+            agent_id="enrichment-agent",
+            payload={
+                "event_type": "EnrichmentDegraded",
+                "batch_id": batch_id,
+                "triggered_by_event_type": triggered_by_event_type,
+                "classifier": "soc",
+                "reason": "unclassified_rate_exceeded",
+                "unclassified_rate": round(unclassified_rate, 4),
+                "threshold": threshold,
+                "enriched_count": enriched_count,
+                "soc_classified_count": soc_classified_count,
+                "unclassified_count": unclassified_count,
+                "degraded_fields": ["soc_code"],
+                "message": (f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold {threshold:.1%}."),
+            },
+        )
+        _alert_bus.publish(event)
+    except Exception as exc:
+        log.warning(
+            "EnrichmentDegraded_publish_failed",
+            batch_id=batch_id,
+            classifier="soc",
+            error=str(exc),
+        )
+
+
 SpamBucket = Literal["rejected", "flagged", "proceed"]
 
 
@@ -633,6 +713,61 @@ class EnrichmentAgent(BaseAgent):
                     execution_mode="parallel",
                 )
 
+                _check_soc_unclassified_rate(
+                    soc_classified_count=soc_classified_count,
+                    enriched_count=enriched_count,
+                    correlation_id=correlation_id,
+                    batch_id=batch_id,
+                    triggered_by_event_type=payload.get("event_type"),
+                )
+
+                # Batch-level Langfuse trace for the parallel path (JIE #15).
+                # Wraps in a span so the event reaches Langfuse (log_event requires
+                # an active observation on the stack). Per-record traces are serial-only
+                # (no job_span_ctx in parallel path — tracked as follow-up).
+                if tracer:
+                    with suppress(Exception):
+                        total_processed = enriched_count + spam_rejected_count + flagged_for_review_count
+                        spam_tier_distribution = {
+                            "clean": enriched_count,
+                            "flagged": flagged_for_review_count,
+                            "rejected": spam_rejected_count,
+                        }
+                        with tracer.start_span(
+                            "enrichment",
+                            correlation_id=correlation_id,
+                            metadata={"batch_id": batch_id, "record_count": len(rows), "execution_mode": "parallel"},
+                        ):
+                            tracer.log_event(
+                                "enrichment_complete",
+                                {
+                                    "output": _json.dumps(
+                                        {
+                                            "event_type": "RecordEnriched",
+                                            "batch_id": batch_id,
+                                            "enriched_count": enriched_count,
+                                            "spam_rejected_count": spam_rejected_count,
+                                            "flagged_for_review_count": flagged_for_review_count,
+                                            "soc_classified_count": soc_classified_count,
+                                            "naics_classified_count": naics_classified_count,
+                                            "duplicate_count": duplicate_count,
+                                        }
+                                    ),
+                                    "enriched_count": enriched_count,
+                                    "spam_rejected_count": spam_rejected_count,
+                                    "flagged_for_review_count": flagged_for_review_count,
+                                    "soc_classified_count": soc_classified_count,
+                                    "naics_classified_count": naics_classified_count,
+                                    "naics_unclassified_count": enriched_count - naics_classified_count,
+                                    "soc_unclassified_count": enriched_count - soc_classified_count,
+                                    "spam_tier_distribution": spam_tier_distribution,
+                                    "temporal_period_distribution": dict(temporal_period_distribution),
+                                    "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
+                                    "total_processed": total_processed,
+                                    "execution_mode": "parallel",
+                                },
+                            )
+
                 return build_record_enriched_event(
                     correlation_id=correlation_id,
                     batch_id=batch_id,
@@ -770,6 +905,29 @@ class EnrichmentAgent(BaseAgent):
 
                         enriched_count += 1
 
+                        # Per-record quality/spam/confidence trace (JIE #15).
+                        # Emits span attributes on the job_span_ctx so Langfuse shows
+                        # quality breakdown alongside NAICS/SOC/employer classifier calls.
+                        if tracer:
+                            with suppress(Exception):
+                                _spam_score = enriched.get("spam_score")
+                                _spam_tier = enriched.get("spam_tier") or posting.get("spam_tier")
+                                tracer.log_event(
+                                    "enrichment_record_quality_spam",
+                                    {
+                                        "quality_score": enriched.get("quality_score"),
+                                        "quality_components": enriched.get("quality_components") or {},
+                                        "spam_score": _spam_score,
+                                        "spam_tier": _spam_tier,
+                                        "overall_confidence": enriched.get("overall_confidence"),
+                                        "field_confidence": enriched.get("field_confidence") or {},
+                                        "soc_code": enriched.get("soc_code"),
+                                        "naics_code": enriched.get("naics_code"),
+                                        "role_classification": enriched.get("role_classification"),
+                                        "seniority": enriched.get("seniority"),
+                                    },
+                                )
+
                         tp = _distribution_bucket(enriched.get("temporal_period", posting.get("temporal_period")))
                         temporal_period_distribution[tp] += 1
                         bp = _distribution_bucket(enriched.get("borderplex_subregion"))
@@ -858,6 +1016,13 @@ class EnrichmentAgent(BaseAgent):
             if tracer:
                 with suppress(Exception):
                     total_processed = enriched_count + spam_rejected_count + flagged_for_review_count
+                    # Batch-level spam tier distribution added per JIE #15.
+                    clean_count = enriched_count  # records that passed spam filter
+                    spam_tier_distribution = {
+                        "clean": clean_count,
+                        "flagged": flagged_for_review_count,
+                        "rejected": spam_rejected_count,
+                    }
                     tracer.log_event(
                         "enrichment_complete",
                         {
@@ -878,9 +1043,23 @@ class EnrichmentAgent(BaseAgent):
                             "flagged_for_review_count": flagged_for_review_count,
                             "soc_classified_count": soc_classified_count,
                             "naics_classified_count": naics_classified_count,
+                            "naics_unclassified_count": enriched_count - naics_classified_count,
+                            "soc_unclassified_count": enriched_count - soc_classified_count,
+                            "spam_tier_distribution": spam_tier_distribution,
+                            "temporal_period_distribution": dict(temporal_period_distribution),
+                            "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
                             "total_processed": total_processed,
+                            "execution_mode": "serial",
                         },
                     )
+
+            _check_soc_unclassified_rate(
+                soc_classified_count=soc_classified_count,
+                enriched_count=enriched_count,
+                correlation_id=correlation_id,
+                batch_id=batch_id,
+                triggered_by_event_type=payload.get("event_type"),
+            )
 
         return build_record_enriched_event(
             correlation_id=correlation_id,
@@ -1209,7 +1388,17 @@ class EnrichmentAgent(BaseAgent):
                             _enrichment_soc_llm(),
                         )
                     )
-                    merged["soc_code"] = None if raw_soc == "unclassified" else raw_soc
+                    if raw_soc == "unclassified":
+                        # Individual-record warning; batch-level rate check fires separately
+                        # in _check_soc_unclassified_rate after the full batch completes.
+                        log.warning(
+                            "enrich_record_soc_unclassified",
+                            title=(posting.get("title") or "")[:200],
+                            normalized_job_id=posting.get("normalized_job_id"),
+                        )
+                        merged["soc_code"] = None
+                    else:
+                        merged["soc_code"] = raw_soc
                 except Exception as soc_exc:
                     log.warning("enrich_record_soc_failed", error=str(soc_exc))
                     merged["soc_code"] = posting.get("soc_code")

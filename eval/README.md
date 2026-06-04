@@ -118,3 +118,87 @@ receive ``usage_details`` + a ``model`` name that matches the registry.
 ### Extraction eval
 
 See [`run_extraction_eval.py`](run_extraction_eval.py) for the skills-extraction harness.
+
+---
+
+## Layer 2 — manual scoring integration (JIE #271)
+
+Human annotators score three metrics in the Langfuse UI per trace:
+
+| Metric | What it measures |
+|--------|-----------------|
+| `correctness` | Is the answer factually correct? (0–1) |
+| `decision_relevance` | Does the answer serve the stakeholder's decision need? (0–1) |
+| `followup_quality` | Are the follow-up questions useful and well-formed? (0–1) |
+
+Cross-pair review assigns two humans to every item (owner + cross-pair reviewer). Their
+scores are stored separately in Langfuse. Three scripts process this data post-scoring.
+
+### Step 1 — Inter-rater reliability + aggregate emission
+
+```powershell
+python scripts/compute_layer2_irr.py --run-name v1-baseline
+```
+
+Reads human scores from Langfuse, computes per-metric IRR (Cohen's kappa, Pearson r,
+disagreement distribution), aggregates multi-annotator scores using arithmetic mean,
+and emits `*_aggregate` scores back to Langfuse.  Writes `eval/qa_irr_report.md`.
+
+Optional flags:
+
+| Flag | Purpose |
+|------|---------|
+| `--dry-run` | Compute and print without emitting Langfuse scores |
+| `--json-output path.json` | Write machine-readable summary for downstream use |
+| `--automated-scores-json path.json` | Provide `qa_eval --json` output for ECE computation |
+| `--dataset-name NAME` | Override dataset name (default: `LaborPulse Golden Questions`) |
+
+Run-level Langfuse scores emitted: `mean_human_correctness_composite`, `mean_confidence_ece`
+(ECE only when `--automated-scores-json` provides confidence scores).
+
+### Step 2 — Layer 1 vs Layer 2 divergence report
+
+```powershell
+# Requires qa_eval --json output and Layer 2 aggregate scores from Step 1
+python scripts/compute_automated_human_divergence.py \
+    --automated-json eval/runs/v1-baseline-scores.json \
+    --run-name v1-baseline
+```
+
+Compares automated `evidence_citation` against human `correctness_aggregate`.
+Sorts items by `|automated − human|` and classifies direction:
+
+- **high-auto-low-human**: likely confident hallucination → priority prompt iteration target
+- **high-human-low-auto**: likely semantic paraphrase → rubric loosening candidate
+
+Writes `eval/qa_divergence_report.md`.  Use `--human-json path.json` (IRR `--json-output`)
+to avoid a second Langfuse round-trip.
+
+### Step 3 — Comment audit
+
+```powershell
+python scripts/audit_layer2_comments.py --run-name v1-baseline
+```
+
+Flags any human score below `--threshold` (default 0.7) that has an empty comment.
+Exits with code 1 when violations exist (CI signal).  Use `--output path.md` for a
+full markdown report.
+
+### New scoring functions in `qa_scoring.py`
+
+| Function | Description |
+|----------|-------------|
+| `aggregate_human_scores(scores)` | Arithmetic mean of annotator scores; warns on spread > 0.3 |
+| `run_ece_from_correctness(confs, correctness)` | Expected Calibration Error (lower is better) |
+| `score_confidence_correctness_alignment(confidence, correctness)` | `1 − \|conf − correctness\|`; None when Layer 2 pending |
+| `compute_no_hallucination_rate(items)` | Fraction of labeled items that are not confidently hallucinating |
+| `human_correctness_composite(correctness, dr, fq)` | Weighted mean 0.5/0.3/0.2 |
+
+`subcomposites_from_means` accepts an optional `no_hallucination_rate` argument.
+When provided, it is blended into `safety_composite` at 20 % weight alongside the
+automated self-consistency signal.
+
+### Environment
+
+No additional env vars are required beyond the Langfuse credentials already used by
+`qa_eval.py` (`LANGFUSE_SECRET_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_BASE_URL`).
