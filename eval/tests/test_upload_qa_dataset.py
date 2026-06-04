@@ -93,8 +93,7 @@ class TestMetadataSize:
         for key, value in metadata.items():
             serialized = json.dumps(value) if not isinstance(value, str) else value
             assert len(serialized) < _LANGFUSE_METADATA_MAX_CHARS, (
-                f"metadata[{key!r}] serializes to {len(serialized)} chars "
-                f"(limit: {_LANGFUSE_METADATA_MAX_CHARS})"
+                f"metadata[{key!r}] serializes to {len(serialized)} chars (limit: {_LANGFUSE_METADATA_MAX_CHARS})"
             )
 
     def test_metadata_within_limit_for_long_intent(self):
@@ -128,8 +127,7 @@ class TestPointerFields:
         excluded = ("must_include", "must_not_include", "ideal_answer_summary", "context")
         for field in excluded:
             assert field not in metadata, (
-                f"Scoring field {field!r} found in metadata — it would exceed "
-                "the Langfuse 200-char limit (JIE #248)"
+                f"Scoring field {field!r} found in metadata — it would exceed the Langfuse 200-char limit (JIE #248)"
             )
 
     def test_optional_boolean_fields_excluded(self):
