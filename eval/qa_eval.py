@@ -131,7 +131,30 @@ def _resolve_question_input(item: Any) -> tuple[str, str, dict[str, Any]]:
 
 
 def _merge_golden(golden_by_id: dict[str, dict[str, Any]], gq_id: str, meta: dict[str, Any]) -> dict[str, Any]:
+    """Merge slim Langfuse metadata with the full golden record from local JSON.
+
+    DatasetItem.metadata only carries pointer fields (id, intent, difficulty)
+    since JIE #248 — scoring fields live in the local golden-question JSON.
+    ``base`` from ``golden_by_id`` takes precedence over ``meta`` for any
+    key present in both, so must_include / must_not_include / ideal_answer_summary
+    always come from the authoritative local file.
+
+    A missing lookup is logged as a warning: scores will silently degrade to
+    None/fallback values if the item exists in Langfuse but not in the local
+    JSON (e.g. after adding questions to the dataset without a corresponding
+    JSON update).
+    """
     base = dict(golden_by_id.get(gq_id) or {})
+    if not base and gq_id:
+        log.warning(
+            "golden_lookup_miss",
+            gq_id=gq_id,
+            detail=(
+                "Item exists in Langfuse dataset but not in local golden-question JSON. "
+                "Scoring fields (must_include, must_not_include, ideal_answer_summary) "
+                "will be missing. Re-sync eval/qa_golden_questions.json."
+            ),
+        )
     merged = {**meta, **base}
     if "expected_intent" not in merged and "intent" in base:
         merged["expected_intent"] = base["intent"]
