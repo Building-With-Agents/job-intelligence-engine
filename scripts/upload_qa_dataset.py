@@ -170,7 +170,7 @@ def upload(
     dataset_name: str,
     dry_run: bool,
 ) -> None:
-    client: Langfuse | None = None if dry_run else Langfuse()
+    client: Langfuse | None = None if dry_run else Langfuse(timeout=60)
 
     if client is not None:
         # create_dataset is idempotent — safe to call on every upload.
