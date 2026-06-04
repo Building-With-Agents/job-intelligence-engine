@@ -288,14 +288,13 @@ def _emit_enrichment_degraded(
     reason: str,
     extraction_note: str | None,
 ) -> None:
-    message = "Spam classification degraded; record continued with null spam fields."
     log.warning(
         "EnrichmentDegraded",
         posting_id=posting_id,
         normalized_job_id=normalized_job_id,
         reason=reason,
         extraction_note=extraction_note,
-        message=message,
+        detail="Spam classification degraded; record continued with null spam fields.",
     )
     if _alert_bus is None:
         return
@@ -317,7 +316,6 @@ def _emit_enrichment_degraded(
                     "overall_confidence",
                 ],
                 "extraction_note": extraction_note,
-                "message": message,
             },
         )
         _alert_bus.publish(event)
@@ -372,7 +370,7 @@ def _check_soc_unclassified_rate(
         unclassified_count=unclassified_count,
         unclassified_rate=round(unclassified_rate, 4),
         threshold=threshold,
-        message=(
+        detail=(
             f"SOC unclassified rate {unclassified_rate:.1%} exceeds threshold "
             f"{threshold:.1%} for batch {batch_id}. "
             "Check dbo.socc population and LLM classification quality."
