@@ -89,6 +89,32 @@ Per-item `X-Request-Id` is the harness `correlation_id` (not env-configured).
 - `--output-json path.json` writes per-item scores (and trace IDs when Langfuse is used).
 - `--json` prints the same run summary as JSON to **stdout** and skips the human-readable console report (use for piping, `Tee-Object`, or redirecting to a file). Combine with `--output-json` to write the file and still emit JSON on stdout; file-write notices go to stderr so stdout stays valid JSON.
 
+### Verify Langfuse cost attribution (JIE #259)
+
+Langfuse trace cost stays **$0.00** until Azure models are registered and generations
+receive ``usage_details`` + a ``model`` name that matches the registry.
+
+1. **One-time model registry** (per Langfuse project):
+
+   ```powershell
+   python scripts/setup_langfuse_models.py
+   ```
+
+   Confirm **Settings → Models** lists `chat-gpt41mini`, `chat-gpt41`, and the two
+   API alias names (`gpt-4.1-mini-2025-04-14`, `gpt-4.1-2025-04-14`).
+
+2. **Smoke eval** (requires `LANGFUSE_*` in `.env`):
+
+   ```powershell
+   python -m eval.qa_eval --prompt-version v1-smoke --limit 1 --local-experiment-only
+   ```
+
+3. **In Langfuse UI:** open the trace → **Cost** should be **> $0** and roughly match
+   `response.cost_usd` / `total_cost_usd` in the expanded response payload.
+
+4. **Optional:** re-run a full baseline (`python -m eval.qa_eval --prompt-version v1-baseline`)
+   and confirm the experiment **Trace Cost** column is non-zero.
+
 ### Extraction eval
 
 See [`run_extraction_eval.py`](run_extraction_eval.py) for the skills-extraction harness.
