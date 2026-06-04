@@ -30,6 +30,7 @@ import structlog
 from common.data_store.database import session_scope
 from common.data_store.models import LLMAuditLog
 from common.observability.langfuse import LangfuseTracer
+from common.observability.langfuse_cost import langfuse_model_for_observation
 
 log = structlog.get_logger()
 
@@ -501,9 +502,11 @@ def complete(
                             "input_tokens": result["input_tokens"],
                             "output_tokens": result["output_tokens"],
                             "cost_usd": result["cost_usd"],
+                            "model": langfuse_model_for_observation("mock-sonnet-v1", result.get("model")),
                             "output": _parse_output_for_trace(result["content"]),
                         },
                     )
+            result["deployment"] = "mock-sonnet-v1"
             return result
 
     # Gemini provider: use google-generativeai SDK
@@ -567,6 +570,7 @@ def complete(
                                 "input_tokens": input_tokens,
                                 "output_tokens": output_tokens,
                                 "cost_usd": cost_usd,
+                                "model": langfuse_model_for_observation(gemini_model, gemini_model),
                                 "output": _parse_output_for_trace(content),
                             },
                         )
@@ -577,6 +581,7 @@ def complete(
                     "cost_usd": cost_usd,
                     "latency_ms": latency_ms,
                     "model": gemini_model,
+                    "deployment": gemini_model,
                     "model_tier": "gemini-flash",
                     "success": True,
                     "extraction_failed": False,
@@ -699,6 +704,7 @@ def complete(
                             latency_ms=latency_ms,
                         )
 
+                        langfuse_model = langfuse_model_for_observation(deployment, response_model)
                         if _tracer:
                             with contextlib.suppress(Exception):
                                 _tracer.record_latency("llm_call", seconds=latency_ms / 1000.0)
@@ -708,6 +714,7 @@ def complete(
                                         "input_tokens": input_tokens,
                                         "output_tokens": output_tokens,
                                         "cost_usd": round(cost_usd, 6),
+                                        "model": langfuse_model,
                                         "output": _parse_output_for_trace(content),
                                     },
                                 )
@@ -718,6 +725,7 @@ def complete(
                             "output_tokens": output_tokens,
                             "cost_usd": cost_usd,
                             "model": response_model,
+                            "deployment": deployment,
                             "model_tier": model_tier,
                             "success": True,
                             "extraction_failed": False,
@@ -832,6 +840,8 @@ def complete(
                         latency_ms=latency_ms,
                     )
 
+                    response_model = getattr(response, "model", model)
+                    langfuse_model = langfuse_model_for_observation(model, response_model)
                     if _tracer:
                         with contextlib.suppress(Exception):
                             _tracer.record_latency("llm_call", seconds=latency_ms / 1000.0)
@@ -841,6 +851,7 @@ def complete(
                                     "input_tokens": input_tokens,
                                     "output_tokens": output_tokens,
                                     "cost_usd": round(cost_usd, 6),
+                                    "model": langfuse_model,
                                     "output": _parse_output_for_trace(content),
                                 },
                             )
@@ -850,7 +861,8 @@ def complete(
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "cost_usd": cost_usd,
-                        "model": getattr(response, "model", model),
+                        "model": response_model,
+                        "deployment": model,
                         "model_tier": model_tier,
                         "success": True,
                         "extraction_failed": False,
