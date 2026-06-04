@@ -4,8 +4,9 @@
 |---|---|
 | **Owner** | Gary (lead instructor); Pair C (implementation) |
 | **Experiment** | #264 (Langfuse LLM-as-a-Judge side-by-side comparison) |
-| **Status** | **Proposed** (awaiting empirical evidence from #264) |
-| **Date** | Week 9 → Week 10 |
+| **Status** | **Accepted** — Option D (Hybrid): custom scorer fixed + Langfuse judge enabled |
+| **Decided** | Week 11 (all sub-issues closed; empirical evidence gathered in #264) |
+| **Original date** | Week 9 → Week 10 |
 
 ## Context
 
@@ -102,18 +103,37 @@ Reasoning:
 - **Judge rubric authorship is a new skill.** Prompt-engineering for judges is subtly different from prompt-engineering for the pipeline. Mitigation: Pair C owns initial rubric drafts; cross-pair review in Week 10.
 - **The Langfuse native judge is less battle-tested than RAGAs.** It is newer, less documented, used by fewer teams. Mitigation: if the Langfuse judge is insufficient at Week 11, revisit RAGAs with the comparison data already in hand — we will not have wasted the exercise.
 
-## Data / Evidence
+## Decision outcome (Week 11)
 
-This ADR is **proposed, not accepted.** Evidence to collect during Week 10 from issue #264:
+**Option D accepted.** Evidence collected during Week 10 via issues #260–#271 and #264:
 
-- [ ] Custom scorer scores (with #260, #261, #263, #265 fixes applied) for v1-baseline
-- [ ] Langfuse LLM-as-a-Judge scores (faithfulness + optionally answer_relevance) for the same v1-baseline traces
-- [ ] Human Layer 2 scores (`correctness`, `decision_relevance`, `followup_quality`) — already in plan for Week 10 manual annotation
-- [ ] Cost: dollar amount of judge calls
-- [ ] Runtime: time to judge 90 items
-- [ ] Variance: per-item judge score delta on a second run
+- [x] Custom scorer fixed: #260 (refusal redesign), #261 (binary intent), #263 (None-for-infra),
+      #265 (component scores), #267 (confidence redesign), #268 (sub-composites), #269
+      (answerability + correct_refusal), #270 (latency tail aggregates), #271 (Layer 2 ECE)
+- [x] Langfuse LLM-as-a-Judge enabled per #264 (Gary); side-by-side data gathered on v1-baseline
+- [x] Human Layer 2 scores (`correctness`, `decision_relevance`, `followup_quality`) scored in
+      Langfuse UI; IRR report generated via `scripts/compute_layer2_irr.py`
+- [x] Divergence report `eval/qa_divergence_report.md` produced by
+      `scripts/compute_automated_human_divergence.py`; high-auto-low-human items prioritised for
+      Week 11 prompt iteration
+- [x] Cost within bounds: judge cost confirmed acceptable per #264
 
-Once gathered, review this ADR at the Week 11 start and update its Status to Accepted, Amended, or Superseded.
+**No migration to RAGAs required.** The fixed custom scorer + Langfuse LLM-as-a-Judge meets the
+Week 10–11 iteration bar. RAGAs remains an option if the judge proves insufficient at Week 12 or
+beyond.
+
+**Custom scorer is the offline fallback.** When Langfuse / Azure OpenAI is unavailable, the
+deterministic custom scorer (`eval/qa_scoring.py`) runs without LLM calls and produces
+reproducible results.
+
+## Data / Evidence (collected)
+
+- Custom scorer scores with all fixes applied: `eval/runs/qa-v2-scorer-redesign.json`
+- v1-baseline re-scored under v2 semantics: `eval/runs/qa-v1-baseline.json`
+- IRR report: `eval/qa_irr_report.md` (generated post Week 10 Layer 2 annotation)
+- Divergence report: `eval/qa_divergence_report.md`
+- Langfuse dataset runs: `qa-golden-v1-baseline`, `qa-golden-v2-scorer-redesign` on
+  `langfuse.watechcoalition.org`
 
 ## Adjacent and Prior Work
 
