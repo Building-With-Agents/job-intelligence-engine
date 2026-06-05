@@ -18,7 +18,7 @@ from ingestion.sources.base_adapter import SourceAdapter
 log = structlog.get_logger()
 
 _FALLBACK_SCRAPE = (
-    Path(__file__).parent.parent  # agents/
+    Path(__file__).parent.parent.parent  # repo root
     / "data"
     / "fixtures"
     / "fallback_scrape_sample.json"
