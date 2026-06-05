@@ -189,6 +189,69 @@ def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
     assert "bad_col" in out.refusal_message
 
 
+def test_routing_preserves_zero_confidence_from_fallback() -> None:
+    """Regression: confidence=0.0 must NOT be inflated to 0.5 by the ``or`` operator.
+
+    ``_fallback_other`` returns ``confidence=0.0``. Previously
+    ``float(classification.get("confidence") or 0.5)`` silently substituted 0.5
+    because 0.0 is falsy in Python. The fix uses an explicit ``None``-check so that
+    a genuine 0.0 is passed as-is to ``QueryResultPayload.classification_confidence``.
+    """
+    from analytics.query_engine import qna as qna_module
+    from analytics.query_engine.schemas import QueryResultPayload
+
+    session = MagicMock()
+    captured: list[QueryResultPayload] = []
+
+    def fake_intent_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"intent": "other", "confidence": 0.0, "needs_clarification": true, "extracted_entities": {}}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.001,
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "model": "m",
+        }
+
+    def fake_sql_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"sql": "SELECT COUNT(*) AS posting_count FROM dbo.job_postings LIMIT 100"}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.002,
+            "input_tokens": 20,
+            "output_tokens": 10,
+            "model": "m",
+        }
+
+    real_run_analytics_qna = qna_module.run_analytics_qna
+
+    def capturing_qna(payload: QueryResultPayload, **kwargs):
+        captured.append(payload)
+        return real_run_analytics_qna(payload, **kwargs)
+
+    session.execute.return_value.keys.return_value = ["posting_count"]
+    session.execute.return_value.fetchall.return_value = []
+
+    with (
+        patch("analytics.query_engine.intent.complete", side_effect=fake_intent_complete),
+        patch("analytics.query_engine.routing.complete", side_effect=fake_sql_complete),
+        patch("analytics.query_engine.routing.audit_log.log_sql_validation_to_llm_audit"),
+        patch("analytics.query_engine.routing.qna.run_analytics_qna", side_effect=capturing_qna),
+    ):
+        run_guardrailed_analytics_query(
+            QueryRequest(query="What is the trend?"),
+            session=session,
+        )
+
+    assert captured, "qna.run_analytics_qna was not called"
+    assert captured[0].classification_confidence == 0.0, (
+        f"Expected 0.0 but got {captured[0].classification_confidence}; "
+        "regression: 'or 0.5' fallback was treating numeric 0.0 as missing"
+    )
+
+
 def test_rest_qna_preserves_transparency_fields_and_classification_cost() -> None:
     session = MagicMock()
 

@@ -42,7 +42,7 @@ class LaborPulseQueryRequest(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    question: str = Field(..., max_length=20_000)
+    question: str = Field(..., min_length=1, max_length=20_000)
     conversation_id: str | None = Field(
         default=None,
         max_length=36,
@@ -52,10 +52,20 @@ class LaborPulseQueryRequest(BaseModel):
     @field_validator("question", mode="before")
     @classmethod
     def _strip_question(cls, v: object) -> object:
-        """Strip leading/trailing whitespace before business-logic validation in the route."""
+        """Strip leading/trailing whitespace; min_length=1 on the field then rejects blank inputs."""
         if isinstance(v, str):
             return v.strip()
         return v
+
+    @field_validator("conversation_id", mode="before")
+    @classmethod
+    def _validate_conversation_id(cls, v: object) -> object:
+        """Accept null or a well-formed UUID v4; reject anything else."""
+        if v is None:
+            return v
+        if isinstance(v, str) and _UUID_RE.match(v):
+            return v
+        raise ValueError("conversation_id must be a valid UUID v4 or null")
 
 
 class LaborPulseEvidenceItem(BaseModel):

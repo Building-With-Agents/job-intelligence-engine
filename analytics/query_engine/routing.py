@@ -350,7 +350,8 @@ def run_guardrailed_analytics_query(
         cost_ledger=ledger,
     )
     intent_label = classification.get("intent") or "generic_aggregate"
-    classification_confidence = float(classification.get("confidence") or 0.5)
+    _raw_conf = classification.get("confidence")
+    classification_confidence = float(_raw_conf if _raw_conf is not None else 0.5)
     classification_confidence = max(0.0, min(1.0, classification_confidence))
 
     sql_res = _call_sql_generation_llm(
