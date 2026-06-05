@@ -151,7 +151,7 @@ def _empty_extracted_entities() -> dict[str, list[str]]:
     }
 
 
-def _heuristic_classification_dict(*, intent: str, confidence: float, reason: str) -> dict[str, Any]:
+def _heuristic_classification_dict(*, intent: str, confidence: float, reason: str) -> ClassificationResult:
     log.info("intent_classification_heuristic", intent=intent, reason=reason, confidence=confidence)
     conf = float(confidence)
     return {
