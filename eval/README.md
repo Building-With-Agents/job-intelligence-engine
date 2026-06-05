@@ -76,7 +76,8 @@ python -m eval.qa_eval --prompt-version v1-baseline --use-http --analytics-base-
 
 | Variable | Role |
 |----------|------|
-| `QA_EVAL_LATENCY_SLA_SECONDS` | Latency SLA for `latency_sla` score (default 45). |
+| `QA_EVAL_LATENCY_SLA_SECONDS` | Latency SLA for `latency_sla` score (default **15**; JIE #270 tightened from 45s). Catastrophic latencies > SLA × 10 return `None` (excluded). |
+| `QA_EVAL_ANSWERABILITY_GATE_THRESHOLD` | Float 0–1. When `mean_answerability` falls below this on a run, `overall_composite_status = "limited"` is emitted (default 0.40; JIE #268). |
 | `ANALYTICS_QUERY_BASE_URL` | Base URL when `--use-http` (default `http://127.0.0.1:8000`). |
 | `ANALYTICS_QUERY_X_TENANT_ID` | `X-Tenant-Id` for `POST /analytics/query` (default `borderplex`). Same as `scripts/smoke/smoke_issue197.py`. |
 | `ANALYTICS_QUERY_X_USER_EMAIL` | `X-User-Email` (default `smoke@thewaifinder.com`). |
@@ -89,10 +90,132 @@ Per-item `X-Request-Id` is the harness `correlation_id` (not env-configured).
 - `--output-json path.json` writes per-item scores (and trace IDs when Langfuse is used).
 - `--json` prints the same run summary as JSON to **stdout** and skips the human-readable console report (use for piping, `Tee-Object`, or redirecting to a file). Combine with `--output-json` to write the file and still emit JSON on stdout; file-write notices go to stderr so stdout stays valid JSON.
 
+---
+
+## v2 scorer architecture (JIE #260–#271)
+
+All scoring changes were landed for the Week 10 harness redesign. The sections below describe the current behaviour.
+
+### None semantics — infrastructure vs quality failures (JIE #263)
+
+Content metrics (`intent_accuracy`, `evidence_citation`, `confidence_self_consistency`) return `None`
+rather than `0.0` for infrastructure failures. Zeroing them conflates two orthogonal axes — pipeline
+health vs answer quality — which would prevent pairs from distinguishing "fix the prompt" from "fix
+the infrastructure."
+
+| Failure class | Score | Rationale |
+|---|---|---|
+| `pipeline_error` / timeout / Azure 500 | `None` | Infrastructure failure; not gradable |
+| `sql_execution_error_detail` set | `None` | Infrastructure failure on evidence path |
+| Empty answer (contract violation) | `None` | Pipeline output contract broken |
+| Committed answer with no evidence | `0.0` | Real quality failure; keeps signal |
+| `latency_sla` catastrophic (> SLA × 10) | `None` | Infrastructure event, not quality signal |
+| `latency_sla` all other | float 0–1 | Always computable from wall-clock time |
+
+Run-level means are computed over the **scorable pool** (non-`None` values only). Per-metric
+`n_scored` and `n_excluded` appear in every run summary and Langfuse mean comment.
+
+### Binary intent accuracy (JIE #261)
+
+`intent_accuracy` is a binary exact-match: 1.0 if `classified_intent == expected_intent`
+(case/whitespace normalised), 0.0 otherwise. The old `0.5` partial-credit ladder backed by
+`RELATED_INTENTS` is retired; `RELATED_INTENTS_OFFLINE` remains for confusion-matrix analysis only.
+
+### Refusal scoring redesign (JIE #260)
+
+`score_evidence_citation` now evaluates the rubric (`must_include`, `must_not_include`) against
+refusal text rather than bypassing it. Refusals are further penalised when the expected intent is
+data-backed (the pipeline should have committed a SQL-backed answer):
+
+| Case | Score formula |
+|---|---|
+| Intent-only refusal | `rubric_score` (must_include coverage − penalty) |
+| Data-backed refusal | `rubric_score × 0.35` (strong penalty for wrongful refusal) |
+
+The `len(ans) > 40` length floor is removed. The `refused-with-evidence → 0.85` shortcut is removed.
+
+### Component scores (JIE #265 phase 1)
+
+`score_evidence_citation` returns four values: `(combined, comment, must_include_recall, evidence_overlap)`.
+The last two are emitted as separate Langfuse `Evaluation` entries (`must_include_recall`,
+`evidence_overlap`) and included in the durable JSON `scores` block. When `combined` is `None`
+(infrastructure exclusion), both components are `None`.
+
+### correct_refusal metric (JIE #269)
+
+A sixth automated score, `correct_refusal` (1.0 / 0.0, or `None`), applies to intent-only
+(non–data-backed) items. It measures whether the pipeline made the right commit-vs-refuse decision.
+
+| Item type | `correct_refusal` |
+|---|---|
+| Data-backed expected intent | `None` (use `answerability` + `evidence_citation` instead) |
+| Infrastructure failure (no response) | `None` (excluded) |
+| Intent-only, refused | 0.0 by default; 1.0 if `refusal_appropriate: true` in golden |
+| Intent-only, committed answer | 1.0 by default; 0.0 if `refusal_appropriate: false` in golden |
+
+Optional golden fields: `data_backed` (bool), `expected_min_rows` (int), `zero_rows_is_correct` (bool),
+`refusal_appropriate` (bool).
+
+`answerability` (data-backed items) and `correct_refusal` (intent-only) together cover all 90
+golden items. Run output includes `refusal_correctness_summary`.
+
+### Sub-composites and geometric mean (JIE #268)
+
+`run_subcomposites_and_gates` computes four sub-composites and an overall geometric mean:
+
+| Sub-composite | Drives | Proxy until |
+|---|---|---|
+| `prompt_quality_composite` | `evidence_citation` mean | #265 full decomposition |
+| `classification_composite` | `intent_accuracy` mean | — |
+| `pipeline_health_composite` | `answerability`, `latency_sla`, `correct_refusal` (weighted) | — |
+| `safety_composite` | `confidence_self_consistency`, `confidence_in_expected_range` | Layer 2 `no_hallucination_rate` |
+| `overall_geometric_composite` | geometric mean of the four sub-composites | — |
+
+The geometric mean penalises any single tanked axis. An arithmetic mean would paper it over.
+
+When `mean_answerability < QA_EVAL_ANSWERABILITY_GATE_THRESHOLD`, the run emits
+`gated: true` and `gate_message` to force reader awareness of coverage gaps.
+
+### Per-stage Langfuse observations (JIE #258)
+
+Each pipeline LLM call produces its own `@observe(as_type="generation")` child observation in
+Langfuse, allowing per-stage drill-down in the trace tree:
+
+| Observation name | Stage | LLM tier |
+|---|---|---|
+| `intent_classification` | Intent routing | `LLM_DEFAULT` (Haiku-class) |
+| `sql_generation` | Text-to-SQL | `LLM_SYNTHESIS` (Sonnet-class) |
+| `synthesis` | Answer synthesis | `LLM_SYNTHESIS` |
+| `follow_up_generation` | Follow-up questions | `LLM_DEFAULT` |
+
+Token usage and model name propagate via `report_langfuse_usage` in
+`analytics/query_engine/langfuse_utils.py`. Cost attribution requires model registry population
+in Langfuse (admin task, JIE #259).
+
+### Per-intent score breakdown (JIE #256)
+
+```powershell
+python scripts/compute_per_intent_means.py
+python scripts/compute_per_intent_means.py eval/runs/qa-v2-scorer-redesign.json
+```
+
+Prints a table of per-intent means (n + 6 score columns) from a durable run JSON. Flat trace
+metadata (`intent`, `difficulty`, `gq_id`) is also set on every Langfuse trace so the Experiment
+detail view supports per-intent filtering.
+
+### Latency tail aggregates (JIE #270)
+
+The Langfuse run-level evaluators emit five latency statistics alongside `mean_latency_sla`:
+
+- `mean_latency_seconds`, `p50_latency_seconds`, `p95_latency_seconds`, `p99_latency_seconds` — raw wall-clock seconds
+- `p95_latency_sla_score` — `min(1, SLA / p95)` for iteration signal at the tail
+
+`catastrophic_excluded` in each comment counts items excluded from `latency_sla` scoring.
+
 ### Verify Langfuse cost attribution (JIE #259)
 
 Langfuse trace cost stays **$0.00** until Azure models are registered and generations
-receive ``usage_details`` + a ``model`` name that matches the registry.
+receive `usage_details` + a `model` name that matches the registry.
 
 1. **One-time model registry** (per Langfuse project):
 
@@ -114,6 +237,8 @@ receive ``usage_details`` + a ``model`` name that matches the registry.
 
 4. **Optional:** re-run a full baseline (`python -m eval.qa_eval --prompt-version v1-baseline`)
    and confirm the experiment **Trace Cost** column is non-zero.
+
+---
 
 ### Extraction eval
 
