@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, TypedDict
 
 import structlog
 from pydantic import BaseModel, Field, field_validator
@@ -151,7 +151,7 @@ def _empty_extracted_entities() -> dict[str, list[str]]:
     }
 
 
-def _heuristic_classification_dict(*, intent: str, confidence: float, reason: str) -> dict[str, Any]:
+def _heuristic_classification_dict(*, intent: str, confidence: float, reason: str) -> ClassificationResult:
     log.info("intent_classification_heuristic", intent=intent, reason=reason, confidence=confidence)
     conf = float(confidence)
     return {
@@ -162,7 +162,7 @@ def _heuristic_classification_dict(*, intent: str, confidence: float, reason: st
     }
 
 
-def intent_heuristic_classification(question: str) -> dict[str, Any] | None:
+def intent_heuristic_classification(question: str) -> ClassificationResult | None:
     """Deterministic intent shortcuts before the classifier LLM (mock-friendly).
 
     ``QA_EVAL_INTENT_HEURISTIC_LEVEL`` gates which tier runs (0–3) so Pair D can
@@ -519,7 +519,21 @@ def _parse_llm_json(content: str) -> dict[str, Any] | None:
     return obj if isinstance(obj, dict) else None
 
 
-def _fallback_other(reason: str) -> dict[str, Any]:
+class ClassificationResult(TypedDict):
+    """Typed return value of :func:`classify_workforce_question`.
+
+    Using ``TypedDict`` (not a Pydantic model) preserves full ``dict`` protocol
+    compatibility at runtime — all existing ``.get()`` callers continue to work
+    without modification.
+    """
+
+    intent: str
+    confidence: float
+    needs_clarification: bool
+    extracted_entities: dict[str, Any]
+
+
+def _fallback_other(reason: str) -> ClassificationResult:
     log.info("intent_classification_fallback", reason=reason)
     return {
         "intent": "other",
@@ -636,7 +650,7 @@ def classify_workforce_question(
     max_tokens: int = 500,
     cost_ledger: CostLedger | None = None,
     conversation_context: str | None = None,
-) -> dict[str, Any]:
+) -> ClassificationResult:
     """Classify a free-text workforce question and extract entities.
 
     Returns a plain dict: ``{"intent": str, "confidence": float,
