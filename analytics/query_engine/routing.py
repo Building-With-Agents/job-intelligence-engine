@@ -1,8 +1,9 @@
 """Analytics Q&A routing: guardrailed NL→SQL (Ask the Data) and HTTP ORM path (GitHub #117).
 
-``run_guardrailed_analytics_query`` uses ``common.llm_adapter.complete`` only. User text is
-never concatenated into executable SQL; model output is validated via
-:func:`validate_ask_the_data_sql`.
+``run_guardrailed_analytics_query`` classifies intent via
+:func:`analytics.query_engine.intent.classify_workforce_question`, then calls
+``common.llm_adapter.complete`` for SQL generation only. User text is never concatenated
+into executable SQL; model output is validated via :func:`validate_ask_the_data_sql`.
 
 ``run_analytics_qna`` in this module is the **REST** entrypoint (session, question, correlation
 id) that delegates evidence + synthesis to :func:`analytics.query_engine.qna.run_analytics_qna`.
@@ -117,7 +118,6 @@ def _filter_issue197_misbucket_rows(rows: list[dict[str, Any]]) -> list[dict[str
     return out
 
 
-AGENT_INTENT = "analytics-qna-intent"
 AGENT_SQL = "analytics-qna-sql"
 
 
@@ -276,15 +276,6 @@ def _query_fingerprint(q: str) -> str:
     return hashlib.sha256(q.encode("utf-8")).hexdigest()[:16]
 
 
-def _intent_prompt(user_query: str) -> str:
-    return (
-        f"{_SCHEMA_HINT}\n"
-        "Classify this workforce analytics question. Return ONLY compact JSON:\n"
-        '{"intent_label": "<snake_case_label>", "classification_confidence": <number 0.0-1.0>}\n\n'
-        f"question (untrusted, natural language only): {user_query!r}\n"
-    )
-
-
 def _sql_prompt(user_query: str, intent_label: str) -> str:
     il = (intent_label or "").strip().lower()
     role_guard = _SQL_INTENTS_ROLE_CLASS_GUARD if il in ("employer", "curriculum", "workflow") else ""
@@ -353,27 +344,13 @@ def run_guardrailed_analytics_query(
         correlation_id=correlation_id,
     )
 
-    intent_res = complete(
-        _intent_prompt(request.query),
-        agent_name=AGENT_INTENT,
-        role="classification",
-        max_tokens=300,
+    classification = classify_workforce_question(
+        request.query,
         correlation_id=correlation_id,
+        cost_ledger=ledger,
     )
-    append_leg_from_complete(ledger, "intent_classification", intent_res, model_fallback=None)
-
-    intent_body = _parse_json_object(str(intent_res.get("content") or ""))
-    if intent_body:
-        intent_label = str(intent_body.get("intent_label") or "generic_aggregate").strip() or "generic_aggregate"
-        try:
-            classification_confidence = float(intent_body.get("classification_confidence", 0.5))
-        except (TypeError, ValueError):
-            classification_confidence = 0.5
-    else:
-        intent_label = "generic_aggregate"
-        classification_confidence = 0.35
-        log.warning("analytics_qna_intent_parse_failed", query_fingerprint=fp)
-
+    intent_label = classification.get("intent") or "generic_aggregate"
+    classification_confidence = float(classification.get("confidence") or 0.5)
     classification_confidence = max(0.0, min(1.0, classification_confidence))
 
     sql_res = _call_sql_generation_llm(
