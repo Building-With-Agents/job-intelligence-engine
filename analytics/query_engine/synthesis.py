@@ -133,14 +133,23 @@ def _build_main_prompt(
         )
     comparison_clause = ""
     if intent_label == "comparison":
-        comparison_clause = (
-            "- This question is a comparison: when citeable_facts_json includes counts for "
-            "two or more skills, sectors, or temporal periods, state the magnitude difference "
-            "(e.g. 'X has 3× more postings than Y') and identify the leader. "
-            "If only one side has data, be explicit about which side is absent and why "
-            "(e.g. 'no demand data found for Y in the current aggregate window'). "
-            "Do not refuse or hedge when the data is thin — use it with appropriate caveats.\n"
-        )
+        comparison_clause = """
+COMPARISON INSTRUCTIONS (required when comparing two or more terms):
+1. Before writing your conclusion, compute the total supporting_count for each
+   compared term by summing across ALL cited facts for that term.
+2. State the totals explicitly: e.g. "Python total: 44 postings; ML total: 53 postings"
+3. Your directional conclusion MUST match the totals — never contradict them. Never conclude Term A is higher
+   if Term B has a higher total; identify the leader from the summed totals.
+4. State the magnitude of the difference (e.g. "ML has 3× more postings than Python" or "ML leads by 9 postings").
+5. If per-period patterns conflict with totals (e.g. Term A leads in one week but
+   trails overall), name that conflict explicitly.
+6. If only one side has data, be explicit about which side is absent and why
+   (e.g. 'no demand data found for Y in the current aggregate window').
+   Do not refuse or hedge when the data is thin — use cited counts with appropriate caveats.
+7. If you cannot compute a clean comparison from the cited facts, state that and
+   set confidence to medium or low — never confidence: high when the answer contradicts
+   the totals you computed from supporting_count.
+"""
     instructions = (
         "You are an analytics assistant. Write a concise, professional answer for workforce stakeholders.\n"
         "Rules:\n"

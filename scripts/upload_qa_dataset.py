@@ -54,6 +54,15 @@ from langfuse import Langfuse  # noqa: E402
 DEFAULT_DATASET_NAME = "LaborPulse Golden Questions"
 DEFAULT_JSON_PATH = _REPO_ROOT / "eval" / "qa_golden_questions.json"
 
+# Langfuse SDK hard-codes a 200-char limit on propagated span attributes (JIE #248).
+# DatasetItem.metadata must stay under this per-value ceiling to avoid the SDK
+# dropping values with the warning:
+#   "Propagated attribute 'experiment_item_metadata' value is over 200 characters"
+# Scoring fields (must_include, must_not_include, ideal_answer_summary, context)
+# are intentionally excluded here; the eval harness reads them from the local
+# golden-question JSON via golden_by_id rather than from propagated metadata.
+_LANGFUSE_METADATA_MAX_CHARS = 200
+
 _VALID_DIFFICULTIES = frozenset({"easy", "medium", "hard"})
 _REQUIRED_FIELDS = (
     "id",
@@ -129,39 +138,24 @@ def _validate_no_duplicate_ids(questions: list[dict]) -> None:
 def _build_dataset_item(item: dict) -> tuple[dict, dict, dict]:
     """Return ``(input, expected_output, metadata)`` for one golden question.
 
-    The ``intent`` field is mapped to ``expected_intent`` in metadata so the
-    eval harness can look it up without knowing the raw JSON schema.  Both
-    keys are stored for debuggability during manual Langfuse inspection.
+    ``metadata`` contains only stable pointer fields so every value stays under
+    the Langfuse SDK 200-char propagation limit (JIE #248).  Scoring fields
+    (``must_include``, ``must_not_include``, ``ideal_answer_summary``, etc.)
+    are intentionally omitted; ``qa_eval.py`` resolves them from the local
+    golden-question JSON via ``golden_by_id`` and ``_merge_golden()``.
+
+    ``expected_intent`` is the canonical key the eval harness reads for
+    ``intent_accuracy`` scoring; ``intent`` is kept alongside it for
+    readability in the Langfuse UI.
     """
     input_data = {"question": item["question"]}
-
     expected_output = {"ideal_answer_summary": item["ideal_answer_summary"]}
-
-    metadata = {
+    metadata: dict = {
         "id": item["id"],
-        "question": item["question"],
-        # Canonical key the eval harness reads for intent_accuracy scoring.
-        "expected_intent": item["intent"],
-        # Keep the raw field too — avoids confusion when reading Langfuse UI.
         "intent": item["intent"],
-        "context": item.get("context", ""),
-        "must_include": item["must_include"],
-        "must_not_include": item["must_not_include"],
+        "expected_intent": item["intent"],
         "difficulty": item["difficulty"],
-        # Repeat here for fast access from qa_eval.py without deserialising
-        # expected_output separately.
-        "ideal_answer_summary": item["ideal_answer_summary"],
     }
-    for k in (
-        "data_backed",
-        "expected_min_rows",
-        "zero_rows_is_correct",
-        "refusal_appropriate",
-        "expected_confidence_range",
-    ):
-        if k in item:
-            metadata[k] = item[k]
-
     return input_data, expected_output, metadata
 
 
@@ -176,7 +170,7 @@ def upload(
     dataset_name: str,
     dry_run: bool,
 ) -> None:
-    client: Langfuse | None = None if dry_run else Langfuse()
+    client: Langfuse | None = None if dry_run else Langfuse(timeout=60)
 
     if client is not None:
         # create_dataset is idempotent — safe to call on every upload.
