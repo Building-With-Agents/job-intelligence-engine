@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 
 class EvidenceItem(BaseModel):
@@ -43,6 +49,14 @@ class LaborPulseQueryRequest(BaseModel):
         description="Optional UUID for multi-turn; omitted on first turn.",
     )
 
+    @field_validator("question", mode="before")
+    @classmethod
+    def _strip_question(cls, v: object) -> object:
+        """Strip leading/trailing whitespace before business-logic validation in the route."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
 
 class LaborPulseEvidenceItem(BaseModel):
     """Citation shape for LaborPulse / wfd-os ``QueryResponse`` (JIE #225)."""
@@ -69,9 +83,9 @@ class LaborPulseQueryResponse(BaseModel):
 class AnalyticsQueryResponse(BaseModel):
     answer: str
     evidence: list[EvidenceItem]
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)
     classified_intent: str = "other"
-    intent_classification_confidence: float = 0.0
+    intent_classification_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     periods_described: str = ""
     confidence_flagged_low: bool = False
     confidence_explanation: str | None = None
