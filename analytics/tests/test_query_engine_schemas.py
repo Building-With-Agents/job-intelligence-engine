@@ -85,3 +85,46 @@ def test_query_result_payload_rejects_empty_intent_label() -> None:
             intent_label="",
             classification_confidence=0.9,
         )
+
+
+# ---------------------------------------------------------------------------
+# LaborPulseQueryRequest schema validators (added in PR #424 hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_laborpulse_query_request_strips_whitespace() -> None:
+    from analytics.api.schemas import LaborPulseQueryRequest
+
+    req = LaborPulseQueryRequest(question="  what skills are trending?  ")
+    assert req.question == "what skills are trending?"
+
+
+def test_laborpulse_query_request_rejects_blank_after_strip() -> None:
+    from analytics.api.schemas import LaborPulseQueryRequest
+
+    with pytest.raises(ValidationError):
+        LaborPulseQueryRequest(question="   ")
+
+
+def test_laborpulse_query_request_accepts_valid_uuid_conversation_id() -> None:
+    from analytics.api.schemas import LaborPulseQueryRequest
+
+    req = LaborPulseQueryRequest(
+        question="any question",
+        conversation_id="550e8400-e29b-41d4-a716-446655440000",
+    )
+    assert req.conversation_id == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_laborpulse_query_request_accepts_null_conversation_id() -> None:
+    from analytics.api.schemas import LaborPulseQueryRequest
+
+    req = LaborPulseQueryRequest(question="any question", conversation_id=None)
+    assert req.conversation_id is None
+
+
+def test_laborpulse_query_request_rejects_non_uuid_conversation_id() -> None:
+    from analytics.api.schemas import LaborPulseQueryRequest
+
+    with pytest.raises(ValidationError):
+        LaborPulseQueryRequest(question="any question", conversation_id="not-a-uuid")

@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 
 class EvidenceItem(BaseModel):
@@ -36,12 +42,30 @@ class LaborPulseQueryRequest(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    question: str = Field(..., max_length=20_000)
+    question: str = Field(..., min_length=1, max_length=20_000)
     conversation_id: str | None = Field(
         default=None,
         max_length=36,
         description="Optional UUID for multi-turn; omitted on first turn.",
     )
+
+    @field_validator("question", mode="before")
+    @classmethod
+    def _strip_question(cls, v: object) -> object:
+        """Strip leading/trailing whitespace; min_length=1 on the field then rejects blank inputs."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("conversation_id", mode="before")
+    @classmethod
+    def _validate_conversation_id(cls, v: object) -> object:
+        """Accept null or a well-formed UUID v4; reject anything else."""
+        if v is None:
+            return v
+        if isinstance(v, str) and _UUID_RE.match(v):
+            return v
+        raise ValueError("conversation_id must be a valid UUID v4 or null")
 
 
 class LaborPulseEvidenceItem(BaseModel):
@@ -69,9 +93,9 @@ class LaborPulseQueryResponse(BaseModel):
 class AnalyticsQueryResponse(BaseModel):
     answer: str
     evidence: list[EvidenceItem]
-    confidence: float
+    confidence: float = Field(ge=0.0, le=1.0)
     classified_intent: str = "other"
-    intent_classification_confidence: float = 0.0
+    intent_classification_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     periods_described: str = ""
     confidence_flagged_low: bool = False
     confidence_explanation: str | None = None

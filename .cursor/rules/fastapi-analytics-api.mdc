@@ -1,0 +1,99 @@
+---
+description: "FastAPI analytics API conventions — routes, schemas, deps, auth (analytics/api/**)"
+alwaysApply: false
+globs:
+  - "analytics/api/**"
+---
+
+# FastAPI Analytics API
+
+**Scope:** `analytics/api/` — FastAPI application exposing `POST /analytics/query` (LaborPulse
+wire), trigger endpoints, and supporting infrastructure (deps, auth, schemas).
+
+**Source-of-truth schemas:** `analytics/api/schemas.py` — all request/response Pydantic models.
+
+---
+
+## Schema conventions
+
+| Model | Rule |
+|---|---|
+| `LaborPulseQueryRequest` | `question` requires `min_length=1`; `conversation_id` must be a valid UUID v4 or `null`. Use `@field_validator` for both. |
+| `AnalyticsQueryResponse` | `confidence` and `intent_classification_confidence` are bounded `Field(ge=0.0, le=1.0)`. |
+| `TriggerEnvelope` | `data` is `dict[str, Any]` — do not tighten unless the trigger type is fixed. |
+| Request models | `ConfigDict(extra="ignore")` for forward-compatibility; `ConfigDict(extra="forbid")` only for internal cross-agent payloads. |
+
+All new request / response models go in `analytics/api/schemas.py`. Do not define
+inline Pydantic models inside route handlers.
+
+---
+
+## Route conventions (`analytics/api/routes.py`)
+
+- **Auth:** All routes require `X-API-Key` header (JIE #226). Enforcement lives in
+  `analytics/api/analytics_api_keys.py` + `deps.py` (FastAPI `Depends`). Do not inline
+  auth logic in route handlers.
+- **Tenant:** `X-Tenant-Id` header is read in `deps.py`; inject `TenantAccess` via `Depends`.
+  Routes must not read headers directly.
+- **Session:** DB sessions are injected via `Depends(get_session)` from `deps.py`. Never
+  open a session inside a route handler.
+- **Correlation IDs:** Generate or forward `correlation_id` at the route layer (UUID if not
+  provided by caller). Propagate to all downstream calls (`classify_workforce_question`,
+  `run_analytics_qna`, audit log).
+- **Audit:** Every `POST /analytics/query` call must write a row to `dbo.orchestration_audit_log`
+  via `audit_log.insert_orchestration_audit`. Failure to write audit is logged but must
+  **not** surface to the caller.
+- **Error responses:** Use FastAPI `HTTPException`; never return bare dicts for errors.
+
+---
+
+## `orchestration_audit_log` columns (ORM authority: `common/data_store/models.py`)
+
+| Column | Type | Required |
+|---|---|---|
+| `correlation_id` | `VARCHAR(128)` | recommended |
+| `endpoint` | `VARCHAR(128)` | **required** (e.g. `"POST /analytics/query"`) |
+| `question_hash` | `VARCHAR(64)` | optional SHA-256 hex of question |
+| `sql_hash` | `VARCHAR(64)` | optional SHA-256 hex of generated SQL |
+| `confidence` | `DOUBLE PRECISION` | optional blended confidence |
+| `success` | `BOOLEAN` | **required** |
+| `error_code` | `VARCHAR(64)` | optional short error key |
+| `payload` | `JSONB` | optional extended context |
+
+The DDL uses `endpoint` (not `event_type`). Idempotent column-rename migration runs
+in `common/data_store/migrations.py` for DBs created with the old schema.
+
+---
+
+## Deps pattern
+
+```python
+# analytics/api/deps.py
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy.orm import Session
+
+def get_api_key(x_api_key: str = Header(...)) -> str:
+    if not is_valid_key(x_api_key):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    return x_api_key
+
+def get_tenant_access(x_tenant_id: str | None = Header(default=None)) -> TenantAccess:
+    return get_tenant_access_for_pipeline(x_tenant_id)
+```
+
+---
+
+## Multi-turn memory (JIE #223)
+
+`conversation_id` on `LaborPulseQueryRequest` enables multi-turn context. Pass it to
+`run_analytics_qna(laborpulse_conversation_id=conversation_id, ...)`. Prior context is
+loaded from `dbo.laborpulse_analytics_*` by `analytics/conversation_memory.py`.
+
+---
+
+## Testing
+
+- Unit-test route handlers with `httpx.AsyncClient` + `app.dependency_overrides`.
+- Mock `session_scope` / `get_session` — never require a live DB in unit tests.
+- Tests that verify `orchestration_audit_log` writes use the tag-and-teardown pattern
+  (see `.cursor/rules/testing-standards.mdc`).
