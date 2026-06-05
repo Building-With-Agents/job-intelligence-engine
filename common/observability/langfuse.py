@@ -170,6 +170,8 @@ class LangfuseTracer(TracerBase):
                 }
             if "cost_usd" in payload:
                 update_kwargs["cost_details"] = {"total": payload["cost_usd"]}
+            if "model" in payload and payload["model"]:
+                update_kwargs["model"] = payload["model"]
             if "output" in payload:
                 update_kwargs["output"] = payload["output"]
             if update_kwargs:
