@@ -316,7 +316,7 @@ def _emit_enrichment_degraded(
                     "overall_confidence",
                 ],
                 "extraction_note": extraction_note,
-                "message": message,
+                "message": "Spam classification degraded; record continued with null spam fields.",
             },
         )
         _alert_bus.publish(event)
