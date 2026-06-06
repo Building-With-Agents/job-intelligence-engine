@@ -194,10 +194,13 @@ def test_raise_on_timeout_false_preserves_pre_150_behavior() -> None:
         }
         merged = asyncio.run(stub.enrich_record_async(posting, session=MagicMock(), raise_on_timeout=False))
 
-    # Function returns successfully with degraded fields (no exception)
+    # Function returns successfully with degraded fields (no exception).
+    # On the timeout path naics_result is a TimeoutError, so the agent falls back
+    # to posting.get("naics_code") — None here, since the test posting carries no
+    # naics_code. This is the pre-#150 degraded contract we must preserve.
     assert merged is not None
     assert isinstance(merged, dict)
-    assert merged.get("naics_code") is None or "code" in str(merged.get("naics_code") or "")
+    assert merged.get("naics_code") is None
 
 
 def test_enrichment_max_retries_config_accessor() -> None:
@@ -209,3 +212,76 @@ def test_enrichment_max_retries_config_accessor() -> None:
     val = enrichment_max_retries()
     assert val >= 0
     assert isinstance(val, int)
+
+
+# -- batch aggregation excludes quarantined records ----------------------
+
+
+def test_quarantined_results_excluded_from_batch_metrics() -> None:
+    """JIE #150 regression: ``__quarantined`` results must not inflate metrics.
+
+    A timed-out record returned as ``{"__quarantined": True, ...}`` by the
+    parallel batch loop must be counted under ``quarantined_count`` and excluded
+    from ``enriched_count`` (and the distributions / SOC denominator). Otherwise
+    a record that was held back from ``job_postings`` would still be reported as
+    successfully enriched in the RecordEnriched event and downstream analytics.
+
+    Mocks ``_enrich_batch_parallel_bridge`` to return one genuinely enriched
+    result plus one quarantined result, then asserts the aggregated event payload.
+    """
+    from common.event_envelope import EventEnvelope
+    from enrichment.agent import EnrichmentAgent
+
+    enriched_posting = {
+        "posting_id": 1,
+        "title": "Senior Python Engineer",
+        "company": "Acme Corp",
+        "source": "jsearch",
+        "normalized_job_id": 1,
+    }
+    quarantined_posting = {
+        "posting_id": 2,
+        "title": "Data Engineer",
+        "company": "Globex",
+        "source": "jsearch",
+        "normalized_job_id": 2,
+    }
+    bridge_results = [
+        {
+            "spam_score": 0.05,
+            "spam_tier": "clean",
+            "overall_confidence": 0.9,
+            "field_confidence": {},
+            "soc_code": "15-1252",
+            "naics_code": "541511",
+            "quality_score": 0.85,
+            "quality_components": {},
+            "__posting": enriched_posting,
+            "__row": {},
+        },
+        # JIE #150: a record that timed out on every attempt and was quarantined.
+        {"__quarantined": True, "__posting": quarantined_posting, "__row": {}},
+    ]
+
+    with (
+        patch.object(EnrichmentAgent, "_enrichment_parallel_enabled", return_value=True),
+        patch.object(EnrichmentAgent, "_enrich_batch_parallel_bridge", return_value=bridge_results),
+        patch("common.llm_adapter.get_tracer", return_value=None),
+    ):
+        agent = EnrichmentAgent()
+        event = EventEnvelope(
+            correlation_id="cid-quarantine",
+            agent_id="skills-extraction",
+            payload={
+                "batch_id": "batch-quarantine-test",
+                "records": [
+                    {"posting_id": 1, "title": "Senior Python Engineer", "company": "Acme Corp"},
+                    {"posting_id": 2, "title": "Data Engineer", "company": "Globex"},
+                ],
+            },
+        )
+        out = agent.process(event)
+
+    # Only the genuinely enriched record counts; the quarantined one is held out.
+    assert out.payload["enriched_count"] == 1
+    assert out.payload["quarantined_count"] == 1

@@ -152,11 +152,18 @@ def _quarantine_enrichment_record(
     elapsed_ms_per_attempt: list[int],
     error_summary: str,
 ) -> None:
-    """Insert a row into ``dbo.enrichment_quarantine`` and commit.
+    """Insert a row into ``dbo.enrichment_quarantine`` and commit immediately.
 
     Skipped (with WARNING log) if ``normalized_job_id`` is None — those rows
     can't be linked back. Caller should still emit ``EnrichmentDegraded`` so
     the orchestration agent learns of the loss.
+
+    **Commit semantics:** this function calls ``session.commit()`` itself rather
+    than deferring to the enclosing ``session_scope()``. This is intentional —
+    the quarantine row is the persistent record of a lost job, so it must be
+    durable the moment this returns, independent of whatever the caller does next
+    with the session. The caller's ``session_scope()`` will issue a second commit
+    on exit; that is a harmless no-op (nothing left to flush).
 
     Per JIE #150.
     """
@@ -181,6 +188,8 @@ def _quarantine_enrichment_record(
             error_summary=error_summary,
         )
         session.add(record)
+        # Commit now (not at session_scope exit) so the quarantine row is durable
+        # the moment this returns — see the "Commit semantics" note in the docstring.
         session.commit()
         log.warning(
             "enrichment_record_quarantined",
@@ -751,6 +760,7 @@ class EnrichmentAgent(BaseAgent):
                 enriched_count = 0
                 spam_rejected_count = 0
                 flagged_for_review_count = 0
+                quarantined_count = 0  # JIE #150: timed-out records held back from promotion
                 temporal_period_distribution: dict[str, int] = defaultdict(int)
                 borderplex_subregion_distribution: dict[str, int] = defaultdict(int)
                 duplicate_count = 0
@@ -763,6 +773,14 @@ class EnrichmentAgent(BaseAgent):
 
                 for r in parallel_results:
                     if r is None or r.get("__error"):
+                        continue
+                    # JIE #150: timed-out records are quarantined, not promoted.
+                    # Exclude them from enriched_count, distributions, freshness
+                    # records, and the SOC-unclassified denominator so batch
+                    # metrics and the RecordEnriched event don't report them as
+                    # successfully enriched.
+                    if r.get("__quarantined"):
+                        quarantined_count += 1
                         continue
                     if r.get("__spam_bucket") == "rejected":
                         spam_rejected_count += 1
@@ -798,6 +816,7 @@ class EnrichmentAgent(BaseAgent):
                     enriched_count=enriched_count,
                     spam_rejected_count=spam_rejected_count,
                     flagged_for_review_count=flagged_for_review_count,
+                    quarantined_count=quarantined_count,
                     duration_ms=batch_duration_ms,
                     concurrency=concurrency,
                     execution_mode="parallel",
@@ -838,6 +857,7 @@ class EnrichmentAgent(BaseAgent):
                                             "enriched_count": enriched_count,
                                             "spam_rejected_count": spam_rejected_count,
                                             "flagged_for_review_count": flagged_for_review_count,
+                                            "quarantined_count": quarantined_count,
                                             "soc_classified_count": soc_classified_count,
                                             "naics_classified_count": naics_classified_count,
                                             "duplicate_count": duplicate_count,
@@ -846,6 +866,7 @@ class EnrichmentAgent(BaseAgent):
                                     "enriched_count": enriched_count,
                                     "spam_rejected_count": spam_rejected_count,
                                     "flagged_for_review_count": flagged_for_review_count,
+                                    "quarantined_count": quarantined_count,
                                     "soc_classified_count": soc_classified_count,
                                     "naics_classified_count": naics_classified_count,
                                     "naics_unclassified_count": enriched_count - naics_classified_count,
@@ -864,6 +885,7 @@ class EnrichmentAgent(BaseAgent):
                     enriched_count=enriched_count,
                     spam_rejected_count=spam_rejected_count,
                     flagged_for_review_count=flagged_for_review_count,
+                    quarantined_count=quarantined_count,
                     temporal_period_distribution=dict(temporal_period_distribution),
                     borderplex_subregion_distribution=dict(borderplex_subregion_distribution),
                     duplicate_count=duplicate_count,
@@ -1793,6 +1815,13 @@ class EnrichmentAgent(BaseAgent):
         _completed = 0
         _total = len(rows)
 
+        # JIE #150 — resolve the retry budget once per batch. ``_enrich_one``
+        # runs once per row, so the import + cached-accessor call are hoisted out
+        # of that hot loop and read from the closure below.
+        from enrichment._config import enrichment_max_retries as _max_retries_fn
+
+        _max_retries = _max_retries_fn()
+
         async def _enrich_one(idx: int, row: dict[str, Any]) -> dict[str, Any] | None:
             nonlocal _in_flight, _peak_in_flight, _saturation_events, _completed, _timeout_count
             bucket = _spam_bucket(row)
@@ -1812,9 +1841,8 @@ class EnrichmentAgent(BaseAgent):
                 posting = _posting_for_enrichment(row, payload)
 
                 # JIE #150 — retry-and-quarantine on enrichment timeout.
-                from enrichment._config import enrichment_max_retries as _max_retries_fn
-
-                _max_retries = _max_retries_fn()
+                # ``_max_retries`` is resolved once per batch in the enclosing
+                # scope (hoisted out of this per-job loop).
                 _elapsed_per_attempt: list[int] = []
                 _quarantined = False
                 enriched: dict[str, Any] | None = None

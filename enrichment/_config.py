@@ -116,6 +116,7 @@ __all__ = [
     "dedup_rolling_window_days",
     "enrichment_concurrency",
     "enrichment_llm_timeout_seconds",
+    "enrichment_max_retries",
     "enrichment_parallel",
     "esco_seed_apply_filter",
     "soc_unclassified_rate_threshold",
