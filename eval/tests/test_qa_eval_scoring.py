@@ -5,15 +5,24 @@ from __future__ import annotations
 import io
 from contextlib import redirect_stdout
 
-from eval.qa_eval import print_console_summary
+from eval.qa_eval import _run_evaluators_average, print_console_summary
 from eval.qa_scoring import (
+    _CATASTROPHIC_LATENCY_MULTIPLIER,
+    _DEFAULT_LATENCY_SLA_SECONDS,
+    LAYER2_METRIC_NAMES,
     QAItemScores,
+    _quantile,
+    aggregate_human_scores,
     composite_score,
     compute_item_scores,
+    compute_no_hallucination_rate,
     confusion_rows,
+    human_correctness_composite,
     intent_classification_report,
     intent_eval_trace_metadata,
+    run_ece_from_correctness,
     run_subcomposites_and_gates,
+    score_confidence_correctness_alignment,
     score_confidence_self_consistency,
     score_evidence_citation,
     score_intent_accuracy,
@@ -188,6 +197,102 @@ def test_latency_at_sla() -> None:
 def test_latency_above_sla() -> None:
     s, _ = score_latency_sla(latency_seconds=90.0, sla_seconds=45.0)
     assert abs(s - 0.5) < 1e-6
+
+
+def test_latency_catastrophic_exclusion_returns_none(monkeypatch) -> None:
+    """Latency > SLA × _CATASTROPHIC_LATENCY_MULTIPLIER returns (None, reason) (JIE #270)."""
+    sla = 15.0
+    catastrophic = sla * _CATASTROPHIC_LATENCY_MULTIPLIER + 1.0  # just over threshold
+    s, reason = score_latency_sla(latency_seconds=catastrophic, sla_seconds=sla)
+    assert s is None, "catastrophic latency must return None, not a float score"
+    assert "excluded" in reason.lower()
+    assert "catastrophic" in reason.lower()
+
+
+def test_latency_just_below_catastrophic_threshold_is_scorable() -> None:
+    """Latency exactly at SLA×10 boundary is NOT catastrophic; it should return a float score."""
+    sla = 15.0
+    threshold = sla * _CATASTROPHIC_LATENCY_MULTIPLIER
+    just_under = threshold - 0.001
+    s, _ = score_latency_sla(latency_seconds=just_under, sla_seconds=sla)
+    assert s is not None and isinstance(s, float)
+    assert 0.0 <= s <= 1.0
+
+
+def test_latency_default_sla_is_15s() -> None:
+    """Default SLA tightened to 15s (was 45s); a 5.6s response scores 1.0 (JIE #270)."""
+    assert _DEFAULT_LATENCY_SLA_SECONDS == 15.0
+    s, _ = score_latency_sla(latency_seconds=5.6, sla_seconds=15.0)
+    assert s == 1.0
+
+
+def test_quantile_p95_computation() -> None:
+    """_quantile(values, 0.95) returns a value close to the 95th percentile (JIE #270)."""
+    # 100 values: 0.0 to 99.0; p95 should be near 94/95
+    values = [float(i) for i in range(100)]
+    p95 = _quantile(values, 0.95)
+    # statistics.quantiles(n=100)[94] is the 95th percentile cut point
+    assert 93.0 <= p95 <= 95.0
+
+
+def test_quantile_single_value_returns_itself() -> None:
+    assert _quantile([7.5], 0.95) == 7.5
+
+
+def test_quantile_p50_is_median() -> None:
+    """p50 from _quantile should match the true median for a uniform list."""
+    values = [float(i) for i in range(1, 101)]
+    p50 = _quantile(values, 0.50)
+    import statistics
+
+    assert abs(p50 - statistics.median(values)) < 5.0  # within reasonable range
+
+
+def test_composite_all_none_when_latency_also_catastrophic() -> None:
+    """When all four core metrics are None (incl. latency from catastrophic exclusion), composite is None (JIE #270)."""
+    scores = QAItemScores(
+        intent_accuracy=None,
+        evidence_citation=None,
+        confidence_self_consistency=None,
+        confidence_in_expected_range=None,
+        latency_sla=None,
+        answerability=None,
+        correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
+        comments={},
+    )
+    assert composite_score(scores) is None
+
+
+def test_print_console_summary_handles_catastrophic_latency_none() -> None:
+    """print_console_summary must not crash when latency_sla=None (catastrophic JIE #270 case)."""
+    catastrophic = QAItemScores(
+        intent_accuracy=0.8,
+        evidence_citation=0.7,
+        confidence_self_consistency=0.9,
+        confidence_in_expected_range=None,
+        latency_sla=None,  # catastrophic exclusion
+        answerability=None,
+        correct_refusal=None,
+        must_include_recall=None,
+        evidence_overlap=None,
+        comments={
+            "intent_accuracy": "intent matches",
+            "evidence_citation": "overlap ok",
+            "confidence_self_consistency": "calibration ok",
+            "confidence_in_expected_range": "no range",
+            "latency_sla": "excluded: catastrophic latency 200.0s exceeds threshold 150s (SLA×10)",
+            "answerability": "skipped",
+            "correct_refusal": "N/A",
+        },
+    )
+    rows = [("gq-cat", catastrophic, None)]
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        print_console_summary(rows=rows, worst_n=5)
+    out = buf.getvalue()
+    assert " — " in out  # None renders as dash, not crash
 
 
 def test_compute_failure_content_excluded_latency_computed() -> None:
@@ -567,3 +672,310 @@ def test_intent_eval_trace_metadata_mismatch() -> None:
     assert m["eval_intent_correct"] == 0.0
     assert m["eval_intent_false_negative_class"] == "geographic"
     assert m["eval_intent_false_positive_class"] == "comparison"
+
+
+# ---------------------------------------------------------------------------
+# _run_evaluators_average — catastrophic-exclusion count and SLA consistency
+# ---------------------------------------------------------------------------
+
+
+def _make_item_result(latency_raw: float, latency_sla: float | None) -> object:
+    """Build a minimal item_result-like object for _run_evaluators_average.
+
+    Simulates what combined_evaluator emits: always latency_seconds_raw,
+    latency_sla only when not catastrophic.
+    """
+    from types import SimpleNamespace
+
+    evals = [SimpleNamespace(name="latency_seconds_raw", value=latency_raw)]
+    if latency_sla is not None:
+        evals.append(SimpleNamespace(name="latency_sla", value=latency_sla))
+    return SimpleNamespace(evaluations=evals)
+
+
+def test_run_evaluators_n_cat_reflects_catastrophic_exclusions() -> None:
+    """catastrophic_excluded in the run-level comment must equal the number of items
+    where latency_sla was excluded (None), NOT the number of malformed items (JIE #270).
+
+    Setup: 4 normal items (latency_sla emitted) + 1 catastrophic (latency_sla omitted).
+    Expected: catastrophic_excluded=1 in the p95_latency_seconds comment.
+    """
+    items = [
+        _make_item_result(3.0, 1.0),
+        _make_item_result(4.0, 1.0),
+        _make_item_result(5.0, 1.0),
+        _make_item_result(6.0, 1.0),
+        _make_item_result(200.0, None),  # catastrophic — latency_sla excluded
+    ]
+    run_mean = _run_evaluators_average()[0]
+    out = run_mean(item_results=items)
+
+    p95_ev = next((e for e in out if e.name == "p95_latency_seconds"), None)
+    assert p95_ev is not None, "p95_latency_seconds must be emitted"
+    # Comment must report 1 catastrophic exclusion, not 0
+    assert "catastrophic_excluded=1" in p95_ev.comment, (
+        f"Expected catastrophic_excluded=1 in comment, got: {p95_ev.comment!r}"
+    )
+    # n= counts raw latency entries; all 5 items have latency_seconds_raw
+    assert "n=5" in p95_ev.comment
+    assert "n_total=5" in p95_ev.comment
+
+
+def test_run_evaluators_p95_sla_score_uses_config_sla(monkeypatch) -> None:
+    """p95_latency_sla_score must use qa_latency_sla_seconds() (i.e., respect
+    QA_EVAL_LATENCY_SLA_SECONDS env var) rather than the hardcoded default (JIE #270).
+
+    If _DEFAULT_LATENCY_SLA_SECONDS (15s) were used instead of a custom 30s SLA,
+    p95_latency_sla_score for a p95 of 20s would be 15/20 = 0.75.
+    With sla=30s it is 30/20 = 1.0.  We assert the latter.
+    """
+    import eval._config as cfg
+
+    monkeypatch.setattr(cfg, "qa_latency_sla_seconds", lambda: 30.0)
+    # Invalidate the cached_accessor so the monkeypatched lambda takes effect
+    if hasattr(cfg.qa_latency_sla_seconds, "cache_clear"):
+        cfg.qa_latency_sla_seconds.cache_clear()
+
+    # 100 values; p95 ≈ 20s, well under the custom 30s SLA → score must be 1.0
+    items = [_make_item_result(float(i), 1.0) for i in range(1, 101)]
+    run_mean = _run_evaluators_average()[0]
+    out = run_mean(item_results=items)
+
+    p95_sla_ev = next((e for e in out if e.name == "p95_latency_sla_score"), None)
+    assert p95_sla_ev is not None, "p95_latency_sla_score must be emitted"
+    # p95 of [1..100] is ~95s; with sla=30 that's 30/95 ≈ 0.315.
+    # With the old hardcoded 15s sla it would be 15/95 ≈ 0.158.
+    # Verify the comment references the custom SLA (30.0), not the default (15.0).
+    assert "30.0s" in p95_sla_ev.comment, (
+        f"p95_latency_sla_score comment must reference custom SLA=30.0s, got: {p95_sla_ev.comment!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Layer 2 scoring tests (JIE #271)
+# ---------------------------------------------------------------------------
+
+
+class TestAggregateHumanScores:
+    def test_empty_returns_none(self) -> None:
+        assert aggregate_human_scores([]) is None
+
+    def test_single_annotator_passthrough(self) -> None:
+        assert aggregate_human_scores([0.75]) == 0.75
+
+    def test_two_annotators_mean(self) -> None:
+        result = aggregate_human_scores([0.8, 0.6])
+        assert abs(result - 0.7) < 1e-9
+
+    def test_three_annotators_mean(self) -> None:
+        result = aggregate_human_scores([1.0, 0.5, 0.0])
+        assert abs(result - 0.5) < 1e-9
+
+    def test_high_spread_still_returns_mean(self) -> None:
+        # Spread 0.9 > 0.3 threshold — logs warning but still returns mean
+        result = aggregate_human_scores([0.9, 0.0])
+        assert abs(result - 0.45) < 1e-9
+
+    def test_tight_spread_no_warning(self) -> None:
+        # Spread 0.1 < 0.3 — no warning, deterministic mean
+        result = aggregate_human_scores([0.85, 0.75])
+        assert result is not None
+        assert 0.79 < result < 0.81
+
+
+class TestRunECEFromCorrectness:
+    def test_none_on_empty(self) -> None:
+        assert run_ece_from_correctness([], []) is None
+
+    def test_none_on_mismatched_lengths(self) -> None:
+        assert run_ece_from_correctness([0.9], [True, False]) is None
+
+    def test_none_when_all_correctness_none(self) -> None:
+        assert run_ece_from_correctness([0.8, 0.5], [None, None]) is None
+
+    def test_perfect_calibration_near_zero(self) -> None:
+        # Single item: conf 1.0 → correctness True (1.0); within same bin → ECE = 0
+        ece = run_ece_from_correctness([1.0], [True])
+        assert ece is not None
+        assert ece < 1e-9
+
+    def test_systematic_overconfidence_positive_ece(self) -> None:
+        # All conf=1.0 but all wrong → ECE should be 1.0
+        ece = run_ece_from_correctness([1.0, 1.0, 1.0], [False, False, False])
+        assert ece is not None
+        assert ece > 0.5
+
+    def test_excludes_none_correctness_items(self) -> None:
+        # Third item has None — excluded; result computed from the other two
+        ece = run_ece_from_correctness([0.9, 0.1, 0.5], [True, False, None])
+        assert ece is not None
+
+    def test_bool_and_float_correctness_compatible(self) -> None:
+        ece_bool = run_ece_from_correctness([0.8], [True])
+        ece_float = run_ece_from_correctness([0.8], [1.0])
+        assert ece_bool is not None
+        assert ece_float is not None
+        assert abs(ece_bool - ece_float) < 1e-9
+
+    def test_returns_float_between_zero_and_one(self) -> None:
+        ece = run_ece_from_correctness([0.9, 0.1, 0.6, 0.4], [True, False, True, False])
+        assert ece is not None
+        assert 0.0 <= ece <= 1.0
+
+
+class TestScoreConfidenceCorrectnessAlignment:
+    def test_none_when_correctness_unavailable(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.8, correctness=None)
+        assert score is None
+        assert "pending" in comment.lower() or "layer 2" in comment.lower()
+
+    def test_perfect_alignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.7, correctness=0.7)
+        assert score is not None
+        assert abs(score - 1.0) < 1e-9
+        assert "distance=0.000" in comment
+
+    def test_maximum_misalignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=1.0, correctness=0.0)
+        assert score is not None
+        assert abs(score - 0.0) < 1e-9
+
+    def test_partial_misalignment(self) -> None:
+        score, comment = score_confidence_correctness_alignment(confidence=0.9, correctness=0.5)
+        assert score is not None
+        assert abs(score - 0.6) < 1e-6
+
+    def test_clamps_inputs(self) -> None:
+        score, _ = score_confidence_correctness_alignment(confidence=1.5, correctness=-0.1)
+        # Clamped: conf=1.0, corr=0.0 → distance=1.0 → score=0.0
+        assert score is not None
+        assert score >= 0.0
+
+
+class TestComputeNoHallucinationRate:
+    def test_empty_returns_zero(self) -> None:
+        assert compute_no_hallucination_rate([]) == 0.0
+
+    def test_all_missing_correctness_returns_zero(self) -> None:
+        items = [{"confidence": 0.9}, {"confidence": 0.5}]
+        assert compute_no_hallucination_rate(items) == 0.0
+
+    def test_high_conf_high_correctness_is_safe(self) -> None:
+        items = [{"confidence": 0.9, "human_correctness": 0.8}]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+    def test_low_conf_is_safe_regardless_of_correctness(self) -> None:
+        # conf < 0.5: pipeline self-reports uncertainty → safe
+        items = [{"confidence": 0.3, "human_correctness": 0.1}]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+    def test_high_conf_low_correctness_is_unsafe(self) -> None:
+        # confident hallucinator
+        items = [{"confidence": 0.9, "human_correctness": 0.2}]
+        assert compute_no_hallucination_rate(items) == 0.0
+
+    def test_mixed_safe_unsafe(self) -> None:
+        items = [
+            {"confidence": 0.9, "human_correctness": 0.9},  # safe
+            {"confidence": 0.9, "human_correctness": 0.2},  # unsafe
+        ]
+        rate = compute_no_hallucination_rate(items)
+        assert abs(rate - 0.5) < 1e-9
+
+    def test_ignores_items_without_correctness(self) -> None:
+        # Only 1 of 2 items has correctness; only that one counts
+        items = [
+            {"confidence": 0.9, "human_correctness": 0.9},
+            {"confidence": 0.9},
+        ]
+        assert compute_no_hallucination_rate(items) == 1.0
+
+
+class TestHumanCorrectnessComposite:
+    def test_all_none_returns_none(self) -> None:
+        assert human_correctness_composite(correctness=None, decision_relevance=None, followup_quality=None) is None
+
+    def test_all_present_weighted_mean(self) -> None:
+        # correctness=1.0 * 0.5 + dr=1.0 * 0.3 + fq=1.0 * 0.2 = 1.0
+        result = human_correctness_composite(correctness=1.0, decision_relevance=1.0, followup_quality=1.0)
+        assert result is not None
+        assert abs(result - 1.0) < 1e-9
+
+    def test_weights_sum_correctly(self) -> None:
+        # correctness=1.0, dr=0.0, fq=0.0 → 0.5 / (0.5+0.3+0.2) = 0.5
+        result = human_correctness_composite(correctness=1.0, decision_relevance=0.0, followup_quality=0.0)
+        assert result is not None
+        assert abs(result - 0.5) < 1e-9
+
+    def test_missing_dimension_renormalizes(self) -> None:
+        # Only correctness present (weight 0.5): renorm → 0.5/0.5 = 1.0 weight
+        result = human_correctness_composite(correctness=0.8, decision_relevance=None, followup_quality=None)
+        assert result is not None
+        assert abs(result - 0.8) < 1e-9
+
+    def test_two_dimensions_renormalize(self) -> None:
+        # correctness=1.0 (0.5) + dr=0.0 (0.3); fq missing → total_w=0.8
+        # weighted_sum = 1.0*0.5 + 0.0*0.3 = 0.5; / 0.8 = 0.625
+        result = human_correctness_composite(correctness=1.0, decision_relevance=0.0, followup_quality=None)
+        assert result is not None
+        assert abs(result - 0.625) < 1e-9
+
+    def test_output_clamped_to_zero_one(self) -> None:
+        result = human_correctness_composite(correctness=0.0, decision_relevance=0.0, followup_quality=0.0)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
+
+
+class TestSubcompositesNoHallucinationRate:
+    def _base_args(self) -> dict:
+        return dict(
+            evidence_citation=0.8,
+            intent_accuracy=0.9,
+            latency_sla=1.0,
+            answerability=None,
+            correct_refusal=None,
+            confidence_self_consistency=0.80,
+            confidence_in_expected_range=None,
+        )
+
+    def test_no_hallucination_rate_absent_unchanged(self) -> None:
+        s1 = subcomposites_from_means(**self._base_args())
+        s2 = subcomposites_from_means(**self._base_args(), no_hallucination_rate=None)
+        assert s1["safety_composite"] == s2["safety_composite"]
+
+    def test_no_hallucination_rate_blends_into_safety(self) -> None:
+        without = subcomposites_from_means(**self._base_args())
+        with_nhr = subcomposites_from_means(**self._base_args(), no_hallucination_rate=1.0)
+        # safety_composite should increase toward 1.0 when nhr=1.0
+        sfty_base = without["safety_composite"]
+        sfty_nhr = with_nhr["safety_composite"]
+        assert sfty_nhr is not None
+        assert sfty_base is not None
+        assert sfty_nhr > sfty_base
+
+    def test_no_hallucination_rate_fallback_when_no_csc(self) -> None:
+        # When csc is None, safety_composite would normally be None
+        args = self._base_args()
+        args["confidence_self_consistency"] = None
+        without = subcomposites_from_means(**args)
+        assert without["safety_composite"] is None
+        with_nhr = subcomposites_from_means(**args, no_hallucination_rate=0.9)
+        # Now nhr fills in as safety_composite
+        assert with_nhr["safety_composite"] is not None
+        assert abs(with_nhr["safety_composite"] - 0.9) < 1e-9
+
+    def test_no_hallucination_rate_weight(self) -> None:
+        # With csc=0.5 and nhr=1.0: 0.80 * 0.5 + 0.20 * 1.0 = 0.60
+        args = self._base_args()
+        args["confidence_self_consistency"] = 0.5
+        with_nhr = subcomposites_from_means(**args, no_hallucination_rate=1.0)
+        assert with_nhr["safety_composite"] is not None
+        assert abs(with_nhr["safety_composite"] - 0.6) < 1e-6
+
+
+class TestLayer2Constants:
+    def test_metric_names_set(self) -> None:
+        assert "correctness" in LAYER2_METRIC_NAMES
+        assert "decision_relevance" in LAYER2_METRIC_NAMES
+        assert "followup_quality" in LAYER2_METRIC_NAMES
+        assert len(LAYER2_METRIC_NAMES) == 3

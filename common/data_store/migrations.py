@@ -648,18 +648,21 @@ CREATE TABLE IF NOT EXISTS dbo.cohort_gap_cache (
     if engine.dialect.name == "postgresql":
         try:
             with engine.begin() as conn:
+                # Create table with columns matching OrchestrationAuditLog ORM model.
                 conn.execute(
                     text(
                         """
 CREATE TABLE IF NOT EXISTS dbo.orchestration_audit_log (
     id SERIAL PRIMARY KEY,
-    event_type VARCHAR(128) NOT NULL,
-    source_agent VARCHAR(64) NOT NULL DEFAULT 'analytics-api',
-    correlation_id VARCHAR(64),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    correlation_id VARCHAR(128),
+    endpoint VARCHAR(128) NOT NULL,
+    question_hash VARCHAR(64),
+    sql_hash VARCHAR(64),
+    confidence DOUBLE PRECISION,
     success BOOLEAN NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-    error_message TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    error_code VARCHAR(64),
+    payload JSONB
 );
 """
                     )
@@ -675,8 +678,8 @@ CREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_created_at
                 conn.execute(
                     text(
                         """
-CREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_event_type
-    ON dbo.orchestration_audit_log (event_type);
+CREATE INDEX IF NOT EXISTS ix_orchestration_audit_correlation
+    ON dbo.orchestration_audit_log (correlation_id);
 """
                     )
                 )
@@ -684,6 +687,70 @@ CREATE INDEX IF NOT EXISTS ix_orchestration_audit_log_event_type
         except Exception as exc:
             log.warning(
                 "migration_orchestration_audit_skipped",
+                error=str(exc),
+            )
+        # Idempotent column fixes for DBs created before the DDL was aligned with the ORM.
+        # Safe to run on a fresh DB (IF NOT EXISTS / IF EXISTS guards each statement).
+        try:
+            with engine.begin() as conn:
+                # Rename event_type → endpoint if the old column still exists.
+                conn.execute(
+                    text(
+                        """
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'dbo'
+          AND table_name = 'orchestration_audit_log'
+          AND column_name = 'event_type'
+    ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'dbo'
+          AND table_name = 'orchestration_audit_log'
+          AND column_name = 'endpoint'
+    ) THEN
+        ALTER TABLE dbo.orchestration_audit_log
+            RENAME COLUMN event_type TO endpoint;
+    END IF;
+END $$;
+"""
+                    )
+                )
+                # Add missing columns that exist in the ORM but not in the original DDL.
+                for col_ddl in [
+                    "ALTER TABLE dbo.orchestration_audit_log ADD COLUMN IF NOT EXISTS question_hash VARCHAR(64)",
+                    "ALTER TABLE dbo.orchestration_audit_log ADD COLUMN IF NOT EXISTS sql_hash VARCHAR(64)",
+                    "ALTER TABLE dbo.orchestration_audit_log ADD COLUMN IF NOT EXISTS confidence DOUBLE PRECISION",
+                    "ALTER TABLE dbo.orchestration_audit_log ADD COLUMN IF NOT EXISTS error_code VARCHAR(64)",
+                    # Drop stale columns from the original DDL that are absent from the ORM.
+                    "ALTER TABLE dbo.orchestration_audit_log DROP COLUMN IF EXISTS source_agent",
+                    "ALTER TABLE dbo.orchestration_audit_log DROP COLUMN IF EXISTS error_message",
+                ]:
+                    conn.execute(text(col_ddl))
+                # Ensure the correlation_id index uses the canonical name from the ORM.
+                conn.execute(
+                    text(
+                        """
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = 'dbo'
+          AND tablename = 'orchestration_audit_log'
+          AND indexname = 'ix_orchestration_audit_correlation'
+    ) THEN
+        CREATE INDEX ix_orchestration_audit_correlation
+            ON dbo.orchestration_audit_log (correlation_id);
+    END IF;
+END $$;
+"""
+                    )
+                )
+            log.info("migrations_orchestration_audit_columns_aligned")
+        except Exception as exc:
+            log.warning(
+                "migration_orchestration_audit_column_fix_skipped",
                 error=str(exc),
             )
         try:

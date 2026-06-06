@@ -363,6 +363,15 @@ async def post_analytics_query(
         try:
             body = LaborPulseQueryRequest.model_validate(payload)
         except ValidationError as exc:
+            # Map field-level Pydantic errors to the canonical API error codes so that
+            # route-contract tests and client error handling remain stable after the
+            # Pydantic validator additions in PR #424.
+            for err in exc.errors():
+                field = str((err.get("loc") or ("",))[0])
+                if field == "conversation_id":
+                    raise HTTPException(status_code=400, detail="invalid_conversation_id") from exc
+                if field == "question" and err.get("type") == "string_too_short":
+                    raise HTTPException(status_code=400, detail="empty_question") from exc
             raise HTTPException(status_code=400, detail="invalid_request_body") from exc
 
         if not (x_tenant_id or "").strip():

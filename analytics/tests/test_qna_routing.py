@@ -25,17 +25,18 @@ def _fake_session_ok() -> MagicMock:
 def test_routing_rejects_invalid_sql_without_execute() -> None:
     session = MagicMock()
 
-    def fake_complete(prompt: str, agent_name: str, **kwargs):
-        if agent_name == "analytics-qna-intent":
-            return {
-                "content": '{"intent_label": "posting_counts", "classification_confidence": 0.9}',
-                "success": True,
-                "extraction_failed": False,
-                "cost_usd": 0.001,
-                "input_tokens": 10,
-                "output_tokens": 5,
-                "model": "m",
-            }
+    def fake_intent_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"intent": "posting_counts", "confidence": 0.9, "extracted_entities": {}}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.001,
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "model": "m",
+        }
+
+    def fake_sql_complete(prompt: str, agent_name: str, **kwargs):
         return {
             "content": '{"sql": "SELECT * FROM dbo.pg_stat_activity LIMIT 10"}',
             "success": True,
@@ -47,7 +48,8 @@ def test_routing_rejects_invalid_sql_without_execute() -> None:
         }
 
     with (
-        patch("analytics.query_engine.routing.complete", side_effect=fake_complete),
+        patch("analytics.query_engine.intent.complete", side_effect=fake_intent_complete),
+        patch("analytics.query_engine.routing.complete", side_effect=fake_sql_complete),
         patch("analytics.query_engine.routing.audit_log.log_sql_validation_to_llm_audit") as audit_mock,
     ):
         out = run_guardrailed_analytics_query(
@@ -67,17 +69,18 @@ def test_routing_rejects_invalid_sql_without_execute() -> None:
 def test_routing_executes_valid_sql_and_returns_synthesis() -> None:
     session = _fake_session_ok()
 
-    def fake_complete(prompt: str, agent_name: str, **kwargs):
-        if agent_name == "analytics-qna-intent":
-            return {
-                "content": '{"intent_label": "aggregate_skill_demand", "classification_confidence": 0.88}',
-                "success": True,
-                "extraction_failed": False,
-                "cost_usd": 0.001,
-                "input_tokens": 10,
-                "output_tokens": 5,
-                "model": "m",
-            }
+    def fake_intent_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"intent": "aggregate_skill_demand", "confidence": 0.88, "extracted_entities": {}}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.001,
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "model": "m",
+        }
+
+    def fake_sql_complete(prompt: str, agent_name: str, **kwargs):
         return {
             "content": json.dumps(
                 {
@@ -119,7 +122,8 @@ def test_routing_executes_valid_sql_and_returns_synthesis() -> None:
         raise AssertionError(agent_name)
 
     with (
-        patch("analytics.query_engine.routing.complete", side_effect=fake_complete),
+        patch("analytics.query_engine.intent.complete", side_effect=fake_intent_complete),
+        patch("analytics.query_engine.routing.complete", side_effect=fake_sql_complete),
         patch("analytics.query_engine.routing.audit_log.log_sql_validation_to_llm_audit") as audit_mock,
         patch("analytics.query_engine.synthesis.complete", side_effect=synth_complete),
     ):
@@ -145,17 +149,18 @@ def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
         '(psycopg2.errors.UndefinedColumn) column "bad_col" does not exist\nLINE 1: SELECT bad_col FROM dbo.job_postings'
     )
 
-    def fake_complete(prompt: str, agent_name: str, **kwargs):
-        if agent_name == "analytics-qna-intent":
-            return {
-                "content": '{"intent_label": "posting_counts", "classification_confidence": 0.9}',
-                "success": True,
-                "extraction_failed": False,
-                "cost_usd": 0.001,
-                "input_tokens": 10,
-                "output_tokens": 5,
-                "model": "m",
-            }
+    def fake_intent_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"intent": "posting_counts", "confidence": 0.9, "extracted_entities": {}}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.001,
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "model": "m",
+        }
+
+    def fake_sql_complete(prompt: str, agent_name: str, **kwargs):
         return {
             "content": json.dumps({"sql": ("SELECT bad_col FROM dbo.job_postings WHERE 1=1 LIMIT 100")}),
             "success": True,
@@ -166,7 +171,10 @@ def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
             "model": "m",
         }
 
-    with patch("analytics.query_engine.routing.complete", side_effect=fake_complete):
+    with (
+        patch("analytics.query_engine.intent.complete", side_effect=fake_intent_complete),
+        patch("analytics.query_engine.routing.complete", side_effect=fake_sql_complete),
+    ):
         out = run_guardrailed_analytics_query(
             QueryRequest(query="Broken column?"),
             session=session,
@@ -179,6 +187,69 @@ def test_routing_sql_execution_failure_surfaces_truncated_db_message() -> None:
     assert out.refusal_message
     assert "PostgreSQL:" in out.refusal_message
     assert "bad_col" in out.refusal_message
+
+
+def test_routing_preserves_zero_confidence_from_fallback() -> None:
+    """Regression: confidence=0.0 must NOT be inflated to 0.5 by the ``or`` operator.
+
+    ``_fallback_other`` returns ``confidence=0.0``. Previously
+    ``float(classification.get("confidence") or 0.5)`` silently substituted 0.5
+    because 0.0 is falsy in Python. The fix uses an explicit ``None``-check so that
+    a genuine 0.0 is passed as-is to ``QueryResultPayload.classification_confidence``.
+    """
+    from analytics.query_engine import qna as qna_module
+    from analytics.query_engine.schemas import QueryResultPayload
+
+    session = MagicMock()
+    captured: list[QueryResultPayload] = []
+
+    def fake_intent_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"intent": "other", "confidence": 0.0, "needs_clarification": true, "extracted_entities": {}}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.001,
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "model": "m",
+        }
+
+    def fake_sql_complete(prompt: str, agent_name: str, **kwargs):
+        return {
+            "content": '{"sql": "SELECT COUNT(*) AS posting_count FROM dbo.job_postings LIMIT 100"}',
+            "success": True,
+            "extraction_failed": False,
+            "cost_usd": 0.002,
+            "input_tokens": 20,
+            "output_tokens": 10,
+            "model": "m",
+        }
+
+    real_run_analytics_qna = qna_module.run_analytics_qna
+
+    def capturing_qna(payload: QueryResultPayload, **kwargs):
+        captured.append(payload)
+        return real_run_analytics_qna(payload, **kwargs)
+
+    session.execute.return_value.keys.return_value = ["posting_count"]
+    session.execute.return_value.fetchall.return_value = []
+
+    with (
+        patch("analytics.query_engine.intent.complete", side_effect=fake_intent_complete),
+        patch("analytics.query_engine.routing.complete", side_effect=fake_sql_complete),
+        patch("analytics.query_engine.routing.audit_log.log_sql_validation_to_llm_audit"),
+        patch("analytics.query_engine.routing.qna.run_analytics_qna", side_effect=capturing_qna),
+    ):
+        run_guardrailed_analytics_query(
+            QueryRequest(query="What is the trend?"),
+            session=session,
+        )
+
+    assert captured, "qna.run_analytics_qna was not called"
+    assert captured[0].classification_confidence == 0.0, (
+        f"Expected 0.0 but got {captured[0].classification_confidence}; "
+        "regression: 'or 0.5' fallback was treating numeric 0.0 as missing"
+    )
 
 
 def test_rest_qna_preserves_transparency_fields_and_classification_cost() -> None:
