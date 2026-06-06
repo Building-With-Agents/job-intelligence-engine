@@ -73,6 +73,12 @@ Single-record payloads are **not** versioned with `record_enriched_schema_versio
 
 Top-level keys are exactly `RECORD_ENRICHED_BATCH_PAYLOAD_KEYS` in `record_enriched_contract.py`.
 
+**`quarantined_count`** (int, JIE #150): records that timed out on every enrichment
+attempt and were written to `dbo.enrichment_quarantine` instead of being promoted to
+`job_postings`. Excluded from `enriched_count` and all batch distributions. Always
+present (defaults to `0`); additive field, so it does **not** bump
+`record_enriched_schema_version` (consumers ignore unknown keys via `extra="ignore"`).
+
 Nested **`dedup`** (always present on batch shape):
 
 | Key | Type | Meaning |

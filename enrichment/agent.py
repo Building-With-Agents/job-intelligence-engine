@@ -107,6 +107,106 @@ from scripts.jsearch_enrichment_preview_lib import build_extraction_dict
 log = structlog.get_logger()
 
 
+# ---------------------------------------------------------------------------
+# JIE #150 — Enrichment-stage timeout escalation
+# ---------------------------------------------------------------------------
+
+
+class EnrichmentTimeoutError(Exception):
+    """Raised by :meth:`enrich_record_async` (when ``raise_on_timeout=True``)
+    after the inner :func:`asyncio.gather` exceeds the configured timeout.
+
+    The caller (parallel batch loop) catches this to:
+      * retry with a fresh ``session_scope`` (up to ``enrichment_max_retries``)
+      * write the record to ``dbo.enrichment_quarantine`` on final failure
+      * emit ``EnrichmentDegraded`` on the alert bus
+      * skip promotion to ``dbo.job_postings``
+
+    Per JIE #150.
+    """
+
+    def __init__(
+        self,
+        *,
+        normalized_job_id: int | None,
+        timeout_seconds: int,
+        attempts: int,
+        elapsed_ms_per_attempt: list[int],
+        error_summary: str,
+    ) -> None:
+        self.normalized_job_id = normalized_job_id
+        self.timeout_seconds = timeout_seconds
+        self.attempts = attempts
+        self.elapsed_ms_per_attempt = list(elapsed_ms_per_attempt)
+        self.error_summary = error_summary
+        super().__init__(f"enrich_record_async timed out after {attempts} attempt(s): {error_summary}")
+
+
+def _quarantine_enrichment_record(
+    session: Session,
+    *,
+    normalized_job_id: int | None,
+    reason: str,
+    attempt_count: int,
+    timeout_seconds: int | None,
+    elapsed_ms_per_attempt: list[int],
+    error_summary: str,
+) -> None:
+    """Insert a row into ``dbo.enrichment_quarantine`` and commit immediately.
+
+    Skipped (with WARNING log) if ``normalized_job_id`` is None — those rows
+    can't be linked back. Caller should still emit ``EnrichmentDegraded`` so
+    the orchestration agent learns of the loss.
+
+    **Commit semantics:** this function calls ``session.commit()`` itself rather
+    than deferring to the enclosing ``session_scope()``. This is intentional —
+    the quarantine row is the persistent record of a lost job, so it must be
+    durable the moment this returns, independent of whatever the caller does next
+    with the session. The caller's ``session_scope()`` will issue a second commit
+    on exit; that is a harmless no-op (nothing left to flush).
+
+    Per JIE #150.
+    """
+    if normalized_job_id is None:
+        log.warning(
+            "enrichment_quarantine_skipped_no_norm_id",
+            reason=reason,
+            attempt_count=attempt_count,
+            error_summary=error_summary,
+        )
+        return
+    try:
+        # Import lazily to avoid circular import at module load.
+        from common.data_store.models import EnrichmentQuarantine
+
+        record = EnrichmentQuarantine(
+            normalized_job_id=normalized_job_id,
+            reason=reason,
+            attempt_count=attempt_count,
+            timeout_seconds=timeout_seconds,
+            elapsed_ms_per_attempt=elapsed_ms_per_attempt,
+            error_summary=error_summary,
+        )
+        session.add(record)
+        # Commit now (not at session_scope exit) so the quarantine row is durable
+        # the moment this returns — see the "Commit semantics" note in the docstring.
+        session.commit()
+        log.warning(
+            "enrichment_record_quarantined",
+            normalized_job_id=normalized_job_id,
+            reason=reason,
+            attempt_count=attempt_count,
+            timeout_seconds=timeout_seconds,
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.error(
+            "enrichment_quarantine_persist_failed",
+            normalized_job_id=normalized_job_id,
+            reason=reason,
+            error=str(exc),
+        )
+
+
 def _enrichment_soc_llm() -> Callable[[str], str]:
     """Sync callable for :func:`classify_soc`; Azure OpenAI via :func:`invoke_skills_llm`."""
 
@@ -660,6 +760,7 @@ class EnrichmentAgent(BaseAgent):
                 enriched_count = 0
                 spam_rejected_count = 0
                 flagged_for_review_count = 0
+                quarantined_count = 0  # JIE #150: timed-out records held back from promotion
                 temporal_period_distribution: dict[str, int] = defaultdict(int)
                 borderplex_subregion_distribution: dict[str, int] = defaultdict(int)
                 duplicate_count = 0
@@ -672,6 +773,14 @@ class EnrichmentAgent(BaseAgent):
 
                 for r in parallel_results:
                     if r is None or r.get("__error"):
+                        continue
+                    # JIE #150: timed-out records are quarantined, not promoted.
+                    # Exclude them from enriched_count, distributions, freshness
+                    # records, and the SOC-unclassified denominator so batch
+                    # metrics and the RecordEnriched event don't report them as
+                    # successfully enriched.
+                    if r.get("__quarantined"):
+                        quarantined_count += 1
                         continue
                     if r.get("__spam_bucket") == "rejected":
                         spam_rejected_count += 1
@@ -707,6 +816,7 @@ class EnrichmentAgent(BaseAgent):
                     enriched_count=enriched_count,
                     spam_rejected_count=spam_rejected_count,
                     flagged_for_review_count=flagged_for_review_count,
+                    quarantined_count=quarantined_count,
                     duration_ms=batch_duration_ms,
                     concurrency=concurrency,
                     execution_mode="parallel",
@@ -747,6 +857,7 @@ class EnrichmentAgent(BaseAgent):
                                             "enriched_count": enriched_count,
                                             "spam_rejected_count": spam_rejected_count,
                                             "flagged_for_review_count": flagged_for_review_count,
+                                            "quarantined_count": quarantined_count,
                                             "soc_classified_count": soc_classified_count,
                                             "naics_classified_count": naics_classified_count,
                                             "duplicate_count": duplicate_count,
@@ -755,6 +866,7 @@ class EnrichmentAgent(BaseAgent):
                                     "enriched_count": enriched_count,
                                     "spam_rejected_count": spam_rejected_count,
                                     "flagged_for_review_count": flagged_for_review_count,
+                                    "quarantined_count": quarantined_count,
                                     "soc_classified_count": soc_classified_count,
                                     "naics_classified_count": naics_classified_count,
                                     "naics_unclassified_count": enriched_count - naics_classified_count,
@@ -773,6 +885,7 @@ class EnrichmentAgent(BaseAgent):
                     enriched_count=enriched_count,
                     spam_rejected_count=spam_rejected_count,
                     flagged_for_review_count=flagged_for_review_count,
+                    quarantined_count=quarantined_count,
                     temporal_period_distribution=dict(temporal_period_distribution),
                     borderplex_subregion_distribution=dict(borderplex_subregion_distribution),
                     duplicate_count=duplicate_count,
@@ -1461,8 +1574,20 @@ class EnrichmentAgent(BaseAgent):
         self,
         posting: dict[str, Any],
         session: Session | None,
+        *,
+        raise_on_timeout: bool = False,
     ) -> dict[str, Any]:
-        """Async counterpart to :meth:`enrich_record` — runs SOC, NAICS, employer concurrently."""
+        """Async counterpart to :meth:`enrich_record` — runs SOC, NAICS, employer concurrently.
+
+        ``raise_on_timeout`` (JIE #150): when ``True``, the inner
+        :func:`asyncio.gather` :class:`TimeoutError` is converted to a
+        :class:`EnrichmentTimeoutError` raised to the caller (so the parallel
+        batch loop can retry with a fresh session and quarantine on final
+        failure). When ``False`` (default), retains pre-#150 behavior of
+        stuffing :class:`TimeoutError` instances into the three result slots
+        and returning a degraded merged dict — required by existing serial
+        callers and unit tests that pin that contract.
+        """
         try:
             company_id, company_confidence = resolve_company(posting.get("company") or "", session)
             location_id, location_confidence, raw_location_text, borderplex_subregion = resolve_location(
@@ -1533,6 +1658,16 @@ class EnrichmentAgent(BaseAgent):
                         timeout_s=_ENRICH_LLM_TIMEOUT,
                         elapsed_ms=_elapsed,
                     )
+                    if raise_on_timeout:
+                        # JIE #150: hand control to the caller for retry +
+                        # quarantine. Do NOT mutate `merged` further.
+                        raise EnrichmentTimeoutError(
+                            normalized_job_id=_nj_id,
+                            timeout_seconds=_ENRICH_LLM_TIMEOUT,
+                            attempts=1,
+                            elapsed_ms_per_attempt=[_elapsed],
+                            error_summary=f"gather timeout after {_ENRICH_LLM_TIMEOUT}s",
+                        ) from None
                     naics_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
                     soc_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
                     employer_result = TimeoutError(f"gather timeout after {_ENRICH_LLM_TIMEOUT}s")
@@ -1628,6 +1763,11 @@ class EnrichmentAgent(BaseAgent):
                 )
 
             return merged
+        except EnrichmentTimeoutError:
+            # JIE #150: let the timeout propagate so the caller can retry
+            # with a fresh session and quarantine on final failure. The
+            # broad `except Exception` below would otherwise mask it.
+            raise
         except Exception:
             log.warning("enrich_record_async_degraded", agent=self.agent_id, reason="resolver_exception")
             return {
@@ -1670,12 +1810,20 @@ class EnrichmentAgent(BaseAgent):
         _in_flight = 0
         _peak_in_flight = 0
         _saturation_events = 0
+        _timeout_count = 0  # JIE #150: batch-level timeout-then-quarantine count
 
         _completed = 0
         _total = len(rows)
 
+        # JIE #150 — resolve the retry budget once per batch. ``_enrich_one``
+        # runs once per row, so the import + cached-accessor call are hoisted out
+        # of that hot loop and read from the closure below.
+        from enrichment._config import enrichment_max_retries as _max_retries_fn
+
+        _max_retries = _max_retries_fn()
+
         async def _enrich_one(idx: int, row: dict[str, Any]) -> dict[str, Any] | None:
-            nonlocal _in_flight, _peak_in_flight, _saturation_events, _completed
+            nonlocal _in_flight, _peak_in_flight, _saturation_events, _completed, _timeout_count
             bucket = _spam_bucket(row)
             if bucket == "rejected":
                 _completed += 1
@@ -1691,56 +1839,103 @@ class EnrichmentAgent(BaseAgent):
                 _peak_in_flight = max(_peak_in_flight, _in_flight)
                 job_start = time.perf_counter()
                 posting = _posting_for_enrichment(row, payload)
+
+                # JIE #150 — retry-and-quarantine on enrichment timeout.
+                # ``_max_retries`` is resolved once per batch in the enclosing
+                # scope (hoisted out of this per-job loop).
+                _elapsed_per_attempt: list[int] = []
+                _quarantined = False
+                enriched: dict[str, Any] | None = None
                 try:
-                    with session_scope() as job_session:
-                        enriched = await self.enrich_record_async(posting, job_session)
-                        sector_id = resolve_sector(posting.get("role_classification"), session=job_session)
-                        enriched["sector_id"] = sector_id
+                    for _attempt in range(_max_retries + 1):
+                        _attempt_start = time.perf_counter()
+                        try:
+                            with session_scope() as job_session:
+                                enriched = await self.enrich_record_async(posting, job_session, raise_on_timeout=True)
+                                _elapsed_per_attempt.append(int((time.perf_counter() - _attempt_start) * 1000))
+                                sector_id = resolve_sector(posting.get("role_classification"), session=job_session)
+                                enriched["sector_id"] = sector_id
 
-                        # Quality score (deterministic — no LLM call)
-                        extraction = build_extraction_dict(
-                            row.get("skills"),
-                            row.get("tools"),
-                            row.get("tasks"),
-                            row.get("responsibilities"),
-                            row.get("context"),
-                        )
-                        q_res = score_quality(
-                            job_title=posting.get("title") or "",
-                            job_description=posting.get("description"),
-                            extraction=extraction,
-                            extraction_failed=bool(row.get("extraction_failed")),
-                        )
-                        enriched["quality_score"] = q_res.quality_score
-                        enriched["quality_components"] = q_res.components
-
-                        # Promotion
-                        nj_promo = _coerce_normalized_job_id(
-                            enriched.get("normalized_job_id") or posting.get("normalized_job_id")
-                        )
-                        # JIE #289: log loud at ERROR when nj_promo is None so the bug
-                        # is observable. Sweeper picks up the orphaned row after grace.
-                        if nj_promo is None:
-                            log.error(
-                                "promotion_skipped_missing_normalized_job_id",
-                                source=posting.get("source"),
-                                external_id=posting.get("external_id"),
-                                call_site="batch_parallel",
-                                enriched_has_key="normalized_job_id" in enriched,
-                                posting_has_key="normalized_job_id" in posting,
-                            )
-                        else:
-                            try:
-                                apply_enrichment_to_job_postings(
-                                    job_session,
-                                    nj_promo,
-                                    _job_postings_promotion_payload(enriched, posting),
+                                # Quality score (deterministic — no LLM call)
+                                extraction = build_extraction_dict(
+                                    row.get("skills"),
+                                    row.get("tools"),
+                                    row.get("tasks"),
+                                    row.get("responsibilities"),
+                                    row.get("context"),
                                 )
-                            except Exception as promo_exc:
-                                log.warning("enrichment_parallel_promotion_failed", error=str(promo_exc))
+                                q_res = score_quality(
+                                    job_title=posting.get("title") or "",
+                                    job_description=posting.get("description"),
+                                    extraction=extraction,
+                                    extraction_failed=bool(row.get("extraction_failed")),
+                                )
+                                enriched["quality_score"] = q_res.quality_score
+                                enriched["quality_components"] = q_res.components
 
-                        enriched["__posting"] = posting
-                        enriched["__row"] = row
+                                # Promotion
+                                nj_promo = _coerce_normalized_job_id(
+                                    enriched.get("normalized_job_id") or posting.get("normalized_job_id")
+                                )
+                                # JIE #289: log loud at ERROR when nj_promo is None so the bug
+                                # is observable. Sweeper picks up the orphaned row after grace.
+                                if nj_promo is None:
+                                    log.error(
+                                        "promotion_skipped_missing_normalized_job_id",
+                                        source=posting.get("source"),
+                                        external_id=posting.get("external_id"),
+                                        call_site="batch_parallel",
+                                        enriched_has_key="normalized_job_id" in enriched,
+                                        posting_has_key="normalized_job_id" in posting,
+                                    )
+                                else:
+                                    try:
+                                        apply_enrichment_to_job_postings(
+                                            job_session,
+                                            nj_promo,
+                                            _job_postings_promotion_payload(enriched, posting),
+                                        )
+                                    except Exception as promo_exc:
+                                        log.warning("enrichment_parallel_promotion_failed", error=str(promo_exc))
+
+                                enriched["__posting"] = posting
+                                enriched["__row"] = row
+                            break  # success — exit retry loop
+                        except EnrichmentTimeoutError as _timeout_exc:
+                            # Session scope auto-closed on raise; record per-attempt elapsed.
+                            _elapsed_per_attempt.extend(_timeout_exc.elapsed_ms_per_attempt)
+                            log.warning(
+                                "enrich_record_async_attempt_timeout",
+                                normalized_job_id=_timeout_exc.normalized_job_id,
+                                attempt=_attempt + 1,
+                                max_attempts=_max_retries + 1,
+                                timeout_s=_timeout_exc.timeout_seconds,
+                            )
+                            if _attempt < _max_retries:
+                                # Loop back; next iteration opens a fresh session_scope
+                                continue
+                            # Final attempt failed — quarantine + emit + skip promotion
+                            with session_scope() as _q_session:
+                                _quarantine_enrichment_record(
+                                    _q_session,
+                                    normalized_job_id=_timeout_exc.normalized_job_id,
+                                    reason="timeout",
+                                    attempt_count=_attempt + 1,
+                                    timeout_seconds=_timeout_exc.timeout_seconds,
+                                    elapsed_ms_per_attempt=_elapsed_per_attempt,
+                                    error_summary=_timeout_exc.error_summary or "gather_timeout",
+                                )
+                            _emit_enrichment_degraded(
+                                correlation_id=correlation_id,
+                                posting_id=posting.get("source_external_id"),
+                                normalized_job_id=_timeout_exc.normalized_job_id,
+                                triggered_by_event_type=payload.get("event_type"),
+                                reason=f"enrich_record_async_timeout_after_{_attempt + 1}_attempts",
+                                extraction_note=None,
+                            )
+                            _quarantined = True
+                            _timeout_count += 1
+                            break
                 except Exception as exc:
                     log.warning("enrichment_parallel_job_failed", idx=idx, error=str(exc))
                     enriched = {"__error": True, "__posting": posting, "__row": row}
@@ -1764,7 +1959,11 @@ class EnrichmentAgent(BaseAgent):
                             total=_total,
                             in_flight=_in_flight,
                             job_ms=job_ms,
+                            timeouts=_timeout_count,  # JIE #150: batch-level quarantine count
                         )
+                if _quarantined:
+                    # JIE #150: signal quarantine outcome to the batch caller.
+                    return {"__quarantined": True, "__posting": posting, "__row": row}
                 return enriched
 
         results = list(await asyncio.gather(*[_enrich_one(i, row) for i, row in enumerate(rows)]))

@@ -39,6 +39,7 @@ RECORD_ENRICHED_BATCH_PAYLOAD_KEYS = frozenset(
         "enriched_count",
         "spam_rejected_count",
         "flagged_for_review_count",
+        "quarantined_count",
         "temporal_period_distribution",
         "borderplex_subregion_distribution",
         "duplicate_count",

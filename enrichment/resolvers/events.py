@@ -45,12 +45,19 @@ def build_record_enriched_event(
     duplicate_count: int,
     soc_classified_count: int,
     naics_classified_count: int,
+    quarantined_count: int = 0,
     dedup_stub_count: int = 0,
     dedup_rows_with_duplicate_cluster_id: int = 0,
     dedup_rows_with_matched_job_posting_id: int = 0,
     freshness_records: list[dict[str, Any]] | None = None,
 ) -> EventEnvelope:
-    """Build one ``RecordEnriched`` event for the whole batch (Week 5–6 + dedup integration)."""
+    """Build one ``RecordEnriched`` event for the whole batch (Week 5–6 + dedup integration).
+
+    ``quarantined_count`` (JIE #150) reports records held back from promotion to
+    ``job_postings`` after repeated enrichment timeouts. Defaulting to 0 keeps the
+    field backward-compatible (additive; consumers ignore unknown keys), so no
+    ``RECORD_ENRICHED_SCHEMA_VERSION`` bump is required.
+    """
     dedup = build_dedup_block(
         stub_count=dedup_stub_count,
         rows_with_duplicate_cluster_id=dedup_rows_with_duplicate_cluster_id,
@@ -67,6 +74,7 @@ def build_record_enriched_event(
             "enriched_count": enriched_count,
             "spam_rejected_count": spam_rejected_count,
             "flagged_for_review_count": flagged_for_review_count,
+            "quarantined_count": quarantined_count,
             "temporal_period_distribution": dict(temporal_period_distribution),
             "borderplex_subregion_distribution": dict(borderplex_subregion_distribution),
             "duplicate_count": duplicate_count,

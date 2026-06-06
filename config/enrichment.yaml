@@ -26,6 +26,14 @@ enrichment:
   # Env override: ENRICHMENT_LLM_TIMEOUT
   llm_timeout_seconds: 120
 
+  # JIE #150 — number of ADDITIONAL retry attempts after the first timeout.
+  # Default 1 (one retry → max 2 total attempts). Set to 0 to disable retries
+  # and match pre-#150 behavior. Above 1 only makes sense once #149
+  # (sync-DB-in-async) is fixed — at concurrency=5, more retries amplify
+  # queue depth.
+  # Env override: ENRICHMENT_MAX_RETRIES
+  max_retries: 1
+
   dedup:
     # Cosine similarity threshold for fuzzy dedup (Decision #39 — EBS).
     # Range 0.0–1.0. Calibrate via enrichment/dedup/calibration.py.

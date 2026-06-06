@@ -41,6 +41,21 @@ def enrichment_llm_timeout_seconds() -> int:
 
 
 @cached_accessor
+def enrichment_max_retries() -> int:
+    """Additional attempts after the first timeout in ``enrich_record_async``.
+
+    YAML key: ``enrichment.max_retries`` (default 1 → one retry → max 2 total).
+    Env override: ``ENRICHMENT_MAX_RETRIES``. Set 0 to match pre-#150 behavior.
+    """
+    return get_int(
+        file="enrichment",
+        key="enrichment.max_retries",
+        env="ENRICHMENT_MAX_RETRIES",
+        minimum=0,
+    )
+
+
+@cached_accessor
 def dedup_cosine_threshold() -> float:
     return get_float(
         file="enrichment",
@@ -101,6 +116,7 @@ __all__ = [
     "dedup_rolling_window_days",
     "enrichment_concurrency",
     "enrichment_llm_timeout_seconds",
+    "enrichment_max_retries",
     "enrichment_parallel",
     "esco_seed_apply_filter",
     "soc_unclassified_rate_threshold",
