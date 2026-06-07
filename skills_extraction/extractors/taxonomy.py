@@ -9,6 +9,12 @@ strict 6-step resolution order:
   5. O*NET occupation code match
   6. Emit as raw_skill with esco_uri = null (Enrichment resolves in Phase 2)
 
+Documentation — equivalent skill labels (JIE #360):
+  Pre-configured synonym groups in ``config/skill_synonyms.yaml`` are collapsed
+  at **query time** in the analytics comparison router (``skill_demand_weekly``).
+  Write-time taxonomy linking in this module is unchanged; future work may add
+  write-time normalization during extraction or aggregation.
+
 Week 4 implementation (Angel + Fabian):
 - Set up ESCO digital skills store (Decision #36)
 - Build GenAI Extension Layer lookup table (10 skills → ESCO parent clusters)

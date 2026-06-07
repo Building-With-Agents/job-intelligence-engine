@@ -616,6 +616,78 @@ class TestComparisonSkillSupplement:
         session.execute.assert_called_once()
 
 
+class TestComparisonSynonymCollapse:
+    """JIE #360 — query-time collapse of equivalent skill labels in comparison route."""
+
+    def test_synonym_comparison_collapses_counts_per_week(self) -> None:
+        from datetime import date
+
+        week = date(2026, 4, 6)
+        session = _make_session(
+            rows=[
+                _make_mock_row(
+                    skill_label="CI/CD",
+                    week_start=week,
+                    posting_count=15,
+                    employer_count=3,
+                    esco_uri=None,
+                ),
+                _make_mock_row(
+                    skill_label="Continuous Integration",
+                    week_start=week,
+                    posting_count=29,
+                    employer_count=5,
+                    esco_uri="http://esco.example/ci",
+                ),
+            ],
+            taxonomy_lower_matches=("continuous integration", "ci/cd"),
+        )
+        cls = _mk_classification(
+            "comparison",
+            skill_names=["CI/CD", "Continuous Integration"],
+        )
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.row_count == 1
+        assert result.rows[0]["skill_label"] == "Continuous Integration"
+        assert result.rows[0]["posting_count"] == 44
+        assert result.rows[0]["employer_count"] == 8
+        assert result.rows[0]["esco_uri"] == "http://esco.example/ci"
+        assert "synonym-collapsed" in result.query_label
+
+    def test_unrelated_skills_not_collapsed(self) -> None:
+        from datetime import date
+
+        week = date(2026, 4, 6)
+        session = _make_session(
+            rows=[
+                _make_mock_row(
+                    skill_label="Cloud Computing",
+                    week_start=week,
+                    posting_count=10,
+                    employer_count=2,
+                    esco_uri=None,
+                ),
+                _make_mock_row(
+                    skill_label="Cybersecurity",
+                    week_start=week,
+                    posting_count=20,
+                    employer_count=4,
+                    esco_uri=None,
+                ),
+            ],
+            taxonomy_lower_matches=("cloud computing", "cybersecurity"),
+        )
+        cls = _mk_classification(
+            "comparison",
+            skill_names=["Cloud Computing", "Cybersecurity"],
+        )
+        result = QueryRouter().route(cls, session)
+        assert result.routed is True
+        assert result.row_count == 2
+        assert "synonym-collapsed" not in result.query_label
+
+
 # ---------------------------------------------------------------------------
 # label_embedding role resolution (issue #229)
 # ---------------------------------------------------------------------------
