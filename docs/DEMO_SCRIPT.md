@@ -11,7 +11,7 @@ Template aligned with curriculum Week 11 demo rehearsal. Sections §1, §3, §4,
 | **Date** | Wednesday, May 6 |
 | **Platform** | Microsoft Teams |
 | **Scheduled run time** | ~30 minutes |
-| **Primary surface** | wfd-os LaborPulse (`/laborpulse`) backed by JIE `POST /analytics/query` on port **8020** (reporting-api moved off :8000 in wfd-os) |
+| **Primary surface** | wfd-os LaborPulse (`/laborpulse`) backed by JIE `POST /analytics/query` on port **8000** locally (`python scripts/run_analytics_api.py`); wfd-os `.env` `JIE_BASE_URL` overrides when needed |
 
 ---
 
@@ -38,7 +38,7 @@ Pair D bridges the raw Borderplex hiring signal in JIE to an instructor-friendly
 
 ## §5 — Preconditions
 
-*(DB seeded, JIE on **:8020**, wfd-os `.env` `JIE_BASE_URL=http://127.0.0.1:8020`, API keys, etc.)*
+*(DB seeded, JIE on **:8000** via `python scripts/run_analytics_api.py`, wfd-os `.env` `JIE_BASE_URL=http://127.0.0.1:8000` when LaborPulse calls JIE directly, API keys, etc.)*
 
 ---
 
