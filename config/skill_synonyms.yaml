@@ -1,0 +1,10 @@
+# config/skill_synonyms.yaml — query-time skill synonym groups (JIE #360).
+# Loaded via load_yaml("skill_synonyms") → data["skill_synonyms"]["groups"].
+
+skill_synonyms:
+  groups:
+    - canonical: "Continuous Integration"
+      aliases:
+        - "CI/CD"
+        - "Continuous Integration and Continuous Deployment"
+        - "Continuous Integration/Continuous Deployment"

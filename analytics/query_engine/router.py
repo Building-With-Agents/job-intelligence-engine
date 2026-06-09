@@ -43,6 +43,11 @@ from analytics.query_engine.constants import (
     NO_DATA_SKILL_TAXONOMY_REFUSAL,
     SKILL_TAXONOMY_GATE_CONFIDENCE_CAP,
 )
+from analytics.query_engine.skill_synonyms import (
+    expand_skill_query_terms,
+    resolve_canonical_skill,
+    terms_share_synonym_group,
+)
 from analytics.tenant_scope import TenantAccess, get_tenant_access_for_pipeline
 from common.data_store.models import (
     CanonicalRole,
@@ -792,6 +797,34 @@ class QueryRouter:
                 error=str(exc),
                 confidence=confidence,
             )
+
+    @staticmethod
+    def _collapse_comparison_synonym_rows(
+        rows: list[dict[str, Any]],
+        *,
+        canonical: str,
+    ) -> list[dict[str, Any]]:
+        """Sum alias ``skill_demand_weekly`` rows per week under *canonical* label."""
+        by_week: dict[Any, dict[str, Any]] = {}
+        for row in rows:
+            week = row.get("week_start")
+            bucket = by_week.get(week)
+            if bucket is None:
+                bucket = {
+                    "skill_label": canonical,
+                    "week_start": week,
+                    "posting_count": 0,
+                    "employer_count": 0,
+                    "esco_uri": None,
+                }
+                by_week[week] = bucket
+            bucket["posting_count"] += int(row.get("posting_count") or 0)
+            bucket["employer_count"] += int(row.get("employer_count") or 0)
+            if bucket.get("esco_uri") is None and row.get("esco_uri"):
+                bucket["esco_uri"] = row.get("esco_uri")
+        collapsed = list(by_week.values())
+        collapsed.sort(key=lambda r: (r.get("week_start") is None, r.get("week_start")), reverse=True)
+        return collapsed
 
     @staticmethod
     def _ilike_or(column: Any, names: list[str], max_terms: int = 5) -> Any | None:
@@ -1751,8 +1784,12 @@ class QueryRouter:
         if not tenant.can_query_borderplex_skill_tables:
             return self._no_borderplex_market_aggregates(intent, confidence)
         if skill_names:
+            synonym_collapse = terms_share_synonym_group(skill_names)
+            query_terms = expand_skill_query_terms(skill_names) if synonym_collapse else skill_names
+            canonical_label = resolve_canonical_skill(skill_names[0]) if synonym_collapse else None
+
             t = SkillDemandWeekly
-            skill_filter = self._ilike_or(t.skill_label, skill_names)
+            skill_filter = self._ilike_or(t.skill_label, query_terms, max_terms=len(query_terms))
             stmt = (
                 select(
                     t.skill_label,
@@ -1767,8 +1804,38 @@ class QueryRouter:
             if skill_filter is not None:
                 stmt = stmt.where(skill_filter)
 
-            label = f"skill comparison — {' vs '.join(skill_names[:5])}"
+            if synonym_collapse and canonical_label:
+                label = f"skill comparison (synonym-collapsed) — {canonical_label} group"
+            else:
+                label = f"skill comparison — {' vs '.join(skill_names[:5])}"
             tables_used = ["skill_demand_weekly"]
+
+            result = self._execute(
+                session,
+                stmt,
+                intent=intent,
+                tables_used=tables_used,
+                query_label=label,
+                confidence=confidence,
+            )
+            if synonym_collapse and canonical_label and result.routed and result.rows:
+                collapsed = self._collapse_comparison_synonym_rows(
+                    result.rows,
+                    canonical=canonical_label,
+                )
+                return RouteResult(
+                    intent=result.intent,
+                    tables_used=result.tables_used,
+                    query_label=result.query_label,
+                    rows=collapsed,
+                    row_count=len(collapsed),
+                    is_partial=result.is_partial,
+                    routed=result.routed,
+                    error=result.error,
+                    confidence=result.confidence,
+                    empty_rows_refusal_reason=result.empty_rows_refusal_reason,
+                )
+            return result
         else:
             ss = SectorSummaryWeekly
             stmt = (
