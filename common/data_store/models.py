@@ -461,12 +461,14 @@ class CanonicalRole(Base):
     __tablename__ = "canonical_roles"
     __table_args__ = (
         Index("ix_canonical_roles_computed_at", "computed_at"),
+        Index("ix_canonical_roles_role_family", "role_family"),
         {"schema": "dbo"},
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     role_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     label: Mapped[str] = mapped_column(Text, nullable=False)
+    role_family: Mapped[str | None] = mapped_column(String(64), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     posting_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     cluster_centroid: Mapped[list[float] | None] = mapped_column(JSONB, nullable=True)

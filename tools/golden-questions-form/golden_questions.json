@@ -1113,26 +1113,26 @@
   },
   {
     "id": "gq-052",
-    "question": "Which IT skills are required in El Paso, TX postings but rarely mentioned in Las Cruces, NM postings, and vice versa?",
+    "question": "How many Borderplex job postings are for cloud-engineering roles compared to cybersecurity roles in recent weeks?",
     "source": "wfd_archetype",
     "intent": "comparison",
-    "context": "Contrast which skills appear frequently in one subregion vs rare in the other (set-difference / ratio style).",
-    "ideal_answer_summary": "Use dbo.job_postings filtered by borderplex_subregion (el_paso vs las_cruces), join normalized_jobs on source/external_id, then join extracted_intelligence on normalized_job_id and unnest skills JSONB . Report top skills unique / over-represented in each metro with counts or shares [to be filled from data]; caveat sparse skills / confidence threshold  if used. If extraction coverage is low, state refusal / partial.",
+    "context": "Workforce director comparing open role-domain postings (cloud engineering vs cybersecurity), not skill-mention weekly aggregates.",
+    "ideal_answer_summary": "Compare distinct job posting counts by role_family (cloud_engineering vs cybersecurity) from job_postings joined to canonical_roles, Borderplex-scoped and filtered by date_posted for recent weeks. Cite posting_count per family; note only postings with non-null canonical_role_id are counted (#363).",
     "must_include": [
-      "extracted_intelligence",
-      "skills OR skill_label",
-      "borderplex_subregion",
-      "el_paso",
-      "las_cruces",
-      "Both directions (“El Paso vs Las Cruces” / “vice versa”)",
-      "Numeric results as [to be filled from data] or caveat"
+      "role_family OR cloud_engineering",
+      "cybersecurity",
+      "job_postings",
+      "canonical_roles",
+      "posting_count",
+      "both_domains_compared_numerically",
+      "canonical_role_id coverage caveat or equivalent"
     ],
     "must_not_include": [
-      "Claiming skill_demand_weekly answers metro-specific asymmetry without job_postings geo/subregion path",
-      "Fabricated employer names",
-      "Single-city-only answer"
+      "skill_demand_weekly as sole evidence for domain job totals",
+      "national statistics substituted",
+      "fabricated_employer_names"
     ],
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "gq-053",
