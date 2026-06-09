@@ -18,6 +18,8 @@ from __future__ import annotations
 import pytest
 
 from analytics.clustering.config import (
+    DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN,
+    DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY,
     DEFAULT_CLUSTER_DIM_REDUCTION_METHOD,
     DEFAULT_CLUSTER_DIM_REDUCTION_N_COMPONENTS,
     DEFAULT_CLUSTER_DISTANCE_METRIC,
@@ -37,6 +39,8 @@ from analytics.clustering.config import (
     DEFAULT_EMERGENCE_MIN_DISTINCT_EMPLOYERS,
     DEFAULT_EMERGENCE_MIN_NOVEL_SKILLS,
     DEFAULT_EMERGENCE_MIN_QUALITY_SCORE,
+    cluster_assignment_max_per_run,
+    cluster_assignment_min_similarity,
     cluster_dim_reduction_method,
     cluster_dim_reduction_n_components,
     cluster_distance_metric,
@@ -82,6 +86,8 @@ def yaml_only_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "EMERGENCE_MIN_QUALITY_SCORE",
         "EMERGENCE_MIN_NOVEL_SKILLS",
         "EMERGENCE_MIN_DISTINCT_EMPLOYERS",
+        "CLUSTER_ASSIGNMENT_MIN_SIMILARITY",
+        "CLUSTER_ASSIGNMENT_MAX_PER_RUN",
     ):
         monkeypatch.delenv(var, raising=False)
     # cached_accessor memoizes; clear so the YAML reads fresh under the
@@ -117,6 +123,8 @@ def yaml_only_env(monkeypatch: pytest.MonkeyPatch) -> None:
     [
         (DEFAULT_CLUSTER_EMBEDDING_BATCH_SIZE, cluster_embedding_batch_size),
         (DEFAULT_CLUSTER_EMBEDDING_AUDIT_AGENT_NAME, cluster_embedding_audit_agent_name),
+        (DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY, cluster_assignment_min_similarity),
+        (DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN, cluster_assignment_max_per_run),
         (DEFAULT_CLUSTER_MIN_TOTAL_POSTINGS, cluster_min_total_postings),
         (DEFAULT_CLUSTER_MIN_CLUSTER_SIZE, cluster_min_cluster_size),
         (DEFAULT_CLUSTER_MIN_SAMPLES, cluster_min_samples),

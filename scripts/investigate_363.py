@@ -95,7 +95,7 @@ def run():
         # had a canonical_role_id previously set (i.e., was wiped to NULL)?
         # We can't know this without audit log, but we can check llm_audit_log for clustering runs
         print("\n=== 14. CLUSTERING RUN HISTORY (llm_audit_log) ===")
-        rows = c.execute(
+        clustering_rows = c.execute(
             text("""
             SELECT
                 DATE(created_at) AS run_date,
@@ -108,9 +108,9 @@ def run():
             LIMIT 10
         """)
         ).fetchall()
-        if rows:
-            for r in rows:
-                print(f"  {r[0]}: calls={r[1]}, successes={r[2]}")
+        if clustering_rows:
+            for row in clustering_rows:
+                print(f"  {row[0]}: calls={row[1]}, successes={row[2]}")
         else:
             print("  No clustering entries in llm_audit_log")
 
@@ -118,7 +118,7 @@ def run():
         # Check if loader-eligible rows were simply not present when clustering last ran
         # by looking at ingestion_run timestamps
         print("\n=== 15. INGESTION TIMELINE FOR LOADER-ELIGIBLE NULL ROWS ===")
-        r = c.execute(
+        ingestion_rows = c.execute(
             text("""
             WITH loader_eligible AS (
                 SELECT jp.job_posting_id, jp.ingestion_run_id
@@ -148,8 +148,8 @@ def run():
         """)
         ).fetchall()
         print(f"  {'INGESTION_RUN_ID':<40} COUNT")
-        for r in rows:
-            print(f"  {str(r[0]):<40} {r[1]}")
+        for row in ingestion_rows:
+            print(f"  {str(row[0]):<40} {row[1]}")
 
 
 if __name__ == "__main__":

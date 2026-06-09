@@ -835,10 +835,12 @@ class AnalyticsAgent(BaseAgent):
                         payload=payload,
                     )
 
+                embedding_by_posting = {item.posting_id: item.embedding for item in embedded}
                 persist_info = persist_clustering_result(
                     session,
                     result,
                     correlation_id=event.correlation_id,
+                    posting_embeddings=embedding_by_posting,
                 )
                 week_start = _iso_week_monday(date.today())
                 snapshot_rows = refresh_role_snapshot_weekly(session, week_start=week_start)

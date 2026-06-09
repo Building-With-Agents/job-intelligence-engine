@@ -43,7 +43,7 @@ def test_embed_texts_azure_logs_audit_on_success(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "skills_extraction.extractors.taxonomy.httpx.Client",
+            "common.embeddings.httpx.Client",
             return_value=mock_cm,
         ),
     ):
@@ -85,7 +85,7 @@ def test_embed_texts_azure_audit_uses_total_tokens_when_no_prompt_tokens(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "skills_extraction.extractors.taxonomy.httpx.Client",
+            "common.embeddings.httpx.Client",
             return_value=mock_cm,
         ),
     ):
@@ -115,10 +115,10 @@ def test_embed_texts_azure_logs_failed_attempts_on_rate_limit(
     with (
         patch.dict(os.environ, embedding_env, clear=False),
         patch(
-            "skills_extraction.extractors.taxonomy.httpx.Client",
+            "common.embeddings.httpx.Client",
             return_value=mock_cm,
         ),
-        patch("skills_extraction.extractors.taxonomy.time.sleep"),
+        patch("common.embeddings.time.sleep"),
     ):
         out = _embed_texts_azure(["hello"], audit_agent_name="enrichment-dedup")
 

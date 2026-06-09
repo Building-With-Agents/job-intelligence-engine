@@ -95,7 +95,7 @@ def _parse_string_list_column(raw: Any, *, extractor: Any) -> list[str]:
     return out
 
 
-def _row_to_features(row: Mapping[str, Any]) -> PostingClusterFeatures:
+def row_to_features(row: Mapping[str, Any]) -> PostingClusterFeatures:
     skills = _parse_string_list_column(row.get("skills"), extractor=_skill_or_tool_label)
     tools = _parse_string_list_column(row.get("tools"), extractor=_skill_or_tool_label)
     responsibilities = _parse_string_list_column(
@@ -185,7 +185,7 @@ def load_posting_cluster_features(
     )
     result = session.execute(sql, params)
     rows = result.mappings().all()
-    features = [_row_to_features(dict(r)) for r in rows]
+    features = [row_to_features(dict(r)) for r in rows]
     log.info(
         "clustering_features_loaded",
         row_count=len(features),
@@ -193,3 +193,6 @@ def load_posting_cluster_features(
         limit=limit,
     )
     return features
+
+
+__all__ = ["load_posting_cluster_features", "row_to_features"]

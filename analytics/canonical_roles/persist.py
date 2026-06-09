@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import uuid
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime, timezone
 from typing import Any
 
@@ -13,6 +13,8 @@ import structlog
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from analytics.canonical_roles.assign_from_centroids import nearest_canonical_role_id
+from analytics.clustering.config import cluster_assignment_max_per_run, cluster_assignment_min_similarity
 from analytics.clustering.types import ClusteringResult, RankedSkill, RankedTool
 from common.data_store.models import CanonicalRole
 
@@ -88,13 +90,16 @@ def persist_clustering_result(
     result: ClusteringResult,
     *,
     correlation_id: str,
+    posting_embeddings: Mapping[str, Sequence[float]] | None = None,
 ) -> dict[str, Any]:
     """Insert or update canonical roles, then map postings to their stable role ids.
 
     Assigns a deterministic UUID ``role_id`` per cluster signature so canonical role ids
     remain stable across reruns when the role label/signature is stable.
     Updates only postings that appear in ``result.assignments`` (embedded + clustered rows);
-    noise rows get NULL ``canonical_role_id``. Postings without embeddings are unchanged.
+    noise rows get NULL ``canonical_role_id`` unless centroid fallback assigns a role
+    (``posting_embeddings`` + ``cluster_assignment_min_similarity``). Postings without
+    embeddings are unchanged.
 
     Returns a dict including ``cluster_id_to_role_id`` for alert mapping.
     """
@@ -150,13 +155,47 @@ def persist_clustering_result(
         label_embeddings_synced += 1
 
     postings_updated = 0
+    noise_fallback_assigned = 0
+    noise_left_null = 0
+    noise_cap_skipped = 0
+    min_similarity = cluster_assignment_min_similarity()
+    max_assign = cluster_assignment_max_per_run()
+    embeddings_by_posting = posting_embeddings or {}
+
     for a in result.assignments:
         pid = a.posting_id
         if a.is_noise:
-            session.execute(
-                text("UPDATE dbo.job_postings SET canonical_role_id = NULL WHERE job_posting_id = CAST(:pid AS text)"),
-                {"pid": pid},
+            if noise_fallback_assigned >= max_assign:
+                session.execute(
+                    text(
+                        "UPDATE dbo.job_postings SET canonical_role_id = NULL WHERE job_posting_id = CAST(:pid AS text)"
+                    ),
+                    {"pid": pid},
+                )
+                noise_cap_skipped += 1
+                noise_left_null += 1
+                postings_updated += 1
+                continue
+            vec = embeddings_by_posting.get(pid)
+            role_id = (
+                nearest_canonical_role_id(vec, session, min_similarity=min_similarity) if vec is not None else None
             )
+            if role_id is not None:
+                session.execute(
+                    text(
+                        "UPDATE dbo.job_postings SET canonical_role_id = :rid WHERE job_posting_id = CAST(:pid AS text)"
+                    ),
+                    {"rid": role_id, "pid": pid},
+                )
+                noise_fallback_assigned += 1
+            else:
+                session.execute(
+                    text(
+                        "UPDATE dbo.job_postings SET canonical_role_id = NULL WHERE job_posting_id = CAST(:pid AS text)"
+                    ),
+                    {"pid": pid},
+                )
+                noise_left_null += 1
             postings_updated += 1
             continue
         cid = a.cluster_id
@@ -188,6 +227,9 @@ def persist_clustering_result(
         postings_updated=postings_updated,
         role_count=len(result.clusters),
         label_embeddings_synced=label_embeddings_synced,
+        noise_fallback_assigned=noise_fallback_assigned,
+        noise_left_null=noise_left_null,
+        noise_cap_skipped=noise_cap_skipped,
     )
 
     return {

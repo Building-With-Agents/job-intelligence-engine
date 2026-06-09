@@ -45,6 +45,10 @@ DEFAULT_EMERGENCE_MIN_QUALITY_SCORE = 0.70
 DEFAULT_EMERGENCE_MIN_NOVEL_SKILLS = 3
 DEFAULT_EMERGENCE_MIN_DISTINCT_EMPLOYERS = 2
 
+# JIE #363 — centroid assignment for NULL canonical_role_id (HDBSCAN noise fallback).
+DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY = 0.75
+DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN = 5000
+
 
 @cached_accessor
 def cluster_embedding_batch_size() -> int:
@@ -145,6 +149,27 @@ def cluster_label_dominance_threshold() -> float:
         env="CLUSTER_LABEL_DOMINANCE_THRESHOLD",
         minimum=0.0,
         maximum=1.0,
+    )
+
+
+@cached_accessor
+def cluster_assignment_min_similarity() -> float:
+    return get_float(
+        file="clustering",
+        key="clustering.assignment.min_centroid_similarity",
+        env="CLUSTER_ASSIGNMENT_MIN_SIMILARITY",
+        minimum=0.0,
+        maximum=1.0,
+    )
+
+
+@cached_accessor
+def cluster_assignment_max_per_run() -> int:
+    return get_int(
+        file="clustering",
+        key="clustering.assignment.max_assignments_per_run",
+        env="CLUSTER_ASSIGNMENT_MAX_PER_RUN",
+        minimum=1,
     )
 
 
@@ -263,6 +288,8 @@ def cluster_umap_random_state() -> int:
 
 
 __all__ = [
+    "cluster_assignment_max_per_run",
+    "cluster_assignment_min_similarity",
     "cluster_dim_reduction_method",
     "cluster_dim_reduction_n_components",
     "cluster_distance_metric",
@@ -279,6 +306,8 @@ __all__ = [
     "cluster_umap_min_dist",
     "cluster_umap_n_neighbors",
     "cluster_umap_random_state",
+    "DEFAULT_CLUSTER_ASSIGNMENT_MAX_PER_RUN",
+    "DEFAULT_CLUSTER_ASSIGNMENT_MIN_SIMILARITY",
     "DEFAULT_CLUSTER_DIM_REDUCTION_METHOD",
     "DEFAULT_CLUSTER_DIM_REDUCTION_N_COMPONENTS",
     "DEFAULT_CLUSTER_DISTANCE_METRIC",

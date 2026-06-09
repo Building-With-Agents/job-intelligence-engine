@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from analytics.canonical_roles.loader import _row_to_features
+from analytics.canonical_roles.loader import row_to_features
 from analytics.canonical_roles.persist import (
     _build_cluster_role_ids,
     cleanup_orphan_canonical_roles,
@@ -43,7 +43,7 @@ def test_row_to_features_parses_skill_name_and_label_fallback() -> None:
         "tools": [{"tool_name": "Git"}],
         "responsibilities": [{"responsibility_description": "Ship features"}],
     }
-    f = _row_to_features(row)
+    f = row_to_features(row)
     assert f.posting_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
     assert f.skills == ["Go", "LegacySkill"]
     assert f.tools == ["Git"]

@@ -186,3 +186,59 @@ recommended first PR.
 
 **Follow-up:** HDBSCAN tuning (option 2a + 2b above) for Category A, tracked as
 a separate issue due to the larger scope and clustering pipeline risk.
+
+---
+
+## 8. Fix implemented (PR — centroid fallback, #363)
+
+**Investigation credit:** @naescobedo — [PR #398](https://github.com/Building-With-Agents/job-intelligence-engine/pull/398) (cherry-picked onto `fix/null-canonical-role`).
+
+**Scope choice:** This delivery implements **H1 option (b)** — nearest `canonical_roles.label_embedding` assignment when cosine similarity ≥ configured threshold — rather than Nestor’s §7 recommendation to prioritize H4 normalization first. H4 (~790 rows without `normalized_jobs`) remains a **follow-up issue**; this fix does not invent normalization rows.
+
+### Configuration
+
+| Setting | Default | Env override |
+|---------|---------|----------------|
+| `clustering.assignment.min_centroid_similarity` | `0.75` | `CLUSTER_ASSIGNMENT_MIN_SIMILARITY` |
+| `clustering.assignment.max_assignments_per_run` | `5000` | `CLUSTER_ASSIGNMENT_MAX_PER_RUN` |
+
+Tune threshold after dry-run: `python scripts/backfill_canonical_role_id.py --dry-run`.
+
+### Code / scripts
+
+| Component | Path |
+|-----------|------|
+| Assignment helper | `analytics/canonical_roles/assign_from_centroids.py` |
+| Idempotent backfill | `scripts/backfill_canonical_role_id.py` (`--dry-run`, `--limit`, `--min-similarity`, `--strict`) |
+| Recurrence hook | `persist_clustering_result(..., posting_embeddings=...)` — noise rows try centroid fallback before NULL |
+| Audit (unchanged) | `python scripts/investigate_363.py` |
+
+**Eligibility guards:** loader-aligned joins; exclude spam auto-reject, duplicates, and `role_classification = 'N/A Not an IT role'`.
+
+### Before / after metrics (reproduce on dev DB)
+
+```powershell
+python scripts/investigate_363.py
+python scripts/db_check.py migrate
+python scripts/backfill_canonical_role_id.py --dry-run
+python scripts/backfill_canonical_role_id.py
+python scripts/investigate_363.py
+```
+
+Record NULL % and bucket counts here after running on your database:
+
+| Metric | Before backfill | After backfill |
+|--------|-----------------|----------------|
+| `canonical_role_id IS NULL` % | _(run investigate_363)_ | _(run investigate_363)_ |
+| H1-eligible NULLs assigned | — | _(backfill stdout)_ |
+
+**Expected remaining NULLs:** H4 normalization gap (~35% of pre-fix NULLs) plus niche titles below similarity threshold; overall NULL rate may remain above 15% until H4 backfill lands.
+
+### Acceptance mapping
+
+| AC | Deliverable |
+|----|-------------|
+| Investigation report | §1–7 above (Nestor); this §8 |
+| Decision / hypothesis | H1 centroid fallback in this PR; H4 follow-up |
+| Backfill mechanism | `scripts/backfill_canonical_role_id.py` + persist noise hook |
+| ≤15% NULL (stretch) | Document post-backfill metrics; not a CI gate unless `--strict` |
