@@ -33,15 +33,12 @@ _ROOT = Path(__file__).resolve().parents[3]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
-    "What are the top IT skills Borderplex employers are hiring for right now?",
-    "What should a training program for AI agent developers look like given what Borderplex employers are hiring for right now?",
-    "What should a training program for cybersecurity analysts look like given what Borderplex employers are hiring for right now?",
-    "What tools and practices do Borderplex employers expect from workflow automation engineers?",
-    "What does an MLOps role look like in the Borderplex job market right now?",
+from scripts.smoke.laborpulse._demo_common import (  # noqa: E402
+    DEFAULT_JIE_BASE_URL,
+    LOCKED_DEMO_QUESTIONS,
+    default_jie_base_url,
+    likely_refusal,
 )
-
-DEFAULT_JIE_BASE_URL = "http://127.0.0.1:8000"
 
 
 def _headers(*, request_id: str | None = None) -> dict[str, str]:
@@ -76,36 +73,16 @@ def _post(base: str, question: str, *, req_id: str) -> tuple[int, dict]:
         return 0, {"error": str(e.reason)}
 
 
-def _likely_refusal(answer: str) -> bool:
-    a = (answer or "").strip().lower()
-    if not a:
-        return True
-    prefixes = (
-        "i cannot",
-        "i can't",
-        "unable to",
-        "cannot answer",
-        "no data",
-        "not enough data",
-    )
-    return any(a.startswith(p) for p in prefixes)
-
-
 def _default_base_url() -> str:
-    """Return the JIE API base URL used by the smoke script.
-
-    Mirrors ``scripts/run_analytics_api.py`` so the no-argument smoke command
-    targets the API port that local devs get by default, while still allowing
-    ``JIE_BASE_URL`` to override it for non-standard runs.
-    """
-    return os.environ.get("JIE_BASE_URL", DEFAULT_JIE_BASE_URL)
+    """Backward-compatible alias for tests and callers."""
+    return default_jie_base_url()
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke the five locked LaborPulse demo questions.")
     parser.add_argument(
         "--base-url",
-        default=_default_base_url(),
+        default=default_jie_base_url(),
         help=f"JIE Analytics API base URL (default: {DEFAULT_JIE_BASE_URL} or JIE_BASE_URL).",
     )
     parser.add_argument(
@@ -145,10 +122,10 @@ def main() -> int:
             sql_gen = str(body.get("sql_generated") or "")
             if args.require_non_empty_sql and not sql_gen.strip():
                 err_parts.append("empty sql_generated")
-            if _likely_refusal(answer):
+            if likely_refusal(answer):
                 err_parts.append("answer looks like refusal or empty")
 
-        answer_ok = bool(status == 200 and answer.strip() and not _likely_refusal(answer))
+        answer_ok = bool(status == 200 and answer.strip() and not likely_refusal(answer))
         if args.require_non_empty_sql:
             answer_ok = answer_ok and bool(str(body.get("sql_generated") or "").strip())
 

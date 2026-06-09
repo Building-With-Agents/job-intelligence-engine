@@ -31,21 +31,16 @@ load_dotenv(_ROOT / ".env", override=False)
 
 from analytics.api._config import allow_no_api_keys
 from common.data_store.database import _resolve_primary_database_url
-
-DEFAULT_JIE_BASE_URL = "http://127.0.0.1:8000"
-
-LOCKED_DEMO_QUESTIONS: tuple[str, ...] = (
-    "What are the top IT skills Borderplex employers are hiring for right now?",
-    "What should a training program for AI agent developers look like given what Borderplex employers are hiring for right now?",
-    "What should a training program for cybersecurity analysts look like given what Borderplex employers are hiring for right now?",
-    "What tools and practices do Borderplex employers expect from workflow automation engineers?",
-    "What does an MLOps role look like in the Borderplex job market right now?",
+from scripts.smoke.laborpulse._demo_common import (
+    LOCKED_DEMO_QUESTIONS,
+    default_jie_base_url,
+    likely_refusal,
 )
 
 
 def _default_jie_base_url() -> str:
-    """Return JIE API base URL; mirrors ``scripts/run_analytics_api.py`` default port."""
-    return os.environ.get("JIE_BASE_URL", DEFAULT_JIE_BASE_URL)
+    """Backward-compatible alias for tests and callers."""
+    return default_jie_base_url()
 
 
 def _get(url: str, *, timeout: float = 10.0) -> tuple[int, str]:
@@ -92,26 +87,15 @@ def _post_query(base: str, question: str, *, req_id: str) -> tuple[int, dict]:
 
 
 def _likely_refusal(answer: str) -> bool:
-    a = (answer or "").strip().lower()
-    if not a:
-        return True
-    prefixes = (
-        "i cannot",
-        "i can't",
-        "unable to",
-        "cannot answer",
-        "no data",
-        "not enough data",
-    )
-    return any(a.startswith(p) for p in prefixes)
+    return likely_refusal(answer)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Week 11 demo pre-flight checks.")
     parser.add_argument(
         "--jie-base-url",
-        default=_default_jie_base_url(),
-        help=f"JIE Analytics API base URL (default: {DEFAULT_JIE_BASE_URL} or JIE_BASE_URL).",
+        default=default_jie_base_url(),
+        help="JIE Analytics API base URL (default from JIE_BASE_URL or http://127.0.0.1:8000).",
     )
     parser.add_argument("--portal-url", default="http://localhost:3000")
     args = parser.parse_args()
