@@ -52,8 +52,6 @@ def _build_allowed_corpus(bundle: EvidenceBundle) -> str:
             parts.append(str(f.supporting_count))
         if f.time_period:
             parts.append(f.time_period)
-        if f.source_table:
-            parts.append(f.source_table)
     return " ".join(parts).lower()
 
 
