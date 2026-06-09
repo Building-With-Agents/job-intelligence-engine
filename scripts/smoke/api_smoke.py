@@ -9,6 +9,7 @@ Requires the API to be running first:
 
     python scripts/run_analytics_api.py
 
+Set ``JIE_BASE_URL`` to override the default API base URL (``http://127.0.0.1:8000``).
 Set ``ANALYTICS_QUERY_X_API_KEY`` when the API enforces ``JIE_API_KEYS`` (JIE #226). Optional
 ``ANALYTICS_QUERY_X_TENANT_ID``, ``ANALYTICS_QUERY_X_USER_EMAIL``, and ``ANALYTICS_QUERY_X_REQUEST_ID``
 override LaborPulse headers for ``POST /analytics/query`` (JIE #222).
@@ -36,6 +37,12 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+
+from scripts.smoke.laborpulse._demo_common import DEFAULT_JIE_BASE_URL, default_jie_base_url  # noqa: E402
+
+
+def _default_base_url() -> str:
+    return default_jie_base_url()
 
 
 def _laborpulse_query_headers(*, request_id: str | None = None) -> dict[str, str]:
@@ -94,7 +101,11 @@ def _print_result(label: str, status: int, body: dict, *, preview_keys: list[str
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Hit all FastAPI endpoints and print results.")
-    parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="API base URL.")
+    parser.add_argument(
+        "--base-url",
+        default=_default_base_url(),
+        help=f"API base URL (default: {DEFAULT_JIE_BASE_URL} or JIE_BASE_URL).",
+    )
     parser.add_argument("--question", default="Which 5 skills have the highest posting counts?")
     parser.add_argument("--correlation-id", default="api-smoke-1")
     parser.add_argument("--role-id", default="role_1", help="canonical_role_id for role_benchmark trigger.")
