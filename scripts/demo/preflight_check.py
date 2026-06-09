@@ -38,6 +38,11 @@ from scripts.smoke.laborpulse._demo_common import (
 )
 
 
+def _default_jie_base_url() -> str:
+    """Backward-compatible alias for tests and callers."""
+    return default_jie_base_url()
+
+
 def _get(url: str, *, timeout: float = 10.0) -> tuple[int, str]:
     req = urllib.request.Request(url, method="GET")
     try:
