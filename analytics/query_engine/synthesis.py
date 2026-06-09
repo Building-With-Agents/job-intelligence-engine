@@ -94,7 +94,9 @@ def _facts_payload(bundle: EvidenceBundle) -> list[dict[str, Any]]:
             {
                 "citation_id": f.citation_id,
                 "summary": f.summary,
-                "source_table": f.source_table,
+                # source_table is intentionally excluded: internal DB identifiers
+                # must never appear in user-facing answer text (JIE #338 / RT-005).
+                # source_table remains on EvidenceCitation for internal tracing only.
                 "supporting_count": f.supporting_count,
                 "time_period": f.time_period,
             }
@@ -161,6 +163,10 @@ COMPARISON INSTRUCTIONS (required when comparing two or more terms):
         "code on that line (for example `salary=50,000–70,000` with no trailing ISO code), "
         "state the amounts as plain numbers only — do not assume USD or any other currency.\n"
         "- Do not include markdown code fences.\n"
+        "- Do not reference internal database table names (such as job_postings, companies, "
+        "skill_demand_weekly, geo_demand_weekly, normalized_jobs, or any SQL table identifier) "
+        "in your answer. Use logical labels instead, e.g. 'job postings data', "
+        "'skill demand records', or 'workforce dataset'.\n"
         f"{trend_clause}"
         f"{comparison_clause}"
     )
