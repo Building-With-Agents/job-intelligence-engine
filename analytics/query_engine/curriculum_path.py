@@ -296,6 +296,9 @@ def _pick_temporal_period(session: Session) -> str | None:
     return next(iter(present), None) if present else None
 
 
+# EXEMPLAR: Phase 2 reference — multi-step ORM aggregation (SKILLS path only, not ROLE path).
+# Pattern: prefer ORM load + Python aggregation for multi-step transforms where
+# logic clarity matters more than raw I/O performance.
 def _query_top_skills(
     session: Session,
     role_id: str,
